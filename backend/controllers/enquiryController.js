@@ -1,0 +1,251 @@
+const Enquiry = require('../models/Enquiry');
+const jwt = require('jsonwebtoken');
+const mongoose = require('mongoose');
+
+// Create a new enquiry
+exports.createEnquiry = async (req, res) => {
+    try {
+        const {
+            vendor,
+            fromLocation,
+            toLocation,
+            type,
+            category,
+            airline,
+            weightRange,
+            truckLoad,
+            vehicleType,
+            handlingType,
+            additionalServices,
+            deliverySpeed,
+            price,
+            isDirect,
+            isBooking,
+            excludedVendor,
+            guestName,
+            guestEmail,
+            guestPhone,
+            guestCompany,
+            commodity
+        } = req.body;
+
+        // Check for optional token
+        let clientId = null;
+        const authHeader = req.header("Authorization");
+        if (authHeader) {
+            try {
+                const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7).trim() : authHeader;
+                const decoded = jwt.verify(token, process.env.JWT_SECRET);
+                clientId = decoded.id;
+            } catch (err) {
+                // Ignore token error, treat as guest
+            }
+        }
+
+        // Validate client and vendor ObjectIds
+        const validatedClientId = (clientId && mongoose.Types.ObjectId.isValid(clientId)) ? clientId : null;
+        const validatedVendorId = (vendor && mongoose.Types.ObjectId.isValid(vendor)) ? vendor : null;
+        const validatedExcludedVendorId = (excludedVendor && mongoose.Types.ObjectId.isValid(excludedVendor)) ? excludedVendor : null;
+
+        // Check customer enquiry limits if logged in
+        if (validatedClientId) {
+            const User = require('../models/User');
+            const userObj = await User.findById(validatedClientId);
+            const hasActivePlan = userObj && userObj.activePlan && userObj.planEndDate && new Date(userObj.planEndDate) > new Date();
+
+            if (!hasActivePlan) {
+                const count = await Enquiry.countDocuments({ client: validatedClientId });
+                if (count >= 5) {
+                    return res.status(403).json({
+                        message: 'You have reached the limit of 5 free enquiries. Please upgrade your plan to continue.'
+                    });
+                }
+            }
+        }
+
+        // Sanitize type and category to avoid validation errors
+        const sanitizedType = (type && ['air', 'sea', 'land', 'warehouse', 'cha'].includes(type.toLowerCase())) ? type.toLowerCase() : 'air';
+        const sanitizedCategory = (category && ['domestic', 'international'].includes(category.toLowerCase())) ? category.toLowerCase() : 'domestic';
+
+        const enquiry = await Enquiry.create({
+            client: validatedClientId,
+            vendor: validatedVendorId,
+            fromLocation,
+            toLocation,
+            type: sanitizedType,
+            category: sanitizedCategory,
+            airline,
+            weightRange,
+            truckLoad,
+            vehicleType,
+            handlingType,
+            additionalServices,
+            deliverySpeed,
+            price,
+            isDirect: isDirect || false,
+            isBooking: isBooking || false,
+            excludedVendor: validatedExcludedVendorId,
+            guestName: guestName || '',
+            guestEmail: guestEmail || '',
+            guestPhone: guestPhone || '',
+            guestCompany: guestCompany || '',
+            commodity: commodity || '',
+            status: 'Pending'
+        });
+
+        res.status(201).json(enquiry);
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
+
+// Get enquiries for the vendor
+exports.getVendorEnquiries = async (req, res) => {
+    try {
+        const isAdmin = req.user.id === 'ad0000000000000000000000';
+        let currentUser = null;
+        let hasActivePlan = true;
+
+        if (isAdmin) {
+            currentUser = {
+                verificationStatus: 'Approved',
+                isVerified: true,
+                role: 'admin'
+            };
+        } else {
+            const User = require('../models/User');
+            currentUser = await User.findById(req.user.id);
+            if (!currentUser || (currentUser.verificationStatus !== 'Approved' && !currentUser.isVerified)) {
+                return res.json([]); // Return empty list of leads if not approved
+            }
+            hasActivePlan = currentUser.activePlan && currentUser.planEndDate && new Date(currentUser.planEndDate) > new Date();
+        }
+
+        const { type } = req.query; // 'my' or 'direct'
+        const isBookingFilter = req.query.isBooking === 'true';
+        let query = {};
+
+        if (type === 'my') {
+            query = { isDirect: false, isBooking: isBookingFilter };
+            if (!isAdmin) {
+                query.vendor = req.user.id;
+            }
+        } else if (type === 'direct') {
+            query = {
+                isDirect: true,
+                isBooking: isBookingFilter
+            };
+            if (!isAdmin) {
+                query.$or = [
+                    { excludedVendor: { $ne: req.user.id } },
+                    { excludedVendor: { $exists: false } },
+                    { excludedVendor: null }
+                ];
+            }
+        } else {
+            return res.status(400).json({ message: 'Valid enquiry type ("my" or "direct") is required' });
+        }
+
+        const enquiries = await Enquiry.find(query)
+            .populate('client', 'name email phone company role')
+            .sort({ createdAt: -1 });
+
+        let results = enquiries;
+        if (!hasActivePlan) {
+            if (enquiries.length > 5) {
+                res.setHeader('X-Limit-Reached', 'true');
+                res.setHeader('Access-Control-Expose-Headers', 'X-Limit-Reached');
+                results = enquiries.slice(0, 5);
+            }
+        }
+
+        // For direct listings, enrich with the vendor's own price for the same route and cargo type
+        if (type === 'direct') {
+            const Pricing = require('../models/Pricing');
+            const vendorRates = isAdmin ? [] : await Pricing.find({ vendor: req.user.id, status: 'active' });
+
+            const enrichedEnquiries = results.map(enq => {
+                const enqObj = enq.toObject();
+                // Find matching rate for same route and type
+                const match = vendorRates.find(rate => {
+                    const fromMatch = rate.fromLocation.toLowerCase() === enq.fromLocation.toLowerCase();
+                    const toMatch = rate.toLocation.toLowerCase() === enq.toLocation.toLowerCase();
+                    const typeMatch = rate.type.toLowerCase() === enq.type.toLowerCase();
+                    return fromMatch && toMatch && typeMatch;
+                });
+                enqObj.vendorOwnPrice = match ? match.price : null;
+                return enqObj;
+            });
+            return res.json(enrichedEnquiries);
+        }
+
+        res.json(results);
+    } catch (error) {
+        const fs = require('fs');
+        fs.appendFileSync('error.log', `\n[${new Date().toISOString()}] getVendorEnquiries ERROR: ${error.stack}\n`);
+        console.error('getVendorEnquiries ERROR:', error);
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
+
+// Update status of enquiry (Accept/Decline/Quote)
+exports.updateEnquiryStatus = async (req, res) => {
+    try {
+        const { status, price } = req.body;
+        if (status && !['Accepted', 'Declined', 'Pending'].includes(status)) {
+            return res.status(400).json({ message: 'Invalid status' });
+        }
+
+        const enquiry = await Enquiry.findById(req.params.id);
+        if (!enquiry) {
+            return res.status(404).json({ message: 'Enquiry not found' });
+        }
+
+        // For direct enquiries, if accepted, we can associate the vendor who accepted it
+        if (enquiry.isDirect && status === 'Accepted') {
+            enquiry.vendor = req.user.id;
+            // Keep it in direct list, do not change isDirect to false
+        } else if (!enquiry.isDirect && enquiry.vendor && enquiry.vendor.toString() !== req.user.id) {
+            return res.status(403).json({ message: 'Unauthorized status update' });
+        }
+
+        if (status) {
+            enquiry.status = status;
+        }
+        if (price !== undefined && price !== null) {
+            enquiry.price = price;
+        }
+
+        await enquiry.save();
+        res.json(enquiry);
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
+
+// Get enquiries for the client/customer
+exports.getClientEnquiries = async (req, res) => {
+    try {
+        const isAdmin = req.user.id === 'ad0000000000000000000000';
+        const { type } = req.query; // 'my' or 'direct'
+        let query = {};
+
+        if (!isAdmin) {
+            query.client = req.user.id;
+        }
+
+        if (type === 'my') {
+            query.isDirect = false;
+        } else if (type === 'direct') {
+            query.isDirect = true;
+        }
+
+        const enquiries = await Enquiry.find(query)
+            .populate('vendor', 'name email phone company')
+            .sort({ createdAt: -1 });
+
+        res.json(enquiries);
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};

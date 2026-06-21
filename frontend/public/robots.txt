@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://www.logisticscanner.com/sitemap.xml
+
+# Disallow admin routes
+Disallow: /admin/
+Disallow: /admin/*

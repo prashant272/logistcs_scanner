@@ -1,0 +1,151 @@
+const mongoose = require('mongoose');
+
+const userSchema = new mongoose.Schema({
+    name: {
+        type: String,
+        required: true,
+        trim: true
+    },
+    email: {
+        type: String,
+        required: true,
+        unique: true,
+        trim: true,
+        lowercase: true
+    },
+    password: {
+        type: String,
+        required: true,
+        minlength: 6
+    },
+    phone: {
+        type: String,
+        required: true
+    },
+    address: {
+        type: String,
+        default: ''
+    },
+    role: {
+        type: String,
+        enum: ['customer', 'vendor'],
+        default: 'customer'
+    },
+    company: {
+        type: String,
+        default: ''
+    },
+    firstName: {
+        type: String,
+        default: ''
+    },
+    lastName: {
+        type: String,
+        default: ''
+    },
+    profilePhoto: {
+        type: String,
+        default: ''
+    },
+    uploadedDocument: {
+        type: String,
+        default: ''
+    },
+    country: {
+        type: String,
+        default: ''
+    },
+    city: {
+        type: String,
+        default: ''
+    },
+    state: {
+        type: String,
+        default: ''
+    },
+    pincode: {
+        type: String,
+        default: ''
+    },
+    website: {
+        type: String,
+        default: ''
+    },
+    alternativeEmail: {
+        type: String,
+        default: ''
+    },
+    alternativeNumber: {
+        type: String,
+        default: ''
+    },
+    dateOfIncorporation: {
+        type: Date
+    },
+    companyAge: {
+        type: String,
+        default: ''
+    },
+    directorsNames: {
+        type: String,
+        default: ''
+    },
+    directorsCount: {
+        type: Number,
+        default: 0
+    },
+    lastYearTurnover: {
+        type: String,
+        default: ''
+    },
+    companyProfile: {
+        type: String,
+        default: ''
+    },
+    serviceIn: {
+        type: String,
+        enum: ['B2B', 'B2C', 'Both'],
+        default: 'Both'
+    },
+    services: {
+        type: [String],
+        default: []
+    },
+    deductionPercentage: {
+        type: Number,
+        default: 0.00
+    },
+    isVerified: {
+        type: Boolean,
+        default: false
+    },
+    verificationStatus: {
+        type: String,
+        enum: ['Pending', 'Approved', 'Declined'],
+        default: 'Pending'
+    },
+    otp: {
+        type: String,
+        default: ''
+    },
+    otpExpires: {
+        type: Date
+    },
+    activePlan: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Plan',
+        default: null
+    },
+    planStartDate: {
+        type: Date
+    },
+    planEndDate: {
+        type: Date
+    },
+    createdAt: {
+        type: Date,
+        default: Date.now
+    }
+});
+
+module.exports = mongoose.model('User', userSchema);
