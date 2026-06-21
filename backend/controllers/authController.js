@@ -1,7 +1,7 @@
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
-const { handleSignupNotification, sendSMS, sendEmail } = require('../services/notificationService');
+const { handleSignupNotification, sendSMS, sendWhatsAppOTP, sendEmail, sendVendorWelcomeEmail, sendVendorRegistrationAdminAlert } = require('../services/notificationService');
 
 // Generate JWT
 const generateToken = (id) => {
@@ -49,7 +49,8 @@ exports.registerUser = async (req, res) => {
                 email,
                 phone,
                 country: address,
-                otp
+                otp,
+                role: userExists.role
             });
 
             return res.status(200).json({
@@ -80,7 +81,8 @@ exports.registerUser = async (req, res) => {
                 email,
                 phone,
                 country: address,
-                otp
+                otp,
+                role: user.role
             });
 
             res.status(201).json({
@@ -129,19 +131,30 @@ exports.verifyOTP = async (req, res) => {
         // Send Welcome SMS if from India
         const isIndia = (user.address && user.address.toLowerCase() === 'india') || (user.phone && user.phone.startsWith('+91'));
         if (isIndia) {
-            await sendSMS({ mobile: user.phone, otp: '', templateID: "1707175750032925464" });
+            const templateID = user.role === 'vendor' ? "1707175750032925464" : "1707175750054912723";
+            await sendSMS({ mobile: user.phone, otp: '', templateID });
         }
 
-        // Send Welcome Email
-        const welcomeSubject = 'Welcome to The LogisticScanner!';
-        const welcomeHtml = `
-            <div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #ddd; max-width: 600px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
-                <h2 style="color: #00b2fe;">Welcome, ${user.name}!</h2>
-                <p>Your account with The LogisticScanner has been verified and created successfully.</p>
-                <p>Happy Shipping, Seamless Delivery!</p>
-            </div>
-        `;
-        await sendEmail({ to: user.email, subject: welcomeSubject, html: welcomeHtml });
+        // Send Welcome Email based on role
+        if (user.role === 'vendor') {
+            await sendVendorWelcomeEmail(user.email, user.name);
+            await sendVendorRegistrationAdminAlert({
+                name: user.name,
+                companyName: user.company,
+                email: user.email,
+                phone: user.phone
+            });
+        } else {
+            const welcomeSubject = 'Welcome to The LogisticScanner!';
+            const welcomeHtml = `
+                <div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #ddd; max-width: 600px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
+                    <h2 style="color: #00b2fe;">Welcome, ${user.name}!</h2>
+                    <p>Your account with The LogisticScanner has been verified and created successfully.</p>
+                    <p>Happy Shipping, Seamless Delivery!</p>
+                </div>
+            `;
+            await sendEmail({ to: user.email, subject: welcomeSubject, html: welcomeHtml });
+        }
 
         res.status(200).json({
             message: 'Verification successful. You are now logged in.',
@@ -184,7 +197,8 @@ exports.resendOTP = async (req, res) => {
             email: user.email,
             phone: user.phone,
             country: user.address,
-            otp
+            otp,
+            role: user.role
         });
 
         res.status(200).json({
@@ -311,8 +325,14 @@ exports.forgotPassword = async (req, res) => {
         const isIndia = (user.address && user.address.toLowerCase().includes('india')) || 
                         (user.phone && (user.phone.startsWith('+91') || user.phone.replace(/\D/g, '').startsWith('91')));
         let smsResult = null;
+        let waResult = null;
+
+        // Always attempt WhatsApp OTP
+        waResult = await sendWhatsAppOTP({ mobile: user.phone, otp });
+
         if (isIndia) {
-            smsResult = await sendSMS({ mobile: user.phone, otp, templateID: "1707175750664448317" });
+            const templateID = user.role === 'vendor' ? "1707175750664448317" : "1707175750668490308";
+            smsResult = await sendSMS({ mobile: user.phone, otp, templateID });
         }
 
         res.status(200).json({
@@ -320,6 +340,7 @@ exports.forgotPassword = async (req, res) => {
             email: user.email,
             notification: {
                 emailSent: emailResult.success,
+                waSent: waResult.success,
                 smsSent: smsResult ? smsResult.success : false,
                 smsSkipped: !isIndia
             }

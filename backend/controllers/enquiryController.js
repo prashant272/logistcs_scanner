@@ -93,6 +93,40 @@ exports.createEnquiry = async (req, res) => {
             status: 'Pending'
         });
 
+        // Notifications
+        let customerEmail = guestEmail;
+        if (validatedClientId) {
+            const User = require('../models/User');
+            const clientUser = await User.findById(validatedClientId);
+            if (clientUser) customerEmail = clientUser.email;
+        }
+
+        const { sendEnquiryToVendorAlert, sendEnquiryCustomerConfirmation } = require('../services/notificationService');
+
+        if (customerEmail) {
+            await sendEnquiryCustomerConfirmation(customerEmail, {
+                cargoType: sanitizedType,
+                pickupCity: fromLocation,
+                destinationCity: toLocation
+            });
+        }
+
+        if (validatedVendorId) {
+            const User = require('../models/User');
+            const vendorUser = await User.findById(validatedVendorId);
+            if (vendorUser) {
+                await sendEnquiryToVendorAlert(vendorUser.email, {
+                    cargoType: sanitizedType,
+                    pickupCity: fromLocation,
+                    pickupCountry: 'India', // Optional
+                    destinationCity: toLocation,
+                    destinationCountry: 'Any', // Optional
+                    weight: weightRange || 'N/A',
+                    volume: 'N/A'
+                });
+            }
+        }
+
         res.status(201).json(enquiry);
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
@@ -217,6 +251,26 @@ exports.updateEnquiryStatus = async (req, res) => {
         }
 
         await enquiry.save();
+
+        // Notification for Acceptance
+        if (status === 'Accepted') {
+            const User = require('../models/User');
+            const vendorUser = await User.findById(req.user.id);
+            let customerEmail = enquiry.guestEmail;
+            
+            if (enquiry.client) {
+                const clientUser = await User.findById(enquiry.client);
+                if (clientUser) customerEmail = clientUser.email;
+            }
+
+            if (customerEmail && vendorUser) {
+                const { sendEnquiryAcceptedCustomerAlert } = require('../services/notificationService');
+                await sendEnquiryAcceptedCustomerAlert(customerEmail, vendorUser.name || vendorUser.company || 'Vendor', {
+                    cargoType: enquiry.type,
+                });
+            }
+        }
+
         res.json(enquiry);
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });

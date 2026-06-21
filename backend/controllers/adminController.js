@@ -168,6 +168,11 @@ exports.toggleVendorVerification = async (req, res) => {
             vendor.verificationStatus = vendor.isVerified ? 'Approved' : 'Declined';
         }
         await vendor.save();
+
+        // Send email notification to vendor about the status change
+        const { sendVendorStatusUpdateEmail } = require('../services/notificationService');
+        await sendVendorStatusUpdateEmail(vendor.email, vendor.name, vendor.isVerified);
+
         res.json(vendor);
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
