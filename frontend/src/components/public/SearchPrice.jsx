@@ -408,7 +408,7 @@ const SearchPrice = ({ isDashboard = false }) => {
     const airlinesOptions = airCategory === 'domestic' ? AIRLINES_DOMESTIC : AIRLINES_INTERNATIONAL;
 
     return (
-        <section className={`bg-[#f4f7fc] pb-12 px-4 font-sans relative z-20 ${isDashboard ? 'pt-6' : ''}`}>
+        <section id="search-price-section" className={`bg-[#f4f7fc] pb-12 px-4 font-sans relative z-20 ${isDashboard ? 'pt-6' : ''}`}>
             <div className={`w-full max-w-[1400px] mx-auto ${isDashboard ? 'mt-0' : '-mt-16 lg:-mt-24'}`}>
                 <div className="bg-white rounded-3xl shadow-[0_20px_60px_rgba(11,30,67,0.06)] border border-slate-100 p-0">
                     
@@ -462,7 +462,7 @@ const SearchPrice = ({ isDashboard = false }) => {
                                         Go Back
                                     </button>
                                     <button
-                                        onClick={() => navigate('/services')}
+                                        onClick={() => navigate('/vendor-network')}
                                         className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-black py-3 rounded-xl transition-all cursor-pointer uppercase tracking-wider"
                                     >
                                         Explore More

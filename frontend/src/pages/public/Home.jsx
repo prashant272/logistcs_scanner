@@ -24,7 +24,6 @@ const Home = () => {
             <WhoWeConnect />
             <GetInTouch />
             <FAQ />
-            <WhatsAppButton />
         </div>
     );
 };

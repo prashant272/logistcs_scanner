@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { MapPin, Phone, Mail, Clock, MessageCircle, ChevronDown, ChevronUp, Package, Globe, Truck } from 'lucide-react';
+import { MapPin, Phone, Mail, Clock, MessageCircle, ChevronDown, ChevronUp, Package, Globe, Truck, ArrowRight } from 'lucide-react';
 
 const Contact = () => {
+    const [userType, setUserType] = useState('Client');
     const [openFaq, setOpenFaq] = useState(null);
 
     const toggleFaq = (index) => {
@@ -32,170 +33,191 @@ const Contact = () => {
     ];
 
     return (
-        <div className="bg-dark-900 min-h-screen pt-24 pb-20 text-white">
-            {/* Header */}
-            <div className="container mx-auto px-6 text-center mb-20">
-                <span className="text-gold text-sm font-bold tracking-[0.3em] uppercase block mb-4">
-                    Contact Us
-                </span>
-                <h1 className="text-4xl md:text-6xl font-display text-white mb-6">
-                    Get in Touch with <span className="text-gold italic">Logistics Scanner</span>
-                </h1>
-                <p className="text-white/60 max-w-2xl mx-auto text-lg font-light">
-                    Whether you need a domestic courier, international freight, or a corporate logistics solution — our elite team is ready to help.
-                </p>
-            </div>
-
-            {/* Quick Service Cards */}
-            <div className="container mx-auto px-6 mb-20">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {[
-                        { icon: Package, title: "Book a Pickup", desc: "Call or WhatsApp us for same-day pickup scheduling.", cta: "Call Now", href: "tel:+918851205871" },
-                        { icon: Globe, title: "International Shipping", desc: "Get a quote for DHL, FedEx, UPS & Aramex international shipments.", cta: "Get Quote", href: "https://wa.me/918851205871" },
-                        { icon: Truck, title: "Track Shipment", desc: "Real-time tracking for all your domestic and international parcels.", cta: "Track Now", href: "/track" },
-                    ].map((card, i) => (
-                        <a key={i} href={card.href} className="bg-white/5 border border-white/10 rounded-2xl p-8 hover:border-gold/40 transition-all group hover:-translate-y-1 block">
-                            <div className="w-14 h-14 bg-gold/10 rounded-xl flex items-center justify-center mb-6 group-hover:bg-gold/20 transition-colors">
-                                <card.icon size={24} className="text-gold" />
-                            </div>
-                            <h3 className="text-xl font-display text-white mb-2">{card.title}</h3>
-                            <p className="text-white/60 text-sm font-light mb-4">{card.desc}</p>
-                            <span className="text-gold text-sm font-bold uppercase tracking-wider border-b border-gold/40 pb-0.5 group-hover:border-gold transition-colors">{card.cta} →</span>
-                        </a>
-                    ))}
+        <div className="bg-slate-50 min-h-screen font-sans text-slate-800">
+            {/* Header Section */}
+            <div className="bg-white pt-24 pb-16 md:pt-32 md:pb-24 px-6 border-b border-slate-200">
+                <div className="container mx-auto max-w-5xl text-center">
+                    <span className="text-blue-600 font-bold uppercase tracking-[0.2em] text-sm mb-4 block">
+                        Get In Touch
+                    </span>
+                    <h1 className="text-4xl md:text-6xl font-extrabold text-slate-900 tracking-tight mb-6">
+                        How Can We <span className="text-blue-600">Help?</span>
+                    </h1>
+                    <p className="text-lg text-slate-600 max-w-2xl mx-auto leading-relaxed">
+                        We're here to help and answer any question you might have. We look forward to hearing from you.
+                    </p>
                 </div>
             </div>
 
-            <div className="container mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-16">
-                {/* Left Column: Contact Info */}
-                <div className="space-y-8">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="bg-white/5 p-6 rounded-2xl border border-white/10 hover:border-gold/30 transition-all">
-                            <MapPin className="text-gold mb-4" size={24} />
-                            <h3 className="font-bold text-white mb-2">Our Branch</h3>
-                            <p className="text-white/60 text-sm leading-relaxed">Plot No 47, Baba Haridass Market, Tura Mandi, Najafgarh, Near Reliance Smart Mall, Delhi - 110043</p>
-                        </div>
-                        <div className="bg-white/5 p-6 rounded-2xl border border-white/10 hover:border-gold/30 transition-all">
-                            <Phone className="text-gold mb-4" size={24} />
-                            <h3 className="font-bold text-white mb-2">Call / WhatsApp</h3>
-                            <p className="text-white/60 text-sm">+91 88512 05871</p>
-                            <p className="text-white/60 text-sm">+91 95552 54163</p>
-                            <p className="text-white/60 text-sm">+91 88826 63673</p>
-                        </div>
-                        <div className="bg-white/5 p-6 rounded-2xl border border-white/10 hover:border-gold/30 transition-all">
-                            <Mail className="text-gold mb-4" size={24} />
-                            <h3 className="font-bold text-white mb-2">Email Us</h3>
-                            <p className="text-white/60 text-sm">info@logisticscanner.com</p>
-                        </div>
-                        <div className="bg-white/5 p-6 rounded-2xl border border-white/10 hover:border-gold/30 transition-all">
-                            <Clock className="text-gold mb-4" size={24} />
-                            <h3 className="font-bold text-white mb-2">Working Hours</h3>
-                            <p className="text-white/60 text-sm">Mon – Sat</p>
-                            <p className="text-white/60 text-sm">9:00 AM – 8:00 PM</p>
-                        </div>
-                    </div>
-
-                    {/* Google Map */}
-                    <div className="rounded-2xl overflow-hidden border border-white/10 h-64 w-full relative">
-                        <iframe
-                             src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3504.186!2d77.4315!3d28.6239!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMjjCsDM3JzI2LjQiTiA3N8KwMjUnNTMuNCJF!5e0!3m2!1sen!2sin!4v1620000000000"
-                            width="100%"
-                            height="100%"
-                            style={{ border: 0, filter: 'grayscale(80%) invert(90%) contrast(90%)' }}
-                            allowFullScreen=""
-                            loading="lazy"
-                            title="Logistics Scanner Location"
-                        />
-                        <div className="absolute inset-0 pointer-events-none mix-blend-overlay bg-gold/5" />
-                    </div>
-
-                    {/* WhatsApp CTA */}
-                    <a
-                        href="https://wa.me/918851205871"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="w-full flex items-center justify-center gap-3 bg-green-600 hover:bg-green-500 text-white font-bold py-4 rounded-2xl transition-all uppercase tracking-wider hover:scale-[1.02] transform"
-                    >
-                        <MessageCircle size={22} />
-                        Book Pickup via WhatsApp
-                    </a>
-                </div>
-
-                {/* Right Column: Form & FAQ */}
-                <div className="space-y-12">
-                    {/* Contact Form */}
-                    <div className="bg-white/5 p-8 rounded-3xl border border-white/10">
-                        <h3 className="text-2xl font-display text-white mb-2">Request a Quote</h3>
-                        <p className="text-white/50 text-sm mb-8 font-light">Fill in your shipment details and we'll get back to you within 30 minutes.</p>
-                        <form className="space-y-5">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                                <div>
-                                    <label className="block text-gold text-xs font-bold uppercase tracking-wider mb-2">Full Name</label>
-                                    <input type="text" className="w-full bg-black/40 border border-white/10 rounded-xl p-3.5 text-white focus:border-gold focus:outline-none transition-colors placeholder:text-gray-600" placeholder="Your Name" />
-                                </div>
-                                <div>
-                                    <label className="block text-gold text-xs font-bold uppercase tracking-wider mb-2">Phone</label>
-                                    <input type="tel" className="w-full bg-black/40 border border-white/10 rounded-xl p-3.5 text-white focus:border-gold focus:outline-none transition-colors placeholder:text-gray-600" placeholder="+91 XXXXX XXXXX" />
+            <div className="container mx-auto px-6 py-16 max-w-6xl">
+                <div className="flex flex-col lg:flex-row gap-12 lg:gap-20">
+                    {/* Left Column: Form */}
+                    <div className="flex-1 bg-white p-8 md:p-12 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100">
+                        <h2 className="text-2xl font-bold text-slate-900 mb-8">Please provide the information below:</h2>
+                        
+                        <form className="space-y-8">
+                            {/* User Type Selection */}
+                            <div className="space-y-3">
+                                <label className="text-sm font-semibold text-slate-700 uppercase tracking-wider">I am a...</label>
+                                <div className="flex flex-wrap gap-4">
+                                    {['Vendor', 'Client', 'Other'].map((type) => (
+                                        <button
+                                            key={type}
+                                            type="button"
+                                            onClick={() => setUserType(type)}
+                                            className={`px-6 py-3 rounded-full text-sm font-bold transition-all border-2 ${
+                                                userType === type 
+                                                ? 'bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-200' 
+                                                : 'bg-white border-slate-200 text-slate-600 hover:border-blue-300 hover:text-blue-600'
+                                            }`}
+                                        >
+                                            I am {type}
+                                        </button>
+                                    ))}
                                 </div>
                             </div>
-                            <div>
-                                <label className="block text-gold text-xs font-bold uppercase tracking-wider mb-2">Email</label>
-                                <input type="email" className="w-full bg-black/40 border border-white/10 rounded-xl p-3.5 text-white focus:border-gold focus:outline-none transition-colors placeholder:text-gray-600" placeholder="your@email.com" />
-                            </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                                <div>
-                                    <label className="block text-gold text-xs font-bold uppercase tracking-wider mb-2">Service Type</label>
-                                    <select className="w-full bg-black/40 border border-white/10 rounded-xl p-3.5 text-gray-400 focus:border-gold focus:outline-none transition-colors">
-                                        <option>Select Service</option>
-                                        <option>Domestic Courier (DTDC)</option>
-                                        <option>International - DHL</option>
-                                        <option>International - FedEx</option>
-                                        <option>International - UPS</option>
-                                        <option>International - Aramex</option>
-                                        <option>Corporate Contract</option>
+
+                            {/* Topic Selection */}
+                            <div className="space-y-3">
+                                <label className="text-sm font-semibold text-slate-700 uppercase tracking-wider">How Can We Help You? *</label>
+                                <div className="relative">
+                                    <select defaultValue="" className="w-full appearance-none bg-slate-50 border border-slate-200 text-slate-800 text-base rounded-xl px-5 py-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all font-medium cursor-pointer">
+                                        <option value="" disabled>Select an option</option>
+                                        <option value="start">Start Shipping with Logistics Scanner</option>
+                                        <option value="quote">Request a Quote (existing clients)</option>
+                                        <option value="other">Other</option>
                                     </select>
-                                </div>
-                                <div>
-                                    <label className="block text-gold text-xs font-bold uppercase tracking-wider mb-2">Destination</label>
-                                    <input type="text" className="w-full bg-black/40 border border-white/10 rounded-xl p-3.5 text-white focus:border-gold focus:outline-none transition-colors placeholder:text-gray-600" placeholder="City / Country" />
+                                    <ChevronDown className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={20} />
                                 </div>
                             </div>
-                            <div>
-                                <label className="block text-gold text-xs font-bold uppercase tracking-wider mb-2">Additional Details</label>
-                                <textarea rows="3" className="w-full bg-black/40 border border-white/10 rounded-xl p-3.5 text-white focus:border-gold focus:outline-none transition-colors placeholder:text-gray-600 resize-none" placeholder="Weight, dimensions, or any special requirements..." />
+
+                            {/* Name Fields */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="space-y-3">
+                                    <label className="text-sm font-semibold text-slate-700 uppercase tracking-wider">First & Last Name *</label>
+                                    <input 
+                                        type="text" 
+                                        placeholder="Enter your name" 
+                                        className="w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-xl px-5 py-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all placeholder:text-slate-400 font-medium"
+                                    />
+                                </div>
+                                <div className="space-y-3">
+                                    <label className="text-sm font-semibold text-slate-700 uppercase tracking-wider">Organization Name *</label>
+                                    <input 
+                                        type="text" 
+                                        placeholder="Enter your organization name" 
+                                        className="w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-xl px-5 py-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all placeholder:text-slate-400 font-medium"
+                                    />
+                                </div>
                             </div>
-                            <button className="w-full py-4 bg-gold text-black font-black uppercase tracking-widest rounded-xl hover:bg-white transition-all transform hover:scale-[1.02]">
-                                Get Quote Now
+
+                            {/* Email */}
+                            <div className="space-y-3">
+                                <label className="text-sm font-semibold text-slate-700 uppercase tracking-wider">Email *</label>
+                                <input 
+                                    type="email" 
+                                    placeholder="Enter your email" 
+                                    className="w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-xl px-5 py-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all placeholder:text-slate-400 font-medium"
+                                />
+                            </div>
+
+                            {/* Message */}
+                            <div className="space-y-3">
+                                <label className="text-sm font-semibold text-slate-700 uppercase tracking-wider">Your Message</label>
+                                <textarea 
+                                    rows="4" 
+                                    placeholder="How can we help you?" 
+                                    className="w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-xl px-5 py-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all placeholder:text-slate-400 font-medium resize-none"
+                                />
+                            </div>
+
+                            <button type="button" className="w-full sm:w-auto bg-slate-900 hover:bg-blue-600 text-white font-bold py-4 px-10 rounded-xl transition-all flex items-center justify-center gap-2 group shadow-lg shadow-slate-900/20 hover:shadow-blue-600/30">
+                                Send Message
+                                <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
                             </button>
                         </form>
                     </div>
 
-                    {/* FAQ Section */}
-                    <div>
-                        <h3 className="text-2xl font-display text-white mb-6">Common Questions</h3>
-                        <div className="space-y-3">
-                            {faqs.map((faq, index) => (
-                                <div key={index} className="border border-white/10 rounded-xl bg-white/5 overflow-hidden hover:border-white/20 transition-colors">
-                                    <button
-                                        onClick={() => toggleFaq(index)}
-                                        className="w-full px-6 py-4 flex items-center justify-between text-left focus:outline-none"
-                                    >
-                                        <span className="font-bold text-white text-sm pr-4">{faq.question}</span>
-                                        {openFaq === index
-                                            ? <ChevronUp className="text-gold shrink-0" size={18} />
-                                            : <ChevronDown className="text-white/40 shrink-0" size={18} />}
-                                    </button>
-                                    {openFaq === index && (
-                                        <div className="px-6 pb-5 text-white/60 text-sm border-t border-white/5 pt-4 font-light leading-relaxed">
-                                            {faq.answer}
-                                        </div>
-                                    )}
+                    {/* Right Column: Contact Details & FAQs */}
+                    <div className="lg:w-1/3 space-y-8">
+                        {/* Contact Info Card */}
+                        <div className="bg-slate-900 text-white p-8 rounded-3xl shadow-xl relative overflow-hidden">
+                            <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600 opacity-20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4"></div>
+                            
+                            <h3 className="text-2xl font-bold mb-8 relative z-10">Contact Information</h3>
+                            
+                            <div className="space-y-6 relative z-10">
+                                <div className="flex gap-4">
+                                    <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center shrink-0">
+                                        <MapPin size={20} className="text-blue-400" />
+                                    </div>
+                                    <div>
+                                        <h4 className="font-semibold text-white mb-1">Our Branch</h4>
+                                        <p className="text-slate-300 text-sm leading-relaxed">Plot No 47, Baba Haridass Market, Tura Mandi, Najafgarh, Near Reliance Smart Mall, Delhi - 110043</p>
+                                    </div>
                                 </div>
-                            ))}
+                                
+                                <div className="flex gap-4">
+                                    <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center shrink-0">
+                                        <Phone size={20} className="text-blue-400" />
+                                    </div>
+                                    <div>
+                                        <h4 className="font-semibold text-white mb-1">Call Us</h4>
+                                        <p className="text-slate-300 text-sm">+91 88512 05871</p>
+                                        <p className="text-slate-300 text-sm">+91 95552 54163</p>
+                                    </div>
+                                </div>
+                                
+                                <div className="flex gap-4">
+                                    <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center shrink-0">
+                                        <Mail size={20} className="text-blue-400" />
+                                    </div>
+                                    <div>
+                                        <h4 className="font-semibold text-white mb-1">Email Us</h4>
+                                        <p className="text-slate-300 text-sm">info@logisticscanner.com</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <a
+                                href="https://wa.me/918851205871"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="mt-8 w-full flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#1da851] text-white font-bold py-3 px-6 rounded-xl transition-all shadow-lg shadow-[#25D366]/20"
+                            >
+                                <MessageCircle size={20} />
+                                Chat on WhatsApp
+                            </a>
+                        </div>
+
+                        {/* FAQs Sidebar Style */}
+                        <div className="bg-white p-8 rounded-3xl border border-slate-100 shadow-[0_4px_20px_rgb(0,0,0,0.03)]">
+                            <h3 className="text-xl font-bold text-slate-900 mb-6">Common Questions</h3>
+                            <div className="space-y-4">
+                                {faqs.slice(0, 4).map((faq, index) => (
+                                    <div key={index} className="border-b border-slate-100 pb-4 last:border-0 last:pb-0">
+                                        <button
+                                            onClick={() => toggleFaq(index)}
+                                            className="w-full flex items-start justify-between text-left group focus:outline-none gap-4"
+                                        >
+                                            <span className="font-semibold text-slate-800 text-sm group-hover:text-blue-600 transition-colors">{faq.question}</span>
+                                            {openFaq === index
+                                                ? <ChevronUp className="text-blue-600 shrink-0 mt-0.5" size={16} />
+                                                : <ChevronDown className="text-slate-400 shrink-0 mt-0.5 group-hover:text-blue-600 transition-colors" size={16} />}
+                                        </button>
+                                        {openFaq === index && (
+                                            <div className="text-slate-600 text-sm pt-3 leading-relaxed">
+                                                {faq.answer}
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
+            
         </div>
     );
 };

@@ -28,7 +28,7 @@ const Navbar = () => {
     // Determine if the navbar should have a white background
     const showWhiteBg = !isHomePage || isScrolled;
 
-    const linkClass = "transition-colors text-xs uppercase tracking-widest font-bold !text-slate-700 hover:!text-[#0066FF]";
+    const linkClass = "transition-colors text-xs uppercase tracking-widest font-black !text-black hover:!text-[#0066FF]";
 
     return (
         <nav
@@ -57,12 +57,12 @@ const Navbar = () => {
                     <Link to="/my-orders" className={linkClass}>
                         Customer
                     </Link>
-                    <Link to="/services" className={linkClass}>
+                    <Link to="/vendor-network" className={linkClass}>
                         Vendor Network Search
                     </Link>
-                    <Link to="/track" className={linkClass}>
+                    <span className={`cursor-default text-xs uppercase tracking-widest font-black !text-black`}>
                         Track
-                    </Link>
+                    </span>
                     <Link to="/contact" className={linkClass}>
                         Contact Us
                     </Link>
@@ -112,38 +112,36 @@ const Navbar = () => {
                     <Link
                         to="/"
                         onClick={() => setIsMobileMenuOpen(false)}
-                        className="text-gray-800 hover:text-[#0091d5] text-base uppercase tracking-widest font-bold"
+                        className="text-black hover:text-[#0091d5] text-base uppercase tracking-widest font-black"
                     >
                         Home
                     </Link>
                     <Link
                         to="/about"
                         onClick={() => setIsMobileMenuOpen(false)}
-                        className="text-gray-800 hover:text-[#0091d5] text-base uppercase tracking-widest font-bold"
+                        className="text-black hover:text-[#0091d5] text-base uppercase tracking-widest font-black"
                     >
                         About
                     </Link>
                     <Link
                         to="/my-orders"
                         onClick={() => setIsMobileMenuOpen(false)}
-                        className="text-gray-800 hover:text-[#0091d5] text-base uppercase tracking-widest font-bold"
+                        className="text-black hover:text-[#0091d5] text-base uppercase tracking-widest font-black"
                     >
                         Customer
                     </Link>
                     <Link
-                        to="/services"
+                        to="/vendor-network"
                         onClick={() => setIsMobileMenuOpen(false)}
-                        className="text-gray-800 hover:text-[#0091d5] text-base uppercase tracking-widest font-bold text-center"
+                        className="text-black hover:text-[#0091d5] text-base uppercase tracking-widest font-black text-center"
                     >
                         Vendor Network Search
                     </Link>
-                    <Link
-                        to="/track"
-                        onClick={() => setIsMobileMenuOpen(false)}
-                        className="text-gray-800 hover:text-[#0091d5] text-base uppercase tracking-widest font-bold"
+                    <span
+                        className="text-black text-base uppercase tracking-widest font-black cursor-default"
                     >
                         Track
-                    </Link>
+                    </span>
                     <Link
                         to="/contact"
                         onClick={() => setIsMobileMenuOpen(false)}

@@ -1,57 +1,81 @@
-import React, { useState } from 'react';
+import React, { useState, Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+
+// Core layout/context components (static import for fast first paint)
 import Navbar from './components/common/Navbar';
 import Footer from './components/common/Footer';
-import Home from './pages/public/Home';
-import Menu from './pages/public/Menu';
-import About from './pages/public/About';
-import Contact from './pages/public/Contact';
-import AdminLogin from './pages/admin/AdminLogin';
-import AdminDashboard from './pages/admin/AdminDashboard';
-import MenuManagement from './pages/admin/MenuManagement';
-import CustomerManagement from './pages/admin/CustomerManagement';
-import VendorPricingManagement from './pages/admin/VendorPricingManagement';
-import ViaPricingManagement from './pages/admin/ViaPricingManagement';
-import PlanManagement from './pages/admin/PlanManagement';
-import CouponManagement from './pages/admin/CouponManagement';
-import Checkout from './pages/customer/Checkout';
-import OrderSuccess from './pages/customer/OrderSuccess';
-import OrderManagement from './pages/admin/OrderManagement';
-import MyOrders from './pages/customer/MyOrders';
-import ServicesPage from './pages/public/ServicesPage';
-import TrackShipment from './pages/public/TrackShipment';
-import SearchResults from './pages/public/SearchResults';
-
-import { CartProvider } from './context/CartContext';
+import ScrollRestoration from './components/common/ScrollRestoration';
+import ScrollToTopButton from './components/common/ScrollToTopButton';
+import WhatsAppButton from './components/common/WhatsAppButton';
 import CartDrawer from './components/public/CartDrawer';
+import { CartProvider } from './context/CartContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
-import Login from './pages/public/Login';
-import Register from './pages/public/Register';
-import VendorAuth from './pages/vendor/VendorAuth';
-import VendorDashboard from './pages/vendor/VendorDashboard';
-import VendorManagement from './pages/admin/VendorManagement';
-import LocationMaster from './pages/admin/LocationMaster';
-
 import { LocationProvider } from './services/LocationService';
 import { PricingProvider } from './services/PricingService';
 import { EnquiryProvider } from './services/EnquiryService';
 
-import VendorDashboardMain from './components/vendor/VendorDashboardMain';
-import VendorEnquiriesTab from './components/vendor/VendorEnquiriesTab';
-import VendorBookingsTab from './components/vendor/VendorBookingsTab';
-import VendorPricingTab from './components/vendor/VendorPricingTab';
-import VendorInvoiceUploadTab from './components/vendor/VendorInvoiceUploadTab';
-import VendorBulkImportTab from './components/vendor/VendorBulkImportTab';
-import VendorProfileTab from './components/vendor/VendorProfileTab';
-import FinanceSection from './components/vendor/FinanceSection';
-import PricingPlans from './pages/vendor/PricingPlans';
-
-import CustomerDashboard from './pages/customer/CustomerDashboard';
-import CustomerEnquiriesTab from './components/customer/CustomerEnquiriesTab';
-import CustomerComplaintsTab from './components/customer/CustomerComplaintsTab';
-import VendorComplaintsTab from './components/vendor/VendorComplaintsTab';
-import AdminComplaints from './pages/admin/AdminComplaints';
+// Core pages (static import for fast initial load)
+import Home from './pages/public/Home';
+import About from './pages/public/About';
+import Contact from './pages/public/Contact';
+import Login from './pages/public/Login';
+import Register from './pages/public/Register';
 import SearchPrice from './components/public/SearchPrice';
+import SearchResults from './pages/public/SearchResults';
+
+// Lazy loaded public pages
+const Menu = lazy(() => import('./pages/public/Menu'));
+const VendorNetwork = lazy(() => import('./pages/public/VendorNetwork'));
+const TrackShipment = lazy(() => import('./pages/public/TrackShipment'));
+const Terms = lazy(() => import('./pages/public/Terms'));
+const Privacy = lazy(() => import('./pages/public/Privacy'));
+const Refund = lazy(() => import('./pages/public/Refund'));
+const Support = lazy(() => import('./pages/public/Support'));
+const PlanRates = lazy(() => import('./pages/public/PlanRates'));
+
+// Lazy loaded customer pages
+const Checkout = lazy(() => import('./pages/customer/Checkout'));
+const OrderSuccess = lazy(() => import('./pages/customer/OrderSuccess'));
+const MyOrders = lazy(() => import('./pages/customer/MyOrders'));
+const CustomerDashboard = lazy(() => import('./pages/customer/CustomerDashboard'));
+const CustomerEnquiriesTab = lazy(() => import('./components/customer/CustomerEnquiriesTab'));
+const CustomerComplaintsTab = lazy(() => import('./components/customer/CustomerComplaintsTab'));
+
+// Lazy loaded vendor pages
+const VendorAuth = lazy(() => import('./pages/vendor/VendorAuth'));
+const VendorDashboard = lazy(() => import('./pages/vendor/VendorDashboard'));
+const VendorDashboardMain = lazy(() => import('./components/vendor/VendorDashboardMain'));
+const VendorEnquiriesTab = lazy(() => import('./components/vendor/VendorEnquiriesTab'));
+const VendorBookingsTab = lazy(() => import('./components/vendor/VendorBookingsTab'));
+const VendorPricingTab = lazy(() => import('./components/vendor/VendorPricingTab'));
+const VendorInvoiceUploadTab = lazy(() => import('./components/vendor/VendorInvoiceUploadTab'));
+const VendorBulkImportTab = lazy(() => import('./components/vendor/VendorBulkImportTab'));
+const VendorProfileTab = lazy(() => import('./components/vendor/VendorProfileTab'));
+const FinanceSection = lazy(() => import('./components/vendor/FinanceSection'));
+const PricingPlans = lazy(() => import('./pages/vendor/PricingPlans'));
+const VendorComplaintsTab = lazy(() => import('./components/vendor/VendorComplaintsTab'));
+
+// Lazy loaded admin pages
+const AdminLogin = lazy(() => import('./pages/admin/AdminLogin'));
+const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
+const MenuManagement = lazy(() => import('./pages/admin/MenuManagement'));
+const CustomerManagement = lazy(() => import('./pages/admin/CustomerManagement'));
+const VendorPricingManagement = lazy(() => import('./pages/admin/VendorPricingManagement'));
+const ViaPricingManagement = lazy(() => import('./pages/admin/ViaPricingManagement'));
+const PlanManagement = lazy(() => import('./pages/admin/PlanManagement'));
+const CouponManagement = lazy(() => import('./pages/admin/CouponManagement'));
+const OrderManagement = lazy(() => import('./pages/admin/OrderManagement'));
+const VendorManagement = lazy(() => import('./pages/admin/VendorManagement'));
+const LocationMaster = lazy(() => import('./pages/admin/LocationMaster'));
+const AdminComplaints = lazy(() => import('./pages/admin/AdminComplaints'));
+
+// Loading Fallback Component
+const PageLoader = () => (
+  <div className="min-h-screen flex items-center justify-center bg-dark-900 text-white flex-col">
+    <div className="w-12 h-12 border-4 border-[#0066FF] border-t-transparent rounded-full animate-spin"></div>
+    <p className="mt-4 text-[#0066FF] font-bold animate-pulse">Loading...</p>
+  </div>
+);
 
 const PrivateRoute = ({ children }) => {
   const token = localStorage.getItem('adminToken');
@@ -96,6 +120,10 @@ function App() {
           <EnquiryProvider>
             <CartProvider>
               <Router>
+                <ScrollRestoration />
+                <ScrollToTopButton />
+                <WhatsAppButton />
+          <Suspense fallback={<PageLoader />}>
           <Routes>
             {/* Admin Routes (No Navbar/Footer) */}
             <Route path="/admin/login" element={<AdminLogin />} />
@@ -173,9 +201,14 @@ function App() {
                     <Route path="/contact" element={<Contact />} />
                     <Route path="/login" element={<Login />} />
                     <Route path="/register" element={<Register />} />
-                    <Route path="/services" element={<ServicesPage />} />
+                    <Route path="/vendor-network" element={<VendorNetwork />} />
                     <Route path="/track" element={<TrackShipment />} />
                     <Route path="/search-results" element={<SearchResults />} />
+                    <Route path="/terms" element={<Terms />} />
+                    <Route path="/privacy" element={<Privacy />} />
+                    <Route path="/refund" element={<Refund />} />
+                    <Route path="/support" element={<Support />} />
+                    <Route path="/plan-rates" element={<PlanRates />} />
                     <Route path="/my-orders" element={<CustomerPrivateRoute><MyOrders /></CustomerPrivateRoute>} />
                     <Route path="/checkout" element={<CustomerPrivateRoute><Checkout /></CustomerPrivateRoute>} />
                     <Route path="/upgrade" element={<CustomerPrivateRoute><PricingPlans /></CustomerPrivateRoute>} />
@@ -187,6 +220,7 @@ function App() {
               </div>
             } />
           </Routes>
+          </Suspense>
         </Router>
             </CartProvider>
           </EnquiryProvider>
