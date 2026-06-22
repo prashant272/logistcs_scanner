@@ -14,6 +14,8 @@ const VendorDashboardMain = () => {
     const { user } = useAuth();
     const { fetchVendorEnquiries, fetchVendorBookings } = useEnquiries();
     const [filterType, setFilterType] = useState('Monthly');
+    const [customStart, setCustomStart] = useState('');
+    const [customEnd, setCustomEnd] = useState('');
     const [vendorStatus, setVendorStatus] = useState(user?.verificationStatus || (user?.isVerified ? 'Approved' : 'Pending'));
 
     // Real-time stats states
@@ -76,6 +78,16 @@ const VendorDashboardMain = () => {
 
     // Filter toggle helper
     const filterByDateRange = (list, rangeType) => {
+        if (rangeType === 'Custom Date' && customStart && customEnd) {
+            const start = new Date(customStart);
+            const end = new Date(customEnd);
+            end.setHours(23, 59, 59, 999);
+            return list.filter(item => {
+                const itemDate = new Date(item.createdAt);
+                return itemDate >= start && itemDate <= end;
+            });
+        }
+
         const now = new Date();
         let cutoff = new Date();
         
@@ -93,6 +105,13 @@ const VendorDashboardMain = () => {
     };
 
     const getDateRangeDisplay = (rangeType) => {
+        if (rangeType === 'Custom Date' && customStart && customEnd) {
+            const start = new Date(customStart);
+            const end = new Date(customEnd);
+            const options = { day: '2-digit', month: 'short', year: 'numeric' };
+            return `${start.toLocaleDateString('en-GB', options)} - ${end.toLocaleDateString('en-GB', options)}`;
+        }
+
         const now = new Date();
         let start = new Date();
         if (rangeType === 'Weekly') {
@@ -178,7 +197,13 @@ const VendorDashboardMain = () => {
                         {['Monthly', 'Weekly', 'Last 15 Days', 'Custom Date'].map((t) => (
                             <button
                                 key={t}
-                                onClick={() => handleFilterChange(t)}
+                                onClick={() => {
+                                    handleFilterChange(t);
+                                    if (t !== 'Custom Date') {
+                                        setCustomStart('');
+                                        setCustomEnd('');
+                                    }
+                                }}
                                 className={`px-4 py-2 rounded-lg text-xs font-bold transition-all duration-200 cursor-pointer ${
                                     filterType === t
                                         ? 'bg-[#0066FF] text-white shadow-md shadow-[#0066FF]/15'
@@ -189,13 +214,31 @@ const VendorDashboardMain = () => {
                             </button>
                         ))}
                     </div>
+                    
+                    {filterType === 'Custom Date' && (
+                        <div className="flex items-center gap-2 bg-slate-50 p-1.5 rounded-xl border border-blue-200 animate-in fade-in zoom-in duration-200">
+                            <input 
+                                type="date" 
+                                value={customStart}
+                                onChange={(e) => setCustomStart(e.target.value)}
+                                className="text-xs font-bold text-slate-700 bg-white p-2 rounded-lg border border-slate-200 outline-none focus:border-blue-500" 
+                            />
+                            <span className="text-slate-400 font-bold">to</span>
+                            <input 
+                                type="date" 
+                                value={customEnd}
+                                onChange={(e) => setCustomEnd(e.target.value)}
+                                className="text-xs font-bold text-slate-700 bg-white p-2 rounded-lg border border-slate-200 outline-none focus:border-blue-500" 
+                            />
+                        </div>
+                    )}
                 </div>
 
                 <div className="flex items-center gap-3 flex-wrap md:flex-nowrap">
                     {/* Date Selector Display */}
                     <div className="bg-[#f4f7fc] border border-slate-100 px-4 py-2.5 rounded-xl text-xs font-bold text-slate-700 flex items-center gap-2">
                         <Calendar size={14} className="text-slate-400" />
-                        <span>{getDateRangeDisplay(filterType)}</span>
+                        <span>{getDateRangeDisplay(filterType) || 'Select Custom Dates'}</span>
                     </div>
 
                     <button className="bg-[#0066FF] hover:bg-[#0052cc] text-white text-xs font-bold px-5 py-2.5 rounded-xl transition-all shadow-sm shadow-[#0066FF]/10 cursor-pointer">
@@ -203,7 +246,11 @@ const VendorDashboardMain = () => {
                     </button>
 
                     <button 
-                        onClick={() => handleFilterChange('Monthly')}
+                        onClick={() => {
+                            handleFilterChange('Monthly');
+                            setCustomStart('');
+                            setCustomEnd('');
+                        }}
                         className="border border-slate-200 hover:bg-slate-50 text-slate-600 text-xs font-bold px-4 py-2.5 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer"
                     >
                         <RotateCcw size={14} /> Clear

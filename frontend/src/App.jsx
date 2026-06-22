@@ -61,6 +61,7 @@ const VendorFinanceList = lazy(() => import('./pages/vendor/VendorFinanceList'))
 // Lazy loaded admin pages
 const AdminLogin = lazy(() => import('./pages/admin/AdminLogin'));
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
+const AdminDashboardMain = lazy(() => import('./components/admin/AdminDashboardMain'));
 const MenuManagement = lazy(() => import('./pages/admin/MenuManagement'));
 const CustomerManagement = lazy(() => import('./pages/admin/CustomerManagement'));
 const VendorPricingManagement = lazy(() => import('./pages/admin/VendorPricingManagement'));
@@ -134,7 +135,7 @@ function App() {
             {/* Admin Routes (No Navbar/Footer) */}
             <Route path="/admin/login" element={<AdminLogin />} />
             <Route path="/admin" element={<PrivateRoute><AdminDashboard /></PrivateRoute>}>
-              <Route path="dashboard" element={<div className="p-6 bg-white rounded-2xl shadow-sm text-slate-800"><h2 className="text-xl font-bold mb-2">Welcome to Admin Dashboard</h2><p className="text-slate-500 text-sm">System administration control panel.</p></div>} />
+              <Route path="dashboard" element={<AdminDashboardMain />} />
               <Route path="menu" element={<MenuManagement />} />
               <Route path="orders" element={<OrderManagement />} />
               <Route path="vendors" element={<VendorManagement />} />

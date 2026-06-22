@@ -380,3 +380,76 @@ exports.deleteViaPricing = async (req, res) => {
         res.status(500).json({ message: 'Server error', error: error.message });
     }
 };
+
+// @desc    Get dashboard stats for admin
+// @route   GET /api/admin/dashboard-stats
+// @access  Private
+exports.getAdminDashboardStats = async (req, res) => {
+    try {
+        const Enquiry = require('../models/Enquiry');
+        const Complaint = require('../models/Complaint');
+        const FinanceApplication = require('../models/FinanceApplication');
+        
+        // Parallel queries for speed
+        const [
+            totalCustomers,
+            totalVendors,
+            pendingVendors,
+            totalEnquiries,
+            acceptedEnquiries,
+            rejectedEnquiries,
+            totalFinanceApps,
+            pendingFinanceApps,
+            totalComplaints,
+            openComplaints,
+            recentVendors,
+            recentBookings,
+            guestEmails,
+            recentAllEnquiries
+        ] = await Promise.all([
+            User.countDocuments({ role: 'customer' }),
+            User.countDocuments({ role: 'vendor' }),
+            User.countDocuments({ role: 'vendor', verificationStatus: { $ne: 'Approved' } }),
+            Enquiry.countDocuments(),
+            Enquiry.countDocuments({ status: 'Accepted' }),
+            Enquiry.countDocuments({ status: 'Declined' }),
+            FinanceApplication.countDocuments(),
+            FinanceApplication.countDocuments({ adminStatus: 'Pending' }),
+            Complaint.countDocuments(),
+            Complaint.countDocuments({ status: 'Pending' }),
+            User.find({ role: 'vendor' }).sort({ createdAt: -1 }).limit(5).select('name email company isVerified verificationStatus createdAt'),
+            Enquiry.find({ status: 'Accepted' }).sort({ createdAt: -1 }).limit(5).populate('client', 'name email').populate('vendor', 'name company'),
+            Enquiry.distinct('guestEmail', { client: null, guestEmail: { $ne: '' } }),
+            Enquiry.find().sort({ createdAt: -1 }).limit(8).populate('client', 'name email').populate('vendor', 'name company')
+        ]);
+
+        res.json({
+            users: {
+                customers: totalCustomers,
+                vendors: totalVendors,
+                pendingVendors: pendingVendors,
+                guests: guestEmails.length
+            },
+            enquiries: {
+                total: totalEnquiries,
+                accepted: acceptedEnquiries,
+                rejected: rejectedEnquiries
+            },
+            finance: {
+                total: totalFinanceApps,
+                pending: pendingFinanceApps
+            },
+            complaints: {
+                total: totalComplaints,
+                open: openComplaints
+            },
+            recentActivity: {
+                vendors: recentVendors,
+                bookings: recentBookings,
+                enquiries: recentAllEnquiries
+            }
+        });
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};

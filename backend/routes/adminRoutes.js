@@ -16,11 +16,13 @@ const {
     adminUpdatePricing,
     getViaPricing,
     addViaPricing,
-    deleteViaPricing
+    deleteViaPricing,
+    getAdminDashboardStats
 } = require("../controllers/adminController");
 const auth = require("../middleware/authMiddleware");
 
 router.post("/login", loginAdmin);
+router.get("/dashboard-stats", auth, getAdminDashboardStats);
 router.get("/vendors", auth, getVendors);
 router.get("/customers", auth, getCustomers);
 router.get("/guests", auth, getGuests);
