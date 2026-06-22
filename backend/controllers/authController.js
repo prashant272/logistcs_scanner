@@ -228,7 +228,7 @@ exports.loginUser = async (req, res) => {
         }
 
         // Check for user email
-        const user = await User.findOne({ email });
+        const user = await User.findOne({ email }).populate('assignedRM');
 
         if (user && (await bcrypt.compare(password, user.password))) {
             // Check if user is verified
@@ -253,6 +253,7 @@ exports.loginUser = async (req, res) => {
                 address: user.address,
                 role: user.role,
                 company: user.company,
+                assignedRM: user.assignedRM,
                 token: generateToken(user.id)
             });
         } else {
@@ -276,7 +277,7 @@ exports.getUserProfile = async (req, res) => {
                 verificationStatus: 'Approved'
             });
         }
-        const user = await User.findById(req.user.id).select('-password').populate('activePlan');
+        const user = await User.findById(req.user.id).select('-password').populate('activePlan').populate('assignedRM');
         res.json(user);
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
@@ -425,6 +426,24 @@ exports.updateUserProfile = async (req, res) => {
         
         const updatedUser = await User.findById(user._id).select('-password');
         res.json(updatedUser);
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
+
+// Delete User Account
+exports.deleteUserAccount = async (req, res) => {
+    try {
+        if (req.user.id === 'ad0000000000000000000000') {
+            return res.status(403).json({ message: 'Admin profile cannot be deleted' });
+        }
+        const user = await User.findById(req.user.id);
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        await User.findByIdAndDelete(req.user.id);
+        res.json({ message: 'Account deleted successfully' });
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
     }

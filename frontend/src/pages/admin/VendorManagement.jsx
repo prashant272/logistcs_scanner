@@ -10,11 +10,27 @@ const VendorManagement = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('All Status');
   const [uploadingVendorId, setUploadingVendorId] = useState(null);
+  const [rms, setRms] = useState([]);
+  const [assigningRmId, setAssigningRmId] = useState(null);
 
   useEffect(() => {
     fetchVendors();
+    fetchRMs();
   }, []);
+
+  const fetchRMs = async () => {
+    try {
+      const token = localStorage.getItem('adminToken');
+      const { data } = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/rm`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setRms(data || []);
+    } catch (err) {
+      console.error('Error fetching RMs:', err);
+    }
+  };
 
   const fetchVendors = async () => {
     try {
@@ -80,13 +96,30 @@ const VendorManagement = () => {
     }
   };
 
+  const handleAssignRM = async (vendorId, rmId) => {
+    try {
+      setAssigningRmId(vendorId);
+      const token = localStorage.getItem('adminToken');
+      const config = { headers: { Authorization: `Bearer ${token}` } };
+      await axios.put(`${import.meta.env.VITE_API_BASE_URL}/rm/assign`, { vendorId, rmId }, config);
+      
+      // Update local state
+      setVendors(prev => prev.map(v => v._id === vendorId ? { ...v, assignedRM: rmId ? { _id: rmId } : null } : v));
+    } catch (err) {
+      console.error('Assign RM failed:', err);
+      alert('Failed to assign RM');
+    } finally {
+      setAssigningRmId(null);
+    }
+  };
+
   // Handle Certificate Upload on behalf of the Vendor
   const handleCertificateUpload = async (e, vendorId) => {
     const file = e.target.files[0];
     if (!file) return;
 
     const formData = new FormData();
-    formData.append('document', file);
+    formData.append('file', file);
 
     try {
       setUploadingVendorId(vendorId);
@@ -127,13 +160,24 @@ const VendorManagement = () => {
     }
   };
 
-  // Filter vendors based on search query
-  const filteredVendors = vendors.filter(vendor => 
-    vendor.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    vendor.company?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    vendor.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    vendor.phone?.includes(searchQuery)
-  );
+  // Filter vendors based on search query and status filter
+  const filteredVendors = vendors.filter(vendor => {
+    const matchesSearch = vendor.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      vendor.company?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      vendor.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      vendor.phone?.includes(searchQuery);
+
+    if (!matchesSearch) return false;
+
+    if (statusFilter === 'All Status') return true;
+    if (statusFilter === 'Approved') return vendor.verificationStatus === 'Approved' || (vendor.isVerified && !vendor.verificationStatus);
+    if (statusFilter === 'Declined') return vendor.verificationStatus === 'Declined';
+    if (statusFilter === 'Pending') return vendor.verificationStatus === 'Pending' || (!vendor.isVerified && !vendor.verificationStatus);
+    if (statusFilter === 'Login') return vendor.isVerified;
+    if (statusFilter === 'Premium Vendors' || statusFilter === 'Paid Vendors') return !!vendor.activePlan;
+    
+    return true;
+  });
 
   return (
     <div className="space-y-6">
@@ -150,12 +194,27 @@ const VendorManagement = () => {
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
             <input
               type="text"
-              placeholder="Search vendors..."
+              placeholder="Search vendor..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full bg-white border border-slate-200/80 rounded-xl pl-10 pr-4 py-2.5 text-xs text-slate-700 font-bold focus:outline-none focus:border-[#0066FF] focus:ring-1 focus:ring-[#0066FF] transition-all placeholder:text-slate-400 shadow-sm"
             />
           </div>
+
+          {/* Status Filter Dropdown */}
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="bg-white border border-slate-200/80 rounded-xl px-4 py-2.5 text-xs text-slate-700 font-bold focus:outline-none focus:border-[#0066FF] focus:ring-1 focus:ring-[#0066FF] transition-all shadow-sm cursor-pointer"
+          >
+            <option value="All Status">All Status</option>
+            <option value="Approved">Approved</option>
+            <option value="Declined">Declined</option>
+            <option value="Pending">Pending</option>
+            <option value="Login">Login</option>
+            <option value="Premium Vendors">Premium Vendors</option>
+            <option value="Paid Vendors">Paid Vendors</option>
+          </select>
 
           <button 
             onClick={fetchVendors} 
@@ -202,6 +261,7 @@ const VendorManagement = () => {
                   <th className="p-4">Last Login</th>
                   <th className="p-4">Document</th>
                   <th className="p-4 text-center">Status</th>
+                  <th className="p-4 text-center">Assign RM</th>
                   <th className="p-4 text-center">Upload Certificate</th>
                 </tr>
               </thead>
@@ -290,6 +350,20 @@ const VendorManagement = () => {
                             Decline
                           </button>
                         </div>
+                      </td>
+                      {/* Assign RM column */}
+                      <td className="p-4 text-center">
+                        <select
+                          disabled={assigningRmId === vendor._id}
+                          value={vendor.assignedRM?._id || vendor.assignedRM || ''}
+                          onChange={(e) => handleAssignRM(vendor._id, e.target.value)}
+                          className="bg-white border border-slate-200/80 rounded-xl px-2 py-1.5 text-[10px] text-slate-700 font-bold focus:outline-none focus:border-[#0066FF] focus:ring-1 focus:ring-[#0066FF] transition-all cursor-pointer shadow-sm w-24"
+                        >
+                          <option value="">No RM</option>
+                          {rms.map(rm => (
+                            <option key={rm._id} value={rm._id}>{rm.name}</option>
+                          ))}
+                        </select>
                       </td>
                       {/* Upload Certificate column */}
                       <td className="p-4 text-center">

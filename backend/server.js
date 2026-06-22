@@ -20,10 +20,13 @@ app.use("/api/offers", require("./routes/offerRoutes"));
 app.use("/api/reservation", require("./routes/reservationRoutes"));
 app.use("/api/pricing", require("./routes/pricingRoutes"));
 app.use("/api/enquiries", require("./routes/enquiryRoutes"));
+app.use("/api/contact", require("./routes/contactRoutes"));
 app.use("/api/locations", require("./routes/locationRoutes"));
 app.use("/api/plans", require("./routes/planRoutes"));
 app.use("/api/coupons", require("./routes/couponRoutes"));
 app.use("/api/complaints", require("./routes/complaintRoutes"));
+app.use("/api/rm", require("./routes/rmRoutes"));
+app.use("/api/finance", require("./routes/financeRoutes"));
 
 app.get("/", (req, res) => {
     res.send("logistics scanner API Running...");

@@ -40,6 +40,7 @@ const MyOrders = lazy(() => import('./pages/customer/MyOrders'));
 const CustomerDashboard = lazy(() => import('./pages/customer/CustomerDashboard'));
 const CustomerEnquiriesTab = lazy(() => import('./components/customer/CustomerEnquiriesTab'));
 const CustomerComplaintsTab = lazy(() => import('./components/customer/CustomerComplaintsTab'));
+const CustomerProfileTab = lazy(() => import('./components/customer/CustomerProfileTab'));
 
 // Lazy loaded vendor pages
 const VendorAuth = lazy(() => import('./pages/vendor/VendorAuth'));
@@ -54,6 +55,8 @@ const VendorProfileTab = lazy(() => import('./components/vendor/VendorProfileTab
 const FinanceSection = lazy(() => import('./components/vendor/FinanceSection'));
 const PricingPlans = lazy(() => import('./pages/vendor/PricingPlans'));
 const VendorComplaintsTab = lazy(() => import('./components/vendor/VendorComplaintsTab'));
+const VendorFinanceForm = lazy(() => import('./pages/vendor/VendorFinanceForm'));
+const VendorFinanceList = lazy(() => import('./pages/vendor/VendorFinanceList'));
 
 // Lazy loaded admin pages
 const AdminLogin = lazy(() => import('./pages/admin/AdminLogin'));
@@ -68,6 +71,9 @@ const OrderManagement = lazy(() => import('./pages/admin/OrderManagement'));
 const VendorManagement = lazy(() => import('./pages/admin/VendorManagement'));
 const LocationMaster = lazy(() => import('./pages/admin/LocationMaster'));
 const AdminComplaints = lazy(() => import('./pages/admin/AdminComplaints'));
+const AdminInquiryListing = lazy(() => import('./pages/admin/AdminInquiryListing'));
+const AddRM = lazy(() => import('./pages/admin/AddRM'));
+const AdminFinanceListing = lazy(() => import('./pages/admin/AdminFinanceListing'));
 
 // Loading Fallback Component
 const PageLoader = () => (
@@ -140,14 +146,14 @@ function App() {
               <Route path="reports/add-via-pricing" element={<ViaPricingManagement />} />
               <Route path="reports/add-plan" element={<PlanManagement />} />
               <Route path="reports/add-coupon" element={<CouponManagement />} />
-              <Route path="reports/inquiry-listing" element={<div className="p-6 bg-white rounded-2xl shadow-sm text-slate-800"><h2 className="text-xl font-bold mb-4">Inquiry Listing</h2><p className="text-slate-500">List of all system inquiries.</p></div>} />
-              <Route path="reports/add-rm" element={<div className="p-6 bg-white rounded-2xl shadow-sm text-slate-800"><h2 className="text-xl font-bold mb-4">Add Relationship Manager</h2><p className="text-slate-500">Add a new Relationship Manager (RM).</p></div>} />
+              <Route path="reports/inquiry-listing" element={<AdminInquiryListing />} />
+              <Route path="reports/add-rm" element={<AddRM />} />
               <Route path="reports/assign-rm" element={<div className="p-6 bg-white rounded-2xl shadow-sm text-slate-800"><h2 className="text-xl font-bold mb-4">Assign Relationship Manager</h2><p className="text-slate-500">Assign relationship managers to customers.</p></div>} />
               <Route path="reports/bulk-import" element={<div className="p-6 bg-white rounded-2xl shadow-sm text-slate-800"><h2 className="text-xl font-bold mb-4">Bulk Import</h2><p className="text-slate-500">Bulk data import tool.</p></div>} />
               
               {/* Location Master */}
               <Route path="location-master" element={<LocationMaster />} />
-              <Route path="finance-enquiry-list" element={<div className="p-6 bg-white rounded-2xl shadow-sm text-slate-800"><h2 className="text-xl font-bold mb-4">Finance Enquiry List</h2><p className="text-slate-500">List of all financial enquiries.</p></div>} />
+              <Route path="finance-enquiry-list" element={<AdminFinanceListing />} />
               
               {/* Request Management */}
               <Route path="invoice-request" element={<div className="p-6 bg-white rounded-2xl shadow-sm text-slate-800"><h2 className="text-xl font-bold mb-4">Invoice Request</h2><p className="text-slate-500">Review and manage invoice requests.</p></div>} />
@@ -166,6 +172,7 @@ function App() {
               <Route path="direct-enquiry" element={<CustomerEnquiriesTab title="Direct Enquiry" type="direct" />} />
               <Route path="my-enquiry" element={<CustomerEnquiriesTab title="My Enquiry" type="my" />} />
               <Route path="complaint" element={<CustomerComplaintsTab />} />
+              <Route path="profile" element={<CustomerProfileTab />} />
             </Route>
 
             {/* Vendor Routes (No Navbar/Footer) */}
@@ -179,8 +186,8 @@ function App() {
               <Route path="direct-booking" element={<VendorBookingsTab title="Direct Bookings" type="direct" />} />
               <Route path="my-bookings" element={<VendorBookingsTab title="My Bookings" type="my" />} />
               <Route path="my-pricing" element={<VendorPricingTab />} />
-              <Route path="finance" element={<FinanceSection />} />
-              <Route path="finance-list" element={<FinanceSection />} />
+              <Route path="finance" element={<VendorFinanceForm />} />
+              <Route path="finance-list" element={<VendorFinanceList />} />
               <Route path="upload-invoice" element={<VendorInvoiceUploadTab />} />
               <Route path="bulk-import" element={<VendorBulkImportTab />} />
               <Route path="view-profile" element={<VendorProfileTab />} />

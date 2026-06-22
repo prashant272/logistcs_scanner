@@ -21,6 +21,7 @@ const VendorDashboardMain = () => {
     const [directEnquiries, setDirectEnquiries] = useState([]);
     const [myBookings, setMyBookings] = useState([]);
     const [directBookings, setDirectBookings] = useState([]);
+    const [financeApp, setFinanceApp] = useState(null);
     const [loadingStats, setLoadingStats] = useState(true);
 
     useEffect(() => {
@@ -30,9 +31,9 @@ const VendorDashboardMain = () => {
                 
                 // Fetch fresh profile status to react instantly to admin actions
                 const token = localStorage.getItem('userToken');
-                const profileRes = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/auth/profile`, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
+                const config = { headers: { Authorization: `Bearer ${token}` } };
+                
+                const profileRes = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/auth/profile`, config);
                 const status = profileRes.data.verificationStatus || (profileRes.data.isVerified ? 'Approved' : 'Pending');
                 setVendorStatus(status);
 
@@ -56,6 +57,17 @@ const VendorDashboardMain = () => {
             } catch (err) {
                 console.error("Error loading dashboard stats:", err);
             } finally {
+                // Fetch Finance Application
+                try {
+                    const token = localStorage.getItem('userToken');
+                    const config = { headers: { Authorization: `Bearer ${token}` } };
+                    const finRes = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/finance/my`, config);
+                    if (finRes.data && finRes.data.length > 0) {
+                        setFinanceApp(finRes.data[0]); // Show the most recent one
+                    }
+                } catch (err) {
+                    if (err.response?.status !== 404) console.error('Error fetching finance app:', err);
+                }
                 setLoadingStats(false);
             }
         };
@@ -252,21 +264,27 @@ const VendorDashboardMain = () => {
                     <UserProfileSection user={user} />
 
                     {/* RM DETAIL CARD */}
-                    <RelationshipManagerCard 
-                        title="RM Detail" 
-                        name="Komal Mishra" 
-                        role="Relationship Manager" 
-                        phone="+91 9926685036" 
-                        email="info@logisticscanner.com" 
-                        isFinance={false} 
-                    />
+                    {user?.assignedRM ? (
+                        <RelationshipManagerCard 
+                            title="Assigned RM" 
+                            name={user.assignedRM.name} 
+                            role="Relationship Manager" 
+                            phone={user.assignedRM.mobile} 
+                            email={user.assignedRM.email} 
+                            isFinance={false} 
+                        />
+                    ) : (
+                        <div className="bg-slate-50 border border-slate-200 rounded-3xl p-6 text-center shadow-sm">
+                            <p className="text-sm font-bold text-slate-500 uppercase tracking-widest">No RM Assigned</p>
+                        </div>
+                    )}
 
                     {/* FINANCE QUERY CARD */}
                     <RelationshipManagerCard 
-                        title="Finance Query" 
-                        name="Komal Mishra" 
-                        role="Relationship Manager" 
-                        phone="+91 9926685036" 
+                        title="Finance Detail" 
+                        name={financeApp?.adminStatus ? `Status: ${financeApp.adminStatus}` : "Not Applied"} 
+                        role={financeApp?.approvedAmount ? `Amount: ₹${financeApp.approvedAmount}` : "Finance Application"} 
+                        phone={financeApp?.processingFees ? `Fees: ₹${financeApp.processingFees}` : "Pending/N/A"} 
                         email="info@logisticscanner.com" 
                         isFinance={true} 
                     />

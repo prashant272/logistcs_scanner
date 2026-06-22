@@ -9,8 +9,8 @@ const RelationshipManagerCard = ({ title, name, role, phone, email, isFinance })
         {title}
       </div>
       <div className="flex items-center gap-3">
-        <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-600 border border-slate-100 overflow-hidden shrink-0 shadow-sm">
-          <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=100&auto=format&fit=crop" alt={name} className="w-full h-full object-cover" />
+        <div className="w-12 h-12 rounded-2xl bg-blue-100 flex items-center justify-center text-blue-600 border border-blue-200 overflow-hidden shrink-0 shadow-sm text-lg font-black uppercase">
+          {name ? name.charAt(0) : '?'}
         </div>
         <div>
           <h4 className="font-extrabold text-sm text-slate-800">{name}</h4>

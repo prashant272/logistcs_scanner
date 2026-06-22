@@ -1,12 +1,50 @@
 import React, { useState } from 'react';
-import { MapPin, Phone, Mail, Clock, MessageCircle, ChevronDown, ChevronUp, Package, Globe, Truck, ArrowRight } from 'lucide-react';
+import { MapPin, Phone, Mail, Clock, MessageCircle, ChevronDown, ChevronUp, Package, Globe, Truck, ArrowRight, CheckCircle, AlertCircle } from 'lucide-react';
+import api from '../../api/axios';
 
 const Contact = () => {
     const [userType, setUserType] = useState('Client');
+    const [topic, setTopic] = useState('');
+    const [name, setName] = useState('');
+    const [organization, setOrganization] = useState('');
+    const [email, setEmail] = useState('');
+    const [message, setMessage] = useState('');
     const [openFaq, setOpenFaq] = useState(null);
+    const [loading, setLoading] = useState(false);
+    const [success, setSuccess] = useState('');
+    const [error, setError] = useState('');
 
     const toggleFaq = (index) => {
         setOpenFaq(openFaq === index ? null : index);
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setLoading(true);
+        setError('');
+        setSuccess('');
+        try {
+            await api.post('/contact', {
+                userType,
+                topic,
+                name,
+                organization,
+                email,
+                message
+            });
+            setSuccess('Your message has been sent successfully. We will get back to you soon.');
+            setTopic('');
+            setName('');
+            setOrganization('');
+            setEmail('');
+            setMessage('');
+            setUserType('Client');
+        } catch (err) {
+            console.error('Error submitting form:', err);
+            setError(err.response?.data?.message || 'Something went wrong. Please try again.');
+        } finally {
+            setLoading(false);
+        }
     };
 
     const faqs = [
@@ -55,7 +93,21 @@ const Contact = () => {
                     <div className="flex-1 bg-white p-8 md:p-12 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100">
                         <h2 className="text-2xl font-bold text-slate-900 mb-8">Please provide the information below:</h2>
                         
-                        <form className="space-y-8">
+                        {success && (
+                            <div className="mb-6 p-4 bg-green-50 border border-green-200 text-green-700 rounded-xl flex items-center gap-3">
+                                <CheckCircle className="text-green-500 shrink-0" size={20} />
+                                <span className="font-medium text-sm">{success}</span>
+                            </div>
+                        )}
+
+                        {error && (
+                            <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl flex items-center gap-3">
+                                <AlertCircle className="text-red-500 shrink-0" size={20} />
+                                <span className="font-medium text-sm">{error}</span>
+                            </div>
+                        )}
+
+                        <form onSubmit={handleSubmit} className="space-y-8">
                             {/* User Type Selection */}
                             <div className="space-y-3">
                                 <label className="text-sm font-semibold text-slate-700 uppercase tracking-wider">I am a...</label>
@@ -81,7 +133,12 @@ const Contact = () => {
                             <div className="space-y-3">
                                 <label className="text-sm font-semibold text-slate-700 uppercase tracking-wider">How Can We Help You? *</label>
                                 <div className="relative">
-                                    <select defaultValue="" className="w-full appearance-none bg-slate-50 border border-slate-200 text-slate-800 text-base rounded-xl px-5 py-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all font-medium cursor-pointer">
+                                    <select 
+                                        value={topic}
+                                        onChange={(e) => setTopic(e.target.value)}
+                                        required
+                                        className="w-full appearance-none bg-slate-50 border border-slate-200 text-slate-800 text-base rounded-xl px-5 py-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all font-medium cursor-pointer"
+                                    >
                                         <option value="" disabled>Select an option</option>
                                         <option value="start">Start Shipping with Logistics Scanner</option>
                                         <option value="quote">Request a Quote (existing clients)</option>
@@ -97,6 +154,9 @@ const Contact = () => {
                                     <label className="text-sm font-semibold text-slate-700 uppercase tracking-wider">First & Last Name *</label>
                                     <input 
                                         type="text" 
+                                        value={name}
+                                        onChange={(e) => setName(e.target.value)}
+                                        required
                                         placeholder="Enter your name" 
                                         className="w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-xl px-5 py-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all placeholder:text-slate-400 font-medium"
                                     />
@@ -105,6 +165,9 @@ const Contact = () => {
                                     <label className="text-sm font-semibold text-slate-700 uppercase tracking-wider">Organization Name *</label>
                                     <input 
                                         type="text" 
+                                        value={organization}
+                                        onChange={(e) => setOrganization(e.target.value)}
+                                        required
                                         placeholder="Enter your organization name" 
                                         className="w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-xl px-5 py-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all placeholder:text-slate-400 font-medium"
                                     />
@@ -116,6 +179,9 @@ const Contact = () => {
                                 <label className="text-sm font-semibold text-slate-700 uppercase tracking-wider">Email *</label>
                                 <input 
                                     type="email" 
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    required
                                     placeholder="Enter your email" 
                                     className="w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-xl px-5 py-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all placeholder:text-slate-400 font-medium"
                                 />
@@ -126,14 +192,20 @@ const Contact = () => {
                                 <label className="text-sm font-semibold text-slate-700 uppercase tracking-wider">Your Message</label>
                                 <textarea 
                                     rows="4" 
+                                    value={message}
+                                    onChange={(e) => setMessage(e.target.value)}
                                     placeholder="How can we help you?" 
                                     className="w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-xl px-5 py-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all placeholder:text-slate-400 font-medium resize-none"
                                 />
                             </div>
 
-                            <button type="button" className="w-full sm:w-auto bg-slate-900 hover:bg-blue-600 text-white font-bold py-4 px-10 rounded-xl transition-all flex items-center justify-center gap-2 group shadow-lg shadow-slate-900/20 hover:shadow-blue-600/30">
-                                Send Message
-                                <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+                            <button 
+                                type="submit" 
+                                disabled={loading}
+                                className={`w-full sm:w-auto bg-slate-900 hover:bg-blue-600 text-white font-bold py-4 px-10 rounded-xl transition-all flex items-center justify-center gap-2 group shadow-lg shadow-slate-900/20 hover:shadow-blue-600/30 ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
+                            >
+                                {loading ? 'Sending...' : 'Send Message'}
+                                {!loading && <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />}
                             </button>
                         </form>
                     </div>
@@ -153,7 +225,8 @@ const Contact = () => {
                                     </div>
                                     <div>
                                         <h4 className="font-semibold text-white mb-1">Our Branch</h4>
-                                        <p className="text-slate-300 text-sm leading-relaxed">Plot No 47, Baba Haridass Market, Tura Mandi, Najafgarh, Near Reliance Smart Mall, Delhi - 110043</p>
+                                        <p className="text-slate-300 text-sm font-bold mb-1">BNB Worldwide Pvt. Ltd.</p>
+                                        <p className="text-slate-300 text-sm leading-relaxed">210/2, S/F, Commercial Flats, District Centre, Janakpuri, New Delhi, Delhi, India, 110058</p>
                                     </div>
                                 </div>
                                 
@@ -163,8 +236,7 @@ const Contact = () => {
                                     </div>
                                     <div>
                                         <h4 className="font-semibold text-white mb-1">Call Us</h4>
-                                        <p className="text-slate-300 text-sm">+91 88512 05871</p>
-                                        <p className="text-slate-300 text-sm">+91 95552 54163</p>
+                                        <p className="text-slate-300 text-sm">+91 92663 35550</p>
                                     </div>
                                 </div>
                                 
@@ -174,13 +246,13 @@ const Contact = () => {
                                     </div>
                                     <div>
                                         <h4 className="font-semibold text-white mb-1">Email Us</h4>
-                                        <p className="text-slate-300 text-sm">info@logisticscanner.com</p>
+                                        <p className="text-slate-300 text-sm">info@logisticdekho.com</p>
                                     </div>
                                 </div>
                             </div>
                             
                             <a
-                                href="https://wa.me/918851205871"
+                                href="https://wa.me/919266335550"
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="mt-8 w-full flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#1da851] text-white font-bold py-3 px-6 rounded-xl transition-all shadow-lg shadow-[#25D366]/20"

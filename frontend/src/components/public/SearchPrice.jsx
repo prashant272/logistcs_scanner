@@ -699,8 +699,8 @@ const SearchPrice = ({ isDashboard = false }) => {
                                 {/* ==================== ROAD (LAND) FREIGHT ==================== */}
                                 {activeTab === 'land' && (
                                     <div className="space-y-4">
-                                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-end">
-                                            <div className="lg:col-span-2 space-y-1.5">
+                                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-end border-b border-slate-100 pb-4 mb-4">
+                                            <div className="lg:col-span-4 space-y-1.5">
                                                 <label className="block text-[11px] font-black text-slate-900 uppercase tracking-wider">Country</label>
                                                 <select
                                                     value={landCountry}
@@ -717,17 +717,50 @@ const SearchPrice = ({ isDashboard = false }) => {
                                                 </select>
                                             </div>
 
-                                            <div className="lg:col-span-3 space-y-1.5 relative">
-                                                <label className="block text-[11px] font-black text-slate-900 uppercase tracking-wider">Origin</label>
+                                            <div className="lg:col-span-4 space-y-1.5">
+                                                <label className="block text-[11px] font-black text-slate-900 uppercase tracking-wider">Load Type</label>
+                                                <select
+                                                    value={loadType}
+                                                    onChange={(e) => setLoadType(e.target.value)}
+                                                    className="w-full bg-white border border-slate-300 rounded-xl px-3 py-3.5 text-xs font-bold !text-slate-900 focus:outline-none focus:border-[#0066FF] shadow-sm cursor-pointer"
+                                                    required
+                                                >
+                                                    <option value="">Select Load Type</option>
+                                                    <option value="PTL">Part Truck Load (PTL)</option>
+                                                    <option value="FTL">Full Truck Load (FTL)</option>
+                                                </select>
+                                            </div>
+
+                                            <div className="lg:col-span-4 space-y-1.5">
+                                                <label className="block text-[11px] font-black text-slate-900 uppercase tracking-wider">Vehicle Type</label>
+                                                <select
+                                                    value={vehicleType}
+                                                    onChange={(e) => setVehicleType(e.target.value)}
+                                                    className="w-full bg-white border border-slate-300 rounded-xl px-3 py-3.5 text-xs font-bold !text-slate-900 focus:outline-none focus:border-[#0066FF] shadow-sm cursor-pointer"
+                                                    required
+                                                >
+                                                    <option value="">Select Vehicle Type</option>
+                                                    <option value="Open Body Truck">Open Body Truck</option>
+                                                    <option value="Closed Container">Closed Container</option>
+                                                    <option value="Flatbed Trailer">Flatbed Trailer</option>
+                                                </select>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-end">
+                                            <div className="lg:col-span-4 space-y-1.5 relative">
+                                                <label className="block text-[11px] font-black text-slate-900 uppercase tracking-wider">
+                                                    {loadType === 'PTL' ? 'Origin Pincode' : 'Origin'}
+                                                </label>
                                                 <input
                                                     type="text"
-                                                    placeholder="City or Location"
+                                                    placeholder={loadType === 'PTL' ? 'Enter Origin Pincode' : 'City or Location'}
                                                     value={origin} onFocus={() => setActiveInput('origin')} onBlur={() => setTimeout(() => setActiveInput(null), 200)}
                                                     onChange={(e) => setOrigin(e.target.value)}
                                                     className="w-full bg-white border border-slate-300 rounded-xl px-4 py-3.5 text-xs font-bold !text-slate-900 focus:outline-none focus:border-[#0066FF] transition-all placeholder:text-slate-400 shadow-sm"
                                                     required
                                                 />
-                                             {renderSuggestions('origin')}
+                                             {loadType !== 'PTL' && renderSuggestions('origin')}
                                          </div>
 
                                             <div className="lg:col-span-1 flex justify-center pb-2">
@@ -741,17 +774,19 @@ const SearchPrice = ({ isDashboard = false }) => {
                                                 </button>
                                             </div>
 
-                                            <div className="lg:col-span-3 space-y-1.5 relative">
-                                                <label className="block text-[11px] font-black text-slate-900 uppercase tracking-wider">Destination</label>
+                                            <div className="lg:col-span-4 space-y-1.5 relative">
+                                                <label className="block text-[11px] font-black text-slate-900 uppercase tracking-wider">
+                                                    {loadType === 'PTL' ? 'Destination Pincode' : 'Destination'}
+                                                </label>
                                                 <input
                                                     type="text"
-                                                    placeholder="City or Location"
+                                                    placeholder={loadType === 'PTL' ? 'Enter Destination Pincode' : 'City or Location'}
                                                     value={destination} onFocus={() => setActiveInput('destination')} onBlur={() => setTimeout(() => setActiveInput(null), 200)}
                                                     onChange={(e) => setDestination(e.target.value)}
                                                     className="w-full bg-white border border-slate-300 rounded-xl px-4 py-3.5 text-xs font-bold !text-slate-900 focus:outline-none focus:border-[#0066FF] transition-all placeholder:text-slate-400 shadow-sm"
                                                     required
                                                 />
-                                             {renderSuggestions('destination')}
+                                             {loadType !== 'PTL' && renderSuggestions('destination')}
                                          </div>
 
                                             <div className="lg:col-span-2 space-y-1.5">
@@ -773,35 +808,6 @@ const SearchPrice = ({ isDashboard = false }) => {
                                                 >
                                                     Search
                                                 </button>
-                                            </div>
-                                        </div>
-
-                                        {/* Row 2: Load parameters */}
-                                        <div className="flex flex-wrap items-center justify-start gap-4 pt-2 border-t border-slate-100 mt-2">
-                                            <div className="w-full md:w-[220px]">
-                                                <label className="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-1">Load Type</label>
-                                                <select
-                                                    value={loadType}
-                                                    onChange={(e) => setLoadType(e.target.value)}
-                                                    className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold !text-slate-900 focus:outline-none focus:border-[#0066FF] shadow-sm cursor-pointer"
-                                                >
-                                                    <option value="">Select Load Type</option>
-                                                    <option value="PTL">Part Truck Load (PTL)</option>
-                                                    <option value="FTL">Full Truck Load (FTL)</option>
-                                                </select>
-                                            </div>
-                                            <div className="w-full md:w-[220px]">
-                                                <label className="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-1">Vehicle Type</label>
-                                                <select
-                                                    value={vehicleType}
-                                                    onChange={(e) => setVehicleType(e.target.value)}
-                                                    className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold !text-slate-900 focus:outline-none focus:border-[#0066FF] shadow-sm cursor-pointer"
-                                                >
-                                                    <option value="">Select Vehicle Type</option>
-                                                    <option value="Open Body Truck">Open Body Truck</option>
-                                                    <option value="Closed Container">Closed Container</option>
-                                                    <option value="Flatbed Trailer">Flatbed Trailer</option>
-                                                </select>
                                             </div>
                                         </div>
                                     </div>

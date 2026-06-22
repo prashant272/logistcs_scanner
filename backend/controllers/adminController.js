@@ -38,7 +38,7 @@ exports.loginAdmin = async (req, res) => {
 // @access  Private
 exports.getVendors = async (req, res) => {
     try {
-        const vendors = await User.find({ role: 'vendor' }).select('-password').sort({ createdAt: -1 });
+        const vendors = await User.find({ role: 'vendor' }).select('-password').populate('assignedRM').sort({ createdAt: -1 });
         res.json(vendors);
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });

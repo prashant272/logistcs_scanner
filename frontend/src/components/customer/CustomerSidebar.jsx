@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
-    Truck, FileText, MessageSquare, AlertTriangle, LogOut, Search
+    Truck, FileText, MessageSquare, AlertTriangle, LogOut, Search, User
 } from 'lucide-react';
 
 const CustomerSidebar = ({ isSidebarOpen, logout }) => {
@@ -9,10 +9,12 @@ const CustomerSidebar = ({ isSidebarOpen, logout }) => {
 
     // Sidebar navigation items for customer dashboard
     const navItems = [
+       
         { name: 'Live Price', path: '/customer/search-price', icon: <Search size={18} /> },
         { name: 'Direct Enquiry', path: '/customer/direct-enquiry', icon: <MessageSquare size={18} /> },
         { name: 'My Enquiry', path: '/customer/my-enquiry', icon: <FileText size={18} /> },
-        { name: 'Complaint', path: '/customer/complaint', icon: <AlertTriangle size={18} /> }
+        { name: 'Complaint', path: '/customer/complaint', icon: <AlertTriangle size={18} /> },
+         { name: 'My Profile', path: '/customer/profile', icon: <User size={18} /> }
     ];
 
     return (

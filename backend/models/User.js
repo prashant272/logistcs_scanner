@@ -142,6 +142,11 @@ const userSchema = new mongoose.Schema({
     planEndDate: {
         type: Date
     },
+    assignedRM: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'RM',
+        default: null
+    },
     createdAt: {
         type: Date,
         default: Date.now

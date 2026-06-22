@@ -137,6 +137,26 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
+    const deleteAccount = async () => {
+        try {
+            const token = localStorage.getItem('userToken');
+            const config = {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            };
+            await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/auth/profile`, config);
+            localStorage.removeItem('userToken');
+            setUser(null);
+            return { success: true };
+        } catch (error) {
+            return {
+                success: false,
+                message: error.response?.data?.message || 'Account deletion failed'
+            };
+        }
+    };
+
     const logout = () => {
         localStorage.removeItem('userToken');
         setUser(null);
@@ -152,6 +172,7 @@ export const AuthProvider = ({ children }) => {
         forgotPassword,
         resetPassword,
         updateProfile,
+        deleteAccount,
         logout
     };
 
