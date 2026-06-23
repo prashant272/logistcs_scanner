@@ -6,8 +6,17 @@ import {
     User, LogOut, Search, AlertCircle
 } from 'lucide-react';
 
-const VendorSidebar = ({ isSidebarOpen, logout }) => {
+const VendorSidebar = ({ isSidebarOpen, logout, user }) => {
     const location = useLocation();
+
+    const isPending = user && user.role !== 'admin' && user.verificationStatus !== 'Approved';
+
+    const handleNavClick = (e, item) => {
+        if (isPending && item.name !== 'View Profile' && item.name !== 'Dashboard') {
+            e.preventDefault();
+            alert('Please upload required document and if your profile is approved then these tabs will be enabled.');
+        }
+    };
 
     // Sidebar navigation items with routes
     const navItems = [
@@ -50,12 +59,15 @@ const VendorSidebar = ({ isSidebarOpen, logout }) => {
                         <Link
                             key={item.name}
                             to={item.path}
+                            onClick={(e) => handleNavClick(e, item)}
                             className={`w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-xs font-bold transition-all duration-200 relative group ${
                                 isActive
                                     ? 'bg-gradient-to-r from-[#0066FF] to-[#00b2fe] text-white shadow-lg shadow-[#0066FF]/20 translate-x-0.5'
                                     : isLivePrice
                                         ? 'bg-[#0066FF]/15 text-[#00b2fe] border border-[#0066FF]/25 hover:bg-[#0066FF]/25 hover:translate-x-0.5'
-                                        : 'text-white/95 hover:bg-white/[0.04] hover:text-white hover:translate-x-0.5'
+                                        : isPending && item.name !== 'View Profile' && item.name !== 'Dashboard'
+                                            ? 'opacity-50 cursor-not-allowed text-white/50'
+                                            : 'text-white/95 hover:bg-white/[0.04] hover:text-white hover:translate-x-0.5'
                             }`}
                         >
                             {/* Left indicator bar */}

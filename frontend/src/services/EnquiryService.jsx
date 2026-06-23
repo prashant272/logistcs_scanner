@@ -70,12 +70,13 @@ export const EnquiryProvider = ({ children }) => {
     }
   };
 
-  const updateEnquiryStatus = async (id, status, typeContext, price) => {
+  const updateEnquiryStatus = async (id, status, typeContext, price, quoteDetails) => {
     try {
       setError(null);
       const payload = {};
       if (status) payload.status = status;
       if (price !== undefined && price !== null) payload.price = price;
+      if (quoteDetails !== undefined) payload.quoteDetails = quoteDetails;
       
       const res = await api.put(`/enquiries/${id}/status`, payload);
       
@@ -83,7 +84,7 @@ export const EnquiryProvider = ({ children }) => {
       setEnquiries((prev) => 
         prev.map((e) => 
           e._id === id 
-            ? { ...e, status: status || e.status, price: price !== undefined ? price : e.price } 
+            ? { ...e, status: status || e.status, price: price !== undefined ? price : e.price, quoteDetails: quoteDetails !== undefined ? quoteDetails : e.quoteDetails } 
             : e
         )
       );

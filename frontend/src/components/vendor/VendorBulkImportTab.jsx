@@ -9,14 +9,21 @@ const pricingFields = [
   { key: 'type', label: 'Freight Type', required: false, description: 'Must be air, sea, land, warehouse, or cha' },
   { key: 'deliverySpeed', label: 'Delivery Speed (Days)', required: false, description: 'Transit time in days' },
   { key: 'validUntil', label: 'Valid Until (Expiry Date)', required: false, description: 'Date when pricing expires' },
-  { key: 'price', label: 'Price / Rate (INR)', required: false, description: 'Numeric rate in rupees' },
+  { key: 'price', label: 'Price / Rate', required: false, description: 'Numeric rate' },
+  { key: 'currency', label: 'Currency', required: false, description: 'e.g. INR, USD, EUR' },
   { key: 'category', label: 'Category', required: false, description: 'domestic or international' },
   { key: 'airline', label: 'Airline', required: false, description: 'Carrier name (Air freight)' },
   { key: 'weightRange', label: 'Weight Range', required: false, description: 'e.g. 45+Kg, 100+Kg' },
   { key: 'truckLoad', label: 'Truck Load', required: false, description: 'FTL or LTL (Land freight)' },
   { key: 'vehicleType', label: 'Vehicle Type', required: false, description: 'e.g. 20ft Container, Box Truck' },
-  { key: 'handlingType', label: 'Handling Type', required: false, description: 'e.g. LCL, FCL' },
-  { key: 'additionalServices', label: 'Additional Services', required: false, description: 'e.g. Customs Clearance' }
+  { key: 'seaLoadType', label: 'Sea Load Type', required: false, description: 'LCL or FCL' },
+  { key: 'fclStandard', label: 'FCL Standard', required: false, description: 'e.g. 20ft Standard, 40ft Standard' },
+  { key: 'warehouseRateType', label: 'Warehouse Rate Type', required: false, description: 'e.g. Per Month, Per Day' },
+  { key: 'warehouseStorageType', label: 'Warehouse Storage Type', required: false, description: 'e.g. General, Cold' },
+  { key: 'chaServiceType', label: 'CHA Service Type', required: false, description: 'Air or Sea' },
+  { key: 'chaCargoType', label: 'CHA Cargo Type', required: false, description: 'Import or Export' },
+  { key: 'handlingType', label: 'Handling Type', required: false, description: 'e.g. General Cargo, Hazardous Goods' },
+  { key: 'additionalServices', label: 'Additional Services', required: false, description: 'e.g. Packing, Insurance' }
 ];
 
 const VendorBulkImportTab = () => {

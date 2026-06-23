@@ -24,6 +24,7 @@ const VendorDashboard = () => {
             <VendorSidebar 
                 isSidebarOpen={isSidebarOpen} 
                 logout={handleLogout} 
+                user={user}
             />
 
             {/* Main Content Wrap */}

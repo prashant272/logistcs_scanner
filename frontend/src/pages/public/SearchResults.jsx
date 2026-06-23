@@ -3,7 +3,7 @@ import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { 
   ArrowLeft, Sparkles, Ship, Plane, Truck, Warehouse, Package, 
   Coins, CheckCircle2, ChevronRight, Phone, Mail, Building, 
-  FileText, X, AlertCircle, Loader2, Calendar, Clock 
+  FileText, X, AlertCircle, Loader2, Calendar, Clock, ToggleLeft, ToggleRight
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useEnquiries } from '../../services/EnquiryService';
@@ -44,6 +44,8 @@ const SearchResults = () => {
     const saved = localStorage.getItem('guestInfo');
     return saved ? JSON.parse(saved).guestEmail : '';
   });
+  const [messageInput, setMessageInput] = useState('');
+  const [clientCreditRequired, setClientCreditRequired] = useState(false);
   const [pendingAction, setPendingAction] = useState(null); // { type: 'enquiry' | 'book', rate: ... }
 
   const broadcastTriggered = useRef(false);
@@ -135,16 +137,8 @@ const SearchResults = () => {
   };
 
   const handleAction = (actionType, rate) => {
-    const savedGuest = localStorage.getItem('guestInfo');
-    if (!user && !savedGuest) {
-      // Open guest modal to proceed
-      setPendingAction({ type: actionType, rate });
-      setIsGuestModalOpen(true);
-    } else {
-      const guestInfo = savedGuest ? JSON.parse(savedGuest) : null;
-      setPendingAction({ type: actionType, rate });
-      executeEnquiryFlow(actionType, rate, guestInfo);
-    }
+    setPendingAction({ type: actionType, rate });
+    setIsGuestModalOpen(true);
   };
 
   const executeEnquiryFlow = async (actionType, rate, guestInfo = null) => {
@@ -170,6 +164,8 @@ const SearchResults = () => {
       vendor: rate ? rate.vendor._id : null,
       isDirect: false, // Targeted matched enquiry
       isBooking: isBooking,
+      message: messageInput,
+      clientCreditRequired,
       ...(guestInfo || {})
     };
 
@@ -190,6 +186,8 @@ const SearchResults = () => {
       vendor: null,
       isDirect: true, // Public broadcast direct enquiry
       isBooking: isBooking,
+      message: messageInput,
+      clientCreditRequired,
       excludedVendor: rate ? rate.vendor._id : null,
       ...(guestInfo || {})
     };
@@ -225,8 +223,10 @@ const SearchResults = () => {
       commodity: guestCommodity
     };
 
-    // Cache guest details in localStorage
-    localStorage.setItem('guestInfo', JSON.stringify(guestInfo));
+    // Cache guest details in localStorage only if not logged in
+    if (!user) {
+      localStorage.setItem('guestInfo', JSON.stringify(guestInfo));
+    }
 
     if (pendingAction && pendingAction.rate) {
       // Execute targeted + broadcast flow
@@ -251,6 +251,8 @@ const SearchResults = () => {
         vendor: null,
         isDirect: true,
         isBooking: isBooking,
+        message: messageInput,
+        clientCreditRequired,
         ...guestInfo
       };
       createEnquiry(broadcastPayload)
@@ -432,6 +434,12 @@ const SearchResults = () => {
                         <span className="text-[9px] text-slate-400 uppercase font-black">Handling</span>
                         <span className="text-slate-800 truncate font-bold mt-0.5">{rate.handlingType || 'Standard'}</span>
                       </div>
+                      {rate.additionalServices && (
+                        <div className="flex flex-col col-span-2 mt-1">
+                          <span className="text-[9px] text-slate-400 uppercase font-black">Additional Services</span>
+                          <span className="text-slate-800 truncate font-bold mt-0.5">{rate.additionalServices}</span>
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -440,7 +448,7 @@ const SearchResults = () => {
                     <div className="flex justify-between items-end">
                       <div>
                         <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider block">Estimated Rate</span>
-                        <span className="text-xl font-black text-[#0066FF]">₹ {rate.price.toLocaleString()}</span>
+                        <span className="text-xl font-black text-[#0066FF]">{rate.currency === 'USD' ? '$' : rate.currency === 'EUR' ? '€' : rate.currency === 'GBP' ? '£' : rate.currency === 'AED' ? 'د.إ' : '₹'} {rate.price.toLocaleString()}</span>
                       </div>
                     </div>
 
@@ -515,8 +523,12 @@ const SearchResults = () => {
             {/* Header */}
             <div className="flex justify-between items-center p-6 border-b border-slate-100 bg-slate-50/50">
               <div>
-                <h3 className="text-base font-black text-[#0B1E43] tracking-tight">Request Freight Quote</h3>
-                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mt-0.5">Please provide your contact information to proceed</p>
+                <h3 className="text-base font-black text-[#0B1E43] tracking-tight">
+                  {pendingAction?.rate ? `Confirm ${pendingAction.type === 'book' ? 'Booking' : 'Enquiry'}` : 'Request Freight Quote'}
+                </h3>
+                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mt-0.5">
+                  {pendingAction?.rate ? `with ${pendingAction.rate.vendor?.company || pendingAction.rate.vendor?.name}` : 'Please provide your details to proceed'}
+                </p>
               </div>
               <button
                 onClick={() => { setIsGuestModalOpen(false); setPendingAction(null); }}
@@ -527,8 +539,93 @@ const SearchResults = () => {
             </div>
 
             {/* Form */}
-            <form onSubmit={handleGuestSubmit} className="p-6 space-y-4">
-              {/* Organization Name */}
+            <form onSubmit={(e) => {
+              if (user) {
+                e.preventDefault();
+                const dummyGuestInfo = {
+                  guestName: user.name || '',
+                  guestCompany: user.company || '',
+                  guestEmail: user.email || '',
+                  guestPhone: user.phone || '',
+                  commodity: guestCommodity
+                };
+                if (pendingAction && pendingAction.rate) {
+                  executeEnquiryFlow(pendingAction.type, pendingAction.rate, dummyGuestInfo);
+                }
+              } else {
+                handleGuestSubmit(e);
+              }
+            }} className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
+              
+              {pendingAction?.rate && (
+                <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-xs font-black text-[#0B1E43]">Quoted Rate</span>
+                    <span className="text-xs font-black text-[#0066FF]">{pendingAction.rate.currency === 'USD' ? '$' : pendingAction.rate.currency === 'EUR' ? '€' : pendingAction.rate.currency === 'GBP' ? '£' : pendingAction.rate.currency === 'AED' ? 'د.إ' : '₹'} {pendingAction.rate.price.toLocaleString()} {pendingAction.rate.type === 'sea' ? 'per container' : (pendingAction.rate.type === 'air' ? 'per kg' : '')}</span>
+                  </div>
+                  {pendingAction.rate.message && (
+                    <p className="text-[10px] text-slate-600 font-medium pt-1 border-t border-blue-100/50">
+                      <span className="font-bold">Vendor Note:</span> {pendingAction.rate.message}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* Message Details */}
+              <div className="space-y-1">
+                <label className="block text-[10px] font-black text-slate-800 uppercase tracking-wider flex items-center gap-1">
+                  <FileText size={11} className="text-slate-400" /> Message / Additional Details
+                </label>
+                <textarea
+                  placeholder="Provide any specific requirements or details..."
+                  value={messageInput}
+                  onChange={(e) => setMessageInput(e.target.value)}
+                  rows={2}
+                  className="w-full bg-[#f4f7fc] border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-800 focus:outline-none focus:bg-white focus:border-[#0066FF] transition-all resize-none"
+                />
+              </div>
+
+              {/* Commodity Details */}
+              <div className="space-y-1">
+                <label className="block text-[10px] font-black text-slate-800 uppercase tracking-wider flex items-center gap-1">
+                  <Package size={11} className="text-slate-400" /> Commodity Description
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Machinery, Electronics"
+                  value={guestCommodity}
+                  onChange={(e) => setGuestCommodity(e.target.value)}
+                  className="w-full bg-[#f4f7fc] border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-800 focus:outline-none focus:bg-white focus:border-[#0066FF] transition-all"
+                  required
+                />
+              </div>
+
+              {user?.role === 'vendor' && (
+                <div className="flex items-center justify-between bg-slate-50 border border-slate-100 rounded-xl p-3 mt-2">
+                  <div>
+                    <h4 className="text-xs font-black text-slate-900">Credit Required</h4>
+                    <p className="text-[10px] font-medium text-slate-500">Do you require a credit line for this enquiry?</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setClientCreditRequired(!clientCreditRequired)}
+                    className="focus:outline-none cursor-pointer"
+                  >
+                    {clientCreditRequired ? (
+                      <ToggleRight size={28} className="text-[#0066FF]" />
+                    ) : (
+                      <ToggleLeft size={28} className="text-slate-400" />
+                    )}
+                  </button>
+                </div>
+              )}
+
+              {!user && (
+                <>
+                  <div className="pt-2 border-t border-slate-100">
+                    <span className="text-[10px] font-black text-[#0066FF] uppercase tracking-wider">Contact Information</span>
+                  </div>
+                  {/* Organization Name */}
               <div className="space-y-1">
                 <label className="block text-[10px] font-black text-slate-800 uppercase tracking-wider flex items-center gap-1">
                   <Building size={11} className="text-slate-400" /> Organization / Client Name
@@ -619,6 +716,9 @@ const SearchResults = () => {
                   required
                 />
               </div>
+
+                </>
+              )}
 
               <p className="text-[10px] text-slate-450 font-bold leading-normal pt-2">
                 By submitting this request, you agree to let logistics scanner partners contact you with pricing quotes.

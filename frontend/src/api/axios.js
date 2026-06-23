@@ -6,7 +6,19 @@ const api = axios.create({
 
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('adminToken') || localStorage.getItem('userToken');
+    let token = null;
+    
+    // Check if we are currently in the admin panel
+    const isAdminRoute = window.location.pathname.startsWith('/admin');
+    
+    if (isAdminRoute) {
+      // For admin routes, prioritize admin token
+      token = localStorage.getItem('adminToken') || localStorage.getItem('userToken');
+    } else {
+      // For vendor/customer routes, strictly use user token to prevent admin token leakage
+      token = localStorage.getItem('userToken');
+    }
+
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }

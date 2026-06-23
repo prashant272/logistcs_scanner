@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { 
   Phone, Mail, Search, MapPin, Building2, Ship, Plane, 
-  Truck, Warehouse, Package, Coins, CheckCircle2, Clock 
+  Truck, Warehouse, Package, Coins, CheckCircle2, Clock, User 
 } from 'lucide-react';
 import { useEnquiries } from '../../services/EnquiryService';
 
@@ -345,22 +345,44 @@ const CustomerEnquiriesTab = ({ title, type }) => {
                   </div>
 
                   {/* Quoted display or Status */}
-                  <div className="flex items-center gap-3">
-                    {hasQuote && (
-                      <div className="flex items-center gap-2 text-xs font-black text-emerald-600 bg-emerald-50 px-4 py-2.5 rounded-xl border border-emerald-100/70">
-                        <Coins size={14} />
-                        <span>Vendor Price Quote: ₹{enq.price.toLocaleString()}</span>
+                  <div className="flex flex-col items-end gap-3 w-full sm:w-auto">
+                    {type === 'direct' && enq.responses && enq.responses.length > 0 ? (
+                      <div className="w-full">
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-2 block">Received Quotes ({enq.responses.length})</span>
+                        <div className="space-y-2">
+                          {enq.responses.map((resp, idx) => (
+                            <div key={idx} className="flex flex-wrap items-center justify-between gap-4 text-xs font-black bg-blue-50/50 px-4 py-3 rounded-xl border border-blue-100/70">
+                              <div className="flex items-center gap-2">
+                                <User size={14} className="text-[#0066FF]" />
+                                <span className="text-[#0B1E43]">{resp.vendor?.company || resp.vendor?.name || 'Vendor'}</span>
+                              </div>
+                              <div className="flex items-center gap-2 text-emerald-600">
+                                <Coins size={14} />
+                                <span>{resp.quoteDetails?.allInCurrency || '₹'} {resp.price?.toLocaleString() || resp.quoteDetails?.allInCharges}</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-3">
+                        {hasQuote && (
+                          <div className="flex items-center gap-2 text-xs font-black text-emerald-600 bg-emerald-50 px-4 py-2.5 rounded-xl border border-emerald-100/70">
+                            <Coins size={14} />
+                            <span>Vendor Price Quote: ₹{enq.price?.toLocaleString()}</span>
+                          </div>
+                        )}
+
+                        <div className={`flex items-center gap-1.5 font-extrabold text-xs px-4 py-2 rounded-xl border ${
+                          isAccepted 
+                            ? 'bg-green-50 text-green-600 border-green-200' 
+                            : 'bg-amber-50 text-amber-600 border-amber-200'
+                        }`}>
+                          {isAccepted ? <CheckCircle2 size={14} /> : <Clock size={14} />}
+                          <span>{enq.status}</span>
+                        </div>
                       </div>
                     )}
-
-                    <div className={`flex items-center gap-1.5 font-extrabold text-xs px-4 py-2 rounded-xl border ${
-                      isAccepted 
-                        ? 'bg-green-50 text-green-600 border-green-200' 
-                        : 'bg-amber-50 text-amber-600 border-amber-200'
-                    }`}>
-                      {isAccepted ? <CheckCircle2 size={14} /> : <Clock size={14} />}
-                      <span>{enq.status}</span>
-                    </div>
                   </div>
                 </div>
               </div>

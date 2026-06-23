@@ -13,11 +13,21 @@ exports.addPricing = async (req, res) => {
             weightRange,
             truckLoad,
             vehicleType,
+            seaLoadType,
+            fclStandard,
+            warehouseRateType,
+            warehouseStorageType,
+            chaServiceType,
+            chaCargoType,
             handlingType,
             additionalServices,
             deliverySpeed,
             validUntil,
-            price
+
+            price,
+            currency,
+            message,
+            creditRequired
         } = req.body;
 
         const pricing = await Pricing.create({
@@ -30,11 +40,19 @@ exports.addPricing = async (req, res) => {
             weightRange,
             truckLoad,
             vehicleType,
+            seaLoadType,
+            fclStandard,
+            warehouseRateType,
+            warehouseStorageType,
+            chaServiceType,
+            chaCargoType,
             handlingType,
             additionalServices,
             deliverySpeed,
             validUntil,
             price,
+            currency: currency || 'INR',
+            message: message || '',
             status: 'active'
         });
 
@@ -99,7 +117,13 @@ exports.searchPricing = async (req, res) => {
             airline,
             weightRange,
             truckLoad,
-            vehicleType
+            vehicleType,
+            seaLoadType,
+            fclStandard,
+            warehouseRateType,
+            warehouseStorageType,
+            chaServiceType,
+            chaCargoType
         } = req.body;
 
         if (!fromLocation || !toLocation || !type) {
@@ -154,6 +178,15 @@ exports.searchPricing = async (req, res) => {
         } else if (type.toLowerCase() === 'land') {
             if (truckLoad) query.truckLoad = truckLoad.trim();
             if (vehicleType) query.vehicleType = vehicleType.trim();
+        } else if (type.toLowerCase() === 'sea') {
+            if (seaLoadType) query.seaLoadType = seaLoadType.trim();
+            if (fclStandard) query.fclStandard = fclStandard.trim();
+        } else if (type.toLowerCase() === 'warehouse') {
+            if (warehouseRateType) query.warehouseRateType = warehouseRateType.trim();
+            if (warehouseStorageType) query.warehouseStorageType = warehouseStorageType.trim();
+        } else if (type.toLowerCase() === 'cha') {
+            if (chaServiceType) query.chaServiceType = chaServiceType.trim();
+            if (chaCargoType) query.chaCargoType = chaCargoType.trim();
         }
 
         // Find matches, populate vendor details
@@ -221,11 +254,20 @@ exports.updatePricing = async (req, res) => {
             weightRange,
             truckLoad,
             vehicleType,
+            seaLoadType,
+            fclStandard,
+            warehouseRateType,
+            warehouseStorageType,
+            chaServiceType,
+            chaCargoType,
             handlingType,
             additionalServices,
             deliverySpeed,
             validUntil,
-            price
+            price,
+            currency,
+            message,
+            creditRequired
         } = req.body;
 
         const pricing = await Pricing.findOne({ _id: req.params.id, vendor: req.user.id });
@@ -241,11 +283,19 @@ exports.updatePricing = async (req, res) => {
         pricing.weightRange = weightRange !== undefined ? weightRange : pricing.weightRange;
         pricing.truckLoad = truckLoad !== undefined ? truckLoad : pricing.truckLoad;
         pricing.vehicleType = vehicleType !== undefined ? vehicleType : pricing.vehicleType;
+        pricing.seaLoadType = seaLoadType !== undefined ? seaLoadType : pricing.seaLoadType;
+        pricing.fclStandard = fclStandard !== undefined ? fclStandard : pricing.fclStandard;
+        pricing.warehouseRateType = warehouseRateType !== undefined ? warehouseRateType : pricing.warehouseRateType;
+        pricing.warehouseStorageType = warehouseStorageType !== undefined ? warehouseStorageType : pricing.warehouseStorageType;
+        pricing.chaServiceType = chaServiceType !== undefined ? chaServiceType : pricing.chaServiceType;
+        pricing.chaCargoType = chaCargoType !== undefined ? chaCargoType : pricing.chaCargoType;
         pricing.handlingType = handlingType !== undefined ? handlingType : pricing.handlingType;
         pricing.additionalServices = additionalServices !== undefined ? additionalServices : pricing.additionalServices;
         pricing.deliverySpeed = deliverySpeed || pricing.deliverySpeed;
         pricing.validUntil = validUntil || pricing.validUntil;
         pricing.price = price !== undefined ? Number(price) : pricing.price;
+        pricing.currency = currency !== undefined ? currency : pricing.currency;
+        pricing.message = message !== undefined ? message : pricing.message;
 
         await pricing.save();
         res.json(pricing);
@@ -273,6 +323,12 @@ exports.bulkAddPricing = async (req, res) => {
                 weightRange,
                 truckLoad,
                 vehicleType,
+                seaLoadType,
+                fclStandard,
+                warehouseRateType,
+                warehouseStorageType,
+                chaServiceType,
+                chaCargoType,
                 handlingType,
                 additionalServices,
                 deliverySpeed,
@@ -303,6 +359,12 @@ exports.bulkAddPricing = async (req, res) => {
                 weightRange: weightRange || '',
                 truckLoad: truckLoad || '',
                 vehicleType: vehicleType || '',
+                seaLoadType: seaLoadType || '',
+                fclStandard: fclStandard || '',
+                warehouseRateType: warehouseRateType || '',
+                warehouseStorageType: warehouseStorageType || '',
+                chaServiceType: chaServiceType || '',
+                chaCargoType: chaCargoType || '',
                 handlingType: handlingType || '',
                 additionalServices: additionalServices || '',
                 deliverySpeed: cleanDeliverySpeed,

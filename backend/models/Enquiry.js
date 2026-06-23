@@ -32,6 +32,26 @@ const enquirySchema = new mongoose.Schema({
         trim: true,
         default: ''
     },
+    message: {
+        type: String,
+        trim: true,
+        default: ''
+    },
+    clientCreditRequired: {
+        type: Boolean,
+        default: false
+    },
+    quoteDetails: {
+        type: Object,
+        default: null
+    },
+    responses: [{
+        vendor: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+        price: Number,
+        quoteDetails: Object,
+        status: { type: String, enum: ['Quoted', 'Accepted', 'Declined'], default: 'Quoted' },
+        createdAt: { type: Date, default: Date.now }
+    }],
     vendor: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
@@ -121,5 +141,11 @@ const enquirySchema = new mongoose.Schema({
         default: Date.now
     }
 });
+
+enquirySchema.index({ status: 1 });
+enquirySchema.index({ client: 1 });
+enquirySchema.index({ vendor: 1 });
+enquirySchema.index({ guestEmail: 1 });
+enquirySchema.index({ createdAt: -1 });
 
 module.exports = mongoose.model('Enquiry', enquirySchema);

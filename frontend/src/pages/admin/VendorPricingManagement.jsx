@@ -41,6 +41,7 @@ const VendorPricingManagement = () => {
   const [deliverySpeed, setDeliverySpeed] = useState('');
   const [validUntil, setValidUntil] = useState('');
   const [price, setPrice] = useState('');
+  const [currency, setCurrency] = useState('INR');
 
   useEffect(() => {
     fetchVendors();
@@ -224,6 +225,7 @@ const VendorPricingManagement = () => {
     setValidUntil(dateStr);
     
     setPrice(rate.price);
+    setCurrency(rate.currency || 'INR');
     setEditingRateId(rate._id);
     setIsModalOpen(true);
   };
@@ -251,7 +253,8 @@ const VendorPricingManagement = () => {
       additionalServices,
       deliverySpeed,
       validUntil,
-      price: Number(price)
+      price: Number(price),
+      currency
     };
 
     try {
@@ -289,6 +292,7 @@ const VendorPricingManagement = () => {
     setDeliverySpeed('');
     setValidUntil('');
     setPrice('');
+    setCurrency('INR');
     setFormError('');
   };
 
@@ -425,7 +429,7 @@ const VendorPricingManagement = () => {
                       {new Date(r.validUntil).toLocaleDateString()}
                     </td>
                     <td className="p-4 font-black text-[#0066FF] text-sm">
-                      ₹ {r.price.toLocaleString()}
+                      {r.currency === 'USD' ? '$' : r.currency === 'EUR' ? '€' : r.currency === 'GBP' ? '£' : r.currency === 'AED' ? 'د.إ' : '₹'} {r.price.toLocaleString()}
                     </td>
                     <td className="p-4">
                       <button
@@ -685,17 +689,32 @@ const VendorPricingManagement = () => {
 
               {/* Price Details */}
               <div className="space-y-1">
-                <label className="block text-[10px] font-black text-[#0066FF] uppercase tracking-wider">Standard Price / Rate (₹)</label>
-                <div className="relative">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs">₹</span>
-                  <input
-                    type="number"
-                    placeholder="Rate amount"
-                    value={price}
-                    onChange={(e) => setPrice(e.target.value)}
-                    className="w-full bg-white border border-slate-200 rounded-xl pl-8 pr-4 py-2.5 text-xs font-black text-[#0066FF] focus:outline-none focus:border-[#0066FF]"
-                    required
-                  />
+                <label className="block text-[10px] font-black text-[#0066FF] uppercase tracking-wider">Standard Price / Rate</label>
+                <div className="flex gap-2">
+                  <select
+                    value={currency}
+                    onChange={(e) => setCurrency(e.target.value)}
+                    className="w-1/4 bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-black text-[#0B1E43] focus:outline-none focus:border-[#0066FF]"
+                  >
+                    <option value="INR">INR (₹)</option>
+                    <option value="USD">USD ($)</option>
+                    <option value="EUR">EUR (€)</option>
+                    <option value="GBP">GBP (£)</option>
+                    <option value="AED">AED (د.إ)</option>
+                  </select>
+                  <div className="relative flex-1">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs">
+                      {currency === 'USD' ? '$' : currency === 'EUR' ? '€' : currency === 'GBP' ? '£' : currency === 'AED' ? 'د.إ' : '₹'}
+                    </span>
+                    <input
+                      type="number"
+                      placeholder="Rate amount"
+                      value={price}
+                      onChange={(e) => setPrice(e.target.value)}
+                      className="w-full bg-white border border-slate-200 rounded-xl pl-8 pr-4 py-2.5 text-xs font-black text-[#0066FF] focus:outline-none focus:border-[#0066FF]"
+                      required
+                    />
+                  </div>
                 </div>
               </div>
 

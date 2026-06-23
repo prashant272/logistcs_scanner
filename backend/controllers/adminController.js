@@ -167,6 +167,11 @@ exports.toggleVendorVerification = async (req, res) => {
             vendor.isVerified = !vendor.isVerified;
             vendor.verificationStatus = vendor.isVerified ? 'Approved' : 'Declined';
         }
+
+        if (vendor.isVerified && !vendor.approvedAt) {
+            vendor.approvedAt = new Date();
+        }
+
         await vendor.save();
 
         // Send email notification to vendor about the status change

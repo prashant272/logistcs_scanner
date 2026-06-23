@@ -48,6 +48,36 @@ const pricingSchema = new mongoose.Schema({
         trim: true,
         default: ''
     },
+    seaLoadType: {
+        type: String,
+        trim: true,
+        default: ''
+    },
+    fclStandard: {
+        type: String,
+        trim: true,
+        default: ''
+    },
+    warehouseRateType: {
+        type: String,
+        trim: true,
+        default: ''
+    },
+    warehouseStorageType: {
+        type: String,
+        trim: true,
+        default: ''
+    },
+    chaServiceType: {
+        type: String,
+        trim: true,
+        default: ''
+    },
+    chaCargoType: {
+        type: String,
+        trim: true,
+        default: ''
+    },
     handlingType: {
         type: String,
         trim: true,
@@ -69,7 +99,18 @@ const pricingSchema = new mongoose.Schema({
     },
     price: {
         type: Number,
-        required: true
+        required: true,
+        min: 0
+    },
+    currency: {
+        type: String,
+        default: 'INR',
+        trim: true
+    },
+    message: {
+        type: String,
+        trim: true,
+        default: ''
     },
     status: {
         type: String,

@@ -17,11 +17,17 @@ const VendorPricingTab = () => {
     updateRate
   } = usePricing();
 
-  const { getSuggestions } = useLocations();
+  const { getSuggestions, fetchLocations } = useLocations();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingRateId, setEditingRateId] = useState(null);
   const [error, setError] = useState('');
+
+  // Warehouse specific states
+  const [warehouseCountry, setWarehouseCountry] = useState('');
+  const [warehouseState, setWarehouseState] = useState('');
+  const [warehouseCity, setWarehouseCity] = useState('');
+  const [warehouseLocationsData, setWarehouseLocationsData] = useState([]);
 
   // Autocomplete Suggestion States
   const [suggestions, setSuggestions] = useState([]);
@@ -37,15 +43,33 @@ const VendorPricingTab = () => {
   const [weightRange, setWeightRange] = useState('');
   const [truckLoad, setTruckLoad] = useState('');
   const [vehicleType, setVehicleType] = useState('');
+  const [seaLoadType, setSeaLoadType] = useState('');
+  const [fclStandard, setFclStandard] = useState('');
+  const [warehouseRateType, setWarehouseRateType] = useState('');
+  const [warehouseStorageType, setWarehouseStorageType] = useState('');
+  const [chaServiceType, setChaServiceType] = useState('Air');
+  const [chaCargoType, setChaCargoType] = useState('');
   const [handlingType, setHandlingType] = useState('');
   const [additionalServices, setAdditionalServices] = useState('');
   const [deliverySpeed, setDeliverySpeed] = useState('');
   const [validUntil, setValidUntil] = useState('');
   const [price, setPrice] = useState('');
+  const [currency, setCurrency] = useState('INR');
+  const [message, setMessage] = useState('');
 
   useEffect(() => {
     fetchRates();
   }, []);
+
+  useEffect(() => {
+    if (type === 'warehouse' && isModalOpen && warehouseLocationsData.length === 0) {
+      fetchLocations(1, 1000, '', 'Warehouse').then(data => {
+        if (data && data.locations) {
+          setWarehouseLocationsData(data.locations);
+        }
+      }).catch(err => console.error('Error loading warehouse locations:', err));
+    }
+  }, [type, isModalOpen]);
 
   const fetchSuggestions = async (query, inputType) => {
     if (!query || query.trim().length < 2) {
@@ -160,6 +184,12 @@ const VendorPricingTab = () => {
     setWeightRange(rate.weightRange || '');
     setTruckLoad(rate.truckLoad || '');
     setVehicleType(rate.vehicleType || '');
+    setSeaLoadType(rate.seaLoadType || '');
+    setFclStandard(rate.fclStandard || '');
+    setWarehouseRateType(rate.warehouseRateType || '');
+    setWarehouseStorageType(rate.warehouseStorageType || '');
+    setChaServiceType(rate.chaServiceType || 'Air');
+    setChaCargoType(rate.chaCargoType || '');
     setHandlingType(rate.handlingType || '');
     setAdditionalServices(rate.additionalServices || '');
     setDeliverySpeed(rate.deliverySpeed || '');
@@ -169,6 +199,8 @@ const VendorPricingTab = () => {
     setValidUntil(dateStr);
     
     setPrice(rate.price);
+    setCurrency(rate.currency || 'INR');
+    setMessage(rate.message || '');
     setEditingRateId(rate._id);
     setIsModalOpen(true);
   };
@@ -177,25 +209,47 @@ const VendorPricingTab = () => {
     e.preventDefault();
     setError('');
 
-    if (!fromLocation || !toLocation || !type || !deliverySpeed || !validUntil || !price) {
+    let finalFromLocation = fromLocation;
+    let finalToLocation = toLocation;
+    
+    if (type === 'warehouse') {
+      finalToLocation = 'Warehouse';
+      finalFromLocation = warehouseCity;
+      if (!warehouseCountry || !warehouseState || !warehouseCity) {
+        setError('Please select Country, State, and City for Warehouse Location');
+        return;
+      }
+    } else if (type === 'cha') {
+      finalToLocation = 'Customs Port';
+    }
+
+    if (!finalFromLocation || !finalToLocation || !type || !deliverySpeed || !validUntil || !price) {
       setError('Please fill in all required fields');
       return;
     }
 
     const payload = {
-      fromLocation,
-      toLocation,
+      fromLocation: finalFromLocation,
+      toLocation: finalToLocation,
       type,
-      category: type === 'air' ? category : undefined,
-      airline: type === 'air' ? airline : undefined,
-      weightRange: type === 'air' ? weightRange : undefined,
-      truckLoad: type === 'land' ? truckLoad : undefined,
-      vehicleType: type === 'land' ? vehicleType : undefined,
+      category,
+      airline,
+      weightRange,
+      truckLoad,
+      vehicleType,
+      seaLoadType,
+      fclStandard,
+      warehouseRateType,
+      warehouseStorageType,
+      chaServiceType,
+      chaCargoType,
       handlingType,
       additionalServices,
       deliverySpeed,
       validUntil,
-      price: Number(price)
+      price: Number(price),
+      currency,
+      message
     };
 
     try {
@@ -222,11 +276,19 @@ const VendorPricingTab = () => {
     setWeightRange('');
     setTruckLoad('');
     setVehicleType('');
+    setSeaLoadType('');
+    setFclStandard('');
+    setWarehouseRateType('');
+    setWarehouseStorageType('');
+    setChaServiceType('Air');
+    setChaCargoType('');
     setHandlingType('');
     setAdditionalServices('');
     setDeliverySpeed('');
     setValidUntil('');
     setPrice('');
+    setCurrency('INR');
+    setMessage('');
     setError('');
   };
 
@@ -310,7 +372,7 @@ const VendorPricingTab = () => {
                     {new Date(r.validUntil).toLocaleDateString()}
                   </td>
                   <td className="p-4 font-black text-[#0066FF] text-sm">
-                    ₹ {r.price.toLocaleString()}
+                    {r.currency === 'USD' ? '$' : r.currency === 'EUR' ? '€' : r.currency === 'GBP' ? '£' : r.currency === 'AED' ? 'د.إ' : '₹'} {r.price.toLocaleString()}
                   </td>
                   <td className="p-4">
                     <button
@@ -380,44 +442,17 @@ const VendorPricingTab = () => {
                 </div>
               )}
 
-              {/* Standard Details */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1 relative">
-                  <label className="block text-[10px] font-black text-slate-900 uppercase tracking-wider">From Location</label>
-                  <input
-                    type="text"
-                    placeholder="Origin City (e.g. Delhi)"
-                    value={fromLocation}
-                    onChange={(e) => setFromLocation(e.target.value)}
-                    onFocus={() => setActiveInput('from')}
-                    onBlur={() => setTimeout(() => setActiveInput(null), 200)}
-                    className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-900 focus:outline-none focus:border-[#0066FF] transition-all"
-                    required
-                  />
-                  {renderSuggestions('from')}
-                </div>
-                <div className="space-y-1 relative">
-                  <label className="block text-[10px] font-black text-slate-900 uppercase tracking-wider">To Location</label>
-                  <input
-                    type="text"
-                    placeholder="Destination City (e.g. Mumbai)"
-                    value={toLocation}
-                    onChange={(e) => setToLocation(e.target.value)}
-                    onFocus={() => setActiveInput('to')}
-                    onBlur={() => setTimeout(() => setActiveInput(null), 200)}
-                    className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-900 focus:outline-none focus:border-[#0066FF] transition-all"
-                    required
-                  />
-                  {renderSuggestions('to')}
-                </div>
-              </div>
-
+              {/* Freight Type and Handling Type (Moved to top) */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <label className="block text-[10px] font-black text-slate-900 uppercase tracking-wider">Freight Type</label>
                   <select
                     value={type}
-                    onChange={(e) => setType(e.target.value)}
+                    onChange={(e) => {
+                      setType(e.target.value);
+                      setFromLocation('');
+                      setToLocation('');
+                    }}
                     className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-900 focus:outline-none focus:border-[#0066FF]"
                   >
                     <option value="air">Air Freight</option>
@@ -443,6 +478,109 @@ const VendorPricingTab = () => {
                     <option value="Valuables">Valuables</option>
                   </select>
                 </div>
+              </div>
+
+              {/* Dynamic Location Details */}
+              <div className={`grid ${['warehouse', 'cha'].includes(type) ? 'grid-cols-1' : 'grid-cols-2'} gap-4`}>
+                <div className="space-y-1 relative">
+                  <label className="block text-[10px] font-black text-slate-900 uppercase tracking-wider">
+                    {type === 'air' && 'Origin Airport'}
+                    {type === 'sea' && 'Origin Port'}
+                    {type === 'land' && 'Origin City'}
+                    {type === 'warehouse' && 'Warehouse Location'}
+                    {type === 'cha' && 'Port / Airport Location'}
+                  </label>
+                  {type === 'warehouse' ? (
+                    <div className="flex gap-2">
+                      <select
+                        value={warehouseCountry}
+                        onChange={(e) => {
+                          setWarehouseCountry(e.target.value);
+                          setWarehouseState('');
+                          setWarehouseCity('');
+                        }}
+                        className="flex-1 bg-white border border-slate-200 rounded-xl px-2 py-2.5 text-[11px] font-bold text-slate-900 focus:outline-none focus:border-[#0066FF]"
+                        required
+                      >
+                        <option value="">Country</option>
+                        {[...new Set(warehouseLocationsData.map(loc => loc.country))].filter(Boolean).map(c => (
+                          <option key={c} value={c}>{c}</option>
+                        ))}
+                      </select>
+                      <select
+                        value={warehouseState}
+                        onChange={(e) => {
+                          setWarehouseState(e.target.value);
+                          setWarehouseCity('');
+                        }}
+                        className="flex-1 bg-white border border-slate-200 rounded-xl px-2 py-2.5 text-[11px] font-bold text-slate-900 focus:outline-none focus:border-[#0066FF]"
+                        required
+                        disabled={!warehouseCountry}
+                      >
+                        <option value="">State</option>
+                        {[...new Set(warehouseLocationsData.filter(loc => loc.country === warehouseCountry).map(loc => loc.state))].filter(Boolean).map(s => (
+                          <option key={s} value={s}>{s}</option>
+                        ))}
+                      </select>
+                      <select
+                        value={warehouseCity}
+                        onChange={(e) => setWarehouseCity(e.target.value)}
+                        className="flex-1 bg-white border border-slate-200 rounded-xl px-2 py-2.5 text-[11px] font-bold text-slate-900 focus:outline-none focus:border-[#0066FF]"
+                        required
+                        disabled={!warehouseState}
+                      >
+                        <option value="">City</option>
+                        {[...new Set(warehouseLocationsData.filter(loc => loc.state === warehouseState).map(loc => loc.city))].filter(Boolean).map(city => (
+                          <option key={city} value={city}>{city}</option>
+                        ))}
+                      </select>
+                    </div>
+                  ) : (
+                    <>
+                      <input
+                        type="text"
+                        placeholder={
+                          type === 'air' ? 'e.g. DEL (Delhi Airport)' :
+                          type === 'sea' ? 'e.g. INNSA (Nhava Sheva)' :
+                          type === 'cha' ? 'Enter Port/Airport' :
+                          'Origin City (e.g. Delhi)'
+                        }
+                        value={fromLocation}
+                        onChange={(e) => setFromLocation(e.target.value)}
+                        onFocus={() => setActiveInput('from')}
+                        onBlur={() => setTimeout(() => setActiveInput(null), 200)}
+                        className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-900 focus:outline-none focus:border-[#0066FF] transition-all"
+                        required
+                      />
+                      {renderSuggestions('from')}
+                    </>
+                  )}
+                </div>
+                
+                {!['warehouse', 'cha'].includes(type) && (
+                  <div className="space-y-1 relative">
+                    <label className="block text-[10px] font-black text-slate-900 uppercase tracking-wider">
+                      {type === 'air' && 'Destination Airport'}
+                      {type === 'sea' && 'Destination Port'}
+                      {type === 'land' && 'Destination City'}
+                    </label>
+                    <input
+                      type="text"
+                      placeholder={
+                        type === 'air' ? 'e.g. LHR (London Heathrow)' :
+                        type === 'sea' ? 'e.g. USNYC (New York)' :
+                        'Destination City (e.g. Mumbai)'
+                      }
+                      value={toLocation}
+                      onChange={(e) => setToLocation(e.target.value)}
+                      onFocus={() => setActiveInput('to')}
+                      onBlur={() => setTimeout(() => setActiveInput(null), 200)}
+                      className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-900 focus:outline-none focus:border-[#0066FF] transition-all"
+                      required
+                    />
+                    {renderSuggestions('to')}
+                  </div>
+                )}
               </div>
 
               {/* Dynamic Option Fields for AIR */}
@@ -529,6 +667,173 @@ const VendorPricingTab = () => {
                 </div>
               )}
 
+              {/* Dynamic Option Fields for SEA */}
+              {type === 'sea' && (
+                <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 space-y-4">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-[#0066FF] block border-b border-slate-200/60 pb-1">Ocean Freight Details</span>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <label className="block text-[10px] font-black text-slate-500 uppercase tracking-wider">Load Type</label>
+                      <select
+                        value={seaLoadType}
+                        onChange={(e) => setSeaLoadType(e.target.value)}
+                        className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 focus:outline-none focus:border-[#0066FF]"
+                      >
+                        <option value="">Select Load Type</option>
+                        <option value="LCL">Less Container Load (LCL)</option>
+                        <option value="FCL">Full Container Load (FCL)</option>
+                      </select>
+                    </div>
+
+                    {seaLoadType === 'FCL' && (
+                      <div className="space-y-1">
+                        <label className="block text-[10px] font-black text-slate-500 uppercase tracking-wider">Container Size</label>
+                        <select
+                          value={fclStandard}
+                          onChange={(e) => setFclStandard(e.target.value)}
+                          className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 focus:outline-none focus:border-[#0066FF]"
+                        >
+                          <option value="">Select Standard</option>
+                          <option value="20ft">20ft Standard</option>
+                          <option value="40ft">40ft Standard</option>
+                          <option value="40ft HC">40ft High Cube</option>
+                        </select>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Dynamic Option Fields for WAREHOUSE */}
+              {type === 'warehouse' && (
+                <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 space-y-4">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-[#0066FF] block border-b border-slate-200/60 pb-1">Warehouse Details</span>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <label className="block text-[10px] font-black text-slate-500 uppercase tracking-wider">Rate Type</label>
+                      <select
+                        value={warehouseRateType}
+                        onChange={(e) => setWarehouseRateType(e.target.value)}
+                        className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 focus:outline-none focus:border-[#0066FF]"
+                      >
+                        <option value="">Select Rate Type</option>
+                        <option value="Per Month">Per Month</option>
+                        <option value="Per Day">Per Day</option>
+                        <option value="Per Week">Per Week</option>
+                      </select>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="block text-[10px] font-black text-slate-500 uppercase tracking-wider">Storage Category</label>
+                      <select
+                        value={category}
+                        onChange={(e) => setCategory(e.target.value)}
+                        className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 focus:outline-none focus:border-[#0066FF]"
+                      >
+                        <option value="domestic">Domestic</option>
+                        <option value="international">International</option>
+                      </select>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="block text-[10px] font-black text-slate-500 uppercase tracking-wider">Storage Type</label>
+                      <select
+                        value={warehouseStorageType}
+                        onChange={(e) => setWarehouseStorageType(e.target.value)}
+                        className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 focus:outline-none focus:border-[#0066FF]"
+                      >
+                        <option value="">Select Storage Type</option>
+                        <option value="General">General Warehousing</option>
+                        <option value="Cold">Cold Storage</option>
+                        <option value="Bonded">Bonded Warehouse</option>
+                        <option value="Private">Private Warehouse</option>
+                        <option value="Custom">Custom Warehouse</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Dynamic Option Fields for CHA */}
+              {type === 'cha' && (
+                <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 space-y-4">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-[#0066FF] block border-b border-slate-200/60 pb-1">Customs Clearance Details</span>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <label className="block text-[10px] font-black text-slate-500 uppercase tracking-wider">Service Type</label>
+                      <select
+                        value={chaServiceType}
+                        onChange={(e) => setChaServiceType(e.target.value)}
+                        className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 focus:outline-none focus:border-[#0066FF]"
+                      >
+                        <option value="Air">Air</option>
+                        <option value="Sea">Sea</option>
+                      </select>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="block text-[10px] font-black text-slate-500 uppercase tracking-wider">Clearance Category</label>
+                      <select
+                        value={category}
+                        onChange={(e) => setCategory(e.target.value)}
+                        className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 focus:outline-none focus:border-[#0066FF]"
+                      >
+                        <option value="domestic">Domestic</option>
+                        <option value="international">International</option>
+                      </select>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="block text-[10px] font-black text-slate-500 uppercase tracking-wider">Cargo Type</label>
+                      <select
+                        value={chaCargoType}
+                        onChange={(e) => setChaCargoType(e.target.value)}
+                        className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 focus:outline-none focus:border-[#0066FF]"
+                      >
+                        <option value="">Select Type</option>
+                        <option value="Import">Import</option>
+                        <option value="Export">Export</option>
+                        <option value="Customs Clearing">Customs Clearing</option>
+                        <option value="Import Duty Clearance">Import Duty Clearance</option>
+                        <option value="Export Documentation">Export Documentation</option>
+                      </select>
+                    </div>
+
+                    {chaServiceType === 'Air' && (
+                      <div className="space-y-1">
+                        <label className="block text-[10px] font-black text-slate-500 uppercase tracking-wider">Weight Range</label>
+                        <select
+                          value={weightRange}
+                          onChange={(e) => setWeightRange(e.target.value)}
+                          className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 focus:outline-none focus:border-[#0066FF]"
+                        >
+                          <option value="">Select Weight Range</option>
+                          <option value="0-50">0 - 50 kg</option>
+                          <option value="50-100">50 - 100 kg</option>
+                          <option value="100-500">100 - 500 kg</option>
+                          <option value="500+">500+ kg</option>
+                        </select>
+                      </div>
+                    )}
+
+                    {chaServiceType === 'Sea' && (
+                      <div className="space-y-1">
+                        <label className="block text-[10px] font-black text-slate-500 uppercase tracking-wider">Load Type</label>
+                        <select
+                          value={seaLoadType}
+                          onChange={(e) => setSeaLoadType(e.target.value)}
+                          className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 focus:outline-none focus:border-[#0066FF]"
+                        >
+                          <option value="">Select Load Type</option>
+                          <option value="LCL">Less Container Load (LCL)</option>
+                          <option value="FCL">Full Container Load (FCL)</option>
+                        </select>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {/* Delivery Properties */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
@@ -549,6 +854,7 @@ const VendorPricingTab = () => {
                     type="date"
                     value={validUntil}
                     onChange={(e) => setValidUntil(e.target.value)}
+                    onClick={(e) => { try { e.target.showPicker(); } catch (err) {} }}
                     className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2 text-xs font-bold text-slate-900 focus:outline-none focus:border-[#0066FF] cursor-pointer"
                     required
                   />
@@ -569,16 +875,45 @@ const VendorPricingTab = () => {
 
               {/* Price Details */}
               <div className="space-y-1">
-                <label className="block text-[10px] font-black text-[#0066FF] uppercase tracking-wider">Standard Price / Rate (₹)</label>
-                <div className="relative">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs">₹</span>
-                  <input
-                    type="number"
-                    placeholder="Rate amount"
-                    value={price}
-                    onChange={(e) => setPrice(e.target.value)}
-                    className="w-full bg-white border border-slate-200 rounded-xl pl-8 pr-4 py-2.5 text-xs font-black text-[#0066FF] focus:outline-none focus:border-[#0066FF]"
-                    required
+                <label className="block text-[10px] font-black text-[#0066FF] uppercase tracking-wider">Standard Price / Rate</label>
+                <div className="flex gap-2">
+                  <select
+                    value={currency}
+                    onChange={(e) => setCurrency(e.target.value)}
+                    className="w-1/4 bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-black text-[#0B1E43] focus:outline-none focus:border-[#0066FF]"
+                  >
+                    <option value="INR">INR (₹)</option>
+                    <option value="USD">USD ($)</option>
+                    <option value="EUR">EUR (€)</option>
+                    <option value="GBP">GBP (£)</option>
+                    <option value="AED">AED (د.إ)</option>
+                  </select>
+                  <div className="relative flex-1">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs">
+                      {currency === 'USD' ? '$' : currency === 'EUR' ? '€' : currency === 'GBP' ? '£' : currency === 'AED' ? 'د.إ' : '₹'}
+                    </span>
+                    <input
+                      type="number"
+                      placeholder="Rate amount"
+                      value={price}
+                      onChange={(e) => setPrice(e.target.value)}
+                      className="w-full bg-white border border-slate-200 rounded-xl pl-8 pr-4 py-2.5 text-xs font-black text-[#0066FF] focus:outline-none focus:border-[#0066FF]"
+                      required
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Message and Credit Info */}
+              <div className="space-y-4 pt-2 border-t border-slate-100">
+                <div className="space-y-1">
+                  <label className="block text-[10px] font-black text-slate-900 uppercase tracking-wider">Message / Product Details</label>
+                  <textarea
+                    placeholder="Brief details about the product..."
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    rows={2}
+                    className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-medium text-slate-900 focus:outline-none focus:border-[#0066FF] resize-none"
                   />
                 </div>
               </div>

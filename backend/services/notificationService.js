@@ -19,7 +19,7 @@ const transporter = nodemailer.createTransport({
 const sendEmail = async ({ to, subject, html }) => {
     try {
         const mailOptions = {
-            from: '"Logisticsscanner" <logisticsscannerofficials@gmail.com>',
+            from: `"Logistics Scanner" <${process.env.EMAIL_USER}>`,
             to,
             subject,
             html
@@ -306,6 +306,26 @@ const sendEnquiryAcceptedCustomerAlert = async (customerEmail, vendorName, enqui
     return await sendEmail({ to: customerEmail, subject, html });
 };
 
+const sendGuestAccountCreatedEmail = async (customerEmail, customerName, generatedPassword) => {
+    const subject = 'Your Customer Account has been Created - Logistics Scanner';
+    const html = `
+        <div style="font-family: Arial, sans-serif; padding: 20px;">
+            <h2>Welcome to Logistics Scanner, ${customerName || 'Customer'}!</h2>
+            <p>Thank you for submitting your enquiry. To help you track your enquiries easily, we have automatically created a customer account for you.</p>
+            <p>Here are your login details:</p>
+            <ul>
+                <li><strong>Email:</strong> ${customerEmail}</li>
+                <li><strong>Password:</strong> <code>${generatedPassword}</code></li>
+            </ul>
+            <p>You can use these credentials to log in to your dashboard and track your responses. If you prefer to change your password, you can use the "Forgot Password" option on the login page.</p>
+            <br>
+            <p>Best Regards,</p>
+            <p>Logistics Scanner Team</p>
+        </div>
+    `;
+    return await sendEmail({ to: customerEmail, subject, html });
+};
+
 module.exports = {
     sendEmail,
     sendSMS,
@@ -316,5 +336,6 @@ module.exports = {
     sendVendorStatusUpdateEmail,
     sendEnquiryToVendorAlert,
     sendEnquiryCustomerConfirmation,
-    sendEnquiryAcceptedCustomerAlert
+    sendEnquiryAcceptedCustomerAlert,
+    sendGuestAccountCreatedEmail
 };

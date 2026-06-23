@@ -165,6 +165,8 @@ exports.verifyOTP = async (req, res) => {
             address: user.address,
             role: user.role,
             company: user.company,
+            verificationStatus: user.verificationStatus,
+            isVerified: user.isVerified,
             token: generateToken(user.id)
         });
     } catch (error) {
@@ -254,6 +256,8 @@ exports.loginUser = async (req, res) => {
                 role: user.role,
                 company: user.company,
                 assignedRM: user.assignedRM,
+                verificationStatus: user.verificationStatus,
+                isVerified: user.isVerified,
                 token: generateToken(user.id)
             });
         } else {

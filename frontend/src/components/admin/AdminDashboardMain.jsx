@@ -1,6 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import axios from 'axios';
+import useSWR from 'swr';
 import { Calendar as CalendarIcon, RotateCcw, Menu, Users, ShoppingBag, AlertCircle, FileText, IndianRupee, UserCheck } from 'lucide-react';
+
+const fetcher = async (url) => {
+    const token = localStorage.getItem('adminToken');
+    const config = { headers: { Authorization: `Bearer ${token}` } };
+    const res = await axios.get(url, config);
+    return res.data;
+};
 
 const StatCard = ({ title, value, icon: Icon, gradientClass, subtitle }) => (
     <div className={`rounded-2xl p-6 shadow-xl flex flex-col justify-between hover:-translate-y-1.5 hover:shadow-2xl transition-all duration-300 ${gradientClass}`}>
@@ -21,28 +29,15 @@ const StatCard = ({ title, value, icon: Icon, gradientClass, subtitle }) => (
 );
 
 const AdminDashboardMain = () => {
-    const [stats, setStats] = useState(null);
-    const [loading, setLoading] = useState(true);
     const [filterType, setFilterType] = useState('Monthly');
     const [customStart, setCustomStart] = useState('');
     const [customEnd, setCustomEnd] = useState('');
 
-    useEffect(() => {
-        const fetchStats = async () => {
-            try {
-                setLoading(true);
-                const token = localStorage.getItem('adminToken');
-                const config = { headers: { Authorization: `Bearer ${token}` } };
-                const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/admin/dashboard-stats`, config);
-                setStats(res.data);
-            } catch (err) {
-                console.error("Error loading admin stats:", err);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchStats();
-    }, []);
+    const { data: stats, error, isLoading: loading } = useSWR(
+        `${import.meta.env.VITE_API_BASE_URL}/admin/dashboard-stats`,
+        fetcher,
+        { refreshInterval: 30000, revalidateOnFocus: true }
+    );
 
     const getDateRangeDisplay = (rangeType) => {
         if (rangeType === 'Custom Date' && customStart && customEnd) {

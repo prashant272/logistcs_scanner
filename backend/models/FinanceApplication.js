@@ -107,4 +107,8 @@ const financeApplicationSchema = new mongoose.Schema({
     }
 });
 
+financeApplicationSchema.index({ adminStatus: 1 });
+financeApplicationSchema.index({ vendor: 1 });
+financeApplicationSchema.index({ createdAt: -1 });
+
 module.exports = mongoose.model('FinanceApplication', financeApplicationSchema);

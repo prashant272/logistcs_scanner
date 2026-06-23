@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import axios from 'axios';
+import useSWR from 'swr';
 import { useAuth } from '../../context/AuthContext';
-import { useEnquiries } from '../../services/EnquiryService';
 import EnquiryCardSection from './EnquiryCardSection';
 import BookingSection from './BookingSection';
 import FinanceSection from './FinanceSection';
@@ -10,71 +10,52 @@ import UserProfileSection from './UserProfileSection';
 import RelationshipManagerCard from './RelationshipManagerCard';
 import { Calendar, RotateCcw, Menu, AlertCircle } from 'lucide-react';
 
+const vendorStatsFetcher = async () => {
+    const token = localStorage.getItem('userToken');
+    const config = { headers: { Authorization: `Bearer ${token}` } };
+    
+    const profileRes = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/auth/profile`, config);
+    const status = profileRes.data.verificationStatus || (profileRes.data.isVerified ? 'Approved' : 'Pending');
+    
+    let stats = { profile: profileRes.data, status, financeApp: null, myEnquiries: [], directEnquiries: [], myBookings: [], directBookings: [] };
+
+    try {
+        const finRes = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/finance/my`, config);
+        if (finRes.data && finRes.data.length > 0) stats.financeApp = finRes.data[0];
+    } catch(e){}
+
+    if (status === 'Approved') {
+        const [myEnqs, directEnqs, myBkgs, directBkgs] = await Promise.all([
+            axios.get(`${import.meta.env.VITE_API_BASE_URL}/enquiries/vendor?type=my`, config),
+            axios.get(`${import.meta.env.VITE_API_BASE_URL}/enquiries/vendor?type=direct`, config),
+            axios.get(`${import.meta.env.VITE_API_BASE_URL}/enquiries/vendor?type=my&isBooking=true`, config),
+            axios.get(`${import.meta.env.VITE_API_BASE_URL}/enquiries/vendor?type=direct&isBooking=true`, config)
+        ]);
+        stats.myEnquiries = myEnqs.data || [];
+        stats.directEnquiries = directEnqs.data || [];
+        stats.myBookings = myBkgs.data || [];
+        stats.directBookings = directBkgs.data || [];
+    }
+    return stats;
+};
+
 const VendorDashboardMain = () => {
     const { user } = useAuth();
-    const { fetchVendorEnquiries, fetchVendorBookings } = useEnquiries();
     const [filterType, setFilterType] = useState('Monthly');
     const [customStart, setCustomStart] = useState('');
     const [customEnd, setCustomEnd] = useState('');
-    const [vendorStatus, setVendorStatus] = useState(user?.verificationStatus || (user?.isVerified ? 'Approved' : 'Pending'));
 
-    // Real-time stats states
-    const [myEnquiries, setMyEnquiries] = useState([]);
-    const [directEnquiries, setDirectEnquiries] = useState([]);
-    const [myBookings, setMyBookings] = useState([]);
-    const [directBookings, setDirectBookings] = useState([]);
-    const [financeApp, setFinanceApp] = useState(null);
-    const [loadingStats, setLoadingStats] = useState(true);
+    const { data: stats, isLoading: loadingStats } = useSWR('vendorDashboardStats', vendorStatsFetcher, {
+        refreshInterval: 30000,
+        revalidateOnFocus: true
+    });
 
-    useEffect(() => {
-        const loadStats = async () => {
-            try {
-                setLoadingStats(true);
-                
-                // Fetch fresh profile status to react instantly to admin actions
-                const token = localStorage.getItem('userToken');
-                const config = { headers: { Authorization: `Bearer ${token}` } };
-                
-                const profileRes = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/auth/profile`, config);
-                const status = profileRes.data.verificationStatus || (profileRes.data.isVerified ? 'Approved' : 'Pending');
-                setVendorStatus(status);
-
-                if (status === 'Approved') {
-                    const [myEnqs, directEnqs, myBkgs, directBkgs] = await Promise.all([
-                        fetchVendorEnquiries('my'),
-                        fetchVendorEnquiries('direct'),
-                        fetchVendorBookings('my'),
-                        fetchVendorBookings('direct')
-                    ]);
-                    setMyEnquiries(myEnqs || []);
-                    setDirectEnquiries(directEnqs || []);
-                    setMyBookings(myBkgs || []);
-                    setDirectBookings(directBkgs || []);
-                } else {
-                    setMyEnquiries([]);
-                    setDirectEnquiries([]);
-                    setMyBookings([]);
-                    setDirectBookings([]);
-                }
-            } catch (err) {
-                console.error("Error loading dashboard stats:", err);
-            } finally {
-                // Fetch Finance Application
-                try {
-                    const token = localStorage.getItem('userToken');
-                    const config = { headers: { Authorization: `Bearer ${token}` } };
-                    const finRes = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/finance/my`, config);
-                    if (finRes.data && finRes.data.length > 0) {
-                        setFinanceApp(finRes.data[0]); // Show the most recent one
-                    }
-                } catch (err) {
-                    if (err.response?.status !== 404) console.error('Error fetching finance app:', err);
-                }
-                setLoadingStats(false);
-            }
-        };
-        loadStats();
-    }, []);
+    const vendorStatus = stats?.status || user?.verificationStatus || (user?.isVerified ? 'Approved' : 'Pending');
+    const myEnquiries = stats?.myEnquiries || [];
+    const directEnquiries = stats?.directEnquiries || [];
+    const myBookings = stats?.myBookings || [];
+    const directBookings = stats?.directBookings || [];
+    const financeApp = stats?.financeApp || null;
 
     // Filter toggle helper
     const filterByDateRange = (list, rangeType) => {
@@ -155,8 +136,21 @@ const VendorDashboardMain = () => {
 
     return (
         <div className="space-y-6">
-            {/* Verification Status Warning Card */}
+            {/* Pending Vendor Message Overlay */}
             {vendorStatus !== 'Approved' && user?.role !== 'admin' && (
+                <div className="bg-white rounded-3xl p-10 border border-amber-100 shadow-[0_8px_30px_rgba(11,30,67,0.02)] text-center flex flex-col items-center justify-center min-h-[400px]">
+                    <AlertCircle size={48} className="text-amber-500 mb-4" />
+                    <h2 className="text-2xl font-black text-[#0B1E43] tracking-tight mb-2">Profile Action Required</h2>
+                    <p className="text-sm font-bold text-slate-500 leading-relaxed max-w-lg">
+                        {vendorStatus === 'Declined' 
+                            ? 'Your profile registration has been declined. Please update your document or contact support.'
+                            : 'Please go to the Profile tab and upload supporting documents like GST, Business PAN Card, or any other business supported documents.'}
+                    </p>
+                </div>
+            )}
+
+            {/* Verification Status Warning Card (kept for admin or other edge cases if needed) */}
+            {user?.role === 'admin' && vendorStatus !== 'Approved' && (
                 <div className={`p-5 rounded-3xl border flex items-center gap-4 shadow-[0_8px_30px_rgba(11,30,67,0.02)] ${
                     vendorStatus === 'Declined' 
                         ? 'bg-red-50/80 border-red-100 text-red-800' 
@@ -258,87 +252,91 @@ const VendorDashboardMain = () => {
                 </div>
             </div>
 
-            {/* Main Layout Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-                
-                {/* LEFT COLUMN: Data cards (8/12 width) */}
-                <div className="lg:col-span-8 space-y-6">
-                    
-                    {/* MY ENQUIRIES */}
-                    <EnquiryCardSection 
-                        title="My Enquiries" 
-                        type="my" 
-                        enquiryCount={myEnqTotal} 
-                        acceptedCount={myEnqAccepted} 
-                        rejectedCount={myEnqRejected} 
-                    />
+            {vendorStatus === 'Approved' || user?.role === 'admin' ? (
+                <>
+                    {/* Main Layout Grid */}
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                        
+                        {/* LEFT COLUMN: Data cards (8/12 width) */}
+                        <div className="lg:col-span-8 space-y-6">
+                            
+                            {/* MY ENQUIRIES */}
+                            <EnquiryCardSection 
+                                title="My Enquiries" 
+                                type="my" 
+                                enquiryCount={myEnqTotal} 
+                                acceptedCount={myEnqAccepted} 
+                                rejectedCount={myEnqRejected} 
+                            />
 
-                    {/* DIRECT ENQUIRIES */}
-                    <EnquiryCardSection 
-                        title="Direct Enquiries" 
-                        type="direct" 
-                        enquiryCount={directEnqTotal} 
-                        acceptedCount={directEnqAccepted} 
-                        rejectedCount={directEnqRejected} 
-                    />
+                            {/* DIRECT ENQUIRIES */}
+                            <EnquiryCardSection 
+                                title="Direct Enquiries" 
+                                type="direct" 
+                                enquiryCount={directEnqTotal} 
+                                acceptedCount={directEnqAccepted} 
+                                rejectedCount={directEnqRejected} 
+                            />
 
-                    {/* BOOKING AND FINANCE GRID */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <BookingSection 
-                            myBookingsCount={myBookingsCount} 
-                            directBookingsCount={directBookingsCount} 
-                        />
-                        <FinanceSection 
-                            myBookings={filteredMyBookings} 
-                            directBookings={filteredDirectBookings} 
-                        />
-                    </div>
+                            {/* BOOKING AND FINANCE GRID */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <BookingSection 
+                                    myBookingsCount={myBookingsCount} 
+                                    directBookingsCount={directBookingsCount} 
+                                />
+                                <FinanceSection 
+                                    myBookings={filteredMyBookings} 
+                                    directBookings={filteredDirectBookings} 
+                                />
+                            </div>
 
-                    {/* COMPLAINTS */}
-                    <ComplaintsSection 
-                        myEnquiries={filteredMyEnqs} 
-                        directEnquiries={filteredDirectEnqs} 
-                        myBookings={filteredMyBookings} 
-                        directBookings={filteredDirectBookings} 
-                    />
+                            {/* COMPLAINTS */}
+                            <ComplaintsSection 
+                                myEnquiries={filteredMyEnqs} 
+                                directEnquiries={filteredDirectEnqs} 
+                                myBookings={filteredMyBookings} 
+                                directBookings={filteredDirectBookings} 
+                            />
 
-                </div>
-
-                {/* RIGHT COLUMN: Profile details, RM Detail, Finance query (4/12 width) */}
-                <div className="lg:col-span-4 space-y-6">
-                    
-                    {/* USER PROFILE CARD */}
-                    <UserProfileSection user={user} />
-
-                    {/* RM DETAIL CARD */}
-                    {user?.assignedRM ? (
-                        <RelationshipManagerCard 
-                            title="Assigned RM" 
-                            name={user.assignedRM.name} 
-                            role="Relationship Manager" 
-                            phone={user.assignedRM.mobile} 
-                            email={user.assignedRM.email} 
-                            isFinance={false} 
-                        />
-                    ) : (
-                        <div className="bg-slate-50 border border-slate-200 rounded-3xl p-6 text-center shadow-sm">
-                            <p className="text-sm font-bold text-slate-500 uppercase tracking-widest">No RM Assigned</p>
                         </div>
-                    )}
 
-                    {/* FINANCE QUERY CARD */}
-                    <RelationshipManagerCard 
-                        title="Finance Detail" 
-                        name={financeApp?.adminStatus ? `Status: ${financeApp.adminStatus}` : "Not Applied"} 
-                        role={financeApp?.approvedAmount ? `Amount: ₹${financeApp.approvedAmount}` : "Finance Application"} 
-                        phone={financeApp?.processingFees ? `Fees: ₹${financeApp.processingFees}` : "Pending/N/A"} 
-                        email="info@logisticscanner.com" 
-                        isFinance={true} 
-                    />
+                        {/* RIGHT COLUMN: Profile details, RM Detail, Finance query (4/12 width) */}
+                        <div className="lg:col-span-4 space-y-6">
+                            
+                            {/* USER PROFILE CARD */}
+                            <UserProfileSection user={user} />
 
-                </div>
+                            {/* RM DETAIL CARD */}
+                            {user?.assignedRM ? (
+                                <RelationshipManagerCard 
+                                    title="Assigned RM" 
+                                    name={user.assignedRM.name} 
+                                    role="Relationship Manager" 
+                                    phone={user.assignedRM.mobile} 
+                                    email={user.assignedRM.email} 
+                                    isFinance={false} 
+                                />
+                            ) : (
+                                <div className="bg-slate-50 border border-slate-200 rounded-3xl p-6 text-center shadow-sm">
+                                    <p className="text-sm font-bold text-slate-500 uppercase tracking-widest">No RM Assigned</p>
+                                </div>
+                            )}
 
-            </div>
+                            {/* FINANCE QUERY CARD */}
+                            <RelationshipManagerCard 
+                                title="Finance Detail" 
+                                name={financeApp?.adminStatus ? `Status: ${financeApp.adminStatus}` : "Not Applied"} 
+                                role={financeApp?.approvedAmount ? `Amount: ₹${financeApp.approvedAmount}` : "Finance Application"} 
+                                phone={financeApp?.processingFees ? `Fees: ₹${financeApp.processingFees}` : "Pending/N/A"} 
+                                email="info@logisticscanner.com" 
+                                isFinance={true} 
+                            />
+
+                        </div>
+
+                    </div>
+                </>
+            ) : null}
         </div>
     );
 };

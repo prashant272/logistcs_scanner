@@ -124,6 +124,10 @@ const userSchema = new mongoose.Schema({
         enum: ['Pending', 'Approved', 'Declined'],
         default: 'Pending'
     },
+    approvedAt: {
+        type: Date,
+        default: null
+    },
     otp: {
         type: String,
         default: ''
@@ -152,5 +156,9 @@ const userSchema = new mongoose.Schema({
         default: Date.now
     }
 });
+
+userSchema.index({ role: 1 });
+userSchema.index({ verificationStatus: 1 });
+userSchema.index({ createdAt: -1 });
 
 module.exports = mongoose.model('User', userSchema);

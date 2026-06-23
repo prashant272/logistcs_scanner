@@ -20,7 +20,7 @@ const COUNTRY_CODES = [
 
 const SearchPrice = ({ isDashboard = false }) => {
     const { user } = useAuth();
-    const { getSuggestions } = useLocations();
+    const { getSuggestions, fetchLocations } = useLocations();
     const { searchRates } = usePricing();
     const { createEnquiry, submissionStatus: enquiryStatus, setSubmissionStatus: setEnquiryStatus } = useEnquiries();
     const navigate = useNavigate();
@@ -36,15 +36,22 @@ const SearchPrice = ({ isDashboard = false }) => {
     const [height, setHeight] = useState('');
     const [width, setWidth] = useState('');
     const [length, setLength] = useState('');
-    const [unit, setUnit] = useState('Unit');
+    const [unit, setUnit] = useState('cm');
     const [quantity, setQuantity] = useState('');
     const [loadType, setLoadType] = useState('');
+    const [fclStandard, setFclStandard] = useState('');
+    const [fclUnit, setFclUnit] = useState('');
+    const [lclWeightRange, setLclWeightRange] = useState('');
+    const [lclVolumeRange, setLclVolumeRange] = useState('');
     const [vehicleType, setVehicleType] = useState('');
     const [landCountry, setLandCountry] = useState('India');
-    const [warehouseLocation, setWarehouseLocation] = useState('');
-    const [storageArea, setStorageArea] = useState('');
-    const [duration, setDuration] = useState('');
+    const [warehouseCountry, setWarehouseCountry] = useState('');
+    const [warehouseState, setWarehouseState] = useState('');
+    const [warehouseDistrict, setWarehouseDistrict] = useState('');
+    const [warehouseCity, setWarehouseCity] = useState('');
+    const [warehouseRateType, setWarehouseRateType] = useState('Display All Rates');
     const [storageType, setStorageType] = useState('');
+    const [warehouseLocationsData, setWarehouseLocationsData] = useState([]);
     const [chaType, setChaType] = useState('Air');
     const [port, setPort] = useState('');
     const [chaCargoType, setChaCargoType] = useState('Select Type');
@@ -77,6 +84,14 @@ const SearchPrice = ({ isDashboard = false }) => {
         setSearchPerformed(false);
         setEnquiryStatus('');
         setShowSuccessPage(false);
+
+        if (activeTab === 'warehouse' && warehouseLocationsData.length === 0) {
+            fetchLocations(1, 1000, '', 'Warehouse').then(data => {
+                if (data && data.locations) {
+                    setWarehouseLocationsData(data.locations);
+                }
+            }).catch(err => console.error('Error loading warehouse locations:', err));
+        }
     }, [activeTab]);
 
     // Autocomplete Suggestion States
@@ -118,7 +133,6 @@ const SearchPrice = ({ isDashboard = false }) => {
         let activeQuery = '';
         if (activeInput === 'origin') activeQuery = origin;
         else if (activeInput === 'destination') activeQuery = destination;
-        else if (activeInput === 'warehouse') activeQuery = warehouseLocation;
         else if (activeInput === 'port') activeQuery = port;
 
         if (!activeQuery || activeQuery.trim().length < 2) {
@@ -131,7 +145,7 @@ const SearchPrice = ({ isDashboard = false }) => {
         }, 300);
 
         return () => clearTimeout(delayDebounce);
-    }, [origin, destination, warehouseLocation, port, activeInput]);
+    }, [origin, destination, port, activeInput]);
 
     const handleSelectSuggestion = (loc, inputType) => {
         // Format as City (Code) if code exists, otherwise just City
@@ -140,8 +154,6 @@ const SearchPrice = ({ isDashboard = false }) => {
             setOrigin(value);
         } else if (inputType === 'destination') {
             setDestination(value);
-        } else if (inputType === 'warehouse') {
-            setWarehouseLocation(value);
         } else if (inputType === 'port') {
             setPort(value);
         }
@@ -202,7 +214,7 @@ const SearchPrice = ({ isDashboard = false }) => {
         let toLoc = destination;
 
         if (activeTab === 'warehouse') {
-            fromLoc = warehouseLocation;
+            fromLoc = warehouseCity;
             toLoc = 'Warehouse';
         } else if (activeTab === 'cha') {
             fromLoc = port;
@@ -217,7 +229,13 @@ const SearchPrice = ({ isDashboard = false }) => {
             airline: activeTab === 'air' ? airAirline : undefined,
             weightRange: activeTab === 'air' ? weight : undefined,
             truckLoad: activeTab === 'land' ? loadType : undefined,
-            vehicleType: activeTab === 'land' ? vehicleType : undefined
+            vehicleType: activeTab === 'land' ? vehicleType : undefined,
+            seaLoadType: activeTab === 'sea' && loadType && loadType !== 'Select Load Type' ? loadType : undefined,
+            fclStandard: activeTab === 'sea' && loadType === 'FCL' && fclStandard ? fclStandard : undefined,
+            warehouseRateType: activeTab === 'warehouse' && warehouseRateType && warehouseRateType !== 'Display All Rates' ? warehouseRateType : undefined,
+            warehouseStorageType: activeTab === 'warehouse' && storageType && storageType !== 'Select Storage Type' ? storageType : undefined,
+            chaServiceType: activeTab === 'cha' ? chaType : undefined,
+            chaCargoType: activeTab === 'cha' && chaCargoType && chaCargoType !== 'Select Type' ? chaCargoType : undefined
         };
 
         try {
@@ -240,11 +258,17 @@ const SearchPrice = ({ isDashboard = false }) => {
                         length,
                         quantity,
                         loadType,
+                        fclStandard,
+                        fclUnit,
+                        lclWeightRange,
+                        lclVolumeRange,
                         vehicleType,
                         landCountry,
-                        warehouseLocation,
-                        storageArea,
-                        duration,
+                        warehouseCountry,
+                        warehouseState,
+                        warehouseDistrict,
+                        warehouseCity,
+                        warehouseRateType,
                         storageType,
                         chaType,
                         port,
@@ -276,11 +300,17 @@ const SearchPrice = ({ isDashboard = false }) => {
                         length,
                         quantity,
                         loadType,
+                        fclStandard,
+                        fclUnit,
+                        lclWeightRange,
+                        lclVolumeRange,
                         vehicleType,
                         landCountry,
-                        warehouseLocation,
-                        storageArea,
-                        duration,
+                        warehouseCountry,
+                        warehouseState,
+                        warehouseDistrict,
+                        warehouseCity,
+                        warehouseRateType,
                         storageType,
                         chaType,
                         port,
@@ -309,7 +339,7 @@ const SearchPrice = ({ isDashboard = false }) => {
         let toLoc = destination;
 
         if (activeTab === 'warehouse') {
-            fromLoc = warehouseLocation;
+            fromLoc = warehouseCity;
             toLoc = 'Warehouse';
         } else if (activeTab === 'cha') {
             fromLoc = port;
@@ -348,7 +378,7 @@ const SearchPrice = ({ isDashboard = false }) => {
         let toLoc = destination;
 
         if (activeTab === 'warehouse') {
-            fromLoc = warehouseLocation;
+            fromLoc = warehouseCity;
             toLoc = 'Warehouse';
         } else if (activeTab === 'cha') {
             fromLoc = port;
@@ -481,78 +511,147 @@ const SearchPrice = ({ isDashboard = false }) => {
 
                                 {/* ==================== OCEAN (SEA) FREIGHT ==================== */}
                                 {activeTab === 'sea' && (
-                                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-end">
-                                        <div className="lg:col-span-3 space-y-1.5 relative">
-                                            <label className="block text-[11px] font-black text-slate-900 uppercase tracking-wider">Origin</label>
-                                            <input
-                                                type="text"
-                                                placeholder="City or Port"
-                                                value={origin} onFocus={() => setActiveInput('origin')} onBlur={() => setTimeout(() => setActiveInput(null), 200)}
-                                                onChange={(e) => setOrigin(e.target.value)}
-                                                className="w-full bg-white border border-slate-300 rounded-xl px-4 py-3.5 text-xs font-bold !text-slate-900 focus:outline-none focus:border-[#0066FF] transition-all placeholder:text-slate-400 shadow-sm"
-                                                required
-                                            />
-                                             {renderSuggestions('origin')}
-                                         </div>
+                                    <div className="space-y-4">
+                                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-end border-b border-slate-100 pb-4 mb-4">
+                                            <div className="lg:col-span-2 space-y-1.5">
+                                                <label className="block text-[11px] font-black text-slate-900 uppercase tracking-wider">Cargo / Load Type</label>
+                                                <select
+                                                    value={loadType}
+                                                    onChange={(e) => setLoadType(e.target.value)}
+                                                    className="w-full bg-white border border-slate-300 rounded-xl px-3 py-3.5 text-xs font-bold !text-slate-900 focus:outline-none focus:border-[#0066FF] transition-all shadow-sm cursor-pointer"
+                                                >
+                                                    <option value="">Select Load Type</option>
+                                                    <option value="LCL">Less Container Load (LCL)</option>
+                                                    <option value="FCL">Full Container Load (FCL)</option>
+                                                </select>
+                                            </div>
 
-                                        <div className="lg:col-span-1 flex justify-center pb-2">
-                                            <button
-                                                type="button"
-                                                onClick={handleSwap}
-                                                className="bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-700 p-3 rounded-full transition-all shadow-sm flex items-center justify-center cursor-pointer"
-                                                title="Swap"
-                                            >
-                                                <ArrowLeftRight size={14} className="text-[#0066FF]" />
-                                            </button>
+                                            <div className="lg:col-span-3 space-y-1.5 relative">
+                                                <label className="block text-[11px] font-black text-slate-900 uppercase tracking-wider">Origin</label>
+                                                <input
+                                                    type="text"
+                                                    placeholder="POL (Port of Loading)"
+                                                    value={origin} onFocus={() => setActiveInput('origin')} onBlur={() => setTimeout(() => setActiveInput(null), 200)}
+                                                    onChange={(e) => setOrigin(e.target.value)}
+                                                    className="w-full bg-white border border-slate-300 rounded-xl px-4 py-3.5 text-xs font-bold !text-slate-900 focus:outline-none focus:border-[#0066FF] transition-all placeholder:text-slate-400 shadow-sm"
+                                                    required
+                                                />
+                                                 {renderSuggestions('origin')}
+                                             </div>
+    
+                                            <div className="lg:col-span-1 flex justify-center pb-2">
+                                                <button
+                                                    type="button"
+                                                    onClick={handleSwap}
+                                                    className="bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-700 p-3 rounded-full transition-all shadow-sm flex items-center justify-center cursor-pointer"
+                                                    title="Swap"
+                                                >
+                                                    <ArrowLeftRight size={14} className="text-[#0066FF]" />
+                                                </button>
+                                            </div>
+    
+                                            <div className="lg:col-span-3 space-y-1.5 relative">
+                                                <label className="block text-[11px] font-black text-slate-900 uppercase tracking-wider">Destination</label>
+                                                <input
+                                                    type="text"
+                                                    placeholder="POD (Port of Discharge)"
+                                                    value={destination} onFocus={() => setActiveInput('destination')} onBlur={() => setTimeout(() => setActiveInput(null), 200)}
+                                                    onChange={(e) => setDestination(e.target.value)}
+                                                    className="w-full bg-white border border-slate-300 rounded-xl px-4 py-3.5 text-xs font-bold !text-slate-900 focus:outline-none focus:border-[#0066FF] transition-all placeholder:text-slate-400 shadow-sm"
+                                                    required
+                                                />
+                                                 {renderSuggestions('destination')}
+                                             </div>
+    
+                                            <div className="lg:col-span-2 space-y-1.5">
+                                                <label className="block text-[11px] font-black text-slate-900 uppercase tracking-wider">Date</label>
+                                                <input
+                                                    type="date"
+                                                    value={date}
+                                                    onChange={(e) => setDate(e.target.value)}
+                                                    onClick={(e) => { try { e.target.showPicker(); } catch (err) {} }}
+                                                    className="w-full bg-white border border-slate-300 rounded-xl px-4 py-3 text-xs font-bold !text-slate-900 focus:outline-none focus:border-[#0066FF] transition-all shadow-sm cursor-pointer"
+                                                    required
+                                                />
+                                            </div>
+    
+                                            <div className="lg:col-span-1">
+                                                <button
+                                                    type="submit"
+                                                    className="w-full bg-[#0066FF] hover:bg-[#0052cc] text-white text-xs font-black py-4 rounded-xl transition-all shadow-md shadow-[#0066FF]/10 uppercase tracking-wider cursor-pointer"
+                                                >
+                                                    Search
+                                                </button>
+                                            </div>
                                         </div>
 
-                                        <div className="lg:col-span-3 space-y-1.5 relative">
-                                            <label className="block text-[11px] font-black text-slate-900 uppercase tracking-wider">Destination</label>
-                                            <input
-                                                type="text"
-                                                placeholder="City or Port"
-                                                value={destination} onFocus={() => setActiveInput('destination')} onBlur={() => setTimeout(() => setActiveInput(null), 200)}
-                                                onChange={(e) => setDestination(e.target.value)}
-                                                className="w-full bg-white border border-slate-300 rounded-xl px-4 py-3.5 text-xs font-bold !text-slate-900 focus:outline-none focus:border-[#0066FF] transition-all placeholder:text-slate-400 shadow-sm"
-                                                required
-                                            />
-                                             {renderSuggestions('destination')}
-                                         </div>
+                                        {loadType === 'LCL' && (
+                                            <div className="flex flex-col items-center gap-4 pt-2 pb-4 w-full">
+                                                <div className="flex flex-wrap justify-center items-center gap-4 w-full">
+                                                    <div className="w-32">
+                                                        <input type="text" placeholder="Length" value={length} onChange={(e) => setLength(e.target.value)} className="w-full bg-white border border-slate-300 rounded-xl px-4 py-3 text-xs font-bold !text-slate-900 focus:outline-none focus:border-[#0066FF] shadow-sm" />
+                                                    </div>
+                                                    <div className="w-32">
+                                                        <input type="text" placeholder="Width" value={width} onChange={(e) => setWidth(e.target.value)} className="w-full bg-white border border-slate-300 rounded-xl px-4 py-3 text-xs font-bold !text-slate-900 focus:outline-none focus:border-[#0066FF] shadow-sm" />
+                                                    </div>
+                                                    <div className="w-32">
+                                                        <input type="text" placeholder="Height" value={height} onChange={(e) => setHeight(e.target.value)} className="w-full bg-white border border-slate-300 rounded-xl px-4 py-3 text-xs font-bold !text-slate-900 focus:outline-none focus:border-[#0066FF] shadow-sm" />
+                                                    </div>
+                                                    <div className="w-32">
+                                                        <select value={unit} onChange={(e) => setUnit(e.target.value)} className="w-full bg-white border border-slate-300 rounded-xl px-3 py-3 text-xs font-bold !text-slate-900 focus:outline-none focus:border-[#0066FF] shadow-sm cursor-pointer">
+                                                            <option value="cm">cm</option>
+                                                            <option value="in">in</option>
+                                                            <option value="m">m</option>
+                                                        </select>
+                                                    </div>
+                                                    <div className="w-32">
+                                                        <input type="text" placeholder="Quantity" value={quantity} onChange={(e) => setQuantity(e.target.value)} className="w-full bg-white border border-slate-300 rounded-xl px-4 py-3 text-xs font-bold !text-slate-900 focus:outline-none focus:border-[#0066FF] shadow-sm" />
+                                                    </div>
+                                                </div>
+                                                <div className="flex justify-center items-center gap-4 w-full">
+                                                    <div className="w-40">
+                                                        <select value={lclWeightRange} onChange={(e) => setLclWeightRange(e.target.value)} className="w-full bg-white border border-slate-300 rounded-xl px-3 py-3 text-xs font-bold !text-slate-900 focus:outline-none focus:border-[#0066FF] shadow-sm cursor-pointer">
+                                                            <option value="">Select Weight</option>
+                                                            <option value="0-5">0-5 Tonnes</option>
+                                                            <option value="5-15">5-15 Tonnes</option>
+                                                            <option value="15-45">15-45 Tonnes</option>
+                                                            <option value="45+">45+ Tonnes</option>
+                                                        </select>
+                                                    </div>
+                                                    <div className="w-40">
+                                                        <select value={lclVolumeRange} onChange={(e) => setLclVolumeRange(e.target.value)} className="w-full bg-[#f0f7ff] border border-[#0066FF]/30 rounded-xl px-3 py-3 text-xs font-bold !text-slate-900 focus:outline-none focus:border-[#0066FF] shadow-sm cursor-pointer">
+                                                            <option value="">Select Volume</option>
+                                                            <option value="0-5">0-5 CBM</option>
+                                                            <option value="5-15">5-15 CBM</option>
+                                                            <option value="15-45">15-45 CBM</option>
+                                                            <option value="45+">45+ CBM</option>
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
 
-                                        <div className="lg:col-span-2 space-y-1.5">
-                                            <label className="block text-[11px] font-black text-slate-900 uppercase tracking-wider">Date</label>
-                                            <input
-                                                type="date"
-                                                value={date}
-                                                onChange={(e) => setDate(e.target.value)}
-                                                onClick={(e) => { try { e.target.showPicker(); } catch (err) {} }}
-                                                className="w-full bg-white border border-slate-300 rounded-xl px-4 py-3 text-xs font-bold !text-slate-900 focus:outline-none focus:border-[#0066FF] transition-all shadow-sm cursor-pointer"
-                                                required
-                                            />
-                                        </div>
-
-                                        <div className="lg:col-span-2 space-y-1.5">
-                                            <label className="block text-[11px] font-black text-slate-900 uppercase tracking-wider">Cargo / Load Type</label>
-                                            <select
-                                                value={loadType}
-                                                onChange={(e) => setLoadType(e.target.value)}
-                                                className="w-full bg-white border border-slate-300 rounded-xl px-3 py-3.5 text-xs font-bold !text-slate-900 focus:outline-none focus:border-[#0066FF] transition-all shadow-sm cursor-pointer"
-                                                required
-                                            >
-                                                <option value="">Select Load Type</option>
-                                                <option value="LCL">LCL (Less than Container Load)</option>
-                                                <option value="FCL">FCL (Full Container Load)</option>
-                                            </select>
-                                        </div>
-
-                                        <div className="lg:col-span-1">
-                                            <button
-                                                type="submit"
-                                                className="w-full bg-[#0066FF] hover:bg-[#0052cc] text-white text-xs font-black py-4 rounded-xl transition-all shadow-md shadow-[#0066FF]/10 uppercase tracking-wider cursor-pointer"
-                                            >
-                                                Search
-                                            </button>
-                                        </div>
+                                        {loadType === 'FCL' && (
+                                            <div className="flex justify-center items-center gap-4 pt-2 pb-4 w-full">
+                                                <div className="w-48">
+                                                    <select value={fclStandard} onChange={(e) => setFclStandard(e.target.value)} className="w-full bg-white border border-slate-300 rounded-xl px-3 py-3 text-xs font-bold !text-slate-900 focus:outline-none focus:border-[#0066FF] shadow-sm cursor-pointer">
+                                                        <option value="">Select FCL Standard</option>
+                                                        <option value="20ft">20ft Standard</option>
+                                                        <option value="40ft">40ft Standard</option>
+                                                        <option value="40ft HC">40ft High Cube</option>
+                                                    </select>
+                                                </div>
+                                                <div className="w-40">
+                                                    <select value={fclUnit} onChange={(e) => setFclUnit(e.target.value)} className="w-full bg-white border border-slate-300 rounded-xl px-3 py-3 text-xs font-bold !text-slate-900 focus:outline-none focus:border-[#0066FF] shadow-sm cursor-pointer">
+                                                        <option value="">Select Unit</option>
+                                                        <option value="1">1 Container</option>
+                                                        <option value="2">2 Containers</option>
+                                                        <option value="3">3 Containers</option>
+                                                        <option value="4+">4+ Containers</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 )}
 
@@ -619,7 +718,6 @@ const SearchPrice = ({ isDashboard = false }) => {
                                                     value={weight}
                                                     onChange={(e) => setWeight(e.target.value)}
                                                     className="w-full bg-white border border-slate-300 rounded-xl px-3 py-3.5 text-xs font-bold !text-slate-900 focus:outline-none focus:border-[#0066FF] shadow-sm cursor-pointer"
-                                                    required
                                                 >
                                                     <option value="">Select Weight</option>
                                                     <option value="0-50">0 - 50 kg</option>
@@ -815,66 +913,88 @@ const SearchPrice = ({ isDashboard = false }) => {
 
                                 {/* ==================== WAREHOUSE ==================== */}
                                 {activeTab === 'warehouse' && (
-                                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-end">
-                                        <div className="lg:col-span-3 space-y-1.5 relative">
-                                            <label className="block text-[11px] font-black text-slate-900 uppercase tracking-wider">City / Location</label>
-                                            <input
-                                                type="text"
-                                                placeholder="Location / City"
-                                                value={warehouseLocation} onFocus={() => setActiveInput('warehouse')} onBlur={() => setTimeout(() => setActiveInput(null), 200)}
-                                                onChange={(e) => setWarehouseLocation(e.target.value)}
-                                                className="w-full bg-white border border-slate-300 rounded-xl px-4 py-3.5 text-xs font-bold !text-slate-900 focus:outline-none focus:border-[#0066FF] transition-all placeholder:text-slate-400 shadow-sm"
-                                                required
-                                            />
-                                             {renderSuggestions('warehouse')}
-                                         </div>
-
-                                        <div className="lg:col-span-3 space-y-1.5">
-                                            <label className="block text-[11px] font-black text-slate-900 uppercase tracking-wider">Storage Area Needed (sq. ft.)</label>
-                                            <input
-                                                type="text"
-                                                placeholder="Storage Area Needed"
-                                                value={storageArea}
-                                                onChange={(e) => setStorageArea(e.target.value)}
-                                                className="w-full bg-white border border-slate-300 rounded-xl px-4 py-3.5 text-xs font-bold !text-slate-900 focus:outline-none focus:border-[#0066FF] transition-all placeholder:text-slate-400 shadow-sm"
-                                                required
-                                            />
+                                    <div className="space-y-4">
+                                        <div className="flex flex-wrap justify-between items-center gap-4 w-full border-b border-slate-100 pb-4 mb-4">
+                                            <div className="flex-1 min-w-[150px]">
+                                                <select
+                                                    value={warehouseCountry}
+                                                    onChange={(e) => {
+                                                        setWarehouseCountry(e.target.value);
+                                                        setWarehouseState('');
+                                                        setWarehouseCity('');
+                                                    }}
+                                                    className="w-full bg-white border border-slate-300 rounded-xl px-3 py-3.5 text-xs font-bold !text-slate-900 focus:outline-none focus:border-[#0066FF] shadow-sm cursor-pointer"
+                                                >
+                                                    <option value="">Country</option>
+                                                    {[...new Set(warehouseLocationsData.map(loc => loc.country))].filter(Boolean).map(c => (
+                                                        <option key={c} value={c}>{c}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                            <div className="flex-1 min-w-[150px]">
+                                                <select
+                                                    value={warehouseState}
+                                                    onChange={(e) => {
+                                                        setWarehouseState(e.target.value);
+                                                        setWarehouseCity('');
+                                                    }}
+                                                    className="w-full bg-white border border-slate-300 rounded-xl px-3 py-3.5 text-xs font-bold !text-slate-900 focus:outline-none focus:border-[#0066FF] shadow-sm cursor-pointer"
+                                                    disabled={!warehouseCountry}
+                                                >
+                                                    <option value="">State</option>
+                                                    {[...new Set(warehouseLocationsData.filter(loc => loc.country === warehouseCountry).map(loc => loc.state))].filter(Boolean).map(s => (
+                                                        <option key={s} value={s}>{s}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                            <div className="flex-1 min-w-[150px]">
+                                                <select
+                                                    value={warehouseCity}
+                                                    onChange={(e) => setWarehouseCity(e.target.value)}
+                                                    className="w-full bg-white border border-slate-300 rounded-xl px-3 py-3.5 text-xs font-bold !text-slate-900 focus:outline-none focus:border-[#0066FF] shadow-sm cursor-pointer"
+                                                    disabled={!warehouseState}
+                                                >
+                                                    <option value="">City</option>
+                                                    {[...new Set(warehouseLocationsData.filter(loc => loc.state === warehouseState).map(loc => loc.city))].filter(Boolean).map(c => (
+                                                        <option key={c} value={c}>{c}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                            <div className="w-[120px]">
+                                                <button
+                                                    type="submit"
+                                                    className="w-full bg-[#0066FF] hover:bg-[#0052cc] text-white text-xs font-black py-4 rounded-xl transition-all shadow-md shadow-[#0066FF]/10 uppercase tracking-wider cursor-pointer"
+                                                >
+                                                    Search
+                                                </button>
+                                            </div>
                                         </div>
-
-                                        <div className="lg:col-span-2 space-y-1.5">
-                                            <label className="block text-[11px] font-black text-slate-900 uppercase tracking-wider">Duration (Months)</label>
-                                            <input
-                                                type="text"
-                                                placeholder="Duration"
-                                                value={duration}
-                                                onChange={(e) => setDuration(e.target.value)}
-                                                className="w-full bg-white border border-slate-300 rounded-xl px-4 py-3.5 text-xs font-bold !text-slate-900 focus:outline-none focus:border-[#0066FF] transition-all placeholder:text-slate-400 shadow-sm"
-                                                required
-                                            />
-                                        </div>
-
-                                        <div className="lg:col-span-3 space-y-1.5">
-                                            <label className="block text-[11px] font-black text-slate-900 uppercase tracking-wider">Storage Type</label>
-                                            <select
-                                                value={storageType}
-                                                onChange={(e) => setStorageType(e.target.value)}
-                                                className="w-full bg-white border border-slate-300 rounded-xl px-3 py-3.5 text-xs font-bold !text-slate-900 focus:outline-none focus:border-[#0066FF] shadow-sm cursor-pointer"
-                                                required
-                                            >
-                                                <option value="">Select Storage Type</option>
-                                                <option value="General">General Warehousing</option>
-                                                <option value="Cold">Cold Storage</option>
-                                                <option value="Bonded">Bonded Warehouse</option>
-                                            </select>
-                                        </div>
-
-                                        <div className="lg:col-span-1">
-                                            <button
-                                                type="submit"
-                                                className="w-full bg-[#0066FF] hover:bg-[#0052cc] text-white text-xs font-black py-4 rounded-xl transition-all shadow-md shadow-[#0066FF]/10 uppercase tracking-wider cursor-pointer"
-                                            >
-                                                Search
-                                            </button>
+                                        
+                                        <div className="flex justify-center items-center gap-4 pt-2 pb-4 w-full">
+                                            <div className="w-48 relative">
+                                                <select
+                                                    value={warehouseRateType}
+                                                    onChange={(e) => setWarehouseRateType(e.target.value)}
+                                                    className="w-full bg-[#0066FF] text-white border border-[#0066FF] rounded-xl px-3 py-3 text-xs font-bold focus:outline-none shadow-sm cursor-pointer"
+                                                >
+                                                    <option value="Display All Rates" className="bg-white text-slate-900">Display All Rates</option>
+                                                    <option value="Per Month" className="bg-white text-slate-900">Per Month</option>
+                                                    <option value="Per Day" className="bg-white text-slate-900">Per Day</option>
+                                                    <option value="Per Week" className="bg-white text-slate-900">Per Week</option>
+                                                </select>
+                                            </div>
+                                            <div className="w-48">
+                                                <select
+                                                    value={storageType}
+                                                    onChange={(e) => setStorageType(e.target.value)}
+                                                    className="w-full bg-white border border-slate-300 rounded-xl px-3 py-3 text-xs font-bold !text-slate-900 focus:outline-none focus:border-[#0066FF] shadow-sm cursor-pointer"
+                                                >
+                                                    <option value="">Warehouse Type</option>
+                                                    <option value="General">General Warehousing</option>
+                                                    <option value="Cold">Cold Storage</option>
+                                                    <option value="Bonded">Bonded Warehouse</option>
+                                                </select>
+                                            </div>
                                         </div>
                                     </div>
                                 )}
@@ -892,15 +1012,16 @@ const SearchPrice = ({ isDashboard = false }) => {
                                             >
                                                 <option value="Air">Air</option>
                                                 <option value="Sea">Sea</option>
-                                                <option value="Land">Land</option>
                                             </select>
                                         </div>
 
                                         <div className="lg:col-span-4 space-y-1.5 relative">
-                                            <label className="block text-[11px] font-black text-slate-900 uppercase tracking-wider">Port</label>
+                                            <label className="block text-[11px] font-black text-slate-900 uppercase tracking-wider">
+                                                {chaType === 'Air' ? 'Airport' : 'Port'}
+                                            </label>
                                             <input
                                                 type="text"
-                                                placeholder="Enter Port Location"
+                                                placeholder={chaType === 'Air' ? 'Enter Airport Location' : 'Enter Port Location'}
                                                 value={port} onFocus={() => setActiveInput('port')} onBlur={() => setTimeout(() => setActiveInput(null), 200)}
                                                 onChange={(e) => setPort(e.target.value)}
                                                 className="w-full bg-white border border-slate-300 rounded-xl px-4 py-3.5 text-xs font-bold !text-slate-900 focus:outline-none focus:border-[#0066FF] transition-all placeholder:text-slate-400 shadow-sm"

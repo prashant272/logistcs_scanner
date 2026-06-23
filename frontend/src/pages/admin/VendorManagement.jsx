@@ -65,8 +65,8 @@ const VendorManagement = () => {
       
       // Save vendor's token into userToken
       localStorage.setItem('userToken', data.token);
-      // Open vendor dashboard in a new tab or same tab
-      window.open('/vendor/dashboard', '_blank');
+      // Open vendor dashboard in the same tab
+      window.location.href = '/vendor/dashboard';
     } catch (err) {
       console.error('Impersonation failed:', err);
       alert(err.response?.data?.message || 'Failed to login as vendor');

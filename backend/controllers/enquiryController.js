@@ -22,11 +22,13 @@ exports.createEnquiry = async (req, res) => {
             isDirect,
             isBooking,
             excludedVendor,
+            clientCreditRequired,
             guestName,
             guestEmail,
             guestPhone,
             guestCompany,
-            commodity
+            commodity,
+            message
         } = req.body;
 
         // Check for optional token
@@ -43,13 +45,16 @@ exports.createEnquiry = async (req, res) => {
         }
 
         // Validate client and vendor ObjectIds
-        const validatedClientId = (clientId && mongoose.Types.ObjectId.isValid(clientId)) ? clientId : null;
+        let validatedClientId = (clientId && mongoose.Types.ObjectId.isValid(clientId)) ? clientId : null;
         const validatedVendorId = (vendor && mongoose.Types.ObjectId.isValid(vendor)) ? vendor : null;
         const validatedExcludedVendorId = (excludedVendor && mongoose.Types.ObjectId.isValid(excludedVendor)) ? excludedVendor : null;
 
+        const User = require('../models/User');
+        const bcrypt = require('bcryptjs');
+        const { sendGuestAccountCreatedEmail } = require('../services/notificationService');
+
         // Check customer enquiry limits if logged in
         if (validatedClientId) {
-            const User = require('../models/User');
             const userObj = await User.findById(validatedClientId);
             const hasActivePlan = userObj && userObj.activePlan && userObj.planEndDate && new Date(userObj.planEndDate) > new Date();
 
@@ -61,6 +66,32 @@ exports.createEnquiry = async (req, res) => {
                     });
                 }
             }
+        } else if (guestEmail) {
+            // Check if user already exists
+            let guestUser = await User.findOne({ email: guestEmail.toLowerCase() });
+            
+            if (!guestUser) {
+                // Create a new customer account automatically
+                const generatedPassword = Math.random().toString(36).slice(-8) + Math.floor(Math.random() * 1000);
+                const salt = await bcrypt.genSalt(10);
+                const hashedPassword = await bcrypt.hash(generatedPassword, salt);
+
+                guestUser = await User.create({
+                    name: guestName || 'Guest User',
+                    email: guestEmail.toLowerCase(),
+                    phone: guestPhone || '',
+                    password: hashedPassword,
+                    role: 'customer',
+                    company: guestCompany || '',
+                    isVerified: true // Auto-verify so they can login directly
+                });
+
+                // Send email with credentials
+                await sendGuestAccountCreatedEmail(guestEmail, guestName, generatedPassword);
+            }
+            
+            // Link the enquiry to this user
+            validatedClientId = guestUser._id;
         }
 
         // Sanitize type and category to avoid validation errors
@@ -85,11 +116,13 @@ exports.createEnquiry = async (req, res) => {
             isDirect: isDirect || false,
             isBooking: isBooking || false,
             excludedVendor: validatedExcludedVendorId,
+            clientCreditRequired: clientCreditRequired || false,
             guestName: guestName || '',
             guestEmail: guestEmail || '',
             guestPhone: guestPhone || '',
             guestCompany: guestCompany || '',
             commodity: commodity || '',
+            message: message || '',
             status: 'Pending'
         });
 
@@ -149,8 +182,8 @@ exports.getVendorEnquiries = async (req, res) => {
         } else {
             const User = require('../models/User');
             currentUser = await User.findById(req.user.id);
-            if (!currentUser || (currentUser.verificationStatus !== 'Approved' && !currentUser.isVerified)) {
-                return res.json([]); // Return empty list of leads if not approved
+            if (!currentUser || (currentUser.verificationStatus !== 'Approved' && currentUser.role === 'vendor')) {
+                return res.json([]); // Return empty list of leads if vendor is not approved
             }
             hasActivePlan = currentUser.activePlan && currentUser.planEndDate && new Date(currentUser.planEndDate) > new Date();
         }
@@ -175,6 +208,11 @@ exports.getVendorEnquiries = async (req, res) => {
                     { excludedVendor: { $exists: false } },
                     { excludedVendor: null }
                 ];
+                if (currentUser && currentUser.approvedAt) {
+                    query.createdAt = { $gte: currentUser.approvedAt };
+                } else if (currentUser && currentUser.createdAt) {
+                    query.createdAt = { $gte: currentUser.createdAt };
+                }
             }
         } else {
             return res.status(400).json({ message: 'Valid enquiry type ("my" or "direct") is required' });
@@ -184,12 +222,28 @@ exports.getVendorEnquiries = async (req, res) => {
             .populate('client', 'name email phone company role')
             .sort({ createdAt: -1 });
 
-        let results = enquiries;
+        let results = enquiries.map(enq => {
+            const enqObj = enq.toObject ? enq.toObject() : enq;
+            // Inject myResponse if any
+            if (type === 'direct' && enq.responses && enq.responses.length > 0 && !isAdmin) {
+                const myResponse = enq.responses.find(r => r.vendor && r.vendor.toString() === req.user.id);
+                if (myResponse) {
+                    enqObj.myResponse = myResponse;
+                }
+            }
+            return enqObj;
+        });
+
         if (!hasActivePlan) {
-            if (enquiries.length > 5) {
+            if (results.length > 5) {
                 res.setHeader('X-Limit-Reached', 'true');
                 res.setHeader('Access-Control-Expose-Headers', 'X-Limit-Reached');
-                results = enquiries.slice(0, 5);
+                results = results.map((enq, index) => {
+                    if (index >= 5) {
+                        return { _id: enq._id, isLocked: true, type: enq.type, createdAt: enq.createdAt };
+                    }
+                    return enq;
+                });
             }
         }
 
@@ -198,13 +252,13 @@ exports.getVendorEnquiries = async (req, res) => {
             const Pricing = require('../models/Pricing');
             const vendorRates = isAdmin ? [] : await Pricing.find({ vendor: req.user.id, status: 'active' });
 
-            const enrichedEnquiries = results.map(enq => {
-                const enqObj = enq.toObject();
+            const enrichedEnquiries = results.map(enqObj => {
+                if (enqObj.isLocked) return enqObj; // Skip enriched for locked
                 // Find matching rate for same route and type
                 const match = vendorRates.find(rate => {
-                    const fromMatch = rate.fromLocation.toLowerCase() === enq.fromLocation.toLowerCase();
-                    const toMatch = rate.toLocation.toLowerCase() === enq.toLocation.toLowerCase();
-                    const typeMatch = rate.type.toLowerCase() === enq.type.toLowerCase();
+                    const fromMatch = rate.fromLocation.toLowerCase() === enqObj.fromLocation.toLowerCase();
+                    const toMatch = rate.toLocation.toLowerCase() === enqObj.toLocation.toLowerCase();
+                    const typeMatch = rate.type.toLowerCase() === enqObj.type.toLowerCase();
                     return fromMatch && toMatch && typeMatch;
                 });
                 enqObj.vendorOwnPrice = match ? match.price : null;
@@ -225,7 +279,7 @@ exports.getVendorEnquiries = async (req, res) => {
 // Update status of enquiry (Accept/Decline/Quote)
 exports.updateEnquiryStatus = async (req, res) => {
     try {
-        const { status, price } = req.body;
+        const { status, price, quoteDetails } = req.body;
         if (status && !['Accepted', 'Declined', 'Pending'].includes(status)) {
             return res.status(400).json({ message: 'Invalid status' });
         }
@@ -237,17 +291,33 @@ exports.updateEnquiryStatus = async (req, res) => {
 
         // For direct enquiries, if accepted, we can associate the vendor who accepted it
         if (enquiry.isDirect && status === 'Accepted') {
-            enquiry.vendor = req.user.id;
-            // Keep it in direct list, do not change isDirect to false
-        } else if (!enquiry.isDirect && enquiry.vendor && enquiry.vendor.toString() !== req.user.id) {
-            return res.status(403).json({ message: 'Unauthorized status update' });
-        }
-
-        if (status) {
-            enquiry.status = status;
-        }
-        if (price !== undefined && price !== null) {
-            enquiry.price = price;
+            // Push to responses instead of modifying global state
+            const existingResponse = enquiry.responses.find(r => r.vendor.toString() === req.user.id);
+            if (existingResponse) {
+                existingResponse.status = status;
+                if (price !== undefined && price !== null) existingResponse.price = price;
+                if (quoteDetails !== undefined) existingResponse.quoteDetails = quoteDetails;
+            } else {
+                enquiry.responses.push({
+                    vendor: req.user.id,
+                    price: price !== undefined ? price : null,
+                    quoteDetails: quoteDetails || null,
+                    status: status
+                });
+            }
+        } else if (!enquiry.isDirect) {
+            if (enquiry.vendor && enquiry.vendor.toString() !== req.user.id) {
+                return res.status(403).json({ message: 'Unauthorized status update' });
+            }
+            if (status) {
+                enquiry.status = status;
+            }
+            if (price !== undefined && price !== null) {
+                enquiry.price = price;
+            }
+            if (quoteDetails !== undefined) {
+                enquiry.quoteDetails = quoteDetails;
+            }
         }
 
         await enquiry.save();
@@ -296,6 +366,7 @@ exports.getClientEnquiries = async (req, res) => {
 
         const enquiries = await Enquiry.find(query)
             .populate('vendor', 'name email phone company')
+            .populate('responses.vendor', 'name email phone company')
             .sort({ createdAt: -1 });
 
         res.json(enquiries);
