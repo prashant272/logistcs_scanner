@@ -1,10 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { 
   Check, X, Phone, Mail, User, Info, Search, MapPin, 
   Building2, Ship, Plane, Truck, Warehouse, Package, 
   Clock, Calendar, Coins, CheckCircle2, Eye, ToggleLeft, ToggleRight, Lock
 } from 'lucide-react';
 import { useEnquiries } from '../../services/EnquiryService';
+import useInfiniteScroll from '../../hooks/useInfiniteScroll';
 
 const VendorEnquiriesTab = ({ title, type }) => {
   const {
@@ -16,6 +17,9 @@ const VendorEnquiriesTab = ({ title, type }) => {
     updateEnquiryStatus
   } = useEnquiries();
 
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState('all'); // 'all', '7days', '15days', 'thismonth', or 'YYYY-MM'
   
@@ -34,8 +38,38 @@ const VendorEnquiriesTab = ({ title, type }) => {
   const [viewingEnquiry, setViewingEnquiry] = useState(null);
 
   useEffect(() => {
-    fetchVendorEnquiries(type);
+    setPage(1);
+    setHasMore(true);
   }, [type]);
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetch = async () => {
+      if (page === 1 && loading) return; // Prevent double fetch on mount if already loading
+      setLoadingMore(page > 1);
+      try {
+        const res = await fetchVendorEnquiries(type, page);
+        if (isMounted) {
+          if (res && res.totalPages) {
+            setHasMore(page < res.totalPages);
+          } else {
+            setHasMore(false);
+          }
+        }
+      } finally {
+        if (isMounted) setLoadingMore(false);
+      }
+    };
+    fetch();
+    
+    return () => { isMounted = false; };
+  }, [type, page]);
+
+  const handleLoadMore = useCallback(() => {
+    setPage(prev => prev + 1);
+  }, []);
+
+  const lastEnquiryElementRef = useInfiniteScroll(handleLoadMore, hasMore, loadingMore || loading);
 
   const handleAction = async (id, newStatus, priceVal = null, qDetails = null) => {
     try {
@@ -209,7 +243,13 @@ const VendorEnquiriesTab = ({ title, type }) => {
 
       {/* Title & Header Section */}
       <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-[0_12px_40px_rgba(11,30,67,0.03)] space-y-6">
-        <div className="flex justify-between items-center border-b border-slate-100 pb-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-black text-[#0B1E43] tracking-tight">{title}</h1>
+          <p className="text-xs font-bold text-slate-500 mt-1 uppercase tracking-wider">
+            Manage your {type} enquiries & quotes
+          </p>
+        </div>
           <div>
             <h2 className="text-base font-black text-[#0B1E43] tracking-tight">{title}</h2>
             <p className="text-xs text-slate-400 font-bold tracking-wide mt-0.5 uppercase">
@@ -268,10 +308,10 @@ const VendorEnquiriesTab = ({ title, type }) => {
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-6">
-          {filteredEnquiries.map((enq) => {
+          {filteredEnquiries.map((enq, index) => {
             if (enq.isLocked) {
               return (
-                <div key={enq._id} className="bg-slate-50 rounded-3xl p-6 md:p-8 border border-slate-200 relative overflow-hidden flex flex-col items-center justify-center min-h-[200px]">
+                <div ref={index === filteredEnquiries.length - 1 ? lastEnquiryElementRef : null} key={enq._id} className="bg-slate-50 rounded-3xl p-6 md:p-8 border border-slate-200 relative overflow-hidden flex flex-col items-center justify-center min-h-[200px]">
                   <div className="absolute inset-0 bg-white/40 backdrop-blur-[2px] z-10 flex flex-col items-center justify-center p-6 text-center">
                     <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center mb-3">
                       <Lock className="w-5 h-5 text-amber-600" />
@@ -324,7 +364,7 @@ const VendorEnquiriesTab = ({ title, type }) => {
                     <div className="space-y-1.5">
                       <div className="flex flex-wrap items-center gap-2">
                         <h4 className="text-base font-black text-[#0B1E43] tracking-tight">
-                          {enq.client?.company || enq.guestCompany || enq.client?.name || enq.guestName || 'Customer'}
+                          {enq.guestCompany || enq.guestName || enq.client?.company || enq.client?.name || 'Customer'}
                         </h4>
                         {enq.clientCreditRequired && (
                           <span className="bg-amber-100 text-amber-800 text-[9px] font-black px-2 py-0.5 rounded-md border border-amber-200 uppercase tracking-wider">
@@ -341,11 +381,11 @@ const VendorEnquiriesTab = ({ title, type }) => {
                       <div className="text-xs text-slate-500 font-bold space-y-1">
                         <div className="flex items-center gap-2 text-slate-600">
                           <Phone size={13} className="text-[#0066FF]" /> 
-                          <span>{enq.client?.phone || enq.guestPhone || 'N/A'}</span>
+                          <span>{enq.guestPhone || enq.client?.phone || 'N/A'}</span>
                         </div>
                         <div className="flex items-center gap-2 text-slate-500">
                           <Mail size={13} className="text-[#0066FF]" /> 
-                          <span className="break-all">{enq.client?.email || enq.guestEmail || 'N/A'}</span>
+                          <span className="break-all">{enq.guestEmail || enq.client?.email || 'N/A'}</span>
                         </div>
                       </div>
 
@@ -518,6 +558,27 @@ const VendorEnquiriesTab = ({ title, type }) => {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Load More Fallback Button */}
+      {hasMore && !loading && (
+        <div className="flex justify-center pt-8 pb-4">
+          <button
+            onClick={handleLoadMore}
+            disabled={loadingMore}
+            className="bg-[#0066FF] hover:bg-[#0052cc] text-white font-black text-sm px-8 py-3 rounded-xl transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {loadingMore ? 'Loading More...' : 'Load More (Manual)'}
+          </button>
+        </div>
+      )}
+
+      {/* Loading Spinner for Intersection Observer */}
+      {loadingMore && !hasMore && (
+        <div className="flex justify-center py-6 text-slate-400 items-center">
+          <Clock className="w-5 h-5 animate-spin mr-2" />
+          <span className="font-semibold text-xs">Loading more enquiries...</span>
         </div>
       )}
       {/* View Modal */}

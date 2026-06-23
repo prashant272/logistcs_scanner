@@ -30,3 +30,7 @@ obj/
 # Misc
 .DS_Store
 Thumbs.db
+
+# Backups
+logistic_code_backup280526
+logisticscanner_backup.sql

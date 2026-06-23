@@ -2,7 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Landmark, MessageSquare, FileText, CheckCircle2, XCircle, ArrowRight } from 'lucide-react';
 
-const EnquiryCardSection = ({ title, type, enquiryCount, acceptedCount, rejectedCount }) => {
+const EnquiryCardSection = ({ title, type, enquiryCount, acceptedCount, rejectedCount, lockedCount }) => {
   const isDirect = type === 'direct';
   const targetLink = isDirect ? '/vendor/direct-enquiries' : '/vendor/my-enquiries';
 
@@ -17,7 +17,14 @@ const EnquiryCardSection = ({ title, type, enquiryCount, acceptedCount, rejected
         <div className="bg-gradient-to-br from-[#f8fafc] to-[#f1f5f9]/50 border border-slate-100 rounded-2xl p-5 flex items-center justify-between hover:shadow-md transition-all duration-300 group">
           <div>
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total enquiry received</p>
-            <h4 className="text-3xl font-extrabold !text-slate-800 mt-2">{enquiryCount}</h4>
+            <h4 className="text-3xl font-extrabold !text-slate-800 mt-2">
+              {enquiryCount}
+              {lockedCount > 0 && (
+                <span className="ml-3 inline-flex items-center gap-1 bg-amber-50 text-amber-600 text-[9px] font-black px-2 py-1 rounded-lg border border-amber-200/60 uppercase tracking-wider align-middle shadow-sm">
+                  + {lockedCount} Locked
+                </span>
+              )}
+            </h4>
             <Link to={targetLink} className="text-[11px] text-[#0066FF] font-extrabold hover:underline mt-3 inline-flex items-center gap-1">
               View Details <ArrowRight size={12} className="transition-transform group-hover:translate-x-0.5" />
             </Link>

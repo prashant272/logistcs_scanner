@@ -27,6 +27,7 @@ app.use("/api/coupons", require("./routes/couponRoutes"));
 app.use("/api/complaints", require("./routes/complaintRoutes"));
 app.use("/api/rm", require("./routes/rmRoutes"));
 app.use("/api/finance", require("./routes/financeRoutes"));
+app.use("/api/ihc", require("./routes/ihcRoutes"));
 
 app.get("/", (req, res) => {
     res.send("logistics scanner API Running...");

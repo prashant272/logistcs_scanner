@@ -16,6 +16,7 @@ const ViaPricingManagement = () => {
   const [ihcPrice, setIhcPrice] = useState('');
   const [standard20, setStandard20] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [editId, setEditId] = useState(null);
   const [formError, setFormError] = useState('');
   const [formSuccess, setFormSuccess] = useState('');
 
@@ -23,6 +24,10 @@ const ViaPricingManagement = () => {
   const [suggestions, setSuggestions] = useState([]);
   const [activeInput, setActiveInput] = useState(null); // 'to', 'via'
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
 
   useEffect(() => {
     fetchList();
@@ -36,8 +41,8 @@ const ViaPricingManagement = () => {
       const config = {
         headers: { Authorization: `Bearer ${token}` }
       };
-      const { data } = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/admin/via-pricing`, config);
-      setList(data || []);
+      const { data } = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/ihc`, config);
+      setList(data.data || []);
       setLoading(false);
     } catch (err) {
       console.error('Error fetching via-pricing:', err);
@@ -151,10 +156,16 @@ const ViaPricingManagement = () => {
         standard20: Number(standard20)
       };
 
-      const { data } = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/admin/via-pricing`, payload, config);
-      
-      setFormSuccess('Via pricing added successfully!');
-      setList(prev => [data, ...prev]);
+      if (editId) {
+        const { data } = await axios.put(`${import.meta.env.VITE_API_BASE_URL}/ihc/${editId}`, payload, config);
+        setFormSuccess('Via pricing updated successfully!');
+        setList(prev => prev.map(item => item._id === editId ? data : item));
+        setEditId(null);
+      } else {
+        const { data } = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/ihc`, payload, config);
+        setFormSuccess('Via pricing added successfully!');
+        setList(prev => [data.data || data, ...prev]);
+      }
       
       // Clear form fields
       setToLocation('');
@@ -169,6 +180,17 @@ const ViaPricingManagement = () => {
     }
   };
 
+  const handleEdit = (item) => {
+    setEditId(item._id);
+    setToLocation(item.destination || item.toLocation);
+    setVia(item.viaPort || item.via);
+    setIhcPrice(item.ihcPrice);
+    setStandard20(item.standard20);
+    setFormError('');
+    setFormSuccess('');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this via pricing entry?')) return;
     try {
@@ -176,13 +198,21 @@ const ViaPricingManagement = () => {
       const config = {
         headers: { Authorization: `Bearer ${token}` }
       };
-      await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/admin/via-pricing/${id}`, config);
+      await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/ihc/${id}`, config);
       setList(prev => prev.filter(item => item._id !== id));
     } catch (err) {
       console.error('Delete via-pricing failed:', err);
       alert('Failed to delete via pricing entry');
     }
   };
+
+  // Pagination Logic
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = list.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(list.length / itemsPerPage);
+
+  const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
   return (
     <div className="space-y-6">
@@ -201,11 +231,11 @@ const ViaPricingManagement = () => {
         </button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-        {/* LEFT COLUMN: Add Via Price Form Card */}
+      <div className="space-y-6">
+        {/* TOP ROW: Add Via Price Form Card */}
         <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-[0_12px_40px_rgba(11,30,67,0.025)] space-y-5">
           <h3 className="text-xs font-black text-[#0B1E43] uppercase tracking-widest flex items-center gap-1.5 border-b border-slate-100 pb-3">
-            <Plus size={16} className="text-[#0066FF]" /> Add Via Price
+            <Plus size={16} className="text-[#0066FF]" /> {editId ? 'Edit Via Price' : 'Add Via Price'}
           </h3>
 
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -221,83 +251,104 @@ const ViaPricingManagement = () => {
               </div>
             )}
 
-            {/* To Location Field */}
-            <div className="space-y-1 relative">
-              <label className="block text-[10px] font-black text-slate-900 uppercase tracking-wider">To Location</label>
-              <input
-                type="text"
-                placeholder="Destination Port/City"
-                value={toLocation}
-                onChange={(e) => setToLocation(e.target.value)}
-                onFocus={() => setActiveInput('to')}
-                onBlur={() => setTimeout(() => setActiveInput(null), 200)}
-                className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-900 focus:outline-none focus:border-[#0066FF] transition-all"
-                required
-              />
-              {renderSuggestions('to')}
-            </div>
-
-            {/* Via Field */}
-            <div className="space-y-1 relative">
-              <label className="block text-[10px] font-black text-slate-900 uppercase tracking-wider">Via</label>
-              <input
-                type="text"
-                placeholder="Transit Port (e.g. Colombo)"
-                value={via}
-                onChange={(e) => setVia(e.target.value)}
-                onFocus={() => setActiveInput('via')}
-                onBlur={() => setTimeout(() => setActiveInput(null), 200)}
-                className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-900 focus:outline-none focus:border-[#0066FF] transition-all"
-                required
-              />
-              {renderSuggestions('via')}
-            </div>
-
-            {/* IHC Price Field */}
-            <div className="space-y-1">
-              <label className="block text-[10px] font-black text-slate-900 uppercase tracking-wider">IHC Price (₹)</label>
-              <div className="relative">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs">₹</span>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
+              {/* To Location Field */}
+              <div className="space-y-1 relative">
+                <label className="block text-[10px] font-black text-slate-900 uppercase tracking-wider">To Location</label>
                 <input
-                  type="number"
-                  placeholder="IHC Price amount"
-                  value={ihcPrice}
-                  onChange={(e) => setIhcPrice(e.target.value)}
-                  className="w-full bg-white border border-slate-200 rounded-xl pl-8 pr-4 py-2.5 text-xs font-bold text-slate-900 focus:outline-none focus:border-[#0066FF]"
+                  type="text"
+                  placeholder="Destination Port/City"
+                  value={toLocation}
+                  onChange={(e) => setToLocation(e.target.value)}
+                  onFocus={() => setActiveInput('to')}
+                  onBlur={() => setTimeout(() => setActiveInput(null), 200)}
+                  className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-900 focus:outline-none focus:border-[#0066FF] transition-all"
                   required
                 />
+                {renderSuggestions('to')}
               </div>
-            </div>
 
-            {/* 20' Standard Field */}
-            <div className="space-y-1">
-              <label className="block text-[10px] font-black text-slate-900 uppercase tracking-wider">20' Standard (₹)</label>
-              <div className="relative">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs">₹</span>
+              {/* Via Field */}
+              <div className="space-y-1 relative">
+                <label className="block text-[10px] font-black text-slate-900 uppercase tracking-wider">Via</label>
                 <input
-                  type="number"
-                  placeholder="20' Standard container price"
-                  value={standard20}
-                  onChange={(e) => setStandard20(e.target.value)}
-                  className="w-full bg-white border border-slate-200 rounded-xl pl-8 pr-4 py-2.5 text-xs font-bold text-slate-900 focus:outline-none focus:border-[#0066FF]"
+                  type="text"
+                  placeholder="Transit Port"
+                  value={via}
+                  onChange={(e) => setVia(e.target.value)}
+                  onFocus={() => setActiveInput('via')}
+                  onBlur={() => setTimeout(() => setActiveInput(null), 200)}
+                  className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-900 focus:outline-none focus:border-[#0066FF] transition-all"
                   required
                 />
+                {renderSuggestions('via')}
+              </div>
+
+              {/* IHC Price Field */}
+              <div className="space-y-1">
+                <label className="block text-[10px] font-black text-slate-900 uppercase tracking-wider">IHC Price (₹)</label>
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs">₹</span>
+                  <input
+                    type="number"
+                    placeholder="IHC Price"
+                    value={ihcPrice}
+                    onChange={(e) => setIhcPrice(e.target.value)}
+                    className="w-full bg-white border border-slate-200 rounded-xl pl-8 pr-4 py-2.5 text-xs font-bold text-slate-900 focus:outline-none focus:border-[#0066FF]"
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* 20' Standard Field */}
+              <div className="space-y-1">
+                <label className="block text-[10px] font-black text-slate-900 uppercase tracking-wider">20' Standard (₹)</label>
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs">₹</span>
+                  <input
+                    type="number"
+                    placeholder="20' Std price"
+                    value={standard20}
+                    onChange={(e) => setStandard20(e.target.value)}
+                    className="w-full bg-white border border-slate-200 rounded-xl pl-8 pr-4 py-2.5 text-xs font-bold text-slate-900 focus:outline-none focus:border-[#0066FF]"
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Save Button */}
+              <div className="flex gap-2">
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="w-full bg-[#0066FF] hover:bg-[#0052cc] text-white text-xs font-black py-2.5 rounded-xl transition-all shadow-sm shadow-[#0066FF]/10 cursor-pointer flex items-center justify-center gap-1.5 uppercase tracking-wider"
+                >
+                  <Send size={13} /> {submitting ? 'Saving...' : editId ? 'Update' : 'Save'}
+                </button>
+                {editId && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditId(null);
+                      setToLocation('');
+                      setVia('');
+                      setIhcPrice('');
+                      setStandard20('');
+                      setFormError('');
+                      setFormSuccess('');
+                    }}
+                    className="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-black py-2.5 px-4 rounded-xl transition-all shadow-sm cursor-pointer uppercase tracking-wider"
+                  >
+                    Cancel
+                  </button>
+                )}
               </div>
             </div>
-
-            {/* Save Button */}
-            <button
-              type="submit"
-              disabled={submitting}
-              className="w-full bg-[#0066FF] hover:bg-[#0052cc] text-white text-xs font-black py-3 rounded-xl transition-all shadow-sm shadow-[#0066FF]/10 cursor-pointer flex items-center justify-center gap-1.5 uppercase tracking-wider"
-            >
-              <Send size={13} /> {submitting ? 'Saving...' : 'Save Via Price'}
-            </button>
           </form>
         </div>
 
-        {/* RIGHT COLUMN: Table displaying added Via Prices */}
-        <div className="lg:col-span-2 bg-white rounded-3xl p-6 border border-slate-100 shadow-[0_12px_40px_rgba(11,30,67,0.025)] space-y-5">
+        {/* BOTTOM ROW: Table displaying added Via Prices */}
+        <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-[0_12px_40px_rgba(11,30,67,0.025)] space-y-5">
           <h3 className="text-xs font-black text-[#0B1E43] uppercase tracking-widest flex items-center gap-1.5 border-b border-slate-100 pb-3">
             <DollarSign size={16} className="text-[#0066FF]" /> Configured Via Pricing
           </h3>
@@ -330,12 +381,12 @@ const ViaPricingManagement = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 bg-white font-bold text-xs">
-                  {list.map((item) => (
+                  {currentItems.map((item) => (
                     <tr key={item._id} className="hover:bg-slate-50/50 transition-colors">
-                      <td className="p-4 text-slate-800 uppercase font-black">{item.toLocation}</td>
-                      <td className="p-4 text-[#0066FF] uppercase font-black">{item.via}</td>
+                      <td className="p-4 text-slate-800 uppercase font-black">{item.destination || item.toLocation}</td>
+                      <td className="p-4 text-[#0066FF] uppercase font-black">{item.viaPort || item.via}</td>
                       <td className="p-4 text-[#0B1E43]">₹ {item.ihcPrice.toLocaleString('en-IN')}</td>
-                      <td className="p-4 text-[#0B1E43]">₹ {item.standard20.toLocaleString('en-IN')}</td>
+                      <td className="p-4 text-[#0B1E43]">₹ {item.standard20?.toLocaleString('en-IN')}</td>
                       <td className="p-4 text-slate-400 font-medium">
                         <div className="flex items-center gap-1">
                           <Calendar size={13} className="text-slate-400" />
@@ -344,7 +395,14 @@ const ViaPricingManagement = () => {
                           </span>
                         </div>
                       </td>
-                      <td className="p-4 text-right">
+                      <td className="p-4 text-right flex justify-end gap-3">
+                        <button
+                          onClick={() => handleEdit(item)}
+                          className="text-blue-500 hover:text-blue-700 font-bold transition-colors cursor-pointer"
+                          title="Edit Entry"
+                        >
+                          <RefreshCw size={16} />
+                        </button>
                         <button
                           onClick={() => handleDelete(item._id)}
                           className="text-red-500 hover:text-red-700 font-bold transition-colors cursor-pointer"
@@ -357,6 +415,30 @@ const ViaPricingManagement = () => {
                   ))}
                 </tbody>
               </table>
+            </div>
+          )}
+
+          {/* Pagination Controls */}
+          {!loading && list.length > itemsPerPage && (
+            <div className="flex items-center justify-between pt-4 border-t border-slate-100">
+              <span className="text-xs font-bold text-slate-400">
+                Showing {indexOfFirstItem + 1} to {Math.min(indexOfLastItem, list.length)} of {list.length} entries
+              </span>
+              <div className="flex gap-1.5">
+                {Array.from({ length: totalPages }, (_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => paginate(i + 1)}
+                    className={`w-8 h-8 rounded-xl flex items-center justify-center text-xs font-black transition-all cursor-pointer ${
+                      currentPage === i + 1
+                        ? 'bg-[#0B1E43] text-white shadow-sm'
+                        : 'bg-white border border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+                    }`}
+                  >
+                    {i + 1}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
         </div>

@@ -14,9 +14,6 @@ const {
     adminTogglePricingStatus,
     adminDeletePricing,
     adminUpdatePricing,
-    getViaPricing,
-    addViaPricing,
-    deleteViaPricing,
     getAdminDashboardStats
 } = require("../controllers/adminController");
 const auth = require("../middleware/authMiddleware");
@@ -37,10 +34,5 @@ router.post("/pricing", auth, adminAddPricing);
 router.put("/pricing/:id/toggle", auth, adminTogglePricingStatus);
 router.delete("/pricing/:id", auth, adminDeletePricing);
 router.put("/pricing/:id", auth, adminUpdatePricing);
-
-// Via Pricing routes
-router.get("/via-pricing", auth, getViaPricing);
-router.post("/via-pricing", auth, addViaPricing);
-router.delete("/via-pricing/:id", auth, deleteViaPricing);
 
 module.exports = router;

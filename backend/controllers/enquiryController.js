@@ -202,25 +202,36 @@ exports.getVendorEnquiries = async (req, res) => {
                 isDirect: true,
                 isBooking: isBookingFilter
             };
-            if (!isAdmin) {
-                query.$or = [
-                    { excludedVendor: { $ne: req.user.id } },
-                    { excludedVendor: { $exists: false } },
-                    { excludedVendor: null }
-                ];
-                if (currentUser && currentUser.approvedAt) {
+            if (!isAdmin && currentUser) {
+                // Filter by creation date relative to user approval/creation
+                if (currentUser.approvedAt) {
                     query.createdAt = { $gte: currentUser.approvedAt };
-                } else if (currentUser && currentUser.createdAt) {
+                } else if (currentUser.createdAt) {
                     query.createdAt = { $gte: currentUser.createdAt };
+                }
+
+                // Filter by service types if specified
+                if (currentUser.services && currentUser.services.length > 0) {
+                    const mappedServices = currentUser.services.map(s => s.toLowerCase().trim());
+                    query.type = { $in: mappedServices };
                 }
             }
         } else {
             return res.status(400).json({ message: 'Valid enquiry type ("my" or "direct") is required' });
         }
 
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        const skip = (page - 1) * limit;
+
+        console.log(`[getVendorEnquiries] user=${req.user.id} type=${type} page=${page} limit=${limit} skip=${skip}`);
+
+        const totalCount = await Enquiry.countDocuments(query);
         const enquiries = await Enquiry.find(query)
             .populate('client', 'name email phone company role')
-            .sort({ createdAt: -1 });
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit);
 
         let results = enquiries.map(enq => {
             const enqObj = enq.toObject ? enq.toObject() : enq;
@@ -235,16 +246,25 @@ exports.getVendorEnquiries = async (req, res) => {
         });
 
         if (!hasActivePlan) {
-            if (results.length > 5) {
+            const absoluteSkip = skip;
+            if (totalCount > 5) {
                 res.setHeader('X-Limit-Reached', 'true');
                 res.setHeader('Access-Control-Expose-Headers', 'X-Limit-Reached');
-                results = results.map((enq, index) => {
-                    if (index >= 5) {
-                        return { _id: enq._id, isLocked: true, type: enq.type, createdAt: enq.createdAt };
-                    }
-                    return enq;
-                });
             }
+            results = results.map((enq, index) => {
+                const absoluteIndex = absoluteSkip + index;
+                if (absoluteIndex >= 5) {
+                    return { 
+                        _id: enq._id, 
+                        isLocked: true, 
+                        type: enq.type, 
+                        createdAt: enq.createdAt,
+                        status: enq.status,
+                        myResponse: enq.myResponse
+                    };
+                }
+                return enq;
+            });
         }
 
         // For direct listings, enrich with the vendor's own price for the same route and cargo type
@@ -264,10 +284,20 @@ exports.getVendorEnquiries = async (req, res) => {
                 enqObj.vendorOwnPrice = match ? match.price : null;
                 return enqObj;
             });
-            return res.json(enrichedEnquiries);
+            return res.json({
+                data: enrichedEnquiries,
+                currentPage: page,
+                totalPages: Math.ceil(totalCount / limit),
+                totalCount
+            });
         }
 
-        res.json(results);
+        res.json({
+            data: results,
+            currentPage: page,
+            totalPages: Math.ceil(totalCount / limit),
+            totalCount
+        });
     } catch (error) {
         const fs = require('fs');
         fs.appendFileSync('error.log', `\n[${new Date().toISOString()}] getVendorEnquiries ERROR: ${error.stack}\n`);

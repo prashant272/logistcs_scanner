@@ -65,12 +65,25 @@ exports.addPricing = async (req, res) => {
 // Get all pricing for the authenticated vendor
 exports.getVendorPricing = async (req, res) => {
     try {
-        const isAdmin = req.user.id === 'ad0000000000000000000000';
-        let query = {};
-        if (!isAdmin) {
-            query.vendor = req.user.id;
+        let query = { vendor: req.user.id };
+        let pricing = await Pricing.find(query).sort({ createdAt: -1 });
+
+        const today = new Date();
+        today.setHours(0,0,0,0);
+        let modified = false;
+
+        for (let p of pricing) {
+            if (p.status === 'active' && new Date(p.validUntil) < today) {
+                p.status = 'disabled';
+                await p.save();
+                modified = true;
+            }
         }
-        const pricing = await Pricing.find(query).sort({ createdAt: -1 });
+        
+        if (modified) {
+            pricing = await Pricing.find(query).sort({ createdAt: -1 });
+        }
+
         res.json(pricing);
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
@@ -123,7 +136,8 @@ exports.searchPricing = async (req, res) => {
             warehouseRateType,
             warehouseStorageType,
             chaServiceType,
-            chaCargoType
+            chaCargoType,
+            viaPort // new field for IHC feature
         } = req.body;
 
         if (!fromLocation || !toLocation || !type) {
@@ -160,11 +174,38 @@ exports.searchPricing = async (req, res) => {
         if (toParsed.city) toOr.push({ toLocation: { $regex: new RegExp(`^${escapeRegExp(toParsed.city)}$`, 'i') } });
         if (toParsed.code) toOr.push({ toLocation: { $regex: new RegExp(`^${escapeRegExp(toParsed.code)}$`, 'i') } });
 
+        // If viaPort is provided, the primary vendor search is from Origin -> ViaPort
+        let finalToOr = toOr;
+        let ihcPricingMatch = null;
+        
+        if (viaPort && type.toLowerCase() === 'sea') {
+            const viaParsed = parseLoc(viaPort);
+            const viaOr = [
+                { toLocation: { $regex: new RegExp(`^${escapeRegExp(viaPort.trim())}$`, 'i') } }
+            ];
+            if (viaParsed.city) viaOr.push({ toLocation: { $regex: new RegExp(`^${escapeRegExp(viaParsed.city)}$`, 'i') } });
+            if (viaParsed.code) viaOr.push({ toLocation: { $regex: new RegExp(`^${escapeRegExp(viaParsed.code)}$`, 'i') } });
+            
+            finalToOr = viaOr; // Search vendor price to viaPort instead of destination
+            
+            // We also need to fetch the IHC price to attach later
+            const IhcPricing = require('../models/IhcPricing');
+            // Try to find IHC price for viaPort -> original toLocation
+            const ihcQuery = {
+                viaPort: { $regex: new RegExp(`^${escapeRegExp(viaParsed.city || viaPort.trim())}`, 'i') },
+                destination: { $regex: new RegExp(`^${escapeRegExp(toParsed.city || toLocation.trim())}`, 'i') }
+            };
+            if (fclStandard) {
+                ihcQuery.containerSize = fclStandard.trim();
+            }
+            ihcPricingMatch = await IhcPricing.findOne(ihcQuery);
+        }
+
         // Build query matching active options
         const query = {
             $and: [
                 { $or: fromOr },
-                { $or: toOr }
+                { $or: finalToOr }
             ],
             type: type.toLowerCase(),
             status: 'active',
@@ -220,6 +261,14 @@ exports.searchPricing = async (req, res) => {
                     const discount = matchObj.price * (matchObj.vendor.deductionPercentage / 100);
                     matchObj.price = parseFloat((matchObj.price - discount).toFixed(2));
                 }
+                
+                // Attach IHC Pricing if it exists
+                if (ihcPricingMatch) {
+                    matchObj.ihcPrice = ihcPricingMatch.ihcPrice;
+                    matchObj.viaPort = ihcPricingMatch.viaPort;
+                    matchObj.originalDestination = ihcPricingMatch.destination;
+                }
+                
                 return matchObj;
             }).filter(matchObj => {
                 if (!matchObj.vendor) return true;

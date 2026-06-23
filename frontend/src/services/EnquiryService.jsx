@@ -18,36 +18,42 @@ export const EnquiryProvider = ({ children }) => {
   const [submissionStatus, setSubmissionStatus] = useState(''); // '', 'submitting', 'success', 'error'
   const [limitReached, setLimitReached] = useState(false);
 
-  const fetchVendorEnquiries = async (type) => {
+  const fetchVendorEnquiries = async (type, page = 1, limit = 10) => {
     try {
-      setLoading(true);
+      if (page === 1) setLoading(true);
       setError(null);
-      const res = await api.get(`/enquiries/vendor?type=${type}`);
+      const res = await api.get(`/enquiries/vendor?type=${type}&page=${page}&limit=${limit}`);
       setLimitReached(res.headers['x-limit-reached'] === 'true');
-      setEnquiries(res.data || []);
+      
+      const responseData = res.data.data || res.data;
+      if (page === 1) {
+        setEnquiries(responseData || []);
+      } else {
+        setEnquiries(prev => [...prev, ...(responseData || [])]);
+      }
       return res.data;
     } catch (err) {
       console.error('Error fetching enquiries:', err);
       setError(err.response?.data?.message || 'Could not retrieve enquiries.');
       throw err;
     } finally {
-      setLoading(false);
+      if (page === 1) setLoading(false);
     }
   };
 
-  const fetchVendorBookings = async (type) => {
+  const fetchVendorBookings = async (type, page = 1, limit = 10) => {
     try {
-      setLoading(true);
+      if (page === 1) setLoading(true);
       setError(null);
-      const res = await api.get(`/enquiries/vendor?type=${type}&isBooking=true`);
+      const res = await api.get(`/enquiries/vendor?type=${type}&isBooking=true&page=${page}&limit=${limit}`);
       setLimitReached(res.headers['x-limit-reached'] === 'true');
-      return res.data || [];
+      return res.data; // returns the paginated object { data, totalPages... }
     } catch (err) {
       console.error('Error fetching bookings:', err);
       setError(err.response?.data?.message || 'Could not retrieve bookings.');
       throw err;
     } finally {
-      setLoading(false);
+      if (page === 1) setLoading(false);
     }
   };
 

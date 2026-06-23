@@ -136,6 +136,10 @@ const enquirySchema = new mongoose.Schema({
         ref: 'User',
         default: null
     },
+    targetedVendors: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    }],
     createdAt: {
         type: Date,
         default: Date.now
@@ -145,6 +149,7 @@ const enquirySchema = new mongoose.Schema({
 enquirySchema.index({ status: 1 });
 enquirySchema.index({ client: 1 });
 enquirySchema.index({ vendor: 1 });
+enquirySchema.index({ targetedVendors: 1 });
 enquirySchema.index({ guestEmail: 1 });
 enquirySchema.index({ createdAt: -1 });
 

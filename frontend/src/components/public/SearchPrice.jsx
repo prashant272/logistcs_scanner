@@ -78,6 +78,40 @@ const SearchPrice = ({ isDashboard = false }) => {
     const [searchPerformed, setSearchPerformed] = useState(false);
     const [showSuccessPage, setShowSuccessPage] = useState(false);
 
+    // IHC / Via Ports States
+    const [availableViaPorts, setAvailableViaPorts] = useState([]);
+    const [selectedViaPort, setSelectedViaPort] = useState('');
+    const [loadingViaPorts, setLoadingViaPorts] = useState(false);
+
+    // Fetch via ports when destination changes (if Sea tab)
+    useEffect(() => {
+        if (activeTab === 'sea' && destination && destination.length > 2) {
+            const fetchVia = async () => {
+                setLoadingViaPorts(true);
+                try {
+                    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/ihc/via-ports?destination=${encodeURIComponent(destination)}`);
+                    if (response.ok) {
+                        const data = await response.json();
+                        setAvailableViaPorts(data.data || []);
+                        if (!data.data?.includes(selectedViaPort)) {
+                            setSelectedViaPort('');
+                        }
+                    }
+                } catch (err) {
+                    console.error('Error fetching via ports:', err);
+                } finally {
+                    setLoadingViaPorts(false);
+                }
+            };
+            
+            const timeoutId = setTimeout(fetchVia, 500); // debounce
+            return () => clearTimeout(timeoutId);
+        } else {
+            setAvailableViaPorts([]);
+            setSelectedViaPort('');
+        }
+    }, [destination, activeTab]);
+
     // Reset results when tab changes
     useEffect(() => {
         setSearchResults(null);
@@ -226,16 +260,17 @@ const SearchPrice = ({ isDashboard = false }) => {
             toLocation: toLoc,
             type: activeTab,
             category: activeTab === 'air' ? airCategory : undefined,
-            airline: activeTab === 'air' ? airAirline : undefined,
+            airline: activeTab === 'air' && airCategory !== 'domestic' ? airAirline : undefined,
             weightRange: activeTab === 'air' ? weight : undefined,
             truckLoad: activeTab === 'land' ? loadType : undefined,
             vehicleType: activeTab === 'land' ? vehicleType : undefined,
-            seaLoadType: activeTab === 'sea' && loadType && loadType !== 'Select Load Type' ? loadType : undefined,
-            fclStandard: activeTab === 'sea' && loadType === 'FCL' && fclStandard ? fclStandard : undefined,
-            warehouseRateType: activeTab === 'warehouse' && warehouseRateType && warehouseRateType !== 'Display All Rates' ? warehouseRateType : undefined,
-            warehouseStorageType: activeTab === 'warehouse' && storageType && storageType !== 'Select Storage Type' ? storageType : undefined,
+            seaLoadType: activeTab === 'sea' ? loadType : undefined,
+            fclStandard: activeTab === 'sea' ? fclStandard : undefined,
+            warehouseRateType: activeTab === 'warehouse' ? warehouseRateType : undefined,
+            warehouseStorageType: activeTab === 'warehouse' ? storageType : undefined,
             chaServiceType: activeTab === 'cha' ? chaType : undefined,
-            chaCargoType: activeTab === 'cha' && chaCargoType && chaCargoType !== 'Select Type' ? chaCargoType : undefined
+            chaCargoType: activeTab === 'cha' ? chaCargoType : undefined,
+            viaPort: activeTab === 'sea' ? selectedViaPort : undefined
         };
 
         try {

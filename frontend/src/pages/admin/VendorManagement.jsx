@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
+import useInfiniteScroll from '../../hooks/useInfiniteScroll';
 import { 
   ShieldCheck, Truck, Mail, Phone, MapPin, Building, Calendar, 
   Search, ExternalLink, LogIn, CheckCircle2, AlertCircle, Upload, RefreshCw
@@ -10,15 +11,37 @@ const VendorManagement = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('All Status');
   const [uploadingVendorId, setUploadingVendorId] = useState(null);
   const [rms, setRms] = useState([]);
   const [assigningRmId, setAssigningRmId] = useState(null);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   useEffect(() => {
-    fetchVendors();
     fetchRMs();
   }, []);
+
+  // Debounce search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Reset page when search or status changes
+  useEffect(() => {
+    setPage(1);
+    setVendors([]);
+  }, [debouncedSearchQuery, statusFilter]);
+
+  // Fetch vendors whenever page, search, or status changes
+  useEffect(() => {
+    fetchVendors();
+  }, [page, debouncedSearchQuery, statusFilter]);
 
   const fetchRMs = async () => {
     try {
@@ -34,23 +57,42 @@ const VendorManagement = () => {
 
   const fetchVendors = async () => {
     try {
-      setLoading(true);
+      if (page === 1) setLoading(true);
+      else setLoadingMore(true);
       setError('');
       const token = localStorage.getItem('adminToken');
-      const config = {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      };
-      const { data } = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/admin/vendors`, config);
-      setVendors(data || []);
+      const { data } = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/admin/vendors?page=${page}&limit=10&search=${debouncedSearchQuery}&status=${statusFilter}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (page === 1) {
+        setVendors(data.data || []);
+      } else {
+        setVendors(prev => [...prev, ...(data.data || [])]);
+      }
+      setHasMore(page < data.totalPages);
+      
       setLoading(false);
+      setLoadingMore(false);
     } catch (err) {
       console.error('Error fetching vendors:', err);
-      setError(err.response?.data?.message || 'Failed to fetch vendors');
+      setError(err.response?.data?.message || 'Failed to fetch data');
       setLoading(false);
+      setLoadingMore(false);
     }
   };
+
+  const handleRefresh = () => {
+    setPage(1);
+    setVendors([]);
+    fetchVendors();
+  };
+
+  const handleLoadMore = useCallback(() => {
+    setPage(prev => prev + 1);
+  }, []);
+
+  const lastVendorElementRef = useInfiniteScroll(handleLoadMore, hasMore, loadingMore || loading);
 
   // Impersonate / Login as Vendor
   const handleLoginAsVendor = async (vendorId) => {
@@ -160,24 +202,7 @@ const VendorManagement = () => {
     }
   };
 
-  // Filter vendors based on search query and status filter
-  const filteredVendors = vendors.filter(vendor => {
-    const matchesSearch = vendor.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      vendor.company?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      vendor.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      vendor.phone?.includes(searchQuery);
-
-    if (!matchesSearch) return false;
-
-    if (statusFilter === 'All Status') return true;
-    if (statusFilter === 'Approved') return vendor.verificationStatus === 'Approved' || (vendor.isVerified && !vendor.verificationStatus);
-    if (statusFilter === 'Declined') return vendor.verificationStatus === 'Declined';
-    if (statusFilter === 'Pending') return vendor.verificationStatus === 'Pending' || (!vendor.isVerified && !vendor.verificationStatus);
-    if (statusFilter === 'Login') return vendor.isVerified;
-    if (statusFilter === 'Premium Vendors' || statusFilter === 'Paid Vendors') return !!vendor.activePlan;
-    
-    return true;
-  });
+  const filteredVendors = vendors;
 
   return (
     <div className="space-y-6">
@@ -217,7 +242,7 @@ const VendorManagement = () => {
           </select>
 
           <button 
-            onClick={fetchVendors} 
+            onClick={handleRefresh} 
             className="p-2.5 bg-white border border-slate-200/80 hover:bg-slate-50 text-slate-650 rounded-xl transition-all cursor-pointer shadow-sm"
             title="Refresh Vendors"
           >
@@ -227,7 +252,7 @@ const VendorManagement = () => {
       </div>
 
       {/* Main Table view */}
-      {loading ? (
+      {loading && page === 1 ? (
         <div className="flex items-center justify-center py-20">
           <div className="w-10 h-10 border-4 border-slate-200 border-t-[#0066FF] rounded-full animate-spin"></div>
         </div>
@@ -266,12 +291,16 @@ const VendorManagement = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-xs font-bold">
-                {filteredVendors.map((vendor) => {
+                {filteredVendors.map((vendor, index) => {
                   const firstName = vendor.firstName || vendor.name?.split(' ')[0] || 'N/A';
                   const lastName = vendor.lastName || vendor.name?.split(' ').slice(1).join(' ') || 'N/A';
                   
                   return (
-                    <tr key={vendor._id} className="hover:bg-slate-50/50 transition-colors">
+                    <tr 
+                      key={vendor._id} 
+                      ref={index === filteredVendors.length - 1 ? lastVendorElementRef : null}
+                      className="hover:bg-slate-50/50 transition-colors group"
+                    >
                       {/* Login Dashboard impersonation */}
                       <td className="p-4 text-center">
                         <button
@@ -384,6 +413,12 @@ const VendorManagement = () => {
                 })}
               </tbody>
             </table>
+            {loadingMore && (
+              <div className="flex justify-center items-center py-6 text-slate-400">
+                <RefreshCw size={20} className="animate-spin mr-2" />
+                <span className="font-semibold text-xs">Loading more vendors...</span>
+              </div>
+            )}
           </div>
         </div>
       )}

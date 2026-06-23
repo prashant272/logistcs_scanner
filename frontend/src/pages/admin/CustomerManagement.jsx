@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
+import useInfiniteScroll from '../../hooks/useInfiniteScroll';
 import { 
   User, Users, Mail, Phone, MapPin, Building, Calendar, Search, 
   ArrowRight, FileText, CheckCircle2, XCircle, ArrowLeft, RefreshCw, Globe
@@ -12,6 +13,10 @@ const CustomerManagement = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   
   // Selected user history state
   const [selectedUser, setSelectedUser] = useState(null); // { type: 'customer'|'guest', id: string, name: string, email: string }
@@ -19,33 +24,94 @@ const CustomerManagement = () => {
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [historyError, setHistoryError] = useState('');
 
+  // Debounce search
   useEffect(() => {
-    fetchData();
-  }, []);
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
-  const fetchData = async () => {
+  // Reset page when search or tab changes
+  useEffect(() => {
+    setPage(1);
+    if (activeTab === 'customers') {
+      setCustomers([]);
+    } else {
+      setGuests([]);
+    }
+  }, [debouncedSearchQuery, activeTab]);
+
+  // Fetch data
+  useEffect(() => {
+    if (activeTab === 'customers') {
+      fetchCustomers();
+    } else {
+      fetchGuests();
+    }
+  }, [activeTab, page, debouncedSearchQuery]);
+
+  const fetchCustomers = async () => {
     try {
-      setLoading(true);
+      if (page === 1) setLoading(true);
+      else setLoadingMore(true);
+      setError('');
+      
+      const token = localStorage.getItem('adminToken');
+      const config = { headers: { Authorization: `Bearer ${token}` } };
+      
+      const { data } = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/admin/customers?page=${page}&limit=10&search=${debouncedSearchQuery}`, config);
+      
+      if (page === 1) {
+        setCustomers(data.data || []);
+      } else {
+        setCustomers(prev => [...prev, ...(data.data || [])]);
+      }
+      setHasMore(page < data.totalPages);
+      
+      setLoading(false);
+      setLoadingMore(false);
+    } catch (err) {
+      console.error('Error fetching admin customers:', err);
+      setError(err?.response?.data?.message || 'Failed to fetch data');
+      setLoading(false);
+      setLoadingMore(false);
+    }
+  };
+
+  const fetchGuests = async () => {
+    try {
+      if (page === 1) setLoading(true);
       setError('');
       const token = localStorage.getItem('adminToken');
-      const config = {
-        headers: { Authorization: `Bearer ${token}` }
-      };
+      const config = { headers: { Authorization: `Bearer ${token}` } };
 
-      const [customersRes, guestsRes] = await Promise.all([
-        axios.get(`${import.meta.env.VITE_API_BASE_URL}/admin/customers`, config),
-        axios.get(`${import.meta.env.VITE_API_BASE_URL}/admin/guests`, config)
-      ]);
-
-      setCustomers(customersRes.data || []);
-      setGuests(guestsRes.data || []);
+      const { data } = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/admin/guests`, config);
+      setGuests(data || []);
       setLoading(false);
     } catch (err) {
-      console.error('Error fetching admin customers/guests:', err);
-      setError(err.response?.data?.message || 'Failed to fetch data');
+      console.error('Error fetching admin guests:', err);
+      setError(err?.response?.data?.message || 'Failed to fetch data');
       setLoading(false);
     }
   };
+
+  const handleRefresh = () => {
+    setPage(1);
+    if (activeTab === 'customers') {
+      setCustomers([]);
+      fetchCustomers();
+    } else {
+      setGuests([]);
+      fetchGuests();
+    }
+  };
+
+  const handleLoadMore = useCallback(() => {
+    setPage(prev => prev + 1);
+  }, []);
+
+  const lastCustomerElementRef = useInfiniteScroll(handleLoadMore, hasMore, loadingMore || loading);
 
   const fetchHistory = async (user) => {
     setSelectedUser(user);
@@ -76,13 +142,7 @@ const CustomerManagement = () => {
     }
   };
 
-  // Filter lists based on search query
-  const filteredCustomers = customers.filter(c => 
-    c.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    c.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    c.company?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    c.phone?.includes(searchQuery)
-  );
+  const filteredCustomers = customers;
 
   const filteredGuests = guests.filter(g => 
     g.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -230,6 +290,12 @@ const CustomerManagement = () => {
                       ))}
                     </tbody>
                   </table>
+                  {loadingMore && (
+                    <div className="flex justify-center items-center py-6 text-slate-400">
+                      <RefreshCw size={20} className="animate-spin mr-2" />
+                      <span className="font-semibold text-xs">Loading more customers...</span>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -262,7 +328,7 @@ const CustomerManagement = () => {
           </div>
 
           <button 
-            onClick={fetchData} 
+            onClick={handleRefresh} 
             className="p-2.5 bg-white border border-slate-200/80 hover:bg-slate-50 text-slate-650 rounded-xl transition-all cursor-pointer shadow-sm"
             title="Refresh Data"
           >
@@ -296,7 +362,7 @@ const CustomerManagement = () => {
       </div>
 
       {/* Main layout card */}
-      {loading ? (
+      {loading && page === 1 ? (
         <div className="flex items-center justify-center py-20">
           <div className="w-10 h-10 border-4 border-slate-200 border-t-[#0066FF] rounded-full animate-spin"></div>
         </div>
@@ -330,9 +396,10 @@ const CustomerManagement = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-xs font-bold">
-                  {filteredCustomers.map((c) => (
+                  {filteredCustomers.map((c, index) => (
                     <tr 
                       key={c._id} 
+                      ref={index === filteredCustomers.length - 1 ? lastCustomerElementRef : null}
                       className="hover:bg-slate-50/50 transition-colors cursor-pointer group"
                       onClick={() => fetchHistory({ ...c, type: 'customer', id: c._id })}
                     >

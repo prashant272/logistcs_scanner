@@ -449,6 +449,11 @@ const SearchResults = () => {
                       <div>
                         <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider block">Estimated Rate</span>
                         <span className="text-xl font-black text-[#0066FF]">{rate.currency === 'USD' ? '$' : rate.currency === 'EUR' ? '€' : rate.currency === 'GBP' ? '£' : rate.currency === 'AED' ? 'د.إ' : '₹'} {rate.price.toLocaleString()}</span>
+                        {rate.ihcPrice && (
+                            <span className="block text-xs font-bold text-slate-600 mt-1">
+                                + IHC Price: ₹ {rate.ihcPrice.toLocaleString()} / Approx
+                            </span>
+                        )}
                       </div>
                     </div>
 

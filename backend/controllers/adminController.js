@@ -38,8 +38,49 @@ exports.loginAdmin = async (req, res) => {
 // @access  Private
 exports.getVendors = async (req, res) => {
     try {
-        const vendors = await User.find({ role: 'vendor' }).select('-password').populate('assignedRM').sort({ createdAt: -1 });
-        res.json(vendors);
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        const skip = (page - 1) * limit;
+        const search = req.query.search || '';
+        const statusFilter = req.query.status || 'All Status';
+
+        const query = { role: 'vendor' };
+        if (search) {
+            query.$or = [
+                { name: { $regex: search, $options: 'i' } },
+                { email: { $regex: search, $options: 'i' } },
+                { 'companyDetails.companyName': { $regex: search, $options: 'i' } }
+            ];
+        }
+
+        if (statusFilter !== 'All Status') {
+            if (statusFilter === 'Approved') {
+                query.$or = [{ verificationStatus: 'Approved' }, { isVerified: true, verificationStatus: { $nin: ['Approved', 'Declined', 'Pending'] } }];
+            } else if (statusFilter === 'Declined') {
+                query.verificationStatus = 'Declined';
+            } else if (statusFilter === 'Pending') {
+                query.$or = [{ verificationStatus: 'Pending' }, { isVerified: false, verificationStatus: { $nin: ['Approved', 'Declined', 'Pending'] } }];
+            } else if (statusFilter === 'Login') {
+                query.isVerified = true;
+            } else if (statusFilter === 'Premium Vendors' || statusFilter === 'Paid Vendors') {
+                query.activePlan = { $ne: null };
+            }
+        }
+
+        const totalCount = await User.countDocuments(query);
+        const vendors = await User.find(query)
+            .select('-password')
+            .populate('assignedRM')
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit);
+
+        res.json({
+            data: vendors,
+            currentPage: page,
+            totalPages: Math.ceil(totalCount / limit),
+            totalCount
+        });
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
     }
@@ -50,8 +91,34 @@ exports.getVendors = async (req, res) => {
 // @access  Private
 exports.getCustomers = async (req, res) => {
     try {
-        const customers = await User.find({ role: 'customer' }).select('-password').sort({ createdAt: -1 });
-        res.json(customers);
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        const skip = (page - 1) * limit;
+        const search = req.query.search || '';
+
+        const query = { role: 'customer' };
+        if (search) {
+            query.$or = [
+                { name: { $regex: search, $options: 'i' } },
+                { email: { $regex: search, $options: 'i' } },
+                { phone: { $regex: search, $options: 'i' } },
+                { 'companyDetails.companyName': { $regex: search, $options: 'i' } }
+            ];
+        }
+
+        const totalCount = await User.countDocuments(query);
+        const customers = await User.find(query)
+            .select('-password')
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit);
+
+        res.json({
+            data: customers,
+            currentPage: page,
+            totalPages: Math.ceil(totalCount / limit),
+            totalCount
+        });
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
     }
@@ -331,60 +398,6 @@ exports.adminUpdatePricing = async (req, res) => {
     }
 };
 
-// Via Pricing controllers
-// @desc    Get all via pricing entries
-// @route   GET /api/admin/via-pricing
-// @access  Private
-exports.getViaPricing = async (req, res) => {
-    try {
-        const ViaPricing = require('../models/ViaPricing');
-        const list = await ViaPricing.find().sort({ createdAt: -1 });
-        res.json(list);
-    } catch (error) {
-        res.status(500).json({ message: 'Server error', error: error.message });
-    }
-};
-
-// @desc    Add a via pricing entry
-// @route   POST /api/admin/via-pricing
-// @access  Private
-exports.addViaPricing = async (req, res) => {
-    try {
-        const ViaPricing = require('../models/ViaPricing');
-        const { toLocation, via, ihcPrice, standard20 } = req.body;
-        
-        if (!toLocation || !via || ihcPrice === undefined || standard20 === undefined) {
-            return res.status(400).json({ message: 'All fields are required' });
-        }
-
-        const item = await ViaPricing.create({
-            toLocation,
-            via,
-            ihcPrice: Number(ihcPrice),
-            standard20: Number(standard20)
-        });
-
-        res.status(201).json(item);
-    } catch (error) {
-        res.status(500).json({ message: 'Server error', error: error.message });
-    }
-};
-
-// @desc    Delete a via pricing entry
-// @route   DELETE /api/admin/via-pricing/:id
-// @access  Private
-exports.deleteViaPricing = async (req, res) => {
-    try {
-        const ViaPricing = require('../models/ViaPricing');
-        const item = await ViaPricing.findByIdAndDelete(req.params.id);
-        if (!item) {
-            return res.status(404).json({ message: 'Entry not found' });
-        }
-        res.json({ message: 'Entry deleted successfully' });
-    } catch (error) {
-        res.status(500).json({ message: 'Server error', error: error.message });
-    }
-};
 
 // @desc    Get dashboard stats for admin
 // @route   GET /api/admin/dashboard-stats

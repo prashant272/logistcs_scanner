@@ -56,6 +56,8 @@ const VendorPricingTab = () => {
   const [price, setPrice] = useState('');
   const [currency, setCurrency] = useState('INR');
   const [message, setMessage] = useState('');
+  
+  const [currentTab, setCurrentTab] = useState('active'); // 'active' or 'expired'
 
   useEffect(() => {
     fetchRates();
@@ -322,11 +324,50 @@ const VendorPricingTab = () => {
         </button>
       </div>
 
+      <div className="flex gap-2 border-b border-slate-100">
+        <button
+          onClick={() => setCurrentTab('active')}
+          className={`px-4 py-2 text-xs font-bold uppercase tracking-wider transition-colors border-b-2 ${
+            currentTab === 'active'
+              ? 'border-[#0066FF] text-[#0066FF]'
+              : 'border-transparent text-slate-400 hover:text-slate-600'
+          }`}
+        >
+          Active Rates
+        </button>
+        <button
+          onClick={() => setCurrentTab('expired')}
+          className={`px-4 py-2 text-xs font-bold uppercase tracking-wider transition-colors border-b-2 ${
+            currentTab === 'expired'
+              ? 'border-red-500 text-red-500'
+              : 'border-transparent text-slate-400 hover:text-slate-600'
+          }`}
+        >
+          Expired Rates
+        </button>
+      </div>
+
       {loading ? (
         <div className="text-center py-10 text-slate-500 font-bold text-xs uppercase tracking-wider">Loading Rates...</div>
-      ) : rates.length === 0 ? (
-        <div className="text-center py-10 text-slate-400 font-medium text-xs">No rates added yet. Click "Add Pricing Rate" to configure shipment pricing.</div>
       ) : (
+        (() => {
+          const today = new Date();
+          today.setHours(0,0,0,0);
+          
+          const activeRates = rates.filter(r => new Date(r.validUntil) >= today);
+          const expiredRates = rates.filter(r => new Date(r.validUntil) < today);
+          
+          const displayRates = currentTab === 'active' ? activeRates : expiredRates;
+
+          if (displayRates.length === 0) {
+            return (
+              <div className="text-center py-10 text-slate-400 font-medium text-xs">
+                {currentTab === 'active' ? 'No active rates.' : 'No expired rates.'}
+              </div>
+            );
+          }
+
+          return (
         <div className="overflow-x-auto rounded-2xl border border-slate-100/85">
           <table className="w-full text-left text-xs text-slate-700 border-collapse">
             <thead className="bg-[#f4f7fc] text-[#0B1E43] text-[10px] font-black uppercase tracking-wider border-b border-slate-100">
@@ -341,7 +382,7 @@ const VendorPricingTab = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 bg-white">
-              {rates.map((r) => (
+              {displayRates.map((r) => (
                 <tr key={r._id} className="hover:bg-slate-50/50 transition-colors">
                   <td className="p-4 font-black text-slate-800 uppercase">
                     {r.fromLocation} ↔ {r.toLocation}
@@ -414,6 +455,8 @@ const VendorPricingTab = () => {
             </tbody>
           </table>
         </div>
+          );
+        })()
       )}
 
       {/* Add Rate Modal */}

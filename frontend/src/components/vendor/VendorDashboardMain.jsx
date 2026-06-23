@@ -26,22 +26,22 @@ const vendorStatsFetcher = async () => {
 
     if (status === 'Approved') {
         const [myEnqs, directEnqs, myBkgs, directBkgs] = await Promise.all([
-            axios.get(`${import.meta.env.VITE_API_BASE_URL}/enquiries/vendor?type=my`, config),
-            axios.get(`${import.meta.env.VITE_API_BASE_URL}/enquiries/vendor?type=direct`, config),
-            axios.get(`${import.meta.env.VITE_API_BASE_URL}/enquiries/vendor?type=my&isBooking=true`, config),
-            axios.get(`${import.meta.env.VITE_API_BASE_URL}/enquiries/vendor?type=direct&isBooking=true`, config)
+            axios.get(`${import.meta.env.VITE_API_BASE_URL}/enquiries/vendor?type=my&limit=1000`, config),
+            axios.get(`${import.meta.env.VITE_API_BASE_URL}/enquiries/vendor?type=direct&limit=1000`, config),
+            axios.get(`${import.meta.env.VITE_API_BASE_URL}/enquiries/vendor?type=my&isBooking=true&limit=1000`, config),
+            axios.get(`${import.meta.env.VITE_API_BASE_URL}/enquiries/vendor?type=direct&isBooking=true&limit=1000`, config)
         ]);
-        stats.myEnquiries = myEnqs.data || [];
-        stats.directEnquiries = directEnqs.data || [];
-        stats.myBookings = myBkgs.data || [];
-        stats.directBookings = directBkgs.data || [];
+        stats.myEnquiries = myEnqs.data.data || myEnqs.data || [];
+        stats.directEnquiries = directEnqs.data.data || directEnqs.data || [];
+        stats.myBookings = myBkgs.data.data || myBkgs.data || [];
+        stats.directBookings = directBkgs.data.data || directBkgs.data || [];
     }
     return stats;
 };
 
 const VendorDashboardMain = () => {
     const { user } = useAuth();
-    const [filterType, setFilterType] = useState('Monthly');
+    const [filterType, setFilterType] = useState('All Time');
     const [customStart, setCustomStart] = useState('');
     const [customEnd, setCustomEnd] = useState('');
 
@@ -78,6 +78,8 @@ const VendorDashboardMain = () => {
             cutoff.setDate(now.getDate() - 15);
         } else if (rangeType === 'Monthly') {
             cutoff.setMonth(now.getMonth() - 1);
+        } else if (rangeType === 'All Time') {
+            return list; 
         } else {
             return list; // default / custom date
         }
@@ -101,9 +103,11 @@ const VendorDashboardMain = () => {
             start.setDate(now.getDate() - 15);
         } else if (rangeType === 'Monthly') {
             start.setMonth(now.getMonth() - 1);
+        } else if (rangeType === 'All Time') {
+            return 'All Time Data';
         } else {
             // default
-            start.setMonth(now.getMonth() - 1);
+            return 'All Time Data';
         }
         
         const options = { day: '2-digit', month: 'short', year: 'numeric' };
@@ -121,18 +125,20 @@ const VendorDashboardMain = () => {
     const filteredDirectBookings = filterByDateRange(directBookings, filterType);
 
     // My Enquiries counters
-    const myEnqTotal = filteredMyEnqs.length;
-    const myEnqAccepted = filteredMyEnqs.filter(e => e.status === 'Accepted').length;
+    const myEnqTotal = filteredMyEnqs.filter(e => !e.isLocked).length;
+    const myEnqLockedCount = filteredMyEnqs.filter(e => e.isLocked).length;
+    const myEnqAccepted = filteredMyEnqs.filter(e => !e.isLocked && e.status === 'Accepted').length;
     const myEnqRejected = myEnqTotal - myEnqAccepted;
 
     // Direct Enquiries counters
-    const directEnqTotal = filteredDirectEnqs.length;
-    const directEnqAccepted = filteredDirectEnqs.filter(e => e.status === 'Accepted').length;
+    const directEnqTotal = filteredDirectEnqs.filter(e => !e.isLocked).length;
+    const directEnqLockedCount = filteredDirectEnqs.filter(e => e.isLocked).length;
+    const directEnqAccepted = filteredDirectEnqs.filter(e => !e.isLocked && e.myResponse?.status === 'Accepted').length;
     const directEnqRejected = directEnqTotal - directEnqAccepted;
 
     // Bookings counters
-    const myBookingsCount = filteredMyBookings.length;
-    const directBookingsCount = filteredDirectBookings.length;
+    const myBookingsCount = filteredMyBookings.filter(e => !e.isLocked).length;
+    const directBookingsCount = filteredDirectBookings.filter(e => !e.isLocked).length;
 
     return (
         <div className="space-y-6">
@@ -188,7 +194,7 @@ const VendorDashboardMain = () => {
                         <Menu size={12} className="text-[#0066FF]" /> Filter Set
                     </span>
                     <div className="flex gap-1.5 bg-slate-50 p-1 rounded-xl border border-slate-100">
-                        {['Monthly', 'Weekly', 'Last 15 Days', 'Custom Date'].map((t) => (
+                        {['All Time', 'Monthly', 'Weekly', 'Last 15 Days', 'Custom Date'].map((t) => (
                             <button
                                 key={t}
                                 onClick={() => {
@@ -241,7 +247,7 @@ const VendorDashboardMain = () => {
 
                     <button 
                         onClick={() => {
-                            handleFilterChange('Monthly');
+                            handleFilterChange('All Time');
                             setCustomStart('');
                             setCustomEnd('');
                         }}
@@ -267,6 +273,7 @@ const VendorDashboardMain = () => {
                                 enquiryCount={myEnqTotal} 
                                 acceptedCount={myEnqAccepted} 
                                 rejectedCount={myEnqRejected} 
+                                lockedCount={myEnqLockedCount}
                             />
 
                             {/* DIRECT ENQUIRIES */}
@@ -276,6 +283,7 @@ const VendorDashboardMain = () => {
                                 enquiryCount={directEnqTotal} 
                                 acceptedCount={directEnqAccepted} 
                                 rejectedCount={directEnqRejected} 
+                                lockedCount={directEnqLockedCount}
                             />
 
                             {/* BOOKING AND FINANCE GRID */}
