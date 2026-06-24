@@ -14,7 +14,7 @@ const ViaPricingManagement = () => {
   const [toLocation, setToLocation] = useState('');
   const [via, setVia] = useState('');
   const [ihcPrice, setIhcPrice] = useState('');
-  const [standard20, setStandard20] = useState('');
+  const [containerSize, setContainerSize] = useState('20ft');
   const [submitting, setSubmitting] = useState(false);
   const [editId, setEditId] = useState(null);
   const [formError, setFormError] = useState('');
@@ -137,7 +137,7 @@ const ViaPricingManagement = () => {
     setFormError('');
     setFormSuccess('');
 
-    if (!toLocation || !via || ihcPrice === '' || standard20 === '') {
+    if (!toLocation || !via || ihcPrice === '') {
       setFormError('Please fill in all the required fields');
       return;
     }
@@ -153,13 +153,14 @@ const ViaPricingManagement = () => {
         toLocation,
         via,
         ihcPrice: Number(ihcPrice),
-        standard20: Number(standard20)
+        standard20: containerSize === '20ft' ? Number(ihcPrice) : undefined,
+        containerSize
       };
 
       if (editId) {
         const { data } = await axios.put(`${import.meta.env.VITE_API_BASE_URL}/ihc/${editId}`, payload, config);
         setFormSuccess('Via pricing updated successfully!');
-        setList(prev => prev.map(item => item._id === editId ? data : item));
+        setList(prev => prev.map(item => item._id === editId ? (data.data || data) : item));
         setEditId(null);
       } else {
         const { data } = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/ihc`, payload, config);
@@ -171,7 +172,7 @@ const ViaPricingManagement = () => {
       setToLocation('');
       setVia('');
       setIhcPrice('');
-      setStandard20('');
+      setContainerSize('20ft');
     } catch (err) {
       console.error(err);
       setFormError(err.response?.data?.message || 'Failed to save via pricing');
@@ -185,7 +186,7 @@ const ViaPricingManagement = () => {
     setToLocation(item.destination || item.toLocation);
     setVia(item.viaPort || item.via);
     setIhcPrice(item.ihcPrice);
-    setStandard20(item.standard20);
+    setContainerSize(item.containerSize || '20ft');
     setFormError('');
     setFormSuccess('');
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -284,6 +285,20 @@ const ViaPricingManagement = () => {
                 {renderSuggestions('via')}
               </div>
 
+              {/* Container Size Dropdown */}
+              <div className="space-y-1">
+                <label className="block text-[10px] font-black text-slate-900 uppercase tracking-wider">Container Size</label>
+                <select
+                  value={containerSize}
+                  onChange={(e) => setContainerSize(e.target.value)}
+                  className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-900 focus:outline-none focus:border-[#0066FF] transition-all cursor-pointer"
+                  required
+                >
+                  <option value="20ft">20ft Standard</option>
+                  <option value="40ft">40ft Standard</option>
+                </select>
+              </div>
+
               {/* IHC Price Field */}
               <div className="space-y-1">
                 <label className="block text-[10px] font-black text-slate-900 uppercase tracking-wider">IHC Price (₹)</label>
@@ -294,22 +309,6 @@ const ViaPricingManagement = () => {
                     placeholder="IHC Price"
                     value={ihcPrice}
                     onChange={(e) => setIhcPrice(e.target.value)}
-                    className="w-full bg-white border border-slate-200 rounded-xl pl-8 pr-4 py-2.5 text-xs font-bold text-slate-900 focus:outline-none focus:border-[#0066FF]"
-                    required
-                  />
-                </div>
-              </div>
-
-              {/* 20' Standard Field */}
-              <div className="space-y-1">
-                <label className="block text-[10px] font-black text-slate-900 uppercase tracking-wider">20' Standard (₹)</label>
-                <div className="relative">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs">₹</span>
-                  <input
-                    type="number"
-                    placeholder="20' Std price"
-                    value={standard20}
-                    onChange={(e) => setStandard20(e.target.value)}
                     className="w-full bg-white border border-slate-200 rounded-xl pl-8 pr-4 py-2.5 text-xs font-bold text-slate-900 focus:outline-none focus:border-[#0066FF]"
                     required
                   />
@@ -333,7 +332,7 @@ const ViaPricingManagement = () => {
                       setToLocation('');
                       setVia('');
                       setIhcPrice('');
-                      setStandard20('');
+                      setContainerSize('20ft');
                       setFormError('');
                       setFormSuccess('');
                     }}
@@ -374,8 +373,8 @@ const ViaPricingManagement = () => {
                   <tr>
                     <th className="p-4">To Location</th>
                     <th className="p-4">Via</th>
+                    <th className="p-4">Container Size</th>
                     <th className="p-4">IHC Price</th>
-                    <th className="p-4">20' Standard</th>
                     <th className="p-4">Date Configured</th>
                     <th className="p-4 text-right">Actions</th>
                   </tr>
@@ -385,8 +384,8 @@ const ViaPricingManagement = () => {
                     <tr key={item._id} className="hover:bg-slate-50/50 transition-colors">
                       <td className="p-4 text-slate-800 uppercase font-black">{item.destination || item.toLocation}</td>
                       <td className="p-4 text-[#0066FF] uppercase font-black">{item.viaPort || item.via}</td>
+                      <td className="p-4 text-slate-500 uppercase">{item.containerSize || '20ft'}</td>
                       <td className="p-4 text-[#0B1E43]">₹ {item.ihcPrice.toLocaleString('en-IN')}</td>
-                      <td className="p-4 text-[#0B1E43]">₹ {item.standard20?.toLocaleString('en-IN')}</td>
                       <td className="p-4 text-slate-400 font-medium">
                         <div className="flex items-center gap-1">
                           <Calendar size={13} className="text-slate-400" />

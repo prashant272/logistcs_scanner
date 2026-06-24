@@ -506,10 +506,26 @@ const SearchResults = () => {
                             <div className="text-2xl font-black text-slate-800 mt-0.5 flex flex-wrap items-baseline justify-start lg:justify-center gap-1">
                               <span className="text-lg font-black text-[#0066FF]">{displayCurrency}</span>
                               <span>{rate.price.toLocaleString()}</span>
-                              {rate.ihcPrice && (
-                                <span className="text-xs font-bold text-slate-500 block lg:inline-block mt-0.5">
-                                  + Approx. IHC: ₹{rate.ihcPrice.toLocaleString('en-IN')}
-                                </span>
+                              {searchPayload.fclStandard ? (
+                                rate.ihcPrice && (
+                                  <span className="text-xs font-bold text-slate-500 block lg:inline-block mt-0.5">
+                                    + Approx. IHC ({rate.ihcContainerSize || '20ft'}): ₹{rate.ihcPrice.toLocaleString('en-IN')}
+                                  </span>
+                                )
+                              ) : (
+                                rate.ihcRates && rate.ihcRates.length > 0 ? (
+                                  rate.ihcRates.map((ihc, idx) => (
+                                    <span key={idx} className="text-[11px] font-bold text-slate-550 block mt-0.5">
+                                      + Approx. IHC ({ihc.containerSize}): ₹{ihc.ihcPrice.toLocaleString('en-IN')}
+                                    </span>
+                                  ))
+                                ) : (
+                                  rate.ihcPrice && (
+                                    <span className="text-xs font-bold text-slate-500 block lg:inline-block mt-0.5">
+                                      + Approx. IHC ({rate.ihcContainerSize || '20ft'}): ₹{rate.ihcPrice.toLocaleString('en-IN')}
+                                    </span>
+                                  )
+                                )
                               )}
                             </div>
                             <div className="text-[8.5px] text-slate-500 font-black mt-0.5">Excl. local port duties</div>

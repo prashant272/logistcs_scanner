@@ -179,7 +179,7 @@ exports.searchPricing = async (req, res) => {
 
         // If viaPort is provided, the primary vendor search is from Origin -> ViaPort
         let finalToOr = toOr;
-        let ihcPricingMatch = null;
+        let ihcMatches = [];
         
         if (viaPort && type.toLowerCase() === 'sea') {
             const viaParsed = parseLoc(viaPort);
@@ -199,15 +199,15 @@ exports.searchPricing = async (req, res) => {
             
             finalToOr = viaOr; // Search vendor price to viaPort instead of destination
             
-            // We also need to fetch the IHC price to attach later
+            // We also need to fetch the IHC prices to attach later
             const IhcPricing = require('../models/IhcPricing');
-            // Try to find IHC price for viaPort -> original toLocation
+            // Try to find IHC prices for viaPort -> original toLocation
             const cleanDest = toLocation.replace(/\s*\(.*?\)\s*/g, '').trim();
             const ihcQuery = {
                 viaPort: { $regex: new RegExp(escapeRegExp(viaClean), 'i') },
                 destination: { $regex: new RegExp(`^${escapeRegExp(cleanDest)}$`, 'i') }
             };
-            ihcPricingMatch = await IhcPricing.findOne(ihcQuery);
+            ihcMatches = await IhcPricing.find(ihcQuery);
         }
 
         // Find matches, populate vendor details
@@ -289,10 +289,27 @@ exports.searchPricing = async (req, res) => {
                 }
                 
                 // Attach IHC Pricing if it exists
-                if (ihcPricingMatch) {
-                    matchObj.ihcPrice = ihcPricingMatch.ihcPrice;
-                    matchObj.viaPort = ihcPricingMatch.viaPort;
-                    matchObj.originalDestination = ihcPricingMatch.destination;
+                if (ihcMatches && ihcMatches.length > 0) {
+                    const reqSize = fclStandard ? fclStandard.trim() : '';
+                    let matchedIhc = null;
+                    if (reqSize) {
+                        const normalizedSize = reqSize.includes('40') ? '40ft' : '20ft';
+                        matchedIhc = ihcMatches.find(m => m.containerSize === normalizedSize);
+                    }
+                    if (!matchedIhc) {
+                        matchedIhc = ihcMatches.find(m => m.containerSize === '20ft') || ihcMatches[0];
+                    }
+
+                    matchObj.ihcPrice = matchedIhc.ihcPrice;
+                    matchObj.viaPort = matchedIhc.viaPort;
+                    matchObj.originalDestination = matchedIhc.destination;
+                    matchObj.ihcContainerSize = matchedIhc.containerSize;
+                    
+                    // Attach all rates for size-wise dropdown/listing display on the frontend
+                    matchObj.ihcRates = ihcMatches.map(m => ({
+                        containerSize: m.containerSize,
+                        ihcPrice: m.ihcPrice
+                    }));
                 }
                 
                 return matchObj;

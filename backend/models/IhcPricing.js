@@ -10,8 +10,11 @@ const ihcPricingSchema = new mongoose.Schema({
         required: true
     },
     standard20: {
-        type: Number,
-        required: true
+        type: Number
+    },
+    containerSize: {
+        type: String,
+        default: '20ft'
     },
     ihcPrice: {
         type: Number,
@@ -24,6 +27,6 @@ const ihcPricingSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 // Create compound index for faster lookup
-ihcPricingSchema.index({ viaPort: 1, destination: 1 }, { unique: true });
+ihcPricingSchema.index({ viaPort: 1, destination: 1, containerSize: 1 }, { unique: true });
 
 module.exports = mongoose.model('IhcPricing', ihcPricingSchema);

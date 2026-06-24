@@ -3,17 +3,18 @@ const Location = require('../models/Location');
 
 exports.createIhcPricing = async (req, res) => {
     try {
-        const { via, toLocation, standard20, ihcPrice, currency } = req.body;
+        const { via, toLocation, standard20, ihcPrice, currency, containerSize } = req.body;
         const viaPort = via;
         const destination = toLocation;
+        const size = containerSize || '20ft';
 
         // Basic validation
-        if (!viaPort || !destination || standard20 === undefined || ihcPrice === undefined) {
-            return res.status(400).json({ message: 'All fields (via, toLocation, standard20, ihcPrice) are required.' });
+        if (!viaPort || !destination || ihcPrice === undefined) {
+            return res.status(400).json({ message: 'All fields (via, toLocation, ihcPrice) are required.' });
         }
 
         // Check if exists to avoid unique constraint error
-        const existing = await IhcPricing.findOne({ viaPort, destination });
+        const existing = await IhcPricing.findOne({ viaPort, destination, containerSize: size });
         if (existing) {
             return res.status(400).json({ message: 'IHC Price for this route and container size already exists.' });
         }
@@ -21,7 +22,8 @@ exports.createIhcPricing = async (req, res) => {
         const newIhc = new IhcPricing({
             viaPort,
             destination,
-            standard20: Number(standard20),
+            containerSize: size,
+            standard20: standard20 !== undefined ? Number(standard20) : undefined,
             ihcPrice: Number(ihcPrice),
             currency: currency || 'INR'
         });
@@ -63,11 +65,17 @@ exports.deleteIhcPricing = async (req, res) => {
 exports.updateIhcPricing = async (req, res) => {
     try {
         const { id } = req.params;
-        const { via, toLocation, standard20, ihcPrice, currency } = req.body;
+        const { via, toLocation, standard20, ihcPrice, currency, containerSize } = req.body;
         
         const result = await IhcPricing.findByIdAndUpdate(
             id, 
-            { ihcPrice: Number(ihcPrice), standard20: Number(standard20), viaPort: via, destination: toLocation }, 
+            { 
+                ihcPrice: Number(ihcPrice), 
+                standard20: standard20 !== undefined ? Number(standard20) : undefined, 
+                viaPort: via, 
+                destination: toLocation,
+                containerSize: containerSize || '20ft'
+            }, 
             { new: true }
         );
         
