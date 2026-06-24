@@ -5,8 +5,10 @@ import {
   Clock, Calendar, Coins, CheckCircle2 
 } from 'lucide-react';
 import { useEnquiries } from '../../services/EnquiryService';
+import { useAuth } from '../../context/AuthContext';
 
 const VendorBookingsTab = ({ title = 'Bookings', type = 'my' }) => {
+  const { user } = useAuth();
   const {
     loading,
     error,
@@ -25,7 +27,7 @@ const VendorBookingsTab = ({ title = 'Bookings', type = 'my' }) => {
   const loadBookings = async () => {
     try {
       const data = await fetchVendorBookings(type);
-      setBookings(data || []);
+      setBookings(data?.data || []);
     } catch (err) {
       console.error('Error loading bookings:', err);
     }
@@ -175,6 +177,7 @@ const VendorBookingsTab = ({ title = 'Bookings', type = 'my' }) => {
         <div className="grid grid-cols-1 gap-5">
           {filteredBookings.map((bkg) => {
             const hasQuoteInput = activeQuoteId === bkg._id;
+            const isInitiator = bkg.client?._id === user?._id || bkg.client === user?._id || (user?._id && String(bkg.client) === String(user._id));
 
             return (
               <div 
@@ -255,7 +258,7 @@ const VendorBookingsTab = ({ title = 'Bookings', type = 'my' }) => {
                       <div className="flex flex-wrap items-center lg:justify-end gap-1.5 font-black text-xs text-slate-800">
                         <Building2 size={13} className="text-slate-400" />
                         <span>{bkg.client?.company || bkg.guestCompany || bkg.client?.name || bkg.guestName || 'Customer'}</span>
-                        {bkg.client?.role === 'vendor' && (
+                        {bkg.client?.role === 'vendor' && bkg.client?.activePlan && bkg.client?.planEndDate && new Date(bkg.client.planEndDate) > new Date() && (
                           <span className="bg-blue-100 text-blue-800 text-[9px] font-black px-2 py-0.5 rounded-md border border-blue-200 uppercase tracking-wider">
                             Verified Vendor
                           </span>
@@ -314,7 +317,7 @@ const VendorBookingsTab = ({ title = 'Bookings', type = 'my' }) => {
                 </div>
 
                 {/* Actions row for Direct Bookings */}
-                {type === 'direct' && bkg.status === 'Pending' && (
+                {type === 'direct' && bkg.status === 'Pending' && !isInitiator && (
                   <div className="border-t border-slate-50 pt-4 flex flex-col sm:flex-row justify-end items-center gap-3 pl-2">
                     
                     {!hasQuoteInput ? (
@@ -364,7 +367,7 @@ const VendorBookingsTab = ({ title = 'Bookings', type = 'my' }) => {
                 )}
 
                 {/* Actions row for My Bookings */}
-                {type === 'my' && (
+                {type === 'my' && !isInitiator && (
                   <div className="border-t border-slate-50 pt-4 flex flex-wrap justify-end items-center gap-2.5 pl-2">
                     <button
                       onClick={() => handleAction(bkg._id, 'Accepted')}

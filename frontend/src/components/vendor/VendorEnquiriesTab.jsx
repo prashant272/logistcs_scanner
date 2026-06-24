@@ -2,10 +2,34 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { 
   Check, X, Phone, Mail, User, Info, Search, MapPin, 
   Building2, Ship, Plane, Truck, Warehouse, Package, 
-  Clock, Calendar, Coins, CheckCircle2, Eye, ToggleLeft, ToggleRight, Lock
+  Clock, Calendar, Coins, CheckCircle2, Eye, ToggleLeft, ToggleRight, Lock, Paperclip
 } from 'lucide-react';
 import { useEnquiries } from '../../services/EnquiryService';
 import useInfiniteScroll from '../../hooks/useInfiniteScroll';
+
+const cleanCompanyName = (rawName) => {
+  if (!rawName) return 'Customer';
+  let name = String(rawName).replace(/\bundefined\b/gi, '').replace(/\bnull\b/gi, '').replace(/\s+/g, ' ').trim();
+  return name || 'Customer';
+};
+
+const maskCompanyName = (name) => {
+  const cleaned = cleanCompanyName(name);
+  return cleaned.split(' ').map(word => {
+    if (word.length <= 2) return word[0] + 'X';
+    let chars = word.split('');
+    for (let i = 1; i < chars.length; i++) {
+      if (i === chars.length - 1) {
+        if (word.length > 3) continue;
+      }
+      if (word.length > 5 && (i === 3 || i === 4 || i === 5)) {
+        continue;
+      }
+      chars[i] = 'X';
+    }
+    return chars.join('').toUpperCase();
+  }).join(' ');
+};
 
 const VendorEnquiriesTab = ({ title, type }) => {
   const {
@@ -72,8 +96,10 @@ const VendorEnquiriesTab = ({ title, type }) => {
   const lastEnquiryElementRef = useInfiniteScroll(handleLoadMore, hasMore, loadingMore || loading);
 
   const handleAction = async (id, newStatus, priceVal = null, qDetails = null) => {
+    console.log('[handleAction] id:', id, 'newStatus:', newStatus, 'type:', type, 'priceVal:', priceVal, 'qDetails:', qDetails);
     try {
-      await updateEnquiryStatus(id, newStatus, type, priceVal, qDetails);
+      const res = await updateEnquiryStatus(id, newStatus, type, priceVal, qDetails);
+      console.log('[handleAction] success response:', res);
     } catch (err) {
       console.error('Error updating status:', err);
       alert(err.response?.data?.message || 'Error updating status');
@@ -343,156 +369,245 @@ const VendorEnquiriesTab = ({ title, type }) => {
 
             return (
               <div 
+                ref={index === filteredEnquiries.length - 1 ? lastEnquiryElementRef : null}
                 key={enq._id} 
-                className="bg-gradient-to-br from-white to-[#f4f8ff]/30 rounded-3xl p-6 md:p-8 border border-sky-100/70 hover:border-sky-300 hover:shadow-xl transition-all duration-300 relative shadow-[0_12px_45px_rgba(11,30,67,0.025)]"
+                className="bg-gradient-to-br from-white to-[#f4f8ff]/35 rounded-2xl p-5 md:p-6 border border-sky-100/75 hover:border-sky-300 hover:shadow-lg transition-all duration-300 relative shadow-[0_8px_30px_rgba(11,30,67,0.02)] space-y-4"
               >
                 {/* Date of Enquiry Badge */}
-                <div className="absolute top-6 right-6 text-xs text-slate-400 font-bold">
+                <div className="absolute top-5 right-5 text-[10px] text-slate-400 font-bold">
                   Date of Enquiry : - <span className="text-slate-700 font-black">{formatDate(enq.createdAt)}</span>
                 </div>
 
-                {/* Card Main Grid */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                  {/* Left Column: Avatar & Contact Specs */}
-                  <div className="flex items-start gap-4">
+                {/* Card Top Row: Icon, Ports, and Load Details */}
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100/60 pb-3 pt-1">
+                  <div className="flex items-center gap-3">
                     {/* Circle Icon Badge */}
-                    <div className="w-12 h-12 rounded-2xl bg-sky-50 border border-sky-100 flex items-center justify-center shrink-0 shadow-sm mt-1">
+                    <div className="w-10 h-10 rounded-xl bg-sky-50 border border-sky-100 flex items-center justify-center shrink-0 shadow-sm">
                       {getEnquiryIcon(enq.type)}
                     </div>
-
-                    {/* Customer & Commodity Info */}
-                    <div className="space-y-1.5">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h4 className="text-base font-black text-[#0B1E43] tracking-tight">
-                          {enq.guestCompany || enq.guestName || enq.client?.company || enq.client?.name || 'Customer'}
-                        </h4>
-                        {enq.clientCreditRequired && (
-                          <span className="bg-amber-100 text-amber-800 text-[9px] font-black px-2 py-0.5 rounded-md border border-amber-200 uppercase tracking-wider">
-                            Credit Required
-                          </span>
-                        )}
-                        {enq.client?.role === 'vendor' && (
-                          <span className="bg-blue-100 text-blue-800 text-[9px] font-black px-2 py-0.5 rounded-md border border-blue-200 uppercase tracking-wider">
-                            Verified Vendor
-                          </span>
-                        )}
+                    
+                    {/* Ports / Locations Route */}
+                    <div className="flex flex-wrap items-center gap-2 text-xs font-black text-slate-750">
+                      <div className="flex items-center gap-2 bg-[#f4f7fc] px-3 py-2 rounded-xl border border-slate-150 shadow-sm">
+                        <MapPin size={12} className="text-[#0066FF]" />
+                        <span>{enq.fromLocation}</span>
                       </div>
-
-                      <div className="text-xs text-slate-500 font-bold space-y-1">
-                        <div className="flex items-center gap-2 text-slate-600">
-                          <Phone size={13} className="text-[#0066FF]" /> 
-                          <span>{enq.guestPhone || enq.client?.phone || 'N/A'}</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-slate-500">
-                          <Mail size={13} className="text-[#0066FF]" /> 
-                          <span className="break-all">{enq.guestEmail || enq.client?.email || 'N/A'}</span>
-                        </div>
-                      </div>
-
-                      <div className="flex flex-wrap items-center gap-2 mt-2">
-                        {enq.commodity && (
-                          <div className="inline-block text-xs font-black text-slate-800 uppercase bg-[#f4f7fc] px-3 py-1 rounded-xl border border-slate-100">
-                            Commodity: <span className="text-[#0066FF]">{enq.commodity}</span>
-                          </div>
-                        )}
-                        {enq.message && (
-                          <div className="inline-block text-xs font-black text-slate-800 uppercase bg-amber-50 px-3 py-1 rounded-xl border border-amber-100/60">
-                            Message Attached
-                          </div>
-                        )}
-                        {(enq.commodity || enq.message) && (
-                          <button
-                            onClick={() => setViewingEnquiry(enq)}
-                            className="w-7 h-7 flex items-center justify-center bg-blue-50 text-blue-500 rounded-lg hover:bg-blue-100 hover:text-blue-600 transition-colors cursor-pointer"
-                            title="View Details"
-                          >
-                            <Eye size={14} />
-                          </button>
-                        )}
+                      <span className="text-[#0066FF] font-black text-base">↔</span>
+                      <div className="flex items-center gap-2 bg-[#f4f7fc] px-3 py-2 rounded-xl border border-slate-150 shadow-sm">
+                        <MapPin size={12} className="text-[#0066FF]" />
+                        <span>{enq.toLocation}</span>
                       </div>
                     </div>
                   </div>
 
-                  {/* Middle Column: Specs Badges */}
-                  <div className="flex flex-wrap gap-3 max-w-md items-center md:justify-center">
-                    {/* Specs Badge: Weight */}
-                    <div className="bg-white border border-slate-100/90 rounded-2xl py-2 px-4 shadow-[0_4px_12px_rgba(0,0,0,0.01)] text-center min-w-[80px]">
-                      <div className="text-[10px] text-slate-400 font-black tracking-wider uppercase">Weight</div>
-                      <div className="text-xs font-black text-slate-800 mt-0.5">{enq.weightRange || 'N/A'}</div>
+                  {/* Top-Right Badges: Container, Load Type, Date of Shipment */}
+                  <div className="flex flex-wrap gap-2 items-center pr-28">
+                    {/* Container Type */}
+                    <div className="bg-white border border-slate-200/80 rounded-lg px-3 py-1.5 text-center min-w-[70px] shadow-sm">
+                      <div className="text-[8px] text-slate-400 font-black uppercase tracking-wider">Container Type</div>
+                      <div className="text-[10px] font-black text-slate-800 mt-0.5">{enq.vehicleType || '40 FT'}</div>
+                    </div>
+                    {/* Load Type */}
+                    <div className="bg-white border border-slate-200/80 rounded-lg px-3 py-1.5 text-center min-w-[70px] shadow-sm">
+                      <div className="text-[8px] text-slate-400 font-black uppercase tracking-wider">Load Type</div>
+                      <div className="text-[10px] font-black text-slate-800 mt-0.5">{enq.truckLoad || 'FCL'}</div>
+                    </div>
+                    {/* Date of Shipment / Target Delivery */}
+                    <div className="bg-white border border-slate-200/80 rounded-lg px-3 py-1.5 text-center min-w-[100px] shadow-sm">
+                      <div className="text-[8px] text-slate-400 font-black uppercase tracking-wider font-mono">Date of Shipment</div>
+                      <div className="text-[10px] font-black text-slate-800 mt-0.5">{getTargetDate(enq.createdAt, enq.deliverySpeed)}</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Card Middle Row: Shipper Details and Matched Info */}
+                <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 py-1">
+                  
+                  {/* Left Sub-Section: Company & Details Box */}
+                  <div className="space-y-2 w-full lg:max-w-md">
+                    <div className="flex items-center gap-2">
+                      <h4 className="text-xs font-black text-[#0B1E43] tracking-tight uppercase">
+                        {isAccepted 
+                          ? cleanCompanyName(enq.guestCompany || enq.guestName || enq.client?.company || enq.client?.name)
+                          : maskCompanyName(enq.guestCompany || enq.guestName || enq.client?.company || enq.client?.name)
+                        }
+                      </h4>
+                      {enq.clientCreditRequired && (
+                        <span className="bg-amber-100 text-amber-800 text-[8px] font-black px-2 py-0.5 rounded-md border border-amber-200 uppercase tracking-wider">
+                          Credit Required
+                        </span>
+                      )}
+                      {enq.client?.activePlan && enq.client?.planEndDate && new Date(enq.client.planEndDate) > new Date() && (
+                        <span className="bg-blue-100 text-blue-800 text-[8px] font-black px-2 py-0.5 rounded-md border border-blue-200 uppercase tracking-wider">
+                          Verified Customer
+                        </span>
+                      )}
                     </div>
 
-                    {/* Specs Badge: Load Type */}
-                    <div className="bg-white border border-slate-100/90 rounded-2xl py-2 px-4 shadow-[0_4px_12px_rgba(0,0,0,0.01)] text-center min-w-[80px]">
-                      <div className="text-[10px] text-slate-400 font-black tracking-wider uppercase">Load Type</div>
-                      <div className="text-xs font-black text-slate-800 mt-0.5">
-                        {enq.type === 'sea' ? (enq.handlingType || 'LCL') : (enq.truckLoad || 'General')}
+                    {/* Red/Green Details Box */}
+                    {!isAccepted ? (
+                      <div className="border border-dashed border-red-200 bg-red-50/10 rounded-xl p-3 relative shadow-[inset_0_2px_4px_rgba(0,0,0,0.01)]">
+                        <span className="bg-red-150 text-red-755 text-[8px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-md absolute -top-2.5 left-3 border border-red-200">
+                          Hidden Before Accept
+                        </span>
+                        
+                        <div className="grid grid-cols-3 divide-x divide-red-100/80 text-center pt-1">
+                          <div className="px-1 space-y-0.5">
+                            <span className="text-[8px] font-black text-slate-450 uppercase tracking-wider block">Mobile No.</span>
+                            <div className="w-10 h-6 bg-white border border-slate-200 rounded flex items-center justify-center shadow-sm mx-auto">
+                              <Lock size={10} className="text-slate-400" />
+                            </div>
+                          </div>
+
+                          <div className="px-1 space-y-0.5">
+                            <span className="text-[8px] font-black text-slate-450 uppercase tracking-wider block">Email ID</span>
+                            <div className="w-10 h-6 bg-white border border-slate-200 rounded flex items-center justify-center shadow-sm mx-auto">
+                              <Lock size={10} className="text-slate-400" />
+                            </div>
+                          </div>
+
+                          <div className="px-1 space-y-0.5">
+                            <span className="text-[8px] font-black text-slate-450 uppercase tracking-wider block">Commodity</span>
+                            <div className="w-10 h-6 bg-white border border-slate-200 rounded flex items-center justify-center shadow-sm mx-auto">
+                              <Lock size={10} className="text-slate-400" />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="border border-emerald-250 bg-emerald-50/10 rounded-xl p-3 relative shadow-[inset_0_2px_4px_rgba(0,0,0,0.015)]">
+                        <span className="bg-emerald-100 text-emerald-700 text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md absolute -top-2.5 left-3 border border-emerald-200">
+                          Visible After Accept
+                        </span>
+
+                        <div className="grid grid-cols-3 divide-x divide-emerald-100 text-center pt-1">
+                          <div className="px-2 space-y-0.5 min-w-0">
+                            <span className="text-[8px] font-black text-slate-455 uppercase tracking-wider block">Mobile No.</span>
+                            <div className="flex items-center justify-center gap-1 text-[10px] font-black text-slate-800">
+                              <Phone size={10} className="text-[#0066FF] shrink-0" /> 
+                              <span className="truncate">{enq.guestPhone || enq.client?.phone || 'N/A'}</span>
+                            </div>
+                          </div>
+
+                          <div className="px-2 space-y-0.5 min-w-0">
+                            <span className="text-[8px] font-black text-slate-455 uppercase tracking-wider block">Email ID</span>
+                            <div className="flex items-center justify-center gap-1 text-[10px] font-black text-slate-800">
+                              <Mail size={10} className="text-[#0066FF] shrink-0" /> 
+                              <span className="break-all truncate" title={enq.guestEmail || enq.client?.email}>{enq.guestEmail || enq.client?.email || 'N/A'}</span>
+                            </div>
+                          </div>
+
+                          <div className="px-2 space-y-0.5 min-w-0">
+                            <span className="text-[8px] font-black text-slate-455 uppercase tracking-wider block">Commodity</span>
+                            <div className="flex items-center justify-center gap-1 text-[10px] font-black text-slate-800">
+                              <Package size={10} className="text-[#0066FF] shrink-0" /> 
+                              <span className="truncate" title={enq.commodity}>{enq.commodity || 'General Cargo'}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Right Sub-Section: Message Attachment, Volume, Target Price */}
+                  <div className="flex flex-wrap items-center gap-3 lg:justify-end">
+                    {/* Message Attached Option */}
+                    {enq.message ? (
+                      <div className="flex items-center gap-1.5">
+                        <div className="inline-flex items-center gap-1 text-[9px] font-black text-slate-800 uppercase bg-amber-50 px-2.5 py-1.5 rounded-lg border border-amber-100/65 shadow-sm">
+                          <span>Message Attached</span>
+                        </div>
+                        {!isAccepted ? (
+                          <div className="w-7 h-7 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-400 shadow-sm">
+                            <Lock size={11} />
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1">
+                            <div className="w-7 h-7 rounded-lg bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-500 shadow-sm">
+                              <Paperclip size={11} />
+                            </div>
+                            <button
+                              onClick={() => setViewingEnquiry(enq)}
+                              className="w-7 h-7 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-500 hover:text-blue-600 border border-blue-100 flex items-center justify-center transition-all cursor-pointer shadow-sm"
+                              title="View Message Details"
+                            >
+                              <Eye size={11} />
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    ) : null}
+
+                    {/* Weight / Target Delivery */}
+                    <div className="bg-white border border-slate-200/90 rounded-xl py-1.5 px-4 shadow-[0_4px_12px_rgba(0,0,0,0.01)] text-center min-w-[75px]">
+                      <div className="text-[8px] text-slate-400 font-black tracking-wider uppercase">Weight</div>
+                      <div className="text-[10px] font-black text-slate-800 mt-0.5">{enq.weightRange || 'N/A'}</div>
+                    </div>
+
+                    {/* Volume Badge */}
+                    <div className="bg-white border border-slate-200/90 rounded-xl py-1.5 px-4 shadow-[0_4px_12px_rgba(0,0,0,0.01)] text-center min-w-[75px]">
+                      <div className="text-[8px] text-slate-400 font-black tracking-wider uppercase">Volume</div>
+                      <div className="text-[10px] font-black text-slate-800 mt-0.5">
+                        {isAccepted 
+                          ? (enq.type === 'sea' ? 'CBM - 0-5' : (enq.vehicleType || 'Standard'))
+                          : 'UNIT- X'
+                        }
                       </div>
                     </div>
 
-                    {/* Specs Badge: Speed / Target Date */}
-                    <div className="bg-white border border-slate-100/90 rounded-2xl py-2 px-4 shadow-[0_4px_12px_rgba(0,0,0,0.01)] text-center min-w-[100px]">
-                      <div className="text-[10px] text-slate-400 font-black tracking-wider uppercase">Target Delivery</div>
-                      <div className="text-xs font-black text-slate-800 mt-0.5">{getTargetDate(enq.createdAt, enq.deliverySpeed)}</div>
-                    </div>
-
-                    {/* Specs Badge: Volume / CBM */}
-                    <div className="bg-white border border-slate-100/90 rounded-2xl py-2 px-4 shadow-[0_4px_12px_rgba(0,0,0,0.01)] text-center min-w-[80px]">
-                      <div className="text-[10px] text-slate-400 font-black tracking-wider uppercase">Volume</div>
-                      <div className="text-xs font-black text-slate-800 mt-0.5">
-                        {enq.type === 'sea' ? 'CBM - 0-5' : (enq.vehicleType || 'Standard')}
+                    {/* Target Price Badge */}
+                    <div className="bg-white border border-slate-200/90 rounded-xl py-1.5 px-4 shadow-[0_4px_12px_rgba(0,0,0,0.01)] text-center min-w-[85px]">
+                      <div className="text-[8px] text-slate-400 font-black tracking-wider uppercase">Target Price</div>
+                      <div className="text-[10px] font-black text-slate-850 mt-0.5">
+                        {isAccepted 
+                          ? (enq.price ? `$ ${enq.price.toLocaleString()}` : 'N/A')
+                          : '$ XXX'
+                        }
                       </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Route & Actions Bottom Bar */}
-                <div className="mt-6 pt-6 border-t border-slate-100/80 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  {/* Ports / Locations Route */}
-                  <div className="flex flex-wrap items-center gap-3 text-xs font-bold text-slate-700">
-                    <div className="flex items-center gap-2 bg-[#f4f7fc] px-3.5 py-2 rounded-xl border border-slate-150">
-                      <Building2 size={14} className="text-slate-400" />
-                      <span>{enq.fromLocation}</span>
-                    </div>
-                    <span className="text-[#0066FF] font-black text-lg">↔</span>
-                    <div className="flex items-center gap-2 bg-[#f4f7fc] px-3.5 py-2 rounded-xl border border-slate-150">
-                      <Building2 size={14} className="text-slate-400" />
-                      <span>{enq.toLocation}</span>
-                    </div>
+                {/* Card Bottom Row: Route & Actions Bottom Bar */}
+                <div className="pt-3 border-t border-slate-100/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  {/* Left Side: Quoted Total if any */}
+                  <div>
+                    {hasQuote && quoteData ? (
+                      <div className="flex items-center gap-1.5 text-[10px] font-black text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-100/70 shadow-sm">
+                        <Coins size={12} />
+                        <span>
+                          Quoted Total: {quoteData.allInCurrency || '₹'} {quotePrice?.toLocaleString() || quoteData.allInCharges}
+                        </span>
+                      </div>
+                    ) : <div />}
                   </div>
 
-                  {hasQuote && quoteData && (
-                    <div className="flex items-center gap-2 text-xs font-black text-emerald-600 bg-emerald-50 px-4 py-2.5 rounded-xl border border-emerald-100/70">
-                      <Coins size={14} />
-                      <span>
-                        Quoted Total: {quoteData.allInCurrency || '₹'} {quotePrice?.toLocaleString() || quoteData.allInCharges}
-                      </span>
-                    </div>
-                  )}
-
                   {/* Actions / Buttons */}
-                  <div className="flex items-center gap-2.5 shrink-0">
+                  <div className="flex items-center gap-2 shrink-0">
                     {/* Status Accepted Badge */}
                     {isAccepted ? (
-                      <div className="flex items-center gap-1.5 bg-green-500 text-white font-extrabold text-xs px-5 py-2.5 rounded-xl shadow-md shadow-green-500/10">
-                        <CheckCircle2 size={14} />
+                      <div className="flex items-center gap-1 bg-emerald-600 text-white font-extrabold text-[10px] px-4 py-2 rounded-xl shadow-md shadow-emerald-500/10">
+                        <CheckCircle2 size={12} />
                         <span>Accepted</span>
                       </div>
                     ) : (
                       <button
                         onClick={() => handleAction(enq._id, 'Accepted')}
-                        className="bg-green-500 hover:bg-green-600 text-white font-extrabold text-xs px-6 py-2.5 rounded-xl transition-all shadow-md shadow-green-500/10 cursor-pointer"
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-[10px] px-5 py-2 rounded-xl transition-all shadow-md shadow-emerald-500/10 cursor-pointer uppercase tracking-wider"
                       >
                         Accept
                       </button>
                     )}
 
                     {/* Quote trigger button */}
-                    <button
-                      onClick={() => setActiveQuoteId(activeQuoteId === enq._id ? null : enq._id)}
-                      className="bg-amber-500 hover:bg-amber-600 text-white font-extrabold text-xs px-6 py-2.5 rounded-xl transition-all shadow-md shadow-amber-500/10 cursor-pointer"
-                    >
-                      {hasQuote ? 'Update Quote' : 'Quote'}
-                    </button>
+                    {isAccepted && (
+                      <button
+                        onClick={() => setActiveQuoteId(activeQuoteId === enq._id ? null : enq._id)}
+                        className="bg-amber-500 hover:bg-amber-600 text-white font-extrabold text-[10px] px-5 py-2 rounded-xl transition-all shadow-md shadow-amber-500/10 cursor-pointer uppercase tracking-wider"
+                      >
+                        {hasQuote ? 'Update Quote' : 'Quote'}
+                      </button>
+                    )}
                   </div>
                 </div>
 
@@ -673,6 +788,13 @@ const VendorEnquiriesTab = ({ title, type }) => {
           </div>
         </div>
       )}
+      {/* Alert Note at the bottom */}
+      <div className="bg-emerald-50 border border-emerald-100 text-emerald-800 rounded-2xl p-4 flex items-start gap-3 mt-8">
+        <Info className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+        <p className="text-xs font-bold leading-relaxed">
+          Note : Mobile No., Email ID and Commodity details will be visible to the vendor only after they accept the enquiry.
+        </p>
+      </div>
     </div>
   );
 };

@@ -3,7 +3,7 @@ import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { 
   ArrowLeft, Sparkles, Ship, Plane, Truck, Warehouse, Package, 
   Coins, CheckCircle2, ChevronRight, Phone, Mail, Building, 
-  FileText, X, AlertCircle, Loader2, Calendar, Clock, ToggleLeft, ToggleRight
+  FileText, X, AlertCircle, Loader2, Calendar, Clock, ToggleLeft, ToggleRight, MapPin
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useEnquiries } from '../../services/EnquiryService';
@@ -33,6 +33,16 @@ const SearchResults = () => {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState(null);
+
+  const formatDate = (dateStr) => {
+    if (!dateStr) return 'N/A';
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric'
+    });
+  };
 
   // Guest details form state
   const [isGuestModalOpen, setIsGuestModalOpen] = useState(false);
@@ -85,7 +95,7 @@ const SearchResults = () => {
           price: null,
           vendor: null,
           isDirect: true,
-          isBooking: false,
+          isBooking: !!(user && user.role === 'vendor'),
           ...guestInfo
         };
         createEnquiry(broadcastPayload)
@@ -124,7 +134,7 @@ const SearchResults = () => {
         price: null,
         vendor: null,
         isDirect: true,
-        isBooking: false
+        isBooking: !!(user && user.role === 'vendor')
       };
       await createEnquiry(broadcastPayload);
       setSuccess(true);
@@ -145,7 +155,7 @@ const SearchResults = () => {
     setLoading(true);
     setError(null);
 
-    const isBooking = actionType === 'book';
+    const isBooking = !!(user && user.role === 'vendor');
 
     // 1. Primary Payload targeted specifically to this vendor
     const primaryPayload = {
@@ -196,11 +206,6 @@ const SearchResults = () => {
       // Trigger targeted enquiry
       await createEnquiry(primaryPayload);
       
-      // Trigger broadcast direct booking for other providers only if it is a Booking
-      if (isBooking) {
-        await createEnquiry(broadcastPayload);
-      }
-      
       setSuccess(true);
       setIsGuestModalOpen(false);
     } catch (err) {
@@ -234,7 +239,7 @@ const SearchResults = () => {
     } else {
       // Auto broadcast flow
       setLoading(true);
-      const isBooking = pendingAction?.type === 'book';
+      const isBooking = !!(user && user.role === 'vendor');
       const broadcastPayload = {
         fromLocation: searchPayload.fromLocation,
         toLocation: searchPayload.toLocation,
@@ -382,101 +387,143 @@ const SearchResults = () => {
               <span className="text-xs text-slate-400 font-bold">{searchResults.length} Match(es) found</span>
             </div>
 
-            <div className={`grid grid-cols-1 ${searchResults.length === 1 ? 'max-w-xl mx-auto' : searchResults.length === 2 ? 'md:grid-cols-2 max-w-4xl mx-auto' : 'md:grid-cols-2 lg:grid-cols-3'} gap-6`}>
-              {searchResults.map((rate) => (
-                <div 
-                  key={rate._id} 
-                  className="bg-white border border-slate-100 hover:border-[#0066FF]/35 hover:shadow-xl rounded-3xl p-6 transition-all duration-300 flex flex-col justify-between gap-5 relative overflow-hidden shadow-[0_8px_30px_rgba(11,30,67,0.015)] group"
-                >
-                  <div className="space-y-4">
-                    {/* Carrier Header */}
-                    <div className="flex justify-between items-start border-b border-slate-50 pb-4">
-                      <div>
-                        <span className="text-[9px] font-black uppercase text-slate-400 tracking-wider">Cargo Operator</span>
-                        <h4 className="text-sm font-extrabold text-slate-800 mt-0.5 leading-tight">{rate.vendor?.company || rate.vendor?.name}</h4>
-                      </div>
-                      <div className="w-10 h-10 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center shrink-0">
-                        {getFreightIcon(rate.type)}
-                      </div>
-                    </div>
-
-                    {/* Specs Details Grid */}
-                    <div className="grid grid-cols-2 gap-3 text-xs text-slate-500 font-semibold py-1">
-                      {rate.type === 'air' && (
-                        <>
-                          <div className="flex flex-col">
-                            <span className="text-[9px] text-slate-400 uppercase font-black">Airline</span>
-                            <span className="text-slate-800 truncate font-bold mt-0.5">{rate.airline || 'Any'}</span>
+            <div className="grid grid-cols-1 gap-6">
+              {searchResults.map((rate) => {
+                  const validityDate = formatDate(rate.validUntil);
+                  const displayCurrency = rate.currency === 'USD' ? '$' : rate.currency === 'EUR' ? '€' : rate.currency === 'GBP' ? '£' : rate.currency === 'AED' ? 'د.إ' : '₹';
+                  
+                  return (
+                    <div 
+                      key={rate._id} 
+                      className="bg-white border border-slate-100 hover:border-blue-500/20 hover:shadow-[0_20px_40px_rgba(11,30,67,0.06)] rounded-2xl p-6 transition-all duration-300 relative shadow-[0_8px_30px_rgba(11,30,67,0.015)] hover:-translate-y-0.5"
+                    >
+                      {/* Top Row: Route & Specs */}
+                      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-100 pb-5">
+                        {/* Left: Route info */}
+                        <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100/50 flex items-center justify-center shrink-0 shadow-sm">
+                            {getFreightIcon(rate.type)}
                           </div>
-                          <div className="flex flex-col">
-                            <span className="text-[9px] text-slate-400 uppercase font-black">Weight Class</span>
-                            <span className="text-slate-800 truncate font-bold mt-0.5">{rate.weightRange}</span>
+                                          <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-2.5 bg-slate-100 hover:bg-slate-200/80 px-4 py-2.5 rounded-xl border border-slate-300 shadow-sm transition-all duration-200">
+                              <MapPin size={13} className="text-[#0066FF]" />
+                              <span className="text-xs font-extrabold text-[#0B1E43]">{rate.fromLocation}</span>
+                            </div>
+                            <div className="flex flex-col items-center shrink-0">
+                              <span className="text-[#0066FF] font-black text-lg leading-none tracking-widest">→</span>
+                            </div>
+                            <div className="flex items-center gap-2.5 bg-slate-100 hover:bg-slate-200/80 px-4 py-2.5 rounded-xl border border-slate-300 shadow-sm transition-all duration-200">
+                              <MapPin size={13} className="text-[#0066FF]" />
+                              <span className="text-xs font-extrabold text-[#0B1E43]">{rate.toLocation}</span>
+                            </div>
                           </div>
-                        </>
-                      )}
-                      {rate.type === 'land' && (
-                        <>
-                          <div className="flex flex-col">
-                            <span className="text-[9px] text-slate-400 uppercase font-black">Truck Type</span>
-                            <span className="text-slate-800 truncate font-bold mt-0.5">{rate.vehicleType}</span>
-                          </div>
-                          <div className="flex flex-col">
-                            <span className="text-[9px] text-slate-400 uppercase font-black">Load Category</span>
-                            <span className="text-slate-800 truncate font-bold mt-0.5">{rate.truckLoad}</span>
-                          </div>
-                        </>
-                      )}
-                      <div className="flex flex-col">
-                        <span className="text-[9px] text-slate-400 uppercase font-black">Transit Time</span>
-                        <span className="text-slate-800 font-bold mt-0.5 flex items-center gap-1"><Clock size={12} className="text-slate-400" /> {rate.deliverySpeed} Days</span>
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="text-[9px] text-slate-400 uppercase font-black">Handling</span>
-                        <span className="text-slate-800 truncate font-bold mt-0.5">{rate.handlingType || 'Standard'}</span>
-                      </div>
-                      {rate.additionalServices && (
-                        <div className="flex flex-col col-span-2 mt-1">
-                          <span className="text-[9px] text-slate-400 uppercase font-black">Additional Services</span>
-                          <span className="text-slate-800 truncate font-bold mt-0.5">{rate.additionalServices}</span>
                         </div>
-                      )}
-                    </div>
-                  </div>
 
-                  {/* Pricing and Buttons */}
-                  <div className="space-y-4 pt-4 border-t border-slate-50">
-                    <div className="flex justify-between items-end">
-                      <div>
-                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider block">Estimated Rate</span>
-                        <span className="text-xl font-black text-[#0066FF]">{rate.currency === 'USD' ? '$' : rate.currency === 'EUR' ? '€' : rate.currency === 'GBP' ? '£' : rate.currency === 'AED' ? 'د.إ' : '₹'} {rate.price.toLocaleString()}</span>
-                        {rate.ihcPrice && (
-                            <span className="block text-xs font-bold text-slate-600 mt-1">
-                                + IHC Price: ₹ {rate.ihcPrice.toLocaleString()} / Approx
-                            </span>
-                        )}
+                        {/* Right Specs Badges */}
+                        <div className="flex flex-wrap gap-2.5 items-center">
+                          <div className="bg-blue-50 border border-blue-200 rounded-xl px-3 py-2 text-center min-w-[90px] shadow-sm">
+                            <div className="text-[9px] text-blue-705 font-black uppercase tracking-wider">Container / Size</div>
+                            <div className="text-xs font-black text-slate-900 mt-0.5">{rate.vehicleType || rate.fclStandard || '40 FT'}</div>
+                          </div>
+                          <div className="bg-indigo-50 border border-indigo-200 rounded-xl px-3 py-2 text-center min-w-[90px] shadow-sm">
+                            <div className="text-[9px] text-indigo-700 font-black uppercase tracking-wider">Load Type</div>
+                            <div className="text-xs font-black text-slate-900 mt-0.5">{rate.truckLoad || rate.seaLoadType || 'FCL'}</div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Middle Section: Company & Details & Price */}
+                      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 pt-2 items-center">
+                        {/* Left & Middle: Company details & notes (9 cols) */}
+                        <div className="lg:col-span-9 space-y-4">
+                          <div className="flex items-center gap-2.5">
+                            <h4 className="text-sm font-black text-[#0B1E43] tracking-wide uppercase">
+                              {rate.vendor?.company || rate.vendor?.name}
+                            </h4>
+                            {rate.vendor?.activePlan && rate.vendor?.planEndDate && new Date(rate.vendor.planEndDate) > new Date() && (
+                              <span className="bg-emerald-100 text-emerald-800 text-[8px] font-black px-2.5 py-1 rounded-md border border-emerald-300 uppercase tracking-wider flex items-center gap-1 shadow-sm">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse"></span>
+                                Verified Vendor
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Technical details tags */}
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                            <div className="bg-[#f4f7fc] border border-slate-200 rounded-xl p-3 flex flex-col justify-center">
+                              <span className="text-[9px] text-slate-550 font-black uppercase tracking-wider">Transit Speed</span>
+                              <span className="text-xs font-extrabold text-[#0066FF] mt-0.5">{rate.deliverySpeed} Days</span>
+                            </div>
+                            
+                            {rate.type === 'sea' && (
+                              <div className="bg-[#f4f7fc] border border-slate-200 rounded-xl p-3 flex flex-col justify-center">
+                                <span className="text-[9px] text-slate-550 font-black uppercase tracking-wider">Shipping Line</span>
+                                <span className="text-xs font-extrabold text-slate-905 mt-0.5 truncate">{rate.airline || 'NVOCC'}</span>
+                              </div>
+                            )}
+
+                            {rate.type === 'air' && (
+                              <div className="bg-[#f4f7fc] border border-slate-200 rounded-xl p-3 flex flex-col justify-center">
+                                <span className="text-[9px] text-slate-550 font-black uppercase tracking-wider">Airline</span>
+                                <span className="text-xs font-extrabold text-slate-905 mt-0.5 truncate">{rate.airline || 'Any'}</span>
+                              </div>
+                            )}
+
+                            {rate.weightRange && (
+                              <div className="bg-[#f4f7fc] border border-slate-200 rounded-xl p-3 flex flex-col justify-center">
+                                <span className="text-[9px] text-slate-550 font-black uppercase tracking-wider">Weight Range</span>
+                                <span className="text-xs font-extrabold text-slate-905 mt-0.5">{rate.weightRange}</span>
+                              </div>
+                            )}
+
+                            {rate.handlingType && (
+                              <div className="bg-[#f4f7fc] border border-slate-200 rounded-xl p-3 flex flex-col justify-center">
+                                <span className="text-[9px] text-slate-550 font-black uppercase tracking-wider">Handling Type</span>
+                                <span className="text-xs font-extrabold text-slate-905 mt-0.5 truncate">{rate.handlingType}</span>
+                              </div>
+                            )}
+
+                            {rate.additionalServices && (
+                              <div className="bg-[#f4f7fc] border border-slate-200 rounded-xl p-3 flex flex-col justify-center col-span-2 sm:col-span-1">
+                                <span className="text-[9px] text-slate-550 font-black uppercase tracking-wider">Addl. Services</span>
+                                <span className="text-xs font-extrabold text-slate-905 mt-0.5 truncate">{rate.additionalServices}</span>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Beautiful Note Panel */}
+                          <div className="bg-blue-50 border border-blue-150 rounded-xl p-3 text-[10px] text-slate-700 font-bold leading-relaxed flex items-start gap-2 shadow-[inset_0_2px_4px_rgba(0,0,0,0.005)]">
+                            <span className="bg-blue-600 text-white text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider shrink-0 mt-0.5">Note</span>
+                            <span>Local and other charges (if applicable) will be at actual basis as per the shipping lines norms. {rate.message && <span className="font-bold text-slate-800">| {rate.message}</span>}</span>
+                          </div>
+                        </div>
+
+                        {/* Right side: Price Box & Connect Button (3 cols) */}
+                        <div className="lg:col-span-3 flex flex-row lg:flex-col items-center justify-between lg:justify-center gap-4 lg:pl-6 lg:border-l lg:border-slate-150 w-full lg:w-auto h-full min-h-[120px]">
+                          {/* Price Box */}
+                          <div className="text-left lg:text-center w-full">
+                            <div className="text-[10px] text-slate-500 font-black uppercase tracking-wider">Freight Cost</div>
+                            <div className="text-2xl font-black text-slate-800 mt-0.5 flex items-baseline justify-start lg:justify-center gap-1">
+                              <span className="text-lg font-black text-[#0066FF]">{displayCurrency}</span>
+                              <span>{rate.price.toLocaleString()}</span>
+                            </div>
+                            <div className="text-[8.5px] text-slate-500 font-black mt-0.5">Excl. local port duties</div>
+                          </div>
+
+                          {/* Connect Button */}
+                          <button
+                            onClick={() => handleAction('book', rate)}
+                            disabled={loading}
+                            className="w-full bg-[#00a859] hover:bg-[#008f4c] text-white text-xs font-black py-3.5 rounded-xl transition-all duration-200 cursor-pointer shadow-md shadow-emerald-500/10 hover:shadow-emerald-500/25 hover:scale-[1.02] active:scale-[0.98] uppercase tracking-wider disabled:opacity-55 disabled:cursor-not-allowed text-center"
+                          >
+                            Connect
+                          </button>
+                        </div>
                       </div>
                     </div>
-
-                    <div className="grid grid-cols-2 gap-2.5">
-                      <button
-                        onClick={() => handleAction('enquiry', rate)}
-                        disabled={loading}
-                        className="w-full bg-[#0066FF] hover:bg-[#0052cc] text-white text-xs font-black py-2.5 rounded-xl transition-all cursor-pointer shadow-sm text-center uppercase tracking-wider disabled:opacity-55 disabled:cursor-not-allowed"
-                      >
-                        Send Enquiry
-                      </button>
-                      <button
-                        onClick={() => handleAction('book', rate)}
-                        disabled={loading}
-                        className="w-full bg-amber-500 hover:bg-amber-600 text-white text-xs font-black py-2.5 rounded-xl transition-all cursor-pointer shadow-sm text-center uppercase tracking-wider disabled:opacity-55 disabled:cursor-not-allowed"
-                      >
-                        Book Now
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+                  );
+                })}
+              </div>
 
             {/* Contact Support Info */}
             <div className="text-center pt-8 border-t border-slate-100 max-w-md mx-auto space-y-1">

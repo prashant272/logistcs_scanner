@@ -38,10 +38,12 @@ const VendorComplaintsTab = () => {
 
     const fetchInteractions = async () => {
         try {
-            const [myEnqs, myBks] = await Promise.all([
-                fetchVendorEnquiries('my').catch(() => []),
-                fetchVendorBookings('my').catch(() => [])
+            const [myEnqsRes, myBksRes] = await Promise.all([
+                fetchVendorEnquiries('my').catch(() => ({ data: [] })),
+                fetchVendorBookings('my').catch(() => ({ data: [] }))
             ]);
+            const myEnqs = myEnqsRes?.data || [];
+            const myBks = myBksRes?.data || [];
             setInteractedItems([...myEnqs, ...myBks]);
         } catch (err) {
             console.error('Error fetching vendor interactions:', err);

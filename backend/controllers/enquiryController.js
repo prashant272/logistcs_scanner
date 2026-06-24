@@ -189,35 +189,58 @@ exports.getVendorEnquiries = async (req, res) => {
         }
 
         const { type } = req.query; // 'my' or 'direct'
+        if (type !== 'my' && type !== 'direct') {
+            return res.status(400).json({ message: 'Valid enquiry type ("my" or "direct") is required' });
+        }
+
         const isBookingFilter = req.query.isBooking === 'true';
         let query = {};
 
-        if (type === 'my') {
-            query = { isDirect: false, isBooking: isBookingFilter };
-            if (!isAdmin) {
-                query.vendor = req.user.id;
-            }
-        } else if (type === 'direct') {
-            query = {
-                isDirect: true,
-                isBooking: isBookingFilter
-            };
-            if (!isAdmin && currentUser) {
-                // Filter by creation date relative to user approval/creation
-                if (currentUser.approvedAt) {
-                    query.createdAt = { $gte: currentUser.approvedAt };
-                } else if (currentUser.createdAt) {
-                    query.createdAt = { $gte: currentUser.createdAt };
-                }
-
-                // Filter by service types if specified
-                if (currentUser.services && currentUser.services.length > 0) {
-                    const mappedServices = currentUser.services.map(s => s.toLowerCase().trim());
-                    query.type = { $in: mappedServices };
+        if (!isAdmin) {
+            if (isBookingFilter) {
+                // Bookings initiated by the current vendor (acting as client)
+                query = {
+                    client: req.user.id,
+                    isBooking: true,
+                    isDirect: type === 'direct'
+                };
+            } else {
+                // Enquiries received by the current vendor (acting as provider)
+                if (type === 'my') {
+                    query = {
+                        vendor: req.user.id,
+                        isDirect: false
+                    };
+                } else if (type === 'direct') {
+                    query = {
+                        isDirect: true,
+                        client: { $ne: req.user.id }
+                    };
                 }
             }
         } else {
-            return res.status(400).json({ message: 'Valid enquiry type ("my" or "direct") is required' });
+            // Admin queries
+            if (type === 'my') {
+                query = { isDirect: false, isBooking: isBookingFilter };
+            } else if (type === 'direct') {
+                query = { isDirect: true, isBooking: isBookingFilter };
+            }
+        }
+
+        // Apply vendor filter date/service logic for direct incoming enquiries
+        if (!isAdmin && type === 'direct' && !isBookingFilter && currentUser) {
+            // Filter by creation date relative to user approval/creation
+            if (currentUser.approvedAt) {
+                query.createdAt = { $gte: currentUser.approvedAt };
+            } else if (currentUser.createdAt) {
+                query.createdAt = { $gte: currentUser.createdAt };
+            }
+
+            // Filter by service types if specified
+            if (currentUser.services && currentUser.services.length > 0) {
+                const mappedServices = currentUser.services.map(s => s.toLowerCase().trim());
+                query.type = { $in: mappedServices };
+            }
         }
 
         const page = parseInt(req.query.page) || 1;
@@ -228,7 +251,7 @@ exports.getVendorEnquiries = async (req, res) => {
 
         const totalCount = await Enquiry.countDocuments(query);
         const enquiries = await Enquiry.find(query)
-            .populate('client', 'name email phone company role')
+            .populate('client', 'name email phone company role activePlan planEndDate')
             .sort({ createdAt: -1 })
             .skip(skip)
             .limit(limit);

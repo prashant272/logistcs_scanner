@@ -77,6 +77,7 @@ export const EnquiryProvider = ({ children }) => {
   };
 
   const updateEnquiryStatus = async (id, status, typeContext, price, quoteDetails) => {
+    console.log('[updateEnquiryStatus] id:', id, 'status:', status, 'typeContext:', typeContext, 'price:', price, 'quoteDetails:', quoteDetails);
     try {
       setError(null);
       const payload = {};
@@ -85,15 +86,32 @@ export const EnquiryProvider = ({ children }) => {
       if (quoteDetails !== undefined) payload.quoteDetails = quoteDetails;
       
       const res = await api.put(`/enquiries/${id}/status`, payload);
+      console.log('[updateEnquiryStatus] API response:', res.data);
       
       // Update state locally
-      setEnquiries((prev) => 
-        prev.map((e) => 
-          e._id === id 
-            ? { ...e, status: status || e.status, price: price !== undefined ? price : e.price, quoteDetails: quoteDetails !== undefined ? quoteDetails : e.quoteDetails } 
-            : e
-        )
-      );
+      setEnquiries((prev) => {
+        const next = prev.map((e) => {
+          if (e._id === id) {
+            const updated = { ...e };
+            if (typeContext === 'direct') {
+              updated.myResponse = {
+                status: status || (e.myResponse?.status || 'Pending'),
+                price: price !== undefined ? price : (e.myResponse?.price || null),
+                quoteDetails: quoteDetails !== undefined ? quoteDetails : (e.myResponse?.quoteDetails || null)
+              };
+            } else {
+              updated.status = status || e.status;
+              if (price !== undefined) updated.price = price;
+              if (quoteDetails !== undefined) updated.quoteDetails = quoteDetails;
+            }
+            console.log('[updateEnquiryStatus] Updated local item:', updated);
+            return updated;
+          }
+          return e;
+        });
+        console.log('[updateEnquiryStatus] Next enquiries array:', next);
+        return next;
+      });
       return res.data;
     } catch (err) {
       console.error('Error updating enquiry status:', err);
