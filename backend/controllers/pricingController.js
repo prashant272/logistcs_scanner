@@ -253,7 +253,7 @@ exports.searchPricing = async (req, res) => {
         } else if (type.toLowerCase() === 'sea') {
             if (seaLoadType) query.seaLoadType = seaLoadType.trim();
             if (seaLoadType === 'FCL' && fclStandard) {
-                query.fclStandard = fclStandard.trim();
+                query.fclStandard = { $in: [fclStandard.trim(), '', null] };
             } else if (seaLoadType === 'LCL') {
                 if (weightRange) query.weightRange = weightRange.trim();
                 if (cbmRange) query.cbmRange = cbmRange.trim();
