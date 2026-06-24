@@ -101,6 +101,10 @@ const financeApplicationSchema = new mongoose.Schema({
         type: String,
         default: ''
     },
+    isFeePaid: {
+        type: Boolean,
+        default: false
+    },
     createdAt: {
         type: Date,
         default: Date.now

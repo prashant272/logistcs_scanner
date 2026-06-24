@@ -159,6 +159,23 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
+    const reloadUserProfile = async () => {
+        const token = localStorage.getItem('userToken');
+        if (token) {
+            try {
+                const config = {
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
+                };
+                const { data } = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/auth/profile`, config);
+                setUser(data);
+            } catch (error) {
+                console.error("Failed to reload profile:", error);
+            }
+        }
+    };
+
     const logout = () => {
         localStorage.removeItem('userToken');
         setUser(null);
@@ -175,7 +192,8 @@ export const AuthProvider = ({ children }) => {
         resetPassword,
         updateProfile,
         deleteAccount,
-        logout
+        logout,
+        reloadUserProfile
     };
 
     return (

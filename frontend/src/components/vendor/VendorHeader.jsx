@@ -40,6 +40,14 @@ const VendorHeader = ({ isSidebarOpen, setSidebarOpen, user, logout, searchQuery
                     </span>
                 </button>
 
+                {/* Available Wallet Balance */}
+                {user?.role === 'vendor' && (
+                    <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-100 px-4 py-2 rounded-xl">
+                        <span className="text-[9px] font-black text-slate-550 uppercase tracking-wider">Available Wallet:</span>
+                        <span className="text-xs font-black text-emerald-600">₹{(user.walletBalance || 0).toLocaleString('en-IN')}</span>
+                    </div>
+                )}
+
                 {/* User Avatar */}
                 <div className="flex items-center gap-3 pl-2 border-l border-slate-100">
                     <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#0066FF]/10 to-[#00b2fe]/10 flex items-center justify-center !text-[#0066FF] font-black border border-[#0066FF]/10 shadow-sm">
