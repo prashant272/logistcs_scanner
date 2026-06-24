@@ -621,6 +621,34 @@ const SearchPrice = ({ isDashboard = false }) => {
                                             </div>
                                         </div>
 
+                                        {activeTab === 'sea' && availableViaPorts.length > 0 && (
+                                            <div className="bg-blue-50/50 border border-blue-200/50 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 my-4 animate-scaleUp">
+                                                <div>
+                                                    <h4 className="text-xs font-black text-[#0B1E43] uppercase tracking-wider flex items-center gap-1.5">
+                                                        <Info size={14} className="text-[#0066FF]" /> Route Via Port (IHC Option)
+                                                    </h4>
+                                                    <p className="text-[10px] text-slate-500 font-semibold mt-0.5">
+                                                        We found Inland Haulage Charges (IHC) routes. Please select which port you want to route via to reach {destination}.
+                                                    </p>
+                                                </div>
+                                                <div className="w-full sm:w-60">
+                                                    <select
+                                                        value={selectedViaPort}
+                                                        onChange={(e) => setSelectedViaPort(e.target.value)}
+                                                        className="w-full bg-white border border-[#0066FF]/30 rounded-xl px-3.5 py-2.5 text-xs font-black text-slate-900 focus:outline-none focus:border-[#0066FF] shadow-sm cursor-pointer"
+                                                        required
+                                                    >
+                                                        <option value="">Select Via Port</option>
+                                                        {availableViaPorts.map((portOption, idx) => (
+                                                            <option key={idx} value={portOption}>
+                                                                {portOption}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        )}
+
                                         {loadType === 'LCL' && (
                                             <div className="flex flex-col items-center gap-4 pt-2 pb-4 w-full">
                                                 <div className="flex flex-wrap justify-center items-center gap-4 w-full">

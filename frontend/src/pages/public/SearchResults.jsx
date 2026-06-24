@@ -503,9 +503,14 @@ const SearchResults = () => {
                           {/* Price Box */}
                           <div className="text-left lg:text-center w-full">
                             <div className="text-[10px] text-slate-500 font-black uppercase tracking-wider">Freight Cost</div>
-                            <div className="text-2xl font-black text-slate-800 mt-0.5 flex items-baseline justify-start lg:justify-center gap-1">
+                            <div className="text-2xl font-black text-slate-800 mt-0.5 flex flex-wrap items-baseline justify-start lg:justify-center gap-1">
                               <span className="text-lg font-black text-[#0066FF]">{displayCurrency}</span>
                               <span>{rate.price.toLocaleString()}</span>
+                              {rate.ihcPrice && (
+                                <span className="text-xs font-bold text-slate-500 block lg:inline-block mt-0.5">
+                                  + Approx. IHC: ₹{rate.ihcPrice.toLocaleString('en-IN')}
+                                </span>
+                              )}
                             </div>
                             <div className="text-[8.5px] text-slate-500 font-black mt-0.5">Excl. local port duties</div>
                           </div>

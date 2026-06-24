@@ -90,9 +90,12 @@ exports.getAvailableViaPorts = async (req, res) => {
             return res.status(400).json({ message: 'Destination is required' });
         }
 
+        // Strip out parentheses (e.g. "Delhi (DEL)" -> "Delhi") to match database keys
+        const cleanDestination = destination.replace(/\s*\(.*?\)\s*/g, '').trim();
+
         // Find all distinct viaPorts that have an IHC price to the given destination
         const viaPorts = await IhcPricing.distinct('viaPort', { 
-            destination: new RegExp(`^${destination}$`, 'i') 
+            destination: new RegExp(`^${cleanDestination}$`, 'i') 
         });
 
         res.status(200).json({ data: viaPorts });
