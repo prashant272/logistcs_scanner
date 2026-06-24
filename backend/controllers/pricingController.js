@@ -207,9 +207,6 @@ exports.searchPricing = async (req, res) => {
                 viaPort: { $regex: new RegExp(escapeRegExp(viaClean), 'i') },
                 destination: { $regex: new RegExp(`^${escapeRegExp(cleanDest)}$`, 'i') }
             };
-            if (fclStandard) {
-                ihcQuery.containerSize = fclStandard.trim();
-            }
             ihcPricingMatch = await IhcPricing.findOne(ihcQuery);
         }
 
