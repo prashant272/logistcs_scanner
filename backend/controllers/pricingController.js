@@ -183,20 +183,29 @@ exports.searchPricing = async (req, res) => {
         
         if (viaPort && type.toLowerCase() === 'sea') {
             const viaParsed = parseLoc(viaPort);
+            const viaClean = viaPort.replace(/\s*\(.*?\)\s*/g, '').trim();
             const viaOr = [
-                { toLocation: { $regex: new RegExp(`^${escapeRegExp(viaPort.trim())}$`, 'i') } }
+                { toLocation: { $regex: new RegExp(`^${escapeRegExp(viaPort.trim())}$`, 'i') } },
+                { toLocation: { $regex: new RegExp(escapeRegExp(viaPort.trim()), 'i') } },
+                { toLocation: { $regex: new RegExp(escapeRegExp(viaClean), 'i') } }
             ];
-            if (viaParsed.city) viaOr.push({ toLocation: { $regex: new RegExp(`^${escapeRegExp(viaParsed.city)}$`, 'i') } });
-            if (viaParsed.code) viaOr.push({ toLocation: { $regex: new RegExp(`^${escapeRegExp(viaParsed.code)}$`, 'i') } });
+            if (viaParsed.city) {
+                viaOr.push({ toLocation: { $regex: new RegExp(`^${escapeRegExp(viaParsed.city)}$`, 'i') } });
+                viaOr.push({ toLocation: { $regex: new RegExp(escapeRegExp(viaParsed.city), 'i') } });
+            }
+            if (viaParsed.code) {
+                viaOr.push({ toLocation: { $regex: new RegExp(`^${escapeRegExp(viaParsed.code)}$`, 'i') } });
+            }
             
             finalToOr = viaOr; // Search vendor price to viaPort instead of destination
             
             // We also need to fetch the IHC price to attach later
             const IhcPricing = require('../models/IhcPricing');
             // Try to find IHC price for viaPort -> original toLocation
+            const cleanDest = toLocation.replace(/\s*\(.*?\)\s*/g, '').trim();
             const ihcQuery = {
-                viaPort: { $regex: new RegExp(`^${escapeRegExp(viaParsed.city || viaPort.trim())}`, 'i') },
-                destination: { $regex: new RegExp(`^${escapeRegExp(toParsed.city || toLocation.trim())}`, 'i') }
+                viaPort: { $regex: new RegExp(escapeRegExp(viaClean), 'i') },
+                destination: { $regex: new RegExp(`^${escapeRegExp(cleanDest)}$`, 'i') }
             };
             if (fclStandard) {
                 ihcQuery.containerSize = fclStandard.trim();
@@ -266,9 +275,12 @@ exports.searchPricing = async (req, res) => {
             if (chaCargoType) query.chaCargoType = chaCargoType.trim();
         }
 
+        console.log('[searchPricing] Request Body:', req.body);
+        console.log('[searchPricing] Constructed Query:', JSON.stringify(query, null, 2));
         const matches = await Pricing.find(query)
             .populate('vendor')
             .sort({ price: 1 }); // Sort by lowest price first
+        console.log('[searchPricing] Matches count:', matches.length);
 
         if (matches.length > 0) {
             const processedResults = matches.map(match => {
