@@ -56,6 +56,7 @@ const VendorPricingTab = () => {
   const [price, setPrice] = useState('');
   const [currency, setCurrency] = useState('INR');
   const [message, setMessage] = useState('');
+  const [cbmRange, setCbmRange] = useState('');
   
   const [currentTab, setCurrentTab] = useState('active'); // 'active' or 'expired'
 
@@ -184,6 +185,7 @@ const VendorPricingTab = () => {
     setCategory(rate.category || 'domestic');
     setAirline(rate.airline || '');
     setWeightRange(rate.weightRange || '');
+    setCbmRange(rate.cbmRange || '');
     setTruckLoad(rate.truckLoad || '');
     setVehicleType(rate.vehicleType || '');
     setSeaLoadType(rate.seaLoadType || '');
@@ -237,6 +239,7 @@ const VendorPricingTab = () => {
       category,
       airline,
       weightRange,
+      cbmRange,
       truckLoad,
       vehicleType,
       seaLoadType,
@@ -276,6 +279,7 @@ const VendorPricingTab = () => {
     setCategory('domestic');
     setAirline('');
     setWeightRange('');
+    setCbmRange('');
     setTruckLoad('');
     setVehicleType('');
     setSeaLoadType('');
@@ -399,13 +403,23 @@ const VendorPricingTab = () => {
                         <span className="block text-[10px]">Weight: {r.weightRange || 'N/A'} | Handling: {r.handlingType || 'N/A'}</span>
                       </span>
                     )}
+                    {r.type === 'sea' && (
+                      <span className="space-y-0.5 block">
+                        <span className="block text-slate-800 font-bold">Ocean Freight ({r.seaLoadType})</span>
+                        {r.seaLoadType === 'FCL' ? (
+                          <span className="block text-[10px]">Size: {r.fclStandard || 'N/A'} | Handling: {r.handlingType || 'N/A'}</span>
+                        ) : (
+                          <span className="block text-[10px]">Weight: {r.weightRange || 'N/A'} | CBM: {r.cbmRange || 'N/A'}</span>
+                        )}
+                      </span>
+                    )}
                     {r.type === 'land' && (
                       <span className="space-y-0.5 block">
                         <span className="block text-slate-800 font-bold">{r.vehicleType || 'Any Truck'}</span>
                         <span className="block text-[10px]">Load: {r.truckLoad || 'N/A'} | Speed: {r.deliverySpeed} days</span>
                       </span>
                     )}
-                    {r.type !== 'air' && r.type !== 'land' && (
+                    {r.type !== 'air' && r.type !== 'sea' && r.type !== 'land' && (
                       <span>Speed: {r.deliverySpeed} days | Handling: {r.handlingType || 'N/A'}</span>
                     )}
                   </td>
@@ -742,6 +756,39 @@ const VendorPricingTab = () => {
                           <option value="40ft HC">40ft High Cube</option>
                         </select>
                       </div>
+                    )}
+
+                    {seaLoadType === 'LCL' && (
+                      <>
+                        <div className="space-y-1">
+                          <label className="block text-[10px] font-black text-slate-500 uppercase tracking-wider">Weight Range</label>
+                          <select
+                            value={weightRange}
+                            onChange={(e) => setWeightRange(e.target.value)}
+                            className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 focus:outline-none focus:border-[#0066FF]"
+                          >
+                            <option value="">Select Weight</option>
+                            <option value="0-5">0-5 Tonnes</option>
+                            <option value="5-15">5-15 Tonnes</option>
+                            <option value="15-45">15-45 Tonnes</option>
+                            <option value="45+">45+ Tonnes</option>
+                          </select>
+                        </div>
+                        <div className="space-y-1">
+                          <label className="block text-[10px] font-black text-slate-500 uppercase tracking-wider">CBM Range (Volume)</label>
+                          <select
+                            value={cbmRange}
+                            onChange={(e) => setCbmRange(e.target.value)}
+                            className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 focus:outline-none focus:border-[#0066FF]"
+                          >
+                            <option value="">Select Volume</option>
+                            <option value="0-5">0-5 CBM</option>
+                            <option value="5-15">5-15 CBM</option>
+                            <option value="15-45">15-45 CBM</option>
+                            <option value="45+">45+ CBM</option>
+                          </select>
+                        </div>
+                      </>
                     )}
                   </div>
                 </div>

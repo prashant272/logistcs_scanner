@@ -38,6 +38,11 @@ const pricingSchema = new mongoose.Schema({
         trim: true,
         default: ''
     },
+    cbmRange: {
+        type: String,
+        trim: true,
+        default: ''
+    },
     truckLoad: {
         type: String,
         trim: true,

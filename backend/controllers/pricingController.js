@@ -15,6 +15,7 @@ exports.addPricing = async (req, res) => {
             vehicleType,
             seaLoadType,
             fclStandard,
+            cbmRange,
             warehouseRateType,
             warehouseStorageType,
             chaServiceType,
@@ -38,6 +39,7 @@ exports.addPricing = async (req, res) => {
             category,
             airline,
             weightRange,
+            cbmRange,
             truckLoad,
             vehicleType,
             seaLoadType,
@@ -133,6 +135,7 @@ exports.searchPricing = async (req, res) => {
             vehicleType,
             seaLoadType,
             fclStandard,
+            cbmRange,
             warehouseRateType,
             warehouseStorageType,
             chaServiceType,
@@ -201,6 +204,27 @@ exports.searchPricing = async (req, res) => {
             ihcPricingMatch = await IhcPricing.findOne(ihcQuery);
         }
 
+        // Find matches, populate vendor details
+        const jwt = require('jsonwebtoken');
+        const User = require('../models/User');
+
+        let userRole = 'customer'; // Default to customer
+        let currentUserId = null;
+        const authHeader = req.header("Authorization");
+        if (authHeader) {
+            try {
+                const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7).trim() : authHeader;
+                const decoded = jwt.verify(token, process.env.JWT_SECRET);
+                const currentUser = await User.findById(decoded.id);
+                if (currentUser) {
+                    userRole = currentUser.role;
+                    currentUserId = currentUser._id;
+                }
+            } catch (err) {
+                // Ignore token error, treat as customer
+            }
+        }
+
         // Build query matching active options
         const query = {
             $and: [
@@ -212,6 +236,10 @@ exports.searchPricing = async (req, res) => {
             validUntil: { $gte: new Date() }
         };
 
+        if (currentUserId) {
+            query.vendor = { $ne: currentUserId };
+        }
+
         if (type.toLowerCase() === 'air') {
             if (category) query.category = category.toLowerCase();
             if (airline) query.airline = airline.trim();
@@ -221,32 +249,18 @@ exports.searchPricing = async (req, res) => {
             if (vehicleType) query.vehicleType = vehicleType.trim();
         } else if (type.toLowerCase() === 'sea') {
             if (seaLoadType) query.seaLoadType = seaLoadType.trim();
-            if (fclStandard) query.fclStandard = fclStandard.trim();
+            if (seaLoadType === 'FCL' && fclStandard) {
+                query.fclStandard = fclStandard.trim();
+            } else if (seaLoadType === 'LCL') {
+                if (weightRange) query.weightRange = weightRange.trim();
+                if (cbmRange) query.cbmRange = cbmRange.trim();
+            }
         } else if (type.toLowerCase() === 'warehouse') {
             if (warehouseRateType) query.warehouseRateType = warehouseRateType.trim();
             if (warehouseStorageType) query.warehouseStorageType = warehouseStorageType.trim();
         } else if (type.toLowerCase() === 'cha') {
             if (chaServiceType) query.chaServiceType = chaServiceType.trim();
             if (chaCargoType) query.chaCargoType = chaCargoType.trim();
-        }
-
-        // Find matches, populate vendor details
-        const jwt = require('jsonwebtoken');
-        const User = require('../models/User');
-
-        let userRole = 'customer'; // Default to customer
-        const authHeader = req.header("Authorization");
-        if (authHeader) {
-            try {
-                const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7).trim() : authHeader;
-                const decoded = jwt.verify(token, process.env.JWT_SECRET);
-                const currentUser = await User.findById(decoded.id);
-                if (currentUser) {
-                    userRole = currentUser.role;
-                }
-            } catch (err) {
-                // Ignore token error, treat as customer
-            }
         }
 
         const matches = await Pricing.find(query)
@@ -305,6 +319,7 @@ exports.updatePricing = async (req, res) => {
             vehicleType,
             seaLoadType,
             fclStandard,
+            cbmRange,
             warehouseRateType,
             warehouseStorageType,
             chaServiceType,
@@ -330,6 +345,7 @@ exports.updatePricing = async (req, res) => {
         pricing.category = category !== undefined ? category : pricing.category;
         pricing.airline = airline !== undefined ? airline : pricing.airline;
         pricing.weightRange = weightRange !== undefined ? weightRange : pricing.weightRange;
+        pricing.cbmRange = cbmRange !== undefined ? cbmRange : pricing.cbmRange;
         pricing.truckLoad = truckLoad !== undefined ? truckLoad : pricing.truckLoad;
         pricing.vehicleType = vehicleType !== undefined ? vehicleType : pricing.vehicleType;
         pricing.seaLoadType = seaLoadType !== undefined ? seaLoadType : pricing.seaLoadType;
