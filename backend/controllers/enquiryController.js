@@ -86,8 +86,9 @@ exports.createEnquiry = async (req, res) => {
                     isVerified: true // Auto-verify so they can login directly
                 });
 
-                // Send email with credentials
-                await sendGuestAccountCreatedEmail(guestEmail, guestName, generatedPassword);
+                // Send email with credentials (run in background)
+                sendGuestAccountCreatedEmail(guestEmail, guestName, generatedPassword)
+                    .catch(err => console.error('Error sending guest account email:', err));
             }
             
             // Link the enquiry to this user
@@ -137,27 +138,28 @@ exports.createEnquiry = async (req, res) => {
         const { sendEnquiryToVendorAlert, sendEnquiryCustomerConfirmation } = require('../services/notificationService');
 
         if (customerEmail) {
-            await sendEnquiryCustomerConfirmation(customerEmail, {
+            sendEnquiryCustomerConfirmation(customerEmail, {
                 cargoType: sanitizedType,
                 pickupCity: fromLocation,
                 destinationCity: toLocation
-            });
+            }).catch(err => console.error('Error sending customer confirmation email:', err));
         }
 
         if (validatedVendorId) {
             const User = require('../models/User');
-            const vendorUser = await User.findById(validatedVendorId);
-            if (vendorUser) {
-                await sendEnquiryToVendorAlert(vendorUser.email, {
-                    cargoType: sanitizedType,
-                    pickupCity: fromLocation,
-                    pickupCountry: 'India', // Optional
-                    destinationCity: toLocation,
-                    destinationCountry: 'Any', // Optional
-                    weight: weightRange || 'N/A',
-                    volume: 'N/A'
-                });
-            }
+            User.findById(validatedVendorId).then(vendorUser => {
+                if (vendorUser) {
+                    sendEnquiryToVendorAlert(vendorUser.email, {
+                        cargoType: sanitizedType,
+                        pickupCity: fromLocation,
+                        pickupCountry: 'India', // Optional
+                        destinationCity: toLocation,
+                        destinationCountry: 'Any', // Optional
+                        weight: weightRange || 'N/A',
+                        volume: 'N/A'
+                    }).catch(err => console.error('Error sending vendor email:', err));
+                }
+            }).catch(err => console.error('Error looking up vendor user for email:', err));
         }
 
         res.status(201).json(enquiry);

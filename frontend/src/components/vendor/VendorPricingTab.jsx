@@ -227,7 +227,8 @@ const VendorPricingTab = () => {
       finalToLocation = 'Customs Port';
     }
 
-    if (!finalFromLocation || !finalToLocation || !type || !deliverySpeed || !validUntil || !price) {
+    const isWhOrCha = ['warehouse', 'cha'].includes(type);
+    if (!finalFromLocation || !finalToLocation || !type || (!isWhOrCha && !deliverySpeed) || !validUntil || !price) {
       setError('Please fill in all required fields');
       return;
     }
@@ -249,8 +250,8 @@ const VendorPricingTab = () => {
       chaServiceType,
       chaCargoType,
       handlingType,
-      additionalServices,
-      deliverySpeed,
+      additionalServices: isWhOrCha ? 'N/A' : additionalServices,
+      deliverySpeed: isWhOrCha ? 'N/A' : deliverySpeed,
       validUntil,
       price: Number(price),
       currency,
@@ -925,18 +926,20 @@ const VendorPricingTab = () => {
               )}
 
               {/* Delivery Properties */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <label className="block text-[10px] font-black text-slate-900 uppercase tracking-wider">Delivery Speed (e.g. 3-4)</label>
-                  <input
-                    type="text"
-                    placeholder="Delivery Days (e.g. 3-4)"
-                    value={deliverySpeed}
-                    onChange={(e) => setDeliverySpeed(e.target.value)}
-                    className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-900 focus:outline-none focus:border-[#0066FF]"
-                    required
-                  />
-                </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {type !== 'warehouse' && type !== 'cha' && (
+                  <div className="space-y-1">
+                    <label className="block text-[10px] font-black text-slate-900 uppercase tracking-wider">Delivery Speed (e.g. 3-4)</label>
+                    <input
+                      type="text"
+                      placeholder="Delivery Days (e.g. 3-4)"
+                      value={deliverySpeed}
+                      onChange={(e) => setDeliverySpeed(e.target.value)}
+                      className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-900 focus:outline-none focus:border-[#0066FF]"
+                      required
+                    />
+                  </div>
+                )}
 
                 <div className="space-y-1">
                   <label className="block text-[10px] font-black text-slate-900 uppercase tracking-wider">Pricing Valid Date</label>
@@ -952,16 +955,18 @@ const VendorPricingTab = () => {
               </div>
 
               {/* Additional Services */}
-              <div className="space-y-1">
-                <label className="block text-[10px] font-black text-slate-900 uppercase tracking-wider">Enter Additional Services (e.g. Packing, Insurance)</label>
-                <input
-                  type="text"
-                  placeholder="Additional Services offered"
-                  value={additionalServices}
-                  onChange={(e) => setAdditionalServices(e.target.value)}
-                  className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-900 focus:outline-none focus:border-[#0066FF]"
-                />
-              </div>
+              {type !== 'warehouse' && type !== 'cha' && (
+                <div className="space-y-1">
+                  <label className="block text-[10px] font-black text-slate-900 uppercase tracking-wider">Enter Additional Services (e.g. Packing, Insurance)</label>
+                  <input
+                    type="text"
+                    placeholder="Additional Services offered"
+                    value={additionalServices}
+                    onChange={(e) => setAdditionalServices(e.target.value)}
+                    className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-900 focus:outline-none focus:border-[#0066FF]"
+                  />
+                </div>
+              )}
 
               {/* Price Details */}
               <div className="space-y-1">

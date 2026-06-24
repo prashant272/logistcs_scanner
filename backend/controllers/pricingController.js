@@ -217,6 +217,9 @@ exports.searchPricing = async (req, res) => {
                 const decoded = jwt.verify(token, process.env.JWT_SECRET);
                 const currentUser = await User.findById(decoded.id);
                 if (currentUser) {
+                    if (currentUser.role === 'vendor' && currentUser.verificationStatus !== 'Approved') {
+                        return res.status(403).json({ message: 'Your account is not approved yet. Please wait for admin approval to search rates.' });
+                    }
                     userRole = currentUser.role;
                     currentUserId = currentUser._id;
                 }

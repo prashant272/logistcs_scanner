@@ -35,4 +35,28 @@ app.get("/", (req, res) => {
 
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+// Automatic cleanup of expired pricing entries (after 15 days of expiry)
+const runPricingCleanup = async () => {
+    try {
+        const Pricing = require('./models/Pricing');
+        const fifteenDaysAgo = new Date();
+        fifteenDaysAgo.setDate(fifteenDaysAgo.getDate() - 15);
+        fifteenDaysAgo.setHours(0,0,0,0);
+        
+        const result = await Pricing.deleteMany({
+            validUntil: { $lt: fifteenDaysAgo }
+        });
+        if (result.deletedCount > 0) {
+            console.log(`[Pricing Cleanup] Deleted ${result.deletedCount} pricing entries expired before ${fifteenDaysAgo.toLocaleDateString()}`);
+        }
+    } catch (err) {
+        console.error('[Pricing Cleanup Error]', err);
+    }
+};
+
+app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+    // Run cleanup 10 seconds after startup, then every 24 hours
+    setTimeout(runPricingCleanup, 10000);
+    setInterval(runPricingCleanup, 24 * 60 * 60 * 1000);
+});

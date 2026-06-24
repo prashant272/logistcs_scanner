@@ -437,10 +437,26 @@ const VendorEnquiriesTab = ({ title, type }) => {
                           Credit Required
                         </span>
                       )}
-                      {enq.client?.activePlan && enq.client?.planEndDate && new Date(enq.client.planEndDate) > new Date() && (
-                        <span className="bg-blue-100 text-blue-800 text-[8px] font-black px-2 py-0.5 rounded-md border border-blue-200 uppercase tracking-wider">
-                          Verified Customer
-                        </span>
+                      {enq.client?.role === 'vendor' ? (
+                        enq.client?.activePlan && enq.client?.planEndDate && new Date(enq.client.planEndDate) > new Date() ? (
+                          <span className="bg-emerald-100 text-emerald-800 text-[8px] font-black px-2 py-0.5 rounded-md border border-emerald-200 uppercase tracking-wider">
+                            Verified Vendor
+                          </span>
+                        ) : (
+                          <span className="bg-slate-100 text-slate-800 text-[8px] font-black px-2 py-0.5 rounded-md border border-slate-200 uppercase tracking-wider">
+                            Vendor
+                          </span>
+                        )
+                      ) : (
+                        enq.client?.activePlan && enq.client?.planEndDate && new Date(enq.client.planEndDate) > new Date() ? (
+                          <span className="bg-blue-100 text-blue-800 text-[8px] font-black px-2 py-0.5 rounded-md border border-blue-200 uppercase tracking-wider">
+                            Verified Customer
+                          </span>
+                        ) : (
+                          <span className="bg-slate-100 text-slate-800 text-[8px] font-black px-2 py-0.5 rounded-md border border-slate-200 uppercase tracking-wider">
+                            Customer
+                          </span>
+                        )
                       )}
                     </div>
 
