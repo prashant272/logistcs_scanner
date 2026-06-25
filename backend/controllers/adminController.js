@@ -486,3 +486,126 @@ exports.getAdminDashboardStats = async (req, res) => {
         res.status(500).json({ message: 'Server error', error: error.message });
     }
 };
+
+// Get all enquiries for Admin with pagination and search
+exports.getEnquiries = async (req, res) => {
+    try {
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        const search = req.query.search || '';
+        
+        let query = {};
+        if (search) {
+            query = {
+                $or: [
+                    { guestName: { $regex: search, $options: 'i' } },
+                    { guestEmail: { $regex: search, $options: 'i' } },
+                    { fromLocation: { $regex: search, $options: 'i' } },
+                    { toLocation: { $regex: search, $options: 'i' } }
+                ]
+            };
+        }
+
+        const skip = (page - 1) * limit;
+        const Enquiry = require('../models/Enquiry');
+        const enquiries = await Enquiry.find(query)
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit)
+            .populate('client', 'name email company phone')
+            .populate('vendor', 'name email company phone');
+            
+        const total = await Enquiry.countDocuments(query);
+
+        res.json({
+            enquiries,
+            total,
+            page,
+            pages: Math.ceil(total / limit)
+        });
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
+
+// Update an enquiry (Admin)
+exports.updateEnquiry = async (req, res) => {
+    try {
+        const Enquiry = require('../models/Enquiry');
+        const enquiry = await Enquiry.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        if (!enquiry) {
+            return res.status(404).json({ message: 'Enquiry not found' });
+        }
+        res.json({ message: 'Enquiry updated successfully', enquiry });
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
+
+// Delete an enquiry (Admin)
+exports.deleteEnquiry = async (req, res) => {
+    try {
+        const Enquiry = require('../models/Enquiry');
+        const enquiry = await Enquiry.findByIdAndDelete(req.params.id);
+        if (!enquiry) {
+            return res.status(404).json({ message: 'Enquiry not found' });
+        }
+        res.json({ message: 'Enquiry deleted successfully' });
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
+
+// Add User (Admin) - bypasses OTP
+exports.adminAddUser = async (req, res) => {
+    try {
+        const User = require('../models/User');
+        const bcrypt = require('bcryptjs');
+        const { sendAdminCreatedUserEmail } = require('../services/notificationService');
+        const { name, email, phone, role, company, address } = req.body;
+        let { password } = req.body;
+
+        if (!name || !email || !phone || !role) {
+            return res.status(400).json({ message: 'Please fill in all required fields' });
+        }
+
+        const userExists = await User.findOne({ email });
+        if (userExists) {
+            return res.status(400).json({ message: 'User with this email already exists' });
+        }
+
+        let generatedPassword = false;
+        if (!password) {
+            // Auto-generate an 8-character password
+            password = Math.random().toString(36).slice(-8);
+            generatedPassword = true;
+        }
+
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
+
+        const user = await User.create({
+            name,
+            email,
+            password: hashedPassword,
+            phone,
+            role,
+            company: company || '',
+            address: address || '',
+            isVerified: true,
+            verificationStatus: role === 'vendor' ? 'Approved' : undefined
+        });
+
+        // Send email with credentials
+        try {
+            await sendAdminCreatedUserEmail(email, name, password, role);
+        } catch (emailError) {
+            console.error('Failed to send admin-created user email', emailError);
+            // We don't fail the registration if email fails, but we might want to log it
+        }
+
+        res.status(201).json({ message: 'User added successfully', user });
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};

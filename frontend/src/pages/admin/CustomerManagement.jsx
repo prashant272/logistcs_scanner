@@ -3,7 +3,7 @@ import axios from 'axios';
 import useInfiniteScroll from '../../hooks/useInfiniteScroll';
 import { 
   User, Users, Mail, Phone, MapPin, Building, Calendar, Search, 
-  ArrowRight, FileText, CheckCircle2, XCircle, ArrowLeft, RefreshCw, Globe
+  ArrowRight, FileText, CheckCircle2, XCircle, ArrowLeft, RefreshCw, Globe, Plus, X, Loader2
 } from 'lucide-react';
 
 const CustomerManagement = () => {
@@ -17,6 +17,13 @@ const CustomerManagement = () => {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
+
+  // Add Customer Modal State
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [addingCustomer, setAddingCustomer] = useState(false);
+  const [addFormData, setAddFormData] = useState({
+    name: '', email: '', password: '', phone: '', company: ''
+  });
   
   // Selected user history state
   const [selectedUser, setSelectedUser] = useState(null); // { type: 'customer'|'guest', id: string, name: string, email: string }
@@ -139,6 +146,29 @@ const CustomerManagement = () => {
       setHistoryError(err.response?.data?.message || 'Failed to load enquiry history');
     } finally {
       setLoadingHistory(false);
+    }
+  };
+
+  const handleAddCustomer = async (e) => {
+    e.preventDefault();
+    try {
+      setAddingCustomer(true);
+      const token = localStorage.getItem('adminToken');
+      await axios.post(`${import.meta.env.VITE_API_BASE_URL}/admin/users`, {
+        ...addFormData,
+        role: 'customer'
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      alert('Customer created successfully!');
+      setShowAddModal(false);
+      setAddFormData({ name: '', email: '', password: '', phone: '', company: '' });
+      handleRefresh();
+    } catch (err) {
+      console.error('Failed to create customer', err);
+      alert(err.response?.data?.message || 'Failed to create customer');
+    } finally {
+      setAddingCustomer(false);
     }
   };
 
@@ -332,7 +362,14 @@ const CustomerManagement = () => {
             className="p-2.5 bg-white border border-slate-200/80 hover:bg-slate-50 text-slate-650 rounded-xl transition-all cursor-pointer shadow-sm"
             title="Refresh Data"
           >
-            <RefreshCw size={14} />
+            <RefreshCw size={18} className={loading ? "animate-spin text-[#0066FF]" : ""} />
+          </button>
+
+          <button 
+            onClick={() => setShowAddModal(true)}
+            className="px-4 py-2.5 bg-[#0066FF] hover:bg-blue-600 text-white rounded-xl transition-all shadow-sm font-bold flex items-center gap-2 text-xs"
+          >
+            <Plus size={16} /> Add Customer
           </button>
         </div>
       </div>
@@ -499,6 +536,50 @@ const CustomerManagement = () => {
           </div>
         )
       )}
+
+      {/* Add Customer Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
+            <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+              <h2 className="text-lg font-black text-slate-800">Add New Customer</h2>
+              <button onClick={() => setShowAddModal(false)} className="text-slate-400 hover:text-rose-500 transition-colors">
+                <X size={20} />
+              </button>
+            </div>
+            <form onSubmit={handleAddCustomer} className="p-5 space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-600 mb-1">Full Name *</label>
+                <input required type="text" value={addFormData.name} onChange={e => setAddFormData({...addFormData, name: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-500" placeholder="Enter name" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-600 mb-1">Email Address *</label>
+                <input required type="email" value={addFormData.email} onChange={e => setAddFormData({...addFormData, email: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-500" placeholder="Enter email" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-600 mb-1">Phone Number *</label>
+                <input required type="tel" value={addFormData.phone} onChange={e => setAddFormData({...addFormData, phone: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-500" placeholder="Enter phone" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-600 mb-1">Password</label>
+                <input type="text" value={addFormData.password} onChange={e => setAddFormData({...addFormData, password: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-500" placeholder="Leave blank to auto-generate" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-600 mb-1">Company Name</label>
+                <input type="text" value={addFormData.company} onChange={e => setAddFormData({...addFormData, company: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-500" placeholder="Enter company name (optional)" />
+              </div>
+              <div className="pt-2 flex justify-end gap-3">
+                <button type="button" onClick={() => setShowAddModal(false)} className="px-4 py-2 text-sm font-bold text-slate-600 bg-slate-100 rounded-xl hover:bg-slate-200 transition-colors">Cancel</button>
+                <button type="submit" disabled={addingCustomer} className="px-4 py-2 text-sm font-bold text-white bg-blue-600 rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center gap-2">
+                  {addingCustomer ? <Loader2 size={16} className="animate-spin" /> : <User size={16} />} 
+                  {addingCustomer ? 'Creating...' : 'Create Customer'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };

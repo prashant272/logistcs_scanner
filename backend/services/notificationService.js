@@ -326,6 +326,26 @@ const sendGuestAccountCreatedEmail = async (customerEmail, customerName, generat
     return await sendEmail({ to: customerEmail, subject, html });
 };
 
+const sendAdminCreatedUserEmail = async (email, name, password, role) => {
+    const subject = `Your ${role.charAt(0).toUpperCase() + role.slice(1)} Account has been Created - Logistics Scanner`;
+    const html = `
+        <div style="font-family: Arial, sans-serif; padding: 20px;">
+            <h2>Welcome to Logistics Scanner, ${name || 'User'}!</h2>
+            <p>An administrator has created a ${role} account for you on our platform.</p>
+            <p>Here are your login details:</p>
+            <ul>
+                <li><strong>Email:</strong> ${email}</li>
+                <li><strong>Password:</strong> <code>${password}</code></li>
+            </ul>
+            <p>You can use these credentials to log in to your dashboard. We highly recommend changing your password after your first login.</p>
+            <br>
+            <p>Best Regards,</p>
+            <p>Logistics Scanner Team</p>
+        </div>
+    `;
+    return await sendEmail({ to: email, subject, html });
+};
+
 module.exports = {
     sendEmail,
     sendSMS,
@@ -337,5 +357,6 @@ module.exports = {
     sendEnquiryToVendorAlert,
     sendEnquiryCustomerConfirmation,
     sendEnquiryAcceptedCustomerAlert,
-    sendGuestAccountCreatedEmail
+    sendGuestAccountCreatedEmail,
+    sendAdminCreatedUserEmail
 };

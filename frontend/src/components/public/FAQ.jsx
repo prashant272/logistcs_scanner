@@ -111,7 +111,7 @@ const FAQ = () => {
     const visibleFaqs = showAll ? faqs : faqs.slice(0, 10);
 
     return (
-        <section className="bg-white py-20 px-6 font-sans relative z-10 border-b border-slate-100">
+        <section className="py-10 bg-white  px-6 font-sans relative z-10 border-b border-slate-100">
             <div className="container mx-auto px-4 relative z-10">
                 <div className="text-center mb-14">
                     <span className="!text-[#0066FF] text-xs font-black tracking-[0.2em] uppercase block mb-3">
@@ -182,3 +182,5 @@ const FAQ = () => {
 };
 
 export default FAQ;
+
+

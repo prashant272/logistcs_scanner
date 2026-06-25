@@ -77,6 +77,7 @@ const AdminComplaints = lazy(() => import('./pages/admin/AdminComplaints'));
 const AdminInquiryListing = lazy(() => import('./pages/admin/AdminInquiryListing'));
 const AddRM = lazy(() => import('./pages/admin/AddRM'));
 const AdminFinanceListing = lazy(() => import('./pages/admin/AdminFinanceListing'));
+const AdminEnquiriesTab = lazy(() => import('./pages/admin/AdminEnquiriesTab'));
 
 // Loading Fallback Component
 const PageLoader = () => (
@@ -142,6 +143,7 @@ function App() {
               <Route path="orders" element={<OrderManagement />} />
               <Route path="vendors" element={<VendorManagement />} />
               <Route path="customers" element={<CustomerManagement />} />
+              <Route path="enquiries" element={<AdminEnquiriesTab />} />
               
               {/* Reports routes */}
               <Route path="reports/vendor-pricing" element={<VendorPricingManagement />} />

@@ -43,6 +43,12 @@ const AdminSidebar = ({ isSidebarOpen, logout }) => {
             ]
         },
         {
+            category: 'Manage Enquiries',
+            items: [
+                { name: 'All Enquiries', path: '/admin/enquiries', icon: <FileText size={16} /> }
+            ]
+        },
+        {
             category: 'Reports',
             isCollapsible: true,
             items: [

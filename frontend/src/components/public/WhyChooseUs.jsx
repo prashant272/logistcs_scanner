@@ -31,7 +31,7 @@ const WhyChooseUs = () => {
     ];
 
     return (
-        <section className="bg-white py-20 px-6 font-sans relative z-10 border-b border-slate-100">
+        <section className="py-10 bg-white  px-6 font-sans relative z-10 border-b border-slate-100">
             <div className="w-full max-w-[1400px] mx-auto">
                 <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 items-center">
                     
@@ -83,3 +83,5 @@ const WhyChooseUs = () => {
 };
 
 export default WhyChooseUs;
+
+

@@ -5,32 +5,32 @@ const OurNetwork = () => {
     const networkStats = [
         {
             icon: <Globe size={40} className="text-[#0066FF]" />,
-            value: "190+",
+            value: "100+",
             label: "Countries Covered",
             desc: "Global presence across 6 continents"
         },
         {
             icon: <Users size={40} className="text-[#0066FF]" />,
-            value: "10,000+",
-            label: "Logistics Providers",
-            desc: "Trusted network of forwarders & suppliers"
+            value: "2000+",
+            label: "Active Users",
+            desc: "Growing global logistics community"
         },
         {
             icon: <FileText size={40} className="text-[#0066FF]" />,
-            value: "50,000+",
-            label: "Freight Requests",
+            value: "3000+",
+            label: "Monthly Requests",
             desc: "Monthly requests from importers & exporters"
         },
         {
             icon: <Handshake size={40} className="text-[#0066FF]" />,
-            value: "100,000+",
-            label: "Business Connections",
-            desc: "Growing global logistics community"
+            value: "1000+",
+            label: "Approved Vendors",
+            desc: "Approved vendors worldwide"
         }
     ];
 
     return (
-        <section className="bg-white py-5 px-6 font-sans relative z-10 border-b border-slate-100">
+        <section className="py-10 bg-white  px-6 font-sans relative z-10 border-b border-slate-100">
             <div className="w-full max-w-[1400px] mx-auto">
                 {/* Title */}
                 <h2 className="text-3xl md:text-4xl font-black text-center !text-slate-950 mb-14 tracking-tight uppercase">
@@ -72,3 +72,5 @@ const OurNetwork = () => {
 };
 
 export default OurNetwork;
+
+

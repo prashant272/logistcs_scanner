@@ -630,7 +630,7 @@ const SearchPrice = ({ isDashboard = false }) => {
                                                 />
                                             </div>
     
-                                            <div className="lg:col-span-1">
+                                            <div className="lg:col-span-1 max-lg:hidden">
                                                 <button
                                                     type="submit"
                                                     className="w-full bg-[#0066FF] hover:bg-[#0052cc] text-white text-xs font-black py-4 rounded-xl transition-all shadow-md shadow-[#0066FF]/10 uppercase tracking-wider cursor-pointer"
@@ -811,7 +811,7 @@ const SearchPrice = ({ isDashboard = false }) => {
                                                 </select>
                                             </div>
 
-                                            <div className="lg:col-span-1">
+                                            <div className="lg:col-span-1 max-lg:hidden">
                                                 <button
                                                     type="submit"
                                                     className="w-full bg-[#0066FF] hover:bg-[#0052cc] text-white text-xs font-black py-4 rounded-xl transition-all shadow-md shadow-[#0066FF]/10 uppercase tracking-wider cursor-pointer"
@@ -984,7 +984,7 @@ const SearchPrice = ({ isDashboard = false }) => {
                                                 />
                                             </div>
 
-                                            <div className="lg:col-span-1">
+                                            <div className="lg:col-span-1 max-lg:hidden">
                                                 <button
                                                     type="submit"
                                                     className="w-full bg-[#0066FF] hover:bg-[#0052cc] text-white text-xs font-black py-4 rounded-xl transition-all shadow-md shadow-[#0066FF]/10 uppercase tracking-wider cursor-pointer"
@@ -1130,7 +1130,7 @@ const SearchPrice = ({ isDashboard = false }) => {
                                             </select>
                                         </div>
 
-                                        <div className="lg:col-span-1">
+                                        <div className="lg:col-span-1 max-lg:hidden">
                                             <button
                                                 type="submit"
                                                 className="w-full bg-[#0066FF] hover:bg-[#0052cc] text-white text-xs font-black py-4 rounded-xl transition-all shadow-md shadow-[#0066FF]/10 uppercase tracking-wider cursor-pointer"
@@ -1141,6 +1141,15 @@ const SearchPrice = ({ isDashboard = false }) => {
                                     </div>
                                 )}
 
+                                {/* Mobile-only Search Button (always at bottom) */}
+                                <div className="block lg:hidden w-full pt-2">
+                                    <button
+                                        type="submit"
+                                        className="w-full bg-[#0066FF] hover:bg-[#0052cc] text-white text-xs font-black py-4 rounded-xl transition-all shadow-md shadow-[#0066FF]/10 uppercase tracking-wider cursor-pointer"
+                                    >
+                                        Search
+                                    </button>
+                                </div>
                             </form>
                         )}
 
@@ -1380,3 +1389,7 @@ const SearchPrice = ({ isDashboard = false }) => {
 };
 
 export default SearchPrice;
+
+
+
+

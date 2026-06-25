@@ -36,7 +36,7 @@ const HowItWorks = () => {
     ];
 
     return (
-        <section className="bg-white py-16 px-6 font-sans relative z-10 border-b border-slate-100">
+        <section className="py-10 bg-white  px-6 font-sans relative z-10 border-b border-slate-100">
             <div className="w-full max-w-[1400px] mx-auto text-center">
                 {/* Title */}
                 <h2 className="text-3xl md:text-4xl font-black !text-slate-950 mb-16 tracking-tight">
@@ -76,3 +76,5 @@ const HowItWorks = () => {
 };
 
 export default HowItWorks;
+
+

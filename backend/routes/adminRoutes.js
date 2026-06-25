@@ -14,11 +14,16 @@ const {
     adminTogglePricingStatus,
     adminDeletePricing,
     adminUpdatePricing,
-    getAdminDashboardStats
+    getAdminDashboardStats,
+    getEnquiries,
+    updateEnquiry,
+    deleteEnquiry,
+    adminAddUser
 } = require("../controllers/adminController");
 const auth = require("../middleware/authMiddleware");
 
 router.post("/login", loginAdmin);
+router.post("/users", auth, adminAddUser);
 router.get("/dashboard-stats", auth, getAdminDashboardStats);
 router.get("/vendors", auth, getVendors);
 router.get("/customers", auth, getCustomers);
@@ -34,5 +39,10 @@ router.post("/pricing", auth, adminAddPricing);
 router.put("/pricing/:id/toggle", auth, adminTogglePricingStatus);
 router.delete("/pricing/:id", auth, adminDeletePricing);
 router.put("/pricing/:id", auth, adminUpdatePricing);
+
+// Enquiries Management
+router.get("/enquiries", auth, getEnquiries);
+router.put("/enquiries/:id", auth, updateEnquiry);
+router.delete("/enquiries/:id", auth, deleteEnquiry);
 
 module.exports = router;
