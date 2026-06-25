@@ -2,19 +2,11 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Wallet, FileText, AlertTriangle } from 'lucide-react';
 
-const FinanceSection = ({ myBookings = [], directBookings = [] }) => {
-  const allBookings = [...myBookings, ...directBookings];
-  
-  // A booking is considered an invoice once it is accepted
-  const acceptedBookings = allBookings.filter(b => b.status === 'Accepted' || b.status === 'Confirmed' || b.status === 'Delivered');
-  const invoicesCount = acceptedBookings.length;
-
-  // Upcoming payments: total price of accepted bookings
-  const upcomingPaymentDue = acceptedBookings.reduce((sum, b) => sum + (Number(b.price) || 0), 0);
-
-  // Due in 5 Days: simulated or calculated based on pending bookings
-  const pendingBookings = allBookings.filter(b => b.status === 'Pending');
-  const dueIn5Days = pendingBookings.reduce((sum, b) => sum + (Number(b.price) || 0), 0);
+const FinanceSection = ({ stats }) => {
+  // Extract counts and amounts directly from stats API
+  const invoicesCount = (stats?.myBookings?.accepted || 0) + (stats?.directBookings?.accepted || 0);
+  const upcomingPaymentDue = (stats?.myBookings?.upcomingPaymentDue || 0) + (stats?.directBookings?.upcomingPaymentDue || 0);
+  const dueIn5Days = (stats?.myBookings?.dueIn5Days || 0) + (stats?.directBookings?.dueIn5Days || 0);
 
   return (
     <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-[0_12px_40px_rgba(11,30,67,0.03)] space-y-5">

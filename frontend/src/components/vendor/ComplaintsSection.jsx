@@ -2,17 +2,11 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { AlertTriangle } from 'lucide-react';
 
-const ComplaintsSection = ({ myEnquiries = [], directEnquiries = [], myBookings = [], directBookings = [] }) => {
-  // Let's derive complaints from Declined status to make it dynamic and real-time
-  const myDeclinedEnquiries = myEnquiries.filter(e => e.status === 'Declined').length;
-  const directDeclinedEnquiries = directEnquiries.filter(e => e.status === 'Declined').length;
-  const myDeclinedBookings = myBookings.filter(b => b.status === 'Declined').length;
-  const directDeclinedBookings = directBookings.filter(b => b.status === 'Declined').length;
-
-  const myComplaintsVendor = myDeclinedBookings;
-  const myComplaintsCustomer = myDeclinedEnquiries;
-  const complaintsAgainstMeVendor = directDeclinedBookings;
-  const complaintsAgainstMeCustomer = directDeclinedEnquiries;
+const ComplaintsSection = ({ stats }) => {
+  const myComplaintsVendor = stats?.myBookings?.declined || 0;
+  const myComplaintsCustomer = stats?.myEnquiries?.declined || 0;
+  const complaintsAgainstMeVendor = stats?.directBookings?.declined || 0;
+  const complaintsAgainstMeCustomer = stats?.directEnquiries?.declined || 0;
 
   return (
     <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-[0_12px_40px_rgba(11,30,67,0.03)] space-y-5">

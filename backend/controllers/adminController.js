@@ -413,6 +413,15 @@ exports.getAdminDashboardStats = async (req, res) => {
         const Enquiry = require('../models/Enquiry');
         const Complaint = require('../models/Complaint');
         const FinanceApplication = require('../models/FinanceApplication');
+        const User = require('../models/User');
+        
+        let dateFilter = {};
+        if (req.query.startDate && req.query.endDate) {
+            const startDate = new Date(req.query.startDate);
+            const endDate = new Date(req.query.endDate);
+            endDate.setHours(23, 59, 59, 999);
+            dateFilter = { createdAt: { $gte: startDate, $lte: endDate } };
+        }
         
         // Parallel queries for speed
         const [
@@ -431,20 +440,20 @@ exports.getAdminDashboardStats = async (req, res) => {
             guestEmails,
             recentAllEnquiries
         ] = await Promise.all([
-            User.countDocuments({ role: 'customer' }),
-            User.countDocuments({ role: 'vendor' }),
-            User.countDocuments({ role: 'vendor', verificationStatus: { $ne: 'Approved' } }),
-            Enquiry.countDocuments(),
-            Enquiry.countDocuments({ status: 'Accepted' }),
-            Enquiry.countDocuments({ status: 'Declined' }),
-            FinanceApplication.countDocuments(),
-            FinanceApplication.countDocuments({ adminStatus: 'Pending' }),
-            Complaint.countDocuments(),
-            Complaint.countDocuments({ status: 'Pending' }),
-            User.find({ role: 'vendor' }).sort({ createdAt: -1 }).limit(5).select('name email company isVerified verificationStatus createdAt'),
-            Enquiry.find({ status: 'Accepted' }).sort({ createdAt: -1 }).limit(5).populate('client', 'name email').populate('vendor', 'name company'),
-            Enquiry.distinct('guestEmail', { client: null, guestEmail: { $ne: '' } }),
-            Enquiry.find().sort({ createdAt: -1 }).limit(8).populate('client', 'name email').populate('vendor', 'name company')
+            User.countDocuments({ role: 'customer', ...dateFilter }),
+            User.countDocuments({ role: 'vendor', ...dateFilter }),
+            User.countDocuments({ role: 'vendor', verificationStatus: { $ne: 'Approved' }, ...dateFilter }),
+            Enquiry.countDocuments(dateFilter),
+            Enquiry.countDocuments({ status: 'Accepted', ...dateFilter }),
+            Enquiry.countDocuments({ status: 'Declined', ...dateFilter }),
+            FinanceApplication.countDocuments(dateFilter),
+            FinanceApplication.countDocuments({ adminStatus: 'Pending', ...dateFilter }),
+            Complaint.countDocuments(dateFilter),
+            Complaint.countDocuments({ status: 'Pending', ...dateFilter }),
+            User.find({ role: 'vendor', ...dateFilter }).sort({ createdAt: -1 }).limit(5).select('name email company isVerified verificationStatus createdAt'),
+            Enquiry.find({ status: 'Accepted', ...dateFilter }).sort({ createdAt: -1 }).limit(5).populate('client', 'name email').populate('vendor', 'name company'),
+            Enquiry.distinct('guestEmail', { client: null, guestEmail: { $ne: '' }, ...dateFilter }),
+            Enquiry.find(dateFilter).sort({ createdAt: -1 }).limit(8).populate('client', 'name email').populate('vendor', 'name company')
         ]);
 
         res.json({

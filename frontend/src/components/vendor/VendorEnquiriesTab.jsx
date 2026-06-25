@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   Check, X, Phone, Mail, User, Info, Search, MapPin, 
   Building2, Ship, Plane, Truck, Warehouse, Package, 
@@ -42,6 +42,7 @@ const VendorEnquiriesTab = ({ title, type }) => {
     updateEnquiryStatus
   } = useEnquiries();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
@@ -49,6 +50,16 @@ const VendorEnquiriesTab = ({ title, type }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState('all'); // 'all', '7days', '15days', 'thismonth', or 'YYYY-MM'
   
+  // Status filter from URL or default to 'all'
+  const [statusFilter, setStatusFilter] = useState('all');
+  
+  useEffect(() => {
+    const filter = new URLSearchParams(location.search).get('filter');
+    if (filter) {
+      setStatusFilter(filter);
+    }
+  }, [location]);
+
   // State for Quote modal/prompt
   const [activeQuoteId, setActiveQuoteId] = useState(null);
   const [quoteDetails, setQuoteDetails] = useState({
@@ -232,30 +243,42 @@ const VendorEnquiriesTab = ({ title, type }) => {
     if (!matchesSearch) return false;
 
     // 2. Date Filtering
-    if (selectedFilter === 'all') return true;
+    if (selectedFilter !== 'all') {
+      const enqDate = new Date(enq.createdAt || Date.now());
+      const today = new Date();
 
-    const enqDate = new Date(enq.createdAt || Date.now());
-    const today = new Date();
-
-    if (selectedFilter === '7days') {
-      const diffTime = Math.abs(today - enqDate);
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      return diffDays <= 7;
+      if (selectedFilter === '7days') {
+        const diffTime = Math.abs(today - enqDate);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        if (diffDays > 7) return false;
+      } else if (selectedFilter === '15days') {
+        const diffTime = Math.abs(today - enqDate);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        if (diffDays > 15) return false;
+      } else if (selectedFilter === 'thismonth') {
+        if (enqDate.getMonth() !== today.getMonth() || enqDate.getFullYear() !== today.getFullYear()) {
+          return false;
+        }
+      } else {
+        // YYYY-MM matching
+        const [filterYear, filterMonth] = selectedFilter.split('-');
+        if (enqDate.getFullYear() !== parseInt(filterYear) || (enqDate.getMonth() + 1) !== parseInt(filterMonth)) {
+          return false;
+        }
+      }
     }
 
-    if (selectedFilter === '15days') {
-      const diffTime = Math.abs(today - enqDate);
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      return diffDays <= 15;
+    // 3. Status Filtering
+    if (statusFilter !== 'all') {
+      const isAccepted = type === 'direct' 
+        ? enq.myResponse?.status === 'Accepted'
+        : enq.status === 'Accepted';
+
+      if (statusFilter === 'accepted' && !isAccepted) return false;
+      if (statusFilter === 'not_accepted' && isAccepted) return false;
     }
 
-    if (selectedFilter === 'thismonth') {
-      return enqDate.getMonth() === today.getMonth() && enqDate.getFullYear() === today.getFullYear();
-    }
-
-    // YYYY-MM matching
-    const [filterYear, filterMonth] = selectedFilter.split('-');
-    return enqDate.getFullYear() === parseInt(filterYear) && (enqDate.getMonth() + 1) === parseInt(filterMonth);
+    return true;
   });
 
   return (
@@ -324,6 +347,27 @@ const VendorEnquiriesTab = ({ title, type }) => {
                 }`}
               >
                 {filter.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Status Filter Buttons */}
+          <div className="flex flex-wrap gap-2 pt-1 border-t border-slate-100 mt-3 pt-3">
+            {[
+              { id: 'all', label: 'All Status' },
+              { id: 'accepted', label: 'Accepted' },
+              { id: 'not_accepted', label: 'Not Accepted' }
+            ].map((f) => (
+              <button
+                key={f.id}
+                onClick={() => setStatusFilter(f.id)}
+                className={`px-4 py-1.5 rounded-lg text-[10px] uppercase tracking-wider font-bold transition-all duration-200 cursor-pointer border ${
+                  statusFilter === f.id
+                    ? 'bg-slate-800 border-slate-800 text-white shadow-md'
+                    : 'bg-white border-slate-200 text-slate-500 hover:text-slate-800 hover:bg-slate-50'
+                }`}
+              >
+                {f.label}
               </button>
             ))}
           </div>

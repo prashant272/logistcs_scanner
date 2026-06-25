@@ -3,10 +3,37 @@ import axios from 'axios';
 import useSWR from 'swr';
 import { Calendar as CalendarIcon, RotateCcw, Menu, Users, ShoppingBag, AlertCircle, FileText, IndianRupee, UserCheck } from 'lucide-react';
 
-const fetcher = async (url) => {
+const fetcher = async ([url, filterType, customStart, customEnd]) => {
     const token = localStorage.getItem('adminToken');
     const config = { headers: { Authorization: `Bearer ${token}` } };
-    const res = await axios.get(url, config);
+    
+    let fetchUrl = url;
+    let startDate, endDate;
+    const now = new Date();
+    
+    if (filterType === 'Custom Date' && customStart && customEnd) {
+        startDate = new Date(customStart);
+        endDate = new Date(customEnd);
+        endDate.setHours(23, 59, 59, 999);
+    } else if (filterType === 'Weekly') {
+        startDate = new Date();
+        startDate.setDate(now.getDate() - 7);
+        endDate = new Date();
+    } else if (filterType === 'Last 15 Days') {
+        startDate = new Date();
+        startDate.setDate(now.getDate() - 15);
+        endDate = new Date();
+    } else if (filterType === 'Monthly') {
+        startDate = new Date();
+        startDate.setMonth(now.getMonth() - 1);
+        endDate = new Date();
+    }
+
+    if (startDate && endDate) {
+        fetchUrl += `?startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`;
+    }
+
+    const res = await axios.get(fetchUrl, config);
     return res.data;
 };
 
@@ -34,7 +61,7 @@ const AdminDashboardMain = () => {
     const [customEnd, setCustomEnd] = useState('');
 
     const { data: stats, error, isLoading: loading } = useSWR(
-        `${import.meta.env.VITE_API_BASE_URL}/admin/dashboard-stats`,
+        [`${import.meta.env.VITE_API_BASE_URL}/admin/dashboard-stats`, filterType, customStart, customEnd],
         fetcher,
         { refreshInterval: 30000, revalidateOnFocus: true }
     );

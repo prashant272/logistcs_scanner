@@ -38,7 +38,7 @@ const EnquiryCardSection = ({ title, type, enquiryCount, acceptedCount, rejected
           <div>
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Enquiry accepted</p>
             <h4 className="text-3xl font-extrabold !text-green-600 mt-2">{acceptedCount}</h4>
-            <Link to={targetLink} className="text-[11px] text-[#0066FF] font-extrabold hover:underline mt-3 inline-flex items-center gap-1">
+            <Link to={`${targetLink}?filter=accepted`} className="text-[11px] text-[#0066FF] font-extrabold hover:underline mt-3 inline-flex items-center gap-1">
               View Details <ArrowRight size={12} className="transition-transform group-hover:translate-x-0.5" />
             </Link>
           </div>
@@ -51,7 +51,7 @@ const EnquiryCardSection = ({ title, type, enquiryCount, acceptedCount, rejected
           <div>
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Enquiry not accepted</p>
             <h4 className="text-3xl font-extrabold !text-red-500 mt-2">{rejectedCount}</h4>
-            <Link to={targetLink} className="text-[11px] text-[#0066FF] font-extrabold hover:underline mt-3 inline-flex items-center gap-1">
+            <Link to={`${targetLink}?filter=not_accepted`} className="text-[11px] text-[#0066FF] font-extrabold hover:underline mt-3 inline-flex items-center gap-1">
               View Details <ArrowRight size={12} className="transition-transform group-hover:translate-x-0.5" />
             </Link>
           </div>

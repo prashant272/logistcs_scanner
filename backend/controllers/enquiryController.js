@@ -528,3 +528,134 @@ exports.getClientEnquiries = async (req, res) => {
         res.status(500).json({ message: 'Server error', error: error.message });
     }
 };
+
+// Get stats for Vendor Dashboard efficiently
+exports.getVendorStats = async (req, res) => {
+    try {
+        const isAdmin = req.user.id === 'ad0000000000000000000000';
+        let currentUser = null;
+
+        if (isAdmin) {
+            currentUser = { role: 'admin' };
+        } else {
+            const User = require('../models/User');
+            currentUser = await User.findById(req.user.id);
+            if (!currentUser || (currentUser.verificationStatus !== 'Approved' && currentUser.role === 'vendor')) {
+                return res.json({
+                    myEnquiries: { total: 0, accepted: 0, locked: 0, rejected: 0, declined: 0 },
+                    directEnquiries: { total: 0, accepted: 0, locked: 0, rejected: 0, declined: 0 },
+                    myBookings: { total: 0, accepted: 0, declined: 0, upcomingPaymentDue: 0, dueIn5Days: 0 },
+                    directBookings: { total: 0, accepted: 0, declined: 0, upcomingPaymentDue: 0, dueIn5Days: 0 }
+                });
+            }
+        }
+
+        const buildQuery = (type, isBookingFilter) => {
+            let query = {};
+            if (!isAdmin) {
+                if (isBookingFilter) {
+                    query = { client: req.user.id, isBooking: true, isDirect: type === 'direct' };
+                } else {
+                    if (type === 'my') {
+                        query = { vendor: req.user.id, isDirect: false };
+                    } else {
+                        query = { isDirect: true, client: { $ne: req.user.id } };
+                    }
+                }
+            } else {
+                query = { isDirect: type === 'direct', isBooking: isBookingFilter };
+            }
+
+            if (!isAdmin && type === 'direct' && !isBookingFilter && currentUser) {
+                if (currentUser.approvedAt) {
+                    query.createdAt = { $gte: currentUser.approvedAt };
+                } else if (currentUser.createdAt) {
+                    query.createdAt = { $gte: currentUser.createdAt };
+                }
+                if (currentUser.services && currentUser.services.length > 0) {
+                    const mappedServices = currentUser.services.map(s => s.toLowerCase().trim());
+                    query.type = { $in: mappedServices };
+                }
+            }
+
+            if (req.query.startDate && req.query.endDate) {
+                const startDate = new Date(req.query.startDate);
+                const endDate = new Date(req.query.endDate);
+                endDate.setHours(23, 59, 59, 999);
+                if (query.createdAt && query.createdAt.$gte) {
+                     query.createdAt = {
+                        $gte: new Date(Math.max(startDate, query.createdAt.$gte)),
+                        $lte: endDate
+                     };
+                } else {
+                     query.createdAt = { $gte: startDate, $lte: endDate };
+                }
+            }
+            return query;
+        };
+
+        const Enquiry = require('../models/Enquiry');
+        const [myEnqs, directEnqs, myBkgs, directBkgs] = await Promise.all([
+            Enquiry.find(buildQuery('my', false)).select('status isLocked responses price createdAt').lean(),
+            Enquiry.find(buildQuery('direct', false)).select('status isLocked responses price createdAt').lean(),
+            Enquiry.find(buildQuery('my', true)).select('status isLocked price createdAt').lean(),
+            Enquiry.find(buildQuery('direct', true)).select('status isLocked price createdAt').lean()
+        ]);
+
+        const calcEnqStats = (enqs, type) => {
+            const stats = { total: 0, accepted: 0, locked: 0, rejected: 0, declined: 0 };
+            enqs.forEach(enq => {
+                if (enq.isLocked) {
+                    stats.locked++;
+                } else {
+                    stats.total++;
+                    let isAccepted = false;
+                    if (type === 'direct' && enq.responses && !isAdmin) {
+                        const myRes = enq.responses.find(r => {
+                            const vId = r.vendor?._id ? r.vendor._id.toString() : r.vendor?.toString();
+                            return vId === req.user.id;
+                        });
+                        if (myRes && myRes.status === 'Accepted') isAccepted = true;
+                    } else if (enq.status === 'Accepted') {
+                        isAccepted = true;
+                    }
+                    
+                    if (isAccepted) stats.accepted++;
+                    else {
+                        stats.rejected++;
+                        if (enq.status === 'Declined') stats.declined++;
+                    }
+                }
+            });
+            return stats;
+        };
+
+        const calcBkgStats = (bkgs) => {
+            const stats = { total: 0, accepted: 0, declined: 0, upcomingPaymentDue: 0, dueIn5Days: 0 };
+            bkgs.forEach(bkg => {
+                if (!bkg.isLocked) {
+                    stats.total++;
+                    if (bkg.status === 'Accepted' || bkg.status === 'Confirmed' || bkg.status === 'Delivered') {
+                        stats.accepted++;
+                        stats.upcomingPaymentDue += (Number(bkg.price) || 0);
+                    } else if (bkg.status === 'Declined') {
+                        stats.declined++;
+                    } else if (bkg.status === 'Pending') {
+                        stats.dueIn5Days += (Number(bkg.price) || 0);
+                    }
+                }
+            });
+            return stats;
+        };
+
+        res.json({
+            myEnquiries: calcEnqStats(myEnqs, 'my'),
+            directEnquiries: calcEnqStats(directEnqs, 'direct'),
+            myBookings: calcBkgStats(myBkgs),
+            directBookings: calcBkgStats(directBkgs)
+        });
+
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
