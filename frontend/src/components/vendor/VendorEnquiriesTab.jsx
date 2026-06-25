@@ -108,11 +108,13 @@ const VendorEnquiriesTab = ({ title, type }) => {
 
   const handleQuoteSubmit = async (e, id) => {
     e.preventDefault();
-    if (!quoteDetails.allInCharges || isNaN(quoteDetails.allInCharges)) {
-      alert('Please enter a valid All In Charges amount');
+    const hasAnyPrice = quoteDetails.freightCharges || quoteDetails.otherCharges || quoteDetails.allInCharges;
+    if (!hasAnyPrice) {
+      alert('Please enter at least one price amount');
       return;
     }
-    await handleAction(id, 'Accepted', Number(quoteDetails.allInCharges), quoteDetails);
+    const finalPrice = Number(quoteDetails.allInCharges || quoteDetails.freightCharges || quoteDetails.otherCharges || 0);
+    await handleAction(id, 'Accepted', finalPrice, quoteDetails);
     setActiveQuoteId(null);
     setQuoteDetails({
       freightCharges: '', freightCurrency: 'INR',
@@ -362,10 +364,10 @@ const VendorEnquiriesTab = ({ title, type }) => {
               );
             }
 
-            const hasQuote = type === 'direct' ? !!enq.myResponse : (enq.price !== undefined && enq.price !== null);
             const isAccepted = type === 'direct' ? (enq.myResponse && enq.myResponse.status === 'Accepted') : (enq.status === 'Accepted');
             const quoteData = type === 'direct' ? (enq.myResponse?.quoteDetails) : enq.quoteDetails;
             const quotePrice = type === 'direct' ? (enq.myResponse?.price) : enq.price;
+            const hasQuote = type === 'direct' ? !!(quotePrice || quoteData?.allInCharges) : (enq.price !== undefined && enq.price !== null);
 
             return (
               <div 
@@ -402,16 +404,43 @@ const VendorEnquiriesTab = ({ title, type }) => {
 
                   {/* Top-Right Badges: Container, Load Type, Date of Shipment */}
                   <div className="flex flex-wrap gap-2 items-center pr-28">
-                    {/* Container Type */}
-                    <div className="bg-white border border-slate-200/80 rounded-lg px-3 py-1.5 text-center min-w-[70px] shadow-sm">
-                      <div className="text-[9px] text-slate-600 font-black uppercase tracking-wider">Container Type</div>
-                      <div className="text-[10px] font-black text-slate-800 mt-0.5">{enq.vehicleType || '40 FT'}</div>
-                    </div>
+                    {/* Container Type for Sea FCL */}
+                    {(enq.type === 'sea' && enq.seaLoadType === 'FCL' && enq.fclStandard) && (
+                      <div className="bg-white border border-slate-200/80 rounded-lg px-3 py-1.5 text-center min-w-[70px] shadow-sm">
+                        <div className="text-[9px] text-slate-600 font-black uppercase tracking-wider">Container Type</div>
+                        <div className="text-[10px] font-black text-slate-800 mt-0.5">{enq.fclStandard}</div>
+                      </div>
+                    )}
+                    
+                    {/* Units for Sea FCL */}
+                    {(enq.type === 'sea' && enq.seaLoadType === 'FCL' && enq.fclUnit) && (
+                      <div className="bg-white border border-slate-200/80 rounded-lg px-3 py-1.5 text-center min-w-[70px] shadow-sm">
+                        <div className="text-[9px] text-slate-600 font-black uppercase tracking-wider">Units</div>
+                        <div className="text-[10px] font-black text-slate-800 mt-0.5">{enq.fclUnit}</div>
+                      </div>
+                    )}
+
+                    {/* Vehicle Type for Land */}
+                    {(enq.type === 'land' && enq.vehicleType) && (
+                      <div className="bg-white border border-slate-200/80 rounded-lg px-3 py-1.5 text-center min-w-[70px] shadow-sm">
+                        <div className="text-[9px] text-slate-600 font-black uppercase tracking-wider">Vehicle Type</div>
+                        <div className="text-[10px] font-black text-slate-800 mt-0.5">{enq.vehicleType}</div>
+                      </div>
+                    )}
+
                     {/* Load Type */}
-                    <div className="bg-white border border-slate-200/80 rounded-lg px-3 py-1.5 text-center min-w-[70px] shadow-sm">
-                      <div className="text-[9px] text-slate-600 font-black uppercase tracking-wider">Load Type</div>
-                      <div className="text-[10px] font-black text-slate-800 mt-0.5">{enq.truckLoad || 'FCL'}</div>
-                    </div>
+                    {(enq.type === 'sea' && enq.seaLoadType) && (
+                      <div className="bg-white border border-slate-200/80 rounded-lg px-3 py-1.5 text-center min-w-[70px] shadow-sm">
+                        <div className="text-[9px] text-slate-600 font-black uppercase tracking-wider">Load Type</div>
+                        <div className="text-[10px] font-black text-slate-800 mt-0.5">{enq.seaLoadType}</div>
+                      </div>
+                    )}
+                    {(enq.type === 'land' && enq.truckLoad) && (
+                      <div className="bg-white border border-slate-200/80 rounded-lg px-3 py-1.5 text-center min-w-[70px] shadow-sm">
+                        <div className="text-[9px] text-slate-600 font-black uppercase tracking-wider">Load Type</div>
+                        <div className="text-[10px] font-black text-slate-800 mt-0.5">{enq.truckLoad}</div>
+                      </div>
+                    )}
                     {/* Date of Shipment / Target Delivery */}
                     <div className="bg-white border border-slate-200/80 rounded-lg px-3 py-1.5 text-center min-w-[100px] shadow-sm">
                       <div className="text-[9px] text-slate-600 font-black uppercase tracking-wider font-mono">Date of Shipment</div>
@@ -587,36 +616,42 @@ const VendorEnquiriesTab = ({ title, type }) => {
                       </div>
                     ) : null}
 
-                    {/* Weight / Target Delivery */}
-                    <div className="bg-white border border-slate-200/90 rounded-xl py-1.5 px-4 shadow-[0_4px_12px_rgba(0,0,0,0.01)] text-center min-w-[75px]">
-                      <div className="text-[9px] text-slate-600 font-black tracking-wider uppercase">Weight</div>
-                      <div className="text-[10px] font-black text-slate-800 mt-0.5">{enq.weightRange || 'N/A'}</div>
-                    </div>
+                    {/* Weight Badge */}
+                    {enq.weightRange && (
+                      <div className="bg-white border border-slate-200/90 rounded-xl py-1.5 px-4 shadow-[0_4px_12px_rgba(0,0,0,0.01)] text-center min-w-[75px]">
+                        <div className="text-[9px] text-slate-600 font-black tracking-wider uppercase">Weight</div>
+                        <div className="text-[10px] font-black text-slate-800 mt-0.5">{enq.weightRange}</div>
+                      </div>
+                    )}
 
                     {/* Volume Badge */}
-                    <div className="bg-white border border-slate-200/90 rounded-xl py-1.5 px-4 shadow-[0_4px_12px_rgba(0,0,0,0.01)] text-center min-w-[75px]">
-                      <div className="text-[9px] text-slate-600 font-black tracking-wider uppercase">Volume</div>
-                      <div className="text-[10px] font-black text-slate-800 mt-0.5">
-                        {isAccepted 
-                          ? (enq.type === 'sea' ? 'CBM - 0-5' : (enq.vehicleType || 'Standard'))
-                          : 'UNIT- X'
-                        }
+                    {enq.cbmRange && (
+                      <div className="bg-white border border-slate-200/90 rounded-xl py-1.5 px-4 shadow-[0_4px_12px_rgba(0,0,0,0.01)] text-center min-w-[75px]">
+                        <div className="text-[9px] text-slate-600 font-black tracking-wider uppercase">Volume</div>
+                        <div className="text-[10px] font-black text-slate-800 mt-0.5">{enq.cbmRange}</div>
                       </div>
-                    </div>
+                    )}
 
                     {/* My Price Badge */}
                     <div className="bg-white border border-slate-200/90 rounded-xl py-1.5 px-4 shadow-[0_4px_12px_rgba(0,0,0,0.01)] text-center min-w-[85px]">
                       <div className="text-[9px] text-slate-600 font-black tracking-wider uppercase">My Price</div>
                       <div className="text-[10px] font-black text-slate-850 mt-0.5">
-                        {enq.price ? `$ ${enq.price.toLocaleString()}` : 'N/A'}
+                        {isAccepted && hasQuote ? `$ ${Number(quotePrice || quoteData?.allInCharges).toLocaleString()}` : ((enq.vendorOwnPrice || enq.price) ? `$ ${(enq.vendorOwnPrice || enq.price).toLocaleString()}` : 'N/A')}
                       </div>
                     </div>
 
                     {/* Target Price Badge */}
                     <div className="bg-white border border-slate-200/90 rounded-xl py-1.5 px-4 shadow-[0_4px_12px_rgba(0,0,0,0.01)] text-center min-w-[85px]">
                       <div className="text-[9px] text-slate-600 font-black tracking-wider uppercase">Target Price</div>
-                      <div className="text-[10px] font-black text-slate-850 mt-0.5">
-                        {enq.targetPrice ? `$ ${enq.targetPrice.toLocaleString()}` : 'N/A'}
+                      <div className="text-[10px] font-black text-slate-850 mt-0.5 flex justify-center items-center h-4">
+                        {!isAccepted ? (
+                          <div className="flex items-center gap-1 text-slate-400" title="Visible after accept">
+                            <Lock size={9} />
+                            <span className="text-[8px] uppercase">Hidden</span>
+                          </div>
+                        ) : (
+                          enq.targetPrice ? `$ ${enq.targetPrice.toLocaleString()}` : 'N/A'
+                        )}
                       </div>
                     </div>
                   </div>
@@ -707,7 +742,7 @@ const VendorEnquiriesTab = ({ title, type }) => {
                         <div className="flex gap-2 pt-2 border-t border-slate-100">
                           <div className="flex-1 space-y-1">
                             <label className="block text-[10px] font-black text-slate-800 uppercase">All In Charges (Total)</label>
-                            <input type="number" placeholder="Total Amount" value={quoteDetails.allInCharges} onChange={e => setQuoteDetails({...quoteDetails, allInCharges: e.target.value})} className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2.5 text-xs font-bold focus:outline-none focus:border-[#0066FF] shadow-sm" required />
+                            <input type="number" placeholder="Total Amount" value={quoteDetails.allInCharges} onChange={e => setQuoteDetails({...quoteDetails, allInCharges: e.target.value})} className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2.5 text-xs font-bold focus:outline-none focus:border-[#0066FF] shadow-sm" />
                           </div>
                           <div className="w-24 space-y-1">
                             <label className="block text-[10px] font-black text-slate-800 uppercase">Currency</label>

@@ -74,6 +74,7 @@ const SearchPrice = ({ isDashboard = false }) => {
     const [isQuoteModalOpen, setIsQuoteModalOpen] = useState(false);
     const [guestName, setGuestName] = useState('');
     const [guestCompany, setGuestCompany] = useState('');
+    const [guestGst, setGuestGst] = useState('');
     const [guestCommodity, setGuestCommodity] = useState('');
     const [guestPhoneCode, setGuestPhoneCode] = useState('+91');
     const [guestPhone, setGuestPhone] = useState('');
@@ -396,9 +397,13 @@ const SearchPrice = ({ isDashboard = false }) => {
             type: activeTab,
             category: activeTab === 'air' ? airCategory : undefined,
             airline: activeTab === 'air' ? airAirline : undefined,
-            weightRange: activeTab === 'air' ? weight : undefined,
+            weightRange: activeTab === 'air' ? weight : (activeTab === 'sea' && loadType === 'LCL' ? lclWeightRange : undefined),
             truckLoad: activeTab === 'land' ? loadType : undefined,
             vehicleType: activeTab === 'land' ? vehicleType : undefined,
+            seaLoadType: activeTab === 'sea' ? loadType : undefined,
+            fclStandard: activeTab === 'sea' ? fclStandard : undefined,
+            fclUnit: activeTab === 'sea' ? fclUnit : undefined,
+            cbmRange: activeTab === 'sea' ? lclVolumeRange : undefined,
             handlingType: handlingType || 'General Cargo',
             additionalServices: additionalServices || '',
             deliverySpeed: matchedRate ? matchedRate.deliverySpeed : '3-4',
@@ -435,9 +440,13 @@ const SearchPrice = ({ isDashboard = false }) => {
             type: activeTab,
             category: activeTab === 'air' ? airCategory : undefined,
             airline: activeTab === 'air' ? airAirline : undefined,
-            weightRange: activeTab === 'air' ? weight : undefined,
+            weightRange: activeTab === 'air' ? weight : (activeTab === 'sea' && loadType === 'LCL' ? lclWeightRange : undefined),
             truckLoad: activeTab === 'land' ? loadType : undefined,
             vehicleType: activeTab === 'land' ? vehicleType : undefined,
+            seaLoadType: activeTab === 'sea' ? loadType : undefined,
+            fclStandard: activeTab === 'sea' ? fclStandard : undefined,
+            fclUnit: activeTab === 'sea' ? fclUnit : undefined,
+            cbmRange: activeTab === 'sea' ? lclVolumeRange : undefined,
             handlingType: handlingType || 'General Cargo',
             additionalServices: additionalServices || '',
             deliverySpeed: selectedRateForQuote ? selectedRateForQuote.deliverySpeed : '3-4',
@@ -447,6 +456,7 @@ const SearchPrice = ({ isDashboard = false }) => {
             // Guest fields
             guestName,
             guestCompany,
+            guestGst,
             guestPhone: `${guestPhoneCode} ${guestPhone}`,
             guestEmail,
             commodity: guestCommodity
@@ -1274,6 +1284,20 @@ const SearchPrice = ({ isDashboard = false }) => {
                                 />
                             </div>
 
+                            {/* GST Number */}
+                            <div className="space-y-1">
+                                <label className="block text-[10px] font-black text-slate-900 uppercase tracking-wider flex items-center gap-1">
+                                    <FileText size={11} className="text-slate-400" /> GST Number (Optional)
+                                </label>
+                                <input
+                                    type="text"
+                                    placeholder="Enter GST Number"
+                                    value={guestGst}
+                                    onChange={(e) => setGuestGst(e.target.value)}
+                                    className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-900 focus:outline-none focus:border-[#0066FF] transition-all"
+                                />
+                            </div>
+
                             {/* Commodity Details */}
                             <div className="space-y-1">
                                 <label className="block text-[10px] font-black text-slate-900 uppercase tracking-wider flex items-center gap-1">
@@ -1320,7 +1344,7 @@ const SearchPrice = ({ isDashboard = false }) => {
                             {/* Email */}
                             <div className="space-y-1">
                                 <label className="block text-[10px] font-black text-slate-900 uppercase tracking-wider flex items-center gap-1">
-                                    <Mail size={11} className="text-slate-400" /> Email
+                                    <Mail size={11} className="text-slate-400" /> Work Email
                                 </label>
                                 <input
                                     type="email"

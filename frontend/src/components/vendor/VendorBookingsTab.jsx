@@ -241,6 +241,16 @@ const VendorBookingsTab = ({ title = 'Bookings', type = 'my' }) => {
                         </div>
                       )}
 
+                      {bkg.type === 'sea' && (bkg.seaLoadType || bkg.fclStandard || bkg.cbmRange) && (
+                        <div className="space-y-0.5">
+                          <span className="text-slate-400 block uppercase font-black text-[8px] tracking-wider">Sea Load</span>
+                          <span className="text-slate-800 truncate block font-black">
+                            {bkg.seaLoadType ? bkg.seaLoadType + ' ' : ''}
+                            {bkg.seaLoadType === 'LCL' ? (bkg.cbmRange ? `(${bkg.cbmRange} CBM)` : '') : (bkg.fclStandard || '')}
+                          </span>
+                        </div>
+                      )}
+
                       <div className="space-y-0.5">
                         <span className="text-slate-400 block uppercase font-black text-[8px] tracking-wider">Transit Time</span>
                         <span className="text-slate-800 block font-black flex items-center gap-1"><Clock size={11} className="text-slate-400" /> {bkg.deliverySpeed || '3-5'} Days</span>

@@ -86,6 +86,7 @@ const SearchResults = () => {
   // Guest details form state
   const [isGuestModalOpen, setIsGuestModalOpen] = useState(false);
   const [guestCompany, setGuestCompany] = useState('');
+  const [guestGst, setGuestGst] = useState('');
   const [guestCommodity, setGuestCommodity] = useState('');
   const [guestPhoneCode, setGuestPhoneCode] = useState('+91');
   const [guestPhone, setGuestPhone] = useState('');
@@ -170,6 +171,9 @@ const SearchResults = () => {
           weightRange: queryDetails.weight,
           truckLoad: queryDetails.loadType,
           vehicleType: queryDetails.vehicleType,
+          seaLoadType: searchPayload.seaLoadType || queryDetails.loadType,
+          fclStandard: searchPayload.fclStandard || queryDetails.fclStandard,
+          cbmRange: queryDetails.lclVolumeRange,
           handlingType: queryDetails.handlingType || 'General Cargo',
           additionalServices: queryDetails.additionalServices || '',
           deliverySpeed: '3-5',
@@ -209,6 +213,9 @@ const SearchResults = () => {
         weightRange: queryDetails.weight,
         truckLoad: queryDetails.loadType,
         vehicleType: queryDetails.vehicleType,
+        seaLoadType: searchPayload.seaLoadType || queryDetails.loadType,
+        fclStandard: searchPayload.fclStandard || queryDetails.fclStandard,
+        cbmRange: queryDetails.lclVolumeRange,
         handlingType: queryDetails.handlingType || 'General Cargo',
         additionalServices: queryDetails.additionalServices || '',
         deliverySpeed: '3-5',
@@ -251,6 +258,9 @@ const SearchResults = () => {
       weightRange: queryDetails.weight,
       truckLoad: queryDetails.loadType,
       vehicleType: queryDetails.vehicleType,
+      seaLoadType: searchPayload.seaLoadType || queryDetails.loadType,
+      fclStandard: searchPayload.fclStandard || queryDetails.fclStandard,
+      cbmRange: queryDetails.lclVolumeRange,
       handlingType: queryDetails.handlingType || 'General Cargo',
       additionalServices: queryDetails.additionalServices || '',
       deliverySpeed: rate ? rate.deliverySpeed : '3-5',
@@ -275,6 +285,9 @@ const SearchResults = () => {
       weightRange: queryDetails.weight,
       truckLoad: queryDetails.loadType,
       vehicleType: queryDetails.vehicleType,
+      seaLoadType: searchPayload.seaLoadType || queryDetails.loadType,
+      fclStandard: searchPayload.fclStandard || queryDetails.fclStandard,
+      cbmRange: queryDetails.lclVolumeRange,
       handlingType: queryDetails.handlingType || 'General Cargo',
       additionalServices: queryDetails.additionalServices || '',
       deliverySpeed: '3-5',
@@ -311,6 +324,7 @@ const SearchResults = () => {
     const guestInfo = {
       guestName: guestCompany,
       guestCompany,
+      guestGst,
       guestEmail,
       guestPhone: `${guestPhoneCode}${guestPhone}`,
       commodity: guestCommodity
@@ -733,6 +747,7 @@ const SearchResults = () => {
                 const dummyGuestInfo = {
                   guestName: user.name || '',
                   guestCompany: user.company || '',
+                  guestGst: user.gst || '',
                   guestEmail: user.email || '',
                   guestPhone: user.phone || '',
                   commodity: guestCommodity
@@ -876,6 +891,20 @@ const SearchResults = () => {
                   onChange={(e) => setGuestCompany(e.target.value)}
                   className="w-full bg-[#f4f7fc] border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-800 focus:outline-none focus:bg-white focus:border-[#0066FF] transition-all"
                   required
+                />
+              </div>
+
+              {/* GST Number */}
+              <div className="space-y-1">
+                <label className="block text-[10px] font-black text-slate-800 uppercase tracking-wider flex items-center gap-1">
+                  <FileText size={11} className="text-slate-400" /> GST Number (Optional)
+                </label>
+                <input
+                  type="text"
+                  placeholder="Enter GST Number"
+                  value={guestGst}
+                  onChange={(e) => setGuestGst(e.target.value)}
+                  className="w-full bg-[#f4f7fc] border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-800 focus:outline-none focus:bg-white focus:border-[#0066FF] transition-all"
                 />
               </div>
 

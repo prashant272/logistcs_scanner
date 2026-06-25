@@ -102,8 +102,8 @@ export const EnquiryProvider = ({ children }) => {
               };
             } else {
               updated.status = status || e.status;
-              if (price !== undefined) updated.price = price;
-              if (quoteDetails !== undefined) updated.quoteDetails = quoteDetails;
+              if (price !== undefined && price !== null) updated.price = price;
+              if (quoteDetails !== undefined && quoteDetails !== null) updated.quoteDetails = quoteDetails;
             }
             console.log('[updateEnquiryStatus] Updated local item:', updated);
             return updated;

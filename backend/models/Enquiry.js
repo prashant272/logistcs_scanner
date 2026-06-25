@@ -27,6 +27,11 @@ const enquirySchema = new mongoose.Schema({
         trim: true,
         default: ''
     },
+    guestGst: {
+        type: String,
+        trim: true,
+        default: ''
+    },
     commodity: {
         type: String,
         trim: true,
@@ -95,6 +100,26 @@ const enquirySchema = new mongoose.Schema({
         default: ''
     },
     vehicleType: {
+        type: String,
+        trim: true,
+        default: ''
+    },
+    seaLoadType: {
+        type: String,
+        trim: true,
+        default: ''
+    },
+    fclStandard: {
+        type: String,
+        trim: true,
+        default: ''
+    },
+    fclUnit: {
+        type: String,
+        trim: true,
+        default: ''
+    },
+    cbmRange: {
         type: String,
         trim: true,
         default: ''
