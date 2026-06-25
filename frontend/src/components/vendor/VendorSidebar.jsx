@@ -32,6 +32,7 @@ const VendorSidebar = ({ isSidebarOpen, logout, user }) => {
         { name: 'Upload Invoice', path: '/vendor/upload-invoice', icon: <FileText size={18} /> },
         { name: 'Bulk Import', path: '/vendor/bulk-import', icon: <FileSpreadsheet size={18} /> },
         { name: 'View Profile', path: '/vendor/view-profile', icon: <User size={18} /> },
+        { name: 'Contact Vendor List', path: '/vendor/contact-vendor-list', icon: <MessageSquare size={18} /> },
         { name: 'Complaint', path: '/vendor/complaint', icon: <AlertCircle size={18} /> }
     ];
 

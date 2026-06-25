@@ -111,12 +111,27 @@ const VendorProfileTab = ({ user: propUser }) => {
     }
   };
 
+  const getLSID = (id) => {
+    if (!id) return 'N/A';
+    let hash = 0;
+    const str = id.toString();
+    for (let i = 0; i < str.length; i++) {
+        hash = (hash * 31 + str.charCodeAt(i)) % 900000;
+    }
+    return 1000000000 + Math.abs(hash);
+  };
+
   return (
     <div className="space-y-8 max-w-5xl mx-auto">
       {/* Title Header */}
       <div className="bg-white rounded-3xl p-6 md:p-8 border border-slate-100 shadow-[0_8px_30px_rgba(11,30,67,0.02)] flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h2 className="text-xl font-extrabold text-[#0B1E43] tracking-tight">Partner Profile</h2>
+          <h2 className="text-xl font-extrabold text-[#0B1E43] tracking-tight flex items-center gap-3">
+            Partner Profile
+            <span className="bg-[#0066FF]/10 text-[#0066FF] text-xs px-3 py-1.5 rounded-full font-black uppercase tracking-wider">
+              LSID: LS-{getLSID(user?._id || user?.id)}
+            </span>
+          </h2>
           <p className="text-sm text-slate-500 font-semibold mt-1">Manage your company credentials, uploads, services, and bidding preferences.</p>
         </div>
       </div>

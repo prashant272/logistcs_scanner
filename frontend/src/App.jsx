@@ -26,6 +26,7 @@ import SearchResults from './pages/public/SearchResults';
 // Lazy loaded public pages
 const Menu = lazy(() => import('./pages/public/Menu'));
 const VendorNetwork = lazy(() => import('./pages/public/VendorNetwork'));
+const VendorPublicProfile = lazy(() => import('./pages/public/VendorPublicProfile'));
 const TrackShipment = lazy(() => import('./pages/public/TrackShipment'));
 const Terms = lazy(() => import('./pages/public/Terms'));
 const Privacy = lazy(() => import('./pages/public/Privacy'));
@@ -57,6 +58,7 @@ const PricingPlans = lazy(() => import('./pages/vendor/PricingPlans'));
 const VendorComplaintsTab = lazy(() => import('./components/vendor/VendorComplaintsTab'));
 const VendorFinanceForm = lazy(() => import('./pages/vendor/VendorFinanceForm'));
 const VendorFinanceList = lazy(() => import('./pages/vendor/VendorFinanceList'));
+const VendorContactListTab = lazy(() => import('./components/vendor/VendorContactListTab'));
 
 // Lazy loaded admin pages
 const AdminLogin = lazy(() => import('./pages/admin/AdminLogin'));
@@ -193,6 +195,7 @@ function App() {
               <Route path="bulk-import" element={<VendorBulkImportTab />} />
               <Route path="view-profile" element={<VendorProfileTab />} />
               <Route path="upgrade" element={<PricingPlans />} />
+              <Route path="contact-vendor-list" element={<VendorContactListTab />} />
               <Route path="complaint" element={<VendorComplaintsTab />} />
             </Route>
 
@@ -210,6 +213,7 @@ function App() {
                     <Route path="/login" element={<Login />} />
                     <Route path="/register" element={<Register />} />
                     <Route path="/vendor-network" element={<VendorNetwork />} />
+                    <Route path="/vendor-network/profile/:id" element={<VendorPublicProfile />} />
                     <Route path="/track" element={<TrackShipment />} />
                     <Route path="/search-results" element={<SearchResults />} />
                     <Route path="/terms" element={<Terms />} />

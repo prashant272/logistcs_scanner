@@ -1,12 +1,24 @@
-import React, { useState } from 'react';
-import { Search, MapPin, Building2, AlertCircle } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Search, MapPin, Building2, AlertCircle, X, Lock, Eye, CheckCircle2, ShieldCheck, Mail, Phone, Globe } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import { useAuth } from '../../context/AuthContext';
 
 const VendorNetwork = () => {
+    const { user } = useAuth();
+    const navigate = useNavigate();
     const [lsid, setLsid] = useState('');
     const [country, setCountry] = useState('');
     const [city, setCity] = useState('');
-    const [showMessage, setShowMessage] = useState(false);
+    
+    // Feature States
+    const [searchResults, setSearchResults] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [viewLoading, setViewLoading] = useState(false);
+    const [error, setError] = useState('');
+    const [selectedVendor, setSelectedVendor] = useState(null);
+    const [showBlockModal, setShowBlockModal] = useState(false);
+    const [fingerprint, setFingerprint] = useState('');
 
     const countryData = {
         "Afghanistan": ["Kabul", "Kandahar", "Herat", "Mazar-i-Sharif"],
@@ -28,21 +40,83 @@ const VendorNetwork = () => {
         "Uzbekistan": ["Tashkent", "Samarkand", "Bukhara", "Namangan"]
     };
 
+    // Calculate light fingerprint on mount
+    useEffect(() => {
+        const fp = [
+            navigator.userAgent,
+            navigator.language,
+            screen.width + 'x' + screen.height,
+            new Date().getTimezoneOffset()
+        ].join('||');
+        let hash = 0;
+        for (let i = 0; i < fp.length; i++) {
+            hash = (hash * 31 + fp.charCodeAt(i)) & 0xFFFFFFFF;
+        }
+        setFingerprint(Math.abs(hash).toString(16));
+    }, []);
+
     const handleCountryChange = (e) => {
         setCountry(e.target.value);
         setCity('');
     };
 
-    const handleSearch = (e) => {
+    const handleSearch = async (e) => {
         e.preventDefault();
-        setShowMessage(true);
-        setTimeout(() => setShowMessage(false), 5000);
+        setLoading(true);
+        setError('');
+        setSearchResults([]);
+        try {
+            const { data } = await axios.get(
+                `${import.meta.env.VITE_API_BASE_URL}/auth/public-vendors-search`,
+                {
+                    params: { lsid, country, city }
+                }
+            );
+            setSearchResults(data);
+            if (data.length === 0) {
+                setError('No vendors found matching criteria.');
+            }
+        } catch (err) {
+            console.error(err);
+            setError('Failed to fetch vendors. Please try again.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleViewVendor = async (vendorId) => {
+        setViewLoading(true);
+        try {
+            const token = localStorage.getItem('userToken');
+            const headers = {};
+            if (token) {
+                headers.Authorization = `Bearer ${token}`;
+            }
+
+            const { data } = await axios.get(
+                `${import.meta.env.VITE_API_BASE_URL}/auth/public-vendors-search/${vendorId}/details`,
+                {
+                    params: { fingerprint },
+                    headers
+                }
+            );
+            setSelectedVendor(data);
+        } catch (err) {
+            console.error(err);
+            if (err.response?.status === 403) {
+                setShowBlockModal(true);
+            } else {
+                alert(err.response?.data?.message || 'Failed to fetch vendor details.');
+            }
+        } finally {
+            setViewLoading(false);
+        }
     };
 
     return (
         <div className="bg-slate-50 min-h-screen pt-32 pb-20 font-sans">
             
-            <div className="container mx-auto px-6 max-w-4xl">
+            <div className="container mx-auto px-6 max-w-5xl">
                 
                 {/* Premium Simple Header */}
                 <div className="text-center mb-12 animate-fade-in-up">
@@ -58,7 +132,7 @@ const VendorNetwork = () => {
                 </div>
 
                 {/* Premium Search Card */}
-                <div className="bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.06)] border border-slate-100 p-8 md:p-12 relative overflow-hidden">
+                <div className="bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.06)] border border-slate-100 p-8 md:p-12 relative overflow-hidden mb-12">
                     {/* Soft decorative glow */}
                     <div className="absolute top-0 right-0 w-64 h-64 bg-[#0066FF]/5 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none"></div>
 
@@ -137,25 +211,225 @@ const VendorNetwork = () => {
                         {/* Submit Button */}
                         <button
                             type="submit"
-                            className="w-full bg-[#0066FF] hover:bg-[#0B1E43] text-white font-black uppercase tracking-widest py-4 rounded-xl shadow-lg shadow-[#0066FF]/30 transition-all transform hover:-translate-y-1 flex items-center justify-center gap-2"
+                            disabled={loading}
+                            className="w-full bg-[#0066FF] hover:bg-[#0B1E43] text-white font-black uppercase tracking-widest py-4 rounded-xl shadow-lg shadow-[#0066FF]/30 transition-all transform hover:-translate-y-1 flex items-center justify-center gap-2 disabled:bg-slate-300 disabled:shadow-none"
                         >
-                            <Search size={20} />
-                            Search Vendor
+                            {loading ? (
+                                <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                            ) : (
+                                <>
+                                    <Search size={20} />
+                                    Search Vendor
+                                </>
+                            )}
                         </button>
-
-                        {/* Working on this Feature Message */}
-                        {showMessage && (
-                            <div className="mt-6 p-4 bg-blue-50 border border-blue-100 rounded-xl flex items-start gap-3">
-                                <AlertCircle size={24} className="text-[#0066FF] shrink-0 mt-0.5" />
-                                <div>
-                                    <h4 className="text-[#0B1E43] font-bold text-sm">Under Development</h4>
-                                    <p className="!text-[#0066FF] text-sm mt-1 font-bold">I am working on this features.</p>
-                                </div>
-                            </div>
-                        )}
                     </form>
                 </div>
+
+                {/* Error message */}
+                {error && (
+                    <div className="p-4 bg-red-50 border border-red-100 text-red-600 rounded-2xl flex items-center gap-3 font-semibold mb-8">
+                        <AlertCircle size={20} />
+                        <span>{error}</span>
+                    </div>
+                )}
+
+                {/* Search Results Table */}
+                {searchResults.length > 0 && (
+                    <div className="bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 overflow-hidden animate-fade-in">
+                        <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                            <h3 className="font-extrabold !text-[#0B1E43] text-lg uppercase tracking-wider">Search Results</h3>
+                            <span className="bg-[#0066FF]/10 text-[#0066FF] text-xs px-3 py-1.5 rounded-full font-black uppercase">
+                                {searchResults.length} Vendors Found
+                            </span>
+                        </div>
+                        <div className="overflow-x-auto">
+                            <table className="w-full border-collapse text-left">
+                                <thead>
+                                    <tr className="border-b border-slate-100 text-slate-400 font-extrabold text-xs uppercase tracking-wider bg-slate-50/20">
+                                        <th className="py-4 px-6">LSID</th>
+                                        <th className="py-4 px-6">Organization Name</th>
+                                        <th className="py-4 px-6">City</th>
+                                        <th className="py-4 px-6">Country</th>
+                                        <th className="py-4 px-6">Status</th>
+                                        <th className="py-4 px-6 text-right">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100 !text-black font-semibold">
+                                    {searchResults.map((vendor) => (
+                                        <tr key={vendor._id} className="hover:bg-slate-50/80 transition-colors">
+                                            <td className="py-4 px-6 !text-[#0066FF] font-extrabold">
+                                                LS-{vendor.lsid}
+                                            </td>
+                                            <td className="py-4 px-6 text-[#0B1E43] font-bold">
+                                                {vendor.organizationName}
+                                            </td>
+                                            <td className="py-4 px-6 text-slate-600">
+                                                {vendor.city || 'N/A'}
+                                            </td>
+                                            <td className="py-4 px-6 text-slate-600">
+                                                {vendor.country || 'N/A'}
+                                            </td>
+                                            <td className="py-4 px-6">
+                                                <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase ${
+                                                    vendor.verificationStatus === 'Approved' 
+                                                        ? 'bg-emerald-50 text-emerald-600 border border-emerald-100'
+                                                        : 'bg-amber-50 text-amber-600 border border-amber-100'
+                                                }`}>
+                                                    <CheckCircle2 size={12} />
+                                                    {vendor.verificationStatus || 'Pending'}
+                                                </span>
+                                            </td>
+                                            <td className="py-4 px-6 text-right">
+                                                <button
+                                                    onClick={() => navigate(`/vendor-network/profile/${vendor._id}`)}
+                                                    className="inline-flex items-center gap-1 bg-[#0066FF] hover:bg-[#0B1E43] text-white text-xs font-black uppercase tracking-wider px-4 py-2 rounded-lg shadow-sm transition-all"
+                                                >
+                                                    <Eye size={14} />
+                                                    View
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                )}
+
             </div>
+
+            {/* Vendor Details Premium Modal */}
+            {selectedVendor && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#0B1E43]/60 backdrop-blur-sm animate-fade-in">
+                    <div className="relative bg-white w-full max-w-lg rounded-3xl shadow-2xl border border-slate-100 p-8 overflow-hidden">
+                        {/* soft gradient top bar */}
+                        <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-[#0066FF] to-[#00b2fe]"></div>
+                        
+                        <button 
+                            onClick={() => setSelectedVendor(null)}
+                            className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 transition-colors"
+                        >
+                            <X size={20} />
+                        </button>
+
+                        <div className="flex items-center gap-3 mb-6 mt-2">
+                            <div className="bg-[#0066FF]/10 p-3 rounded-2xl">
+                                <ShieldCheck size={28} className="text-[#0066FF]" />
+                            </div>
+                            <div>
+                                <h3 className="text-2xl font-black text-[#0B1E43] tracking-tight">{selectedVendor.organizationName}</h3>
+                                <p className="text-xs text-[#0066FF] font-black uppercase tracking-widest mt-0.5">LSID: LS-{selectedVendor.lsid}</p>
+                            </div>
+                        </div>
+
+                        <div className="space-y-4 border-t border-b border-slate-100 py-6 mb-6">
+                            <div className="flex items-start gap-3">
+                                <Mail size={18} className="text-slate-400 mt-0.5 shrink-0" />
+                                <div>
+                                    <p className="text-xs text-slate-400 font-extrabold uppercase tracking-wider">Email Address</p>
+                                    <p className="text-slate-800 font-bold">{selectedVendor.email || 'N/A'}</p>
+                                </div>
+                            </div>
+
+                            <div className="flex items-start gap-3">
+                                <Phone size={18} className="text-slate-400 mt-0.5 shrink-0" />
+                                <div>
+                                    <p className="text-xs text-slate-400 font-extrabold uppercase tracking-wider">Phone Number</p>
+                                    <p className="text-slate-800 font-bold">{selectedVendor.phone || 'N/A'}</p>
+                                </div>
+                            </div>
+
+                            <div className="flex items-start gap-3">
+                                <MapPin size={18} className="text-slate-400 mt-0.5 shrink-0" />
+                                <div>
+                                    <p className="text-xs text-slate-400 font-extrabold uppercase tracking-wider">Location / Address</p>
+                                    <p className="text-slate-800 font-bold">
+                                        {selectedVendor.address ? `${selectedVendor.address}, ` : ''}
+                                        {selectedVendor.city}, {selectedVendor.country}
+                                    </p>
+                                </div>
+                            </div>
+
+                            {selectedVendor.website && (
+                                <div className="flex items-start gap-3">
+                                    <Globe size={18} className="text-slate-400 mt-0.5 shrink-0" />
+                                    <div>
+                                        <p className="text-xs text-slate-400 font-extrabold uppercase tracking-wider">Website</p>
+                                        <a href={selectedVendor.website} target="_blank" rel="noopener noreferrer" className="text-[#0066FF] hover:underline font-bold">
+                                            {selectedVendor.website}
+                                        </a>
+                                    </div>
+                                </div>
+                            )}
+
+                            {selectedVendor.services && selectedVendor.services.length > 0 && (
+                                <div className="flex items-start gap-3">
+                                    <Building2 size={18} className="text-slate-400 mt-0.5 shrink-0" />
+                                    <div>
+                                        <p className="text-xs text-slate-400 font-extrabold uppercase tracking-wider">Services Offered</p>
+                                        <div className="flex flex-wrap gap-1.5 mt-2">
+                                            {selectedVendor.services.map((srv, idx) => (
+                                                <span key={idx} className="bg-slate-100 text-slate-700 text-xs px-2.5 py-1 rounded-md font-bold">
+                                                    {srv}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        <button 
+                            onClick={() => setSelectedVendor(null)}
+                            className="w-full bg-[#0B1E43] hover:bg-[#0066FF] text-white font-black uppercase tracking-widest py-3 rounded-xl transition-all"
+                        >
+                            Close Details
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Block Modal */}
+            {showBlockModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#0B1E43]/60 backdrop-blur-sm animate-fade-in">
+                    <div className="relative bg-white w-full max-w-md rounded-3xl shadow-2xl p-8 overflow-hidden text-center">
+                        <button 
+                            onClick={() => setShowBlockModal(false)}
+                            className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 transition-colors"
+                        >
+                            <X size={20} />
+                        </button>
+
+                        <div className="mx-auto w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mb-6">
+                            <Lock size={32} />
+                        </div>
+
+                        <h3 className="text-2xl font-black text-[#0B1E43] mb-3">Profile Access Blocked</h3>
+                        <p className="text-slate-600 font-bold text-sm mb-6 leading-relaxed">
+                            You have already viewed details of one vendor. To view details of all logistics partners, please register and get approved as a vendor.
+                        </p>
+
+                        <div className="flex flex-col gap-3">
+                            <Link 
+                                to="/vendor-auth" 
+                                className="w-full bg-[#0066FF] hover:bg-[#0B1E43] text-white font-black uppercase tracking-widest py-3.5 rounded-xl shadow-lg shadow-[#0066FF]/20 transition-all text-center text-sm"
+                                onClick={() => setShowBlockModal(false)}
+                            >
+                                Register as a Vendor
+                            </Link>
+                            <Link 
+                                to="/vendor-auth" 
+                                className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-black uppercase tracking-widest py-3.5 rounded-xl transition-all text-center text-sm"
+                                onClick={() => setShowBlockModal(false)}
+                            >
+                                Log In
+                            </Link>
+                        </div>
+                    </div>
+                </div>
+            )}
+
         </div>
     );
 };
