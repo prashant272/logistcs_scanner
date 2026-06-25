@@ -48,7 +48,7 @@ const StatCard = ({ title, value, icon: Icon, gradientClass, subtitle }) => (
             </span>
         </div>
         <div className="mt-6">
-            <h3 className="text-4xl font-black text-white drop-shadow-md tracking-tight">{value}</h3>
+            <h3 className="text-4xl font-black !text-white drop-shadow-md tracking-tight">{value}</h3>
             <p className="text-sm font-bold text-white mt-1 drop-shadow-sm">{title}</p>
             {subtitle && <p className="text-xs text-white/90 mt-1.5 font-medium drop-shadow-sm">{subtitle}</p>}
         </div>
