@@ -1,8 +1,9 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   Check, X, Phone, Mail, User, Info, Search, MapPin, 
   Building2, Ship, Plane, Truck, Warehouse, Package, 
-  Clock, Calendar, Coins, CheckCircle2, Eye, ToggleLeft, ToggleRight, Lock, Paperclip
+  Clock, Calendar, Coins, CheckCircle2, Eye, ToggleLeft, ToggleRight, Lock, Paperclip, AlertTriangle
 } from 'lucide-react';
 import { useEnquiries } from '../../services/EnquiryService';
 import useInfiniteScroll from '../../hooks/useInfiniteScroll';
@@ -40,6 +41,7 @@ const VendorEnquiriesTab = ({ title, type }) => {
     fetchVendorEnquiries,
     updateEnquiryStatus
   } = useEnquiries();
+  const navigate = useNavigate();
 
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
@@ -57,6 +59,8 @@ const VendorEnquiriesTab = ({ title, type }) => {
     allInCharges: '',
     allInCurrency: 'INR'
   });
+  
+  const [limitError, setLimitError] = useState('');
 
   // State for View details modal
   const [viewingEnquiry, setViewingEnquiry] = useState(null);
@@ -102,7 +106,12 @@ const VendorEnquiriesTab = ({ title, type }) => {
       console.log('[handleAction] success response:', res);
     } catch (err) {
       console.error('Error updating status:', err);
-      alert(err.response?.data?.message || 'Error updating status');
+      const message = err.response?.data?.message || 'Error updating status';
+      if (err.response?.status === 403 && message.includes('Monthly limit reached')) {
+        setLimitError(message);
+      } else {
+        alert(message);
+      }
     }
   };
 
@@ -917,6 +926,41 @@ const VendorEnquiriesTab = ({ title, type }) => {
           Note : Mobile No., Email ID and Commodity details will be visible to the vendor only after they accept the enquiry.
         </p>
       </div>
+
+      {/* Limit Reached Modal */}
+      {limitError && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-3xl w-full max-w-sm shadow-[0_24px_60px_rgba(11,30,67,0.15)] border border-slate-150 overflow-hidden flex flex-col animate-scaleUp">
+            <div className="p-6 text-center space-y-4">
+              <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto text-red-500 mb-2">
+                <AlertTriangle size={32} />
+              </div>
+              <h3 className="text-xl font-black text-[#0B1E43] tracking-tight">Monthly Limit Exceeded</h3>
+              <p className="text-sm font-semibold text-slate-500 leading-relaxed">
+                {limitError}
+              </p>
+            </div>
+            <div className="p-4 bg-slate-50 border-t border-slate-100 flex gap-3">
+              <button 
+                onClick={() => setLimitError('')}
+                className="flex-1 bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 text-xs font-black py-3 rounded-xl transition-all shadow-sm uppercase tracking-wider cursor-pointer"
+              >
+                Close
+              </button>
+              <button 
+                onClick={() => {
+                  setLimitError('');
+                  navigate('/vendor/upgrade');
+                }}
+                className="flex-1 bg-[#0066FF] hover:bg-[#0052cc] text-white text-xs font-black py-3 rounded-xl transition-all shadow-md shadow-[#0066FF]/10 uppercase tracking-wider cursor-pointer"
+              >
+                See Plans
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };

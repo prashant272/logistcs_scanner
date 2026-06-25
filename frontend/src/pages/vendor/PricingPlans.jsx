@@ -104,7 +104,7 @@ const PricingPlans = () => {
             const config = {
                 headers: { Authorization: `Bearer ${token}` }
             };
-            const userCountry = user.address || user.country || 'Others';
+            const userCountry = user.country || 'India';
             const res = await axios.get(
                 `${import.meta.env.VITE_API_BASE_URL}/plans?activeOnly=true&userType=${user.role}&country=${userCountry}`,
                 config
@@ -315,9 +315,9 @@ const PricingPlans = () => {
                         </h3>
                     </div>
                     <div className={`px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider ${
-                        activePlanId ? 'bg-emerald-50 border border-emerald-100 text-emerald-600' : 'bg-amber-50 border border-amber-100 text-amber-600'
+                        activePlanId && user?.activePlan?.price > 0 ? 'bg-emerald-50 border border-emerald-100 text-emerald-600' : 'bg-amber-50 border border-amber-100 text-amber-600'
                     }`}>
-                        {activePlanId ? 'Premium Subscribed' : 'Free Trial Tier'}
+                        {activePlanId && user?.activePlan?.price > 0 ? 'Premium Subscribed' : 'Free Tier Active'}
                     </div>
                 </div>
                 

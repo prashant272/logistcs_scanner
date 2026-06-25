@@ -366,6 +366,48 @@ exports.updateEnquiryStatus = async (req, res) => {
             return res.status(404).json({ message: 'Enquiry not found' });
         }
 
+        // --- Monthly Limit Check for Vendors ---
+        if (status === 'Accepted' && (!enquiry.client || enquiry.client.toString() !== req.user.id)) {
+            const User = require('../models/User');
+            const vendorUser = await User.findById(req.user.id).populate('activePlan');
+            const hasActivePlan = vendorUser && vendorUser.activePlan && vendorUser.planEndDate && new Date(vendorUser.planEndDate) > new Date();
+            
+            let inquiryLimit = 5;
+            if (hasActivePlan && vendorUser.activePlan.inquiryLimit) {
+                inquiryLimit = vendorUser.activePlan.inquiryLimit;
+            }
+
+            const startOfMonth = new Date();
+            startOfMonth.setDate(1);
+            startOfMonth.setHours(0,0,0,0);
+
+            let alreadyAcceptedThis = false;
+            if (enquiry.isDirect) {
+                const existing = enquiry.responses.find(r => r.vendor && r.vendor.toString() === req.user.id && r.status === 'Accepted');
+                if (existing) alreadyAcceptedThis = true;
+            } else {
+                if (enquiry.vendor && enquiry.vendor.toString() === req.user.id && enquiry.status === 'Accepted') {
+                    alreadyAcceptedThis = true;
+                }
+            }
+
+            if (!alreadyAcceptedThis) {
+                const acceptedCount = await Enquiry.countDocuments({
+                    $or: [
+                        { vendor: req.user.id, status: 'Accepted', createdAt: { $gte: startOfMonth } },
+                        { 'responses': { $elemMatch: { vendor: req.user.id, status: 'Accepted' } }, createdAt: { $gte: startOfMonth } }
+                    ]
+                });
+
+                if (acceptedCount >= inquiryLimit) {
+                    return res.status(403).json({ 
+                        message: `Monthly limit reached. You can only accept/quote ${inquiryLimit} enquiries per month on your current plan. Please upgrade your plan.` 
+                    });
+                }
+            }
+        }
+        // ----------------------------------------
+
         // If the logged-in user is the client (initiator) of the booking/enquiry
         if (enquiry.client && enquiry.client.toString() === req.user.id) {
             const { targetVendorId } = req.body;
