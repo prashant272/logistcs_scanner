@@ -275,7 +275,10 @@ exports.searchPricing = async (req, res) => {
         console.log('[searchPricing] Request Body:', req.body);
         console.log('[searchPricing] Constructed Query:', JSON.stringify(query, null, 2));
         const matches = await Pricing.find(query)
-            .populate('vendor')
+            .populate({
+                path: 'vendor',
+                populate: { path: 'activePlan' }
+            })
             .sort({ price: 1 }); // Sort by lowest price first
         console.log('[searchPricing] Matches count:', matches.length);
 

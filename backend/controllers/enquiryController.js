@@ -253,7 +253,11 @@ exports.getVendorEnquiries = async (req, res) => {
 
         const totalCount = await Enquiry.countDocuments(query);
         const enquiries = await Enquiry.find(query)
-            .populate('client', 'name email phone company role activePlan planEndDate')
+            .populate({
+                path: 'client',
+                select: 'name email phone company role activePlan planEndDate',
+                populate: { path: 'activePlan' }
+            })
             .sort({ createdAt: -1 })
             .skip(skip)
             .limit(limit);
@@ -420,8 +424,16 @@ exports.getClientEnquiries = async (req, res) => {
         }
 
         const enquiries = await Enquiry.find(query)
-            .populate('vendor', 'name email phone company')
-            .populate('responses.vendor', 'name email phone company')
+            .populate({
+                path: 'vendor',
+                select: 'name email phone company role activePlan planEndDate',
+                populate: { path: 'activePlan' }
+            })
+            .populate({
+                path: 'responses.vendor',
+                select: 'name email phone company role activePlan planEndDate',
+                populate: { path: 'activePlan' }
+            })
             .sort({ createdAt: -1 });
 
         res.json(enquiries);

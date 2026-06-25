@@ -440,7 +440,7 @@ const SearchResults = () => {
                             <h4 className="text-sm font-black text-[#0B1E43] tracking-wide uppercase">
                               {rate.vendor?.company || rate.vendor?.name}
                             </h4>
-                            {rate.vendor?.activePlan && rate.vendor?.planEndDate && new Date(rate.vendor.planEndDate) > new Date() && (
+                            {rate.vendor?.activePlan && typeof rate.vendor.activePlan === 'object' && rate.vendor.activePlan.price > 0 && rate.vendor?.planEndDate && new Date(rate.vendor.planEndDate) > new Date() && (
                               <span className="bg-emerald-100 text-emerald-800 text-[8px] font-black px-2.5 py-1 rounded-md border border-emerald-300 uppercase tracking-wider flex items-center gap-1 shadow-sm">
                                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse"></span>
                                 Verified Vendor

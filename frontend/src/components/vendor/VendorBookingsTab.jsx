@@ -259,7 +259,7 @@ const VendorBookingsTab = ({ title = 'Bookings', type = 'my' }) => {
                         <Building2 size={13} className="text-slate-400" />
                         <span>{bkg.client?.company || bkg.guestCompany || bkg.client?.name || bkg.guestName || 'Customer'}</span>
                         {bkg.client?.role === 'vendor' ? (
-                          bkg.client?.activePlan && bkg.client?.planEndDate && new Date(bkg.client.planEndDate) > new Date() ? (
+                          bkg.client?.activePlan && typeof bkg.client.activePlan === 'object' && bkg.client.activePlan.price > 0 && bkg.client?.planEndDate && new Date(bkg.client.planEndDate) > new Date() ? (
                             <span className="bg-emerald-100 text-emerald-800 text-[8px] font-black px-2 py-0.5 rounded-md border border-emerald-200 uppercase tracking-wider">
                               Verified Vendor
                             </span>
@@ -269,7 +269,7 @@ const VendorBookingsTab = ({ title = 'Bookings', type = 'my' }) => {
                             </span>
                           )
                         ) : (
-                          bkg.client?.activePlan && bkg.client?.planEndDate && new Date(bkg.client.planEndDate) > new Date() && (
+                          bkg.client?.activePlan && typeof bkg.client.activePlan === 'object' && bkg.client.activePlan.price > 0 && bkg.client?.planEndDate && new Date(bkg.client.planEndDate) > new Date() && (
                             <span className="bg-blue-100 text-blue-800 text-[8px] font-black px-2 py-0.5 rounded-md border border-blue-200 uppercase tracking-wider">
                               Verified Customer
                             </span>
