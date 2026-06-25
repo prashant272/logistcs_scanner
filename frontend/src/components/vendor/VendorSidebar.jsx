@@ -38,16 +38,12 @@ const VendorSidebar = ({ isSidebarOpen, logout, user }) => {
     return (
         <aside className={`bg-gradient-to-b from-[#0B1E43] via-[#081633] to-[#050f24] text-white ${isSidebarOpen ? 'w-64' : 'w-0 md:w-20'} transition-all duration-300 flex flex-col shrink-0 h-screen fixed left-0 top-0 overflow-y-auto z-20 border-r border-white/5`}>
             {/* Logo Section */}
-            <div className="p-5 flex items-center justify-between border-b border-white/5 h-20 overflow-hidden">
-                <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-[#0066FF] to-[#00b2fe] flex items-center justify-center shrink-0 shadow-lg shadow-[#0066FF]/25">
-                        <Truck className="text-white w-5 h-5" />
-                    </div>
-                    <div className={`flex flex-col ${!isSidebarOpen && 'md:hidden'}`}>
-                        <span className="font-extrabold tracking-wider text-sm text-white">LOGISTICS</span>
-                        <span className="text-[10px] tracking-[0.25em] text-[#00b2fe] font-black">SCANNER</span>
-                    </div>
-                </div>
+            <div className="border-b border-white/5 h-20 overflow-hidden w-full flex items-center justify-center bg-white p-3">
+                {isSidebarOpen ? (
+                    <img src="/logo.png" alt="Logistics Scanner Logo" className="max-h-full max-w-full object-contain" />
+                ) : (
+                    <img src="/logo.png" alt="Logistics Scanner Logo" className="h-10 w-10 object-contain p-1" />
+                )}
             </div>
 
             {/* Sidebar Navigation */}

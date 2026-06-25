@@ -248,6 +248,9 @@ exports.loginUser = async (req, res) => {
                 return res.status(401).json({ message: 'You are not registered for this role' });
             }
 
+            user.lastActive = new Date();
+            await user.save();
+
             res.json({
                 _id: user.id,
                 name: user.name,
@@ -284,6 +287,10 @@ exports.getUserProfile = async (req, res) => {
             });
         }
         const user = await User.findById(req.user.id).select('-password').populate('activePlan').populate('assignedRM');
+        if (user) {
+            user.lastActive = new Date();
+            await user.save().catch(err => console.error("Error saving lastActive:", err));
+        }
         res.json(user);
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });

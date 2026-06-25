@@ -55,8 +55,19 @@ const SearchResults = () => {
     return saved ? JSON.parse(saved).guestEmail : '';
   });
   const [messageInput, setMessageInput] = useState('');
-  const [clientCreditRequired, setClientCreditRequired] = useState(false);
+  const [clientCreditRequired, setClientCreditRequired] = useState(true);
+  const [showWalletAlertModal, setShowWalletAlertModal] = useState(false);
+  const [walletAlertStep, setWalletAlertStep] = useState(1);
   const [pendingAction, setPendingAction] = useState(null); // { type: 'enquiry' | 'book', rate: ... }
+
+  const handleCreditToggle = () => {
+    if (!user?.walletBalance || user.walletBalance <= 0) {
+      setWalletAlertStep(1);
+      setShowWalletAlertModal(true);
+    } else {
+      setClientCreditRequired(!clientCreditRequired);
+    }
+  };
 
   const broadcastTriggered = useRef(false);
 
@@ -483,12 +494,12 @@ const SearchResults = () => {
                               </div>
                             )}
 
-                            {rate.additionalServices && (
+                            {/* {rate.additionalServices && (
                               <div className="bg-[#f4f7fc] border border-slate-200 rounded-xl p-3 flex flex-col justify-center col-span-2 sm:col-span-1">
                                 <span className="text-[9px] text-slate-550 font-black uppercase tracking-wider">Addl. Services</span>
                                 <span className="text-xs font-extrabold text-slate-905 mt-0.5 truncate">{rate.additionalServices}</span>
                               </div>
-                            )}
+                            )} */}
                           </div>
 
                           {/* Beautiful Note Panel */}
@@ -679,17 +690,18 @@ const SearchResults = () => {
                     <h4 className="text-xs font-black text-slate-900">Credit Required</h4>
                     <p className="text-[10px] font-medium text-slate-500">Do you require a credit line for this enquiry?</p>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setClientCreditRequired(!clientCreditRequired)}
-                    className="focus:outline-none cursor-pointer"
-                  >
-                    {clientCreditRequired ? (
-                      <ToggleRight size={28} className="text-[#0066FF]" />
-                    ) : (
-                      <ToggleLeft size={28} className="text-slate-400" />
-                    )}
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id="creditRequiredCheckbox"
+                      checked={clientCreditRequired}
+                      onChange={handleCreditToggle}
+                      className="w-4.5 h-4.5 text-[#0066FF] bg-slate-100 border-slate-350 rounded focus:ring-[#0066FF] cursor-pointer"
+                    />
+                    <label htmlFor="creditRequiredCheckbox" className="text-xs font-black text-slate-800 cursor-pointer">
+                      {clientCreditRequired ? 'Yes' : 'No'}
+                    </label>
+                  </div>
                 </div>
               )}
 
@@ -806,6 +818,67 @@ const SearchResults = () => {
                 <span>Submit Details & Raise Enquiry</span>
               </button>
             </form>
+          </div>
+        </div>
+      )}
+
+      {showWalletAlertModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-3xl w-full max-w-sm shadow-[0_24px_60px_rgba(11,30,67,0.15)] border border-slate-150 p-6 space-y-6 text-center animate-scaleUp">
+            {walletAlertStep === 1 ? (
+              <>
+                <div className="mx-auto w-12 h-12 rounded-full bg-red-50 flex items-center justify-center">
+                  <AlertCircle className="text-red-600 w-6 h-6" />
+                </div>
+                <div className="space-y-2">
+                  <h3 className="text-xs font-black text-[#0B1E43] uppercase tracking-wider">Wallet Not Approved</h3>
+                  <p className="text-[11px] text-slate-500 font-bold leading-relaxed">
+                    Your wallet is not approved. Please contact your finance manager.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setWalletAlertStep(2)}
+                  className="w-full bg-[#0066FF] hover:bg-[#0052cc] text-white font-extrabold text-xs py-2.5 rounded-xl transition-all shadow-md cursor-pointer"
+                >
+                  OK
+                </button>
+              </>
+            ) : (
+              <>
+                <div className="mx-auto w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center">
+                  <Coins className="text-[#0066FF] w-6 h-6" />
+                </div>
+                <div className="space-y-2">
+                  <h3 className="text-xs font-black text-[#0B1E43] uppercase tracking-wider">Request Wallet Limit</h3>
+                  <p className="text-[11px] text-slate-500 font-bold leading-relaxed">
+                    Do you want to request a wallet limit, or do you want to proceed without checking it?
+                  </p>
+                </div>
+                <div className="flex gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowWalletAlertModal(false);
+                      setClientCreditRequired(false);
+                    }}
+                    className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold text-xs py-2.5 rounded-xl transition-all cursor-pointer"
+                  >
+                    Proceed Without Credit
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowWalletAlertModal(false);
+                      navigate('/vendor/finance');
+                    }}
+                    className="flex-1 bg-[#0066FF] hover:bg-[#0052cc] text-white font-extrabold text-xs py-2.5 rounded-xl transition-all shadow-md cursor-pointer"
+                  >
+                    Submit Your Details
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}

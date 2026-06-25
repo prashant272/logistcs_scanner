@@ -58,8 +58,10 @@ const UserProfileSection = ({ user }) => {
         <div className="flex items-center justify-between gap-2 pt-4 border-t border-slate-100">
           <div>
             <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">CURRENT WALLET</p>
-            <span className="text-xs font-black text-[#0066FF] tracking-wide">
-              {user?.walletBalance !== undefined ? `₹ ${user.walletBalance.toLocaleString('en-IN')}` : '₹ 5,00,000'}
+            <span className={`text-xs font-black tracking-wide ${
+              user?.walletBalance && user.walletBalance > 0 ? 'text-[#0066FF]' : 'text-red-550'
+            }`}>
+              {user?.walletBalance && user.walletBalance > 0 ? `₹ ${user.walletBalance.toLocaleString('en-IN')}` : 'Not Approved'}
             </span>
           </div>
           <button className="border border-[#0066FF]/20 hover:bg-[#0066FF]/5 text-[#0066FF] text-[9px] font-black px-3.5 py-2 rounded-xl uppercase tracking-widest transition-all cursor-pointer">

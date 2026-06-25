@@ -14,7 +14,6 @@ const VendorHeader = ({ isSidebarOpen, setSidebarOpen, user, logout, searchQuery
                 </button>
                 <div>
                     <h1 className="text-base font-extrabold !text-[#0B1E43] leading-none tracking-tight">Vendor Dashboard</h1>
-                    <p className="text-[10px] !text-slate-400 mt-1.5 font-bold tracking-wider uppercase">PIRAMAL LOGISTICS PARTNER</p>
                 </div>
             </div>
 
@@ -42,9 +41,17 @@ const VendorHeader = ({ isSidebarOpen, setSidebarOpen, user, logout, searchQuery
 
                 {/* Available Wallet Balance */}
                 {user?.role === 'vendor' && (
-                    <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-100 px-4 py-2 rounded-xl">
+                    <div className={`flex items-center gap-2 px-4 py-2 rounded-xl border ${
+                        user.walletBalance && user.walletBalance > 0
+                            ? 'bg-emerald-50 border-emerald-100'
+                            : 'bg-red-50 border-red-100'
+                    }`}>
                         <span className="text-[9px] font-black text-slate-550 uppercase tracking-wider">Available Wallet:</span>
-                        <span className="text-xs font-black text-emerald-600">₹{(user.walletBalance || 0).toLocaleString('en-IN')}</span>
+                        <span className={`text-xs font-black ${
+                            user.walletBalance && user.walletBalance > 0 ? 'text-emerald-600' : 'text-red-650'
+                        }`}>
+                            {user.walletBalance && user.walletBalance > 0 ? `₹${user.walletBalance.toLocaleString('en-IN')}` : 'Not Approved'}
+                        </span>
                     </div>
                 )}
 

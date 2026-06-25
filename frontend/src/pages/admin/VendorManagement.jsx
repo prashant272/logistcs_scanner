@@ -32,16 +32,46 @@ const VendorManagement = () => {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
+  const fetchVendors = useCallback(async (targetPage = page, isReset = false) => {
+    try {
+      if (targetPage === 1) setLoading(true);
+      else setLoadingMore(true);
+      setError('');
+      const token = localStorage.getItem('adminToken');
+      const { data } = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/admin/vendors?page=${targetPage}&limit=10&search=${debouncedSearchQuery}&status=${statusFilter}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (targetPage === 1 || isReset) {
+        setVendors(data.data || []);
+      } else {
+        setVendors(prev => [...prev, ...(data.data || [])]);
+      }
+      setHasMore(targetPage < data.totalPages);
+      
+      setLoading(false);
+      setLoadingMore(false);
+    } catch (err) {
+      console.error('Error fetching vendors:', err);
+      setError(err.response?.data?.message || 'Failed to fetch data');
+      setLoading(false);
+      setLoadingMore(false);
+    }
+  }, [debouncedSearchQuery, statusFilter]);
+
   // Reset page when search or status changes
   useEffect(() => {
     setPage(1);
     setVendors([]);
-  }, [debouncedSearchQuery, statusFilter]);
+    fetchVendors(1, true);
+  }, [debouncedSearchQuery, statusFilter, fetchVendors]);
 
-  // Fetch vendors whenever page, search, or status changes
+  // Fetch vendors when page changes
   useEffect(() => {
-    fetchVendors();
-  }, [page, debouncedSearchQuery, statusFilter]);
+    if (page > 1) {
+      fetchVendors(page);
+    }
+  }, [page, fetchVendors]);
 
   const fetchRMs = async () => {
     try {
@@ -55,37 +85,10 @@ const VendorManagement = () => {
     }
   };
 
-  const fetchVendors = async () => {
-    try {
-      if (page === 1) setLoading(true);
-      else setLoadingMore(true);
-      setError('');
-      const token = localStorage.getItem('adminToken');
-      const { data } = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/admin/vendors?page=${page}&limit=10&search=${debouncedSearchQuery}&status=${statusFilter}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      
-      if (page === 1) {
-        setVendors(data.data || []);
-      } else {
-        setVendors(prev => [...prev, ...(data.data || [])]);
-      }
-      setHasMore(page < data.totalPages);
-      
-      setLoading(false);
-      setLoadingMore(false);
-    } catch (err) {
-      console.error('Error fetching vendors:', err);
-      setError(err.response?.data?.message || 'Failed to fetch data');
-      setLoading(false);
-      setLoadingMore(false);
-    }
-  };
-
   const handleRefresh = () => {
     setPage(1);
     setVendors([]);
-    fetchVendors();
+    fetchVendors(1, true);
   };
 
   const handleLoadMore = useCallback(() => {

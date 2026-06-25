@@ -49,7 +49,8 @@ exports.getVendors = async (req, res) => {
             query.$or = [
                 { name: { $regex: search, $options: 'i' } },
                 { email: { $regex: search, $options: 'i' } },
-                { 'companyDetails.companyName': { $regex: search, $options: 'i' } }
+                { phone: { $regex: search, $options: 'i' } },
+                { company: { $regex: search, $options: 'i' } }
             ];
         }
 
@@ -61,9 +62,14 @@ exports.getVendors = async (req, res) => {
             } else if (statusFilter === 'Pending') {
                 query.$or = [{ verificationStatus: 'Pending' }, { isVerified: false, verificationStatus: { $nin: ['Approved', 'Declined', 'Pending'] } }];
             } else if (statusFilter === 'Login') {
-                query.isVerified = true;
+                const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000);
+                query.lastActive = { $gte: fifteenMinutesAgo };
             } else if (statusFilter === 'Premium Vendors' || statusFilter === 'Paid Vendors') {
-                query.activePlan = { $ne: null };
+                const Plan = require('../models/Plan');
+                const paidPlans = await Plan.find({ price: { $gt: 0 } }).select('_id');
+                const paidPlanIds = paidPlans.map(p => p._id);
+                query.activePlan = { $in: paidPlanIds };
+                query.planEndDate = { $gt: new Date() };
             }
         }
 
@@ -102,7 +108,7 @@ exports.getCustomers = async (req, res) => {
                 { name: { $regex: search, $options: 'i' } },
                 { email: { $regex: search, $options: 'i' } },
                 { phone: { $regex: search, $options: 'i' } },
-                { 'companyDetails.companyName': { $regex: search, $options: 'i' } }
+                { company: { $regex: search, $options: 'i' } }
             ];
         }
 

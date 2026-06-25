@@ -26,6 +26,16 @@ router.get('/vendors', protect, async (req, res) => {
     }
 });
 
+// Route to get all customers for logged in users
+router.get('/customers', protect, async (req, res) => {
+    try {
+        const customers = await User.find({ role: 'customer' }).select('name company email phone').sort({ company: 1, name: 1 });
+        res.json(customers);
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+});
+
 // Route for file upload (images and documents to Cloudflare R2 / AWS S3)
 router.post('/upload', protect, (req, res, next) => {
     uploadDoc.single('file')(req, res, (err) => {

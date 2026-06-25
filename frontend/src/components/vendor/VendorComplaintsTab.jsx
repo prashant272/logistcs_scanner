@@ -38,13 +38,17 @@ const VendorComplaintsTab = () => {
 
     const fetchInteractions = async () => {
         try {
-            const [myEnqsRes, myBksRes] = await Promise.all([
+            const [myEnqsRes, directEnqsRes, myBksRes, directBksRes] = await Promise.all([
                 fetchVendorEnquiries('my').catch(() => ({ data: [] })),
-                fetchVendorBookings('my').catch(() => ({ data: [] }))
+                fetchVendorEnquiries('direct').catch(() => ({ data: [] })),
+                fetchVendorBookings('my').catch(() => ({ data: [] })),
+                fetchVendorBookings('direct').catch(() => ({ data: [] }))
             ]);
             const myEnqs = myEnqsRes?.data || [];
+            const directEnqs = directEnqsRes?.data || [];
             const myBks = myBksRes?.data || [];
-            setInteractedItems([...myEnqs, ...myBks]);
+            const directBks = directBksRes?.data || [];
+            setInteractedItems([...myEnqs, ...directEnqs, ...myBks, ...directBks]);
         } catch (err) {
             console.error('Error fetching vendor interactions:', err);
         }
@@ -67,29 +71,24 @@ const VendorComplaintsTab = () => {
         }
     }, [activeFilter, complainAgainstRole]);
 
-    // Get unique list of users from vendor's enquiries/bookings
+    // Get unique list of users
     const getUniqueUsers = () => {
         if (complainAgainstRole === 'vendor') {
             return systemVendors
                 .filter(v => v._id !== user?.id && v._id !== user?._id)
-                .map(v => ({ id: v._id, name: v.company || v.name }));
+                .map(v => ({ id: v._id, name: v.company ? `${v.company} (${v.name})` : v.name }));
         }
 
         const userMap = new Map();
         if (interactedItems && Array.isArray(interactedItems)) {
             interactedItems.forEach(item => {
-                if (item.client && item.client._id && item.client.role === 'customer' && item.client._id !== user?.id && item.client._id !== user?._id) {
-                    const label = item.client.company || item.client.name;
+                if (item.client && item.client._id && item.client._id !== user?.id && item.client._id !== user?._id) {
+                    const label = item.client.company ? `${item.client.company} (${item.client.name})` : item.client.name;
                     userMap.set(item.client._id, label);
                 }
             });
         }
-        return Array.from(vendorMapEntries(userMap));
-    };
-
-    // Helper because JSX has simple loops
-    const vendorMapEntries = (map) => {
-        return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
+        return Array.from(userMap.entries()).map(([id, name]) => ({ id, name }));
     };
 
     const uniqueUsers = getUniqueUsers();
