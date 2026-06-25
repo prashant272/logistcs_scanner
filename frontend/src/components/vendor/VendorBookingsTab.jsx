@@ -2,13 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { 
   Check, X, Phone, Mail, User, Info, Search, MapPin, 
   Building2, Ship, Plane, Truck, Warehouse, Package, 
-  Clock, Calendar, Coins, CheckCircle2 
+  Clock, Calendar, Coins, CheckCircle2, Eye
 } from 'lucide-react';
 import { useEnquiries } from '../../services/EnquiryService';
 import { useAuth } from '../../context/AuthContext';
 
 const VendorBookingsTab = ({ title = 'Bookings', type = 'my' }) => {
   const { user } = useAuth();
+  const userId = user?._id || user?.id;
   const {
     loading,
     error,
@@ -19,6 +20,7 @@ const VendorBookingsTab = ({ title = 'Bookings', type = 'my' }) => {
 
   const [bookings, setBookings] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedBookingForQuotes, setSelectedBookingForQuotes] = useState(null);
   
   // State for quote/price confirmation in bookings
   const [activeQuoteId, setActiveQuoteId] = useState(null);
@@ -177,7 +179,9 @@ const VendorBookingsTab = ({ title = 'Bookings', type = 'my' }) => {
         <div className="grid grid-cols-1 gap-5">
           {filteredBookings.map((bkg) => {
             const hasQuoteInput = activeQuoteId === bkg._id;
-            const isInitiator = bkg.client?._id === user?._id || bkg.client === user?._id || (user?._id && String(bkg.client) === String(user._id));
+            const isInitiator = !!(userId && (bkg.client?._id === userId || bkg.client === userId || String(bkg.client?._id || bkg.client) === String(userId)));
+            const displayPartner = (isInitiator && bkg.vendor) ? bkg.vendor : (bkg.client || { name: bkg.guestName, company: bkg.guestCompany, email: bkg.guestEmail, phone: bkg.guestPhone, role: 'customer' });
+            const quotesCount = bkg.responses ? bkg.responses.filter(resp => resp.vendor?._id !== userId && resp.vendor !== userId).length : 0;
 
             return (
               <div 
@@ -252,47 +256,74 @@ const VendorBookingsTab = ({ title = 'Bookings', type = 'my' }) => {
                   {/* Right block: Client contacts & Status */}
                   <div className="flex flex-col lg:items-end justify-between lg:text-right gap-3 lg:border-l lg:border-slate-100 lg:pl-6 w-full lg:w-auto lg:min-w-[220px] shrink-0">
                     
-                    {/* Client Company Name */}
-                    <div className="space-y-0.5">
-                      <span className="text-[8px] text-slate-400 uppercase font-black tracking-wider block">Shipper</span>
-                      <div className="flex flex-wrap items-center lg:justify-end gap-1.5 font-black text-xs text-slate-800">
-                        <Building2 size={13} className="text-slate-400" />
-                        <span>{bkg.client?.company || bkg.guestCompany || bkg.client?.name || bkg.guestName || 'Customer'}</span>
-                        {bkg.client?.role === 'vendor' ? (
-                          bkg.client?.activePlan && typeof bkg.client.activePlan === 'object' && bkg.client.activePlan.price > 0 && bkg.client?.planEndDate && new Date(bkg.client.planEndDate) > new Date() ? (
-                            <span className="bg-emerald-100 text-emerald-800 text-[8px] font-black px-2 py-0.5 rounded-md border border-emerald-200 uppercase tracking-wider">
-                              Verified Vendor
-                            </span>
-                          ) : (
-                            <span className="bg-slate-100 text-slate-800 text-[8px] font-black px-2 py-0.5 rounded-md border border-slate-200 uppercase tracking-wider">
-                              Vendor
-                            </span>
-                          )
-                        ) : (
-                          bkg.client?.activePlan && typeof bkg.client.activePlan === 'object' && bkg.client.activePlan.price > 0 && bkg.client?.planEndDate && new Date(bkg.client.planEndDate) > new Date() && (
-                            <span className="bg-blue-100 text-blue-800 text-[8px] font-black px-2 py-0.5 rounded-md border border-blue-200 uppercase tracking-wider">
-                              Verified Customer
-                            </span>
-                          )
-                        )}
+                    {isInitiator ? (
+                      <div className="space-y-1.5 text-left lg:text-right">
+                        <span className="text-[8px] text-slate-400 uppercase font-black tracking-wider block">
+                          {bkg.vendor ? 'Booked Vendor' : 'Booking Mode'}
+                        </span>
+                        <div className="text-xs font-black text-[#0066FF] uppercase">
+                          {bkg.vendor ? (bkg.vendor.company || bkg.vendor.name) : 'Broadcast Request'}
+                        </div>
+                        <p className="text-[10px] text-slate-500 font-bold leading-normal max-w-[200px]">
+                          {bkg.vendor 
+                            ? 'Booking confirmed. Click "View Quotes" below to see quote details and contact info.' 
+                            : 'This is a public request. Other vendors can quote. Click "View Quotes" below to accept a quote.'}
+                        </p>
                       </div>
-                    </div>
+                    ) : (
+                      <>
+                        {/* Client Company Name */}
+                        <div className="space-y-0.5">
+                          <span className="text-[8px] text-slate-400 uppercase font-black tracking-wider block">
+                            Shipper
+                          </span>
+                          <div className="flex flex-wrap items-center lg:justify-end gap-1.5 font-black text-xs text-slate-800">
+                            <Building2 size={13} className="text-slate-400" />
+                            <span>{displayPartner.company || displayPartner.name || 'Customer'}</span>
+                            {displayPartner.role === 'vendor' ? (
+                              displayPartner.activePlan && typeof displayPartner.activePlan === 'object' && displayPartner.activePlan.price > 0 && displayPartner.planEndDate && new Date(displayPartner.planEndDate) > new Date() ? (
+                                <span className="bg-emerald-100 text-emerald-800 text-[8px] font-black px-2 py-0.5 rounded-md border border-emerald-200 uppercase tracking-wider">
+                                  Verified Vendor
+                                </span>
+                              ) : (
+                                <span className="bg-slate-100 text-slate-800 text-[8px] font-black px-2 py-0.5 rounded-md border border-slate-200 uppercase tracking-wider">
+                                  Vendor
+                                </span>
+                              )
+                            ) : (
+                              displayPartner.activePlan && typeof displayPartner.activePlan === 'object' && displayPartner.activePlan.price > 0 && displayPartner.planEndDate && new Date(displayPartner.planEndDate) > new Date() && (
+                                <span className="bg-blue-100 text-blue-800 text-[8px] font-black px-2 py-0.5 rounded-md border border-blue-200 uppercase tracking-wider">
+                                  Verified Customer
+                                </span>
+                              )
+                            )}
+                          </div>
+                        </div>
 
-                    {/* Contacts */}
-                    <div className="space-y-1 text-[10px] text-slate-500 font-bold">
-                      <div className="flex items-center lg:justify-end gap-1.5">
-                        <Phone size={11} className="text-slate-400" />
-                        <span>{bkg.client?.phone || bkg.guestPhone || 'N/A'}</span>
-                      </div>
-                      <div className="flex items-center lg:justify-end gap-1.5">
-                        <Mail size={11} className="text-slate-400" />
-                        <span className="break-all">{bkg.client?.email || bkg.guestEmail || 'N/A'}</span>
-                      </div>
-                    </div>
+                        {/* Contacts */}
+                        <div className="space-y-1 text-[10px] text-slate-500 font-bold">
+                          <div className="flex items-center lg:justify-end gap-1.5">
+                            <Phone size={11} className="text-slate-400" />
+                            <span>{displayPartner.phone || 'N/A'}</span>
+                          </div>
+                          <div className="flex items-center lg:justify-end gap-1.5">
+                            <Mail size={11} className="text-slate-400" />
+                            <span className="break-all">{displayPartner.email || 'N/A'}</span>
+                          </div>
+                        </div>
+                      </>
+                    )}
 
                     {/* Price and status badges */}
                     <div className="flex flex-col lg:items-end gap-2 pt-1">
-                      {type === 'direct' ? (
+                       {type === 'direct' && isInitiator ? (
+                        <div className="text-left lg:text-right">
+                          <span className="text-[8px] text-slate-400 uppercase font-black tracking-wider block">Quotes Received</span>
+                          <span className="text-xs font-black text-[#0066FF] bg-blue-50 border border-blue-100 px-2 py-0.5 rounded-lg">
+                            {quotesCount} Quotes
+                          </span>
+                        </div>
+                      ) : type === 'direct' ? (
                         <div className="text-left lg:text-right space-y-1 bg-slate-50 border border-slate-100/50 p-2.5 rounded-xl">
                           <div className="text-[9px] font-bold text-slate-500">
                             Customer booked at: <span className="text-[#0066FF] font-black">₹ {(bkg.price || 0).toLocaleString()}</span>
@@ -413,6 +444,17 @@ const VendorBookingsTab = ({ title = 'Bookings', type = 'my' }) => {
                     </button>
                   </div>
                 )}
+                {/* Actions row for Bookings initiated by me (to view quotes) */}
+                {isInitiator && (
+                  <div className="border-t border-slate-50 pt-4 flex justify-end items-center gap-3 pl-2">
+                    <button
+                      onClick={() => setSelectedBookingForQuotes(bkg)}
+                      className="bg-[#0066FF] hover:bg-[#0052cc] text-white text-[10px] font-black px-5 py-2.5 rounded-xl shadow-sm transition-all cursor-pointer uppercase tracking-wider flex items-center gap-1.5"
+                    >
+                      <Eye size={12} /> View Quotes ({quotesCount})
+                    </button>
+                  </div>
+                )}
 
               </div>
             );
@@ -420,6 +462,104 @@ const VendorBookingsTab = ({ title = 'Bookings', type = 'my' }) => {
         </div>
       )}
       </div>
+
+      {/* Quotes List Modal */}
+      {selectedBookingForQuotes && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-fadeIn">
+          <div className="bg-white rounded-3xl w-full max-w-xl shadow-[0_24px_60px_rgba(11,30,67,0.15)] border border-slate-150 overflow-hidden flex flex-col max-h-[85vh] animate-scaleUp">
+            {/* Header */}
+            <div className="flex justify-between items-center p-6 border-b border-slate-100 bg-slate-50/50">
+              <div>
+                <h3 className="text-base font-black text-[#0B1E43] tracking-tight">Quotes Received</h3>
+                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mt-0.5">
+                  BKG-{selectedBookingForQuotes._id.slice(-6).toUpperCase()} | {selectedBookingForQuotes.fromLocation} ↔ {selectedBookingForQuotes.toLocation}
+                </p>
+              </div>
+              <button
+                onClick={() => setSelectedBookingForQuotes(null)}
+                className="text-slate-400 hover:text-slate-600 cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* List */}
+            <div className="p-6 overflow-y-auto space-y-4 flex-1">
+              {!selectedBookingForQuotes.responses || selectedBookingForQuotes.responses.filter(resp => resp.vendor?._id !== userId && resp.vendor !== userId).length === 0 ? (
+                <div className="text-center py-12 text-xs font-bold text-slate-400 uppercase tracking-widest border border-dashed border-slate-200 rounded-2xl">
+                  No quotes received yet
+                </div>
+              ) : (
+                selectedBookingForQuotes.responses
+                  .filter(resp => resp.vendor?._id !== userId && resp.vendor !== userId)
+                  .map((resp) => {
+                    const isAccepted = resp.status === 'Accepted' || selectedBookingForQuotes.vendor?._id === resp.vendor?._id || selectedBookingForQuotes.vendor === resp.vendor?._id;
+                  
+                  return (
+                    <div 
+                      key={resp._id} 
+                      className={`border rounded-2xl p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 transition-all ${
+                        isAccepted 
+                          ? 'border-emerald-200 bg-emerald-50/20 shadow-sm' 
+                          : 'border-slate-100 bg-slate-50/30'
+                      }`}
+                    >
+                      <div className="space-y-1">
+                        <h4 className="text-xs font-black text-slate-800 uppercase tracking-tight">
+                          {resp.vendor?.company || resp.vendor?.name || 'Unknown Vendor'}
+                        </h4>
+                        <div className="text-[10px] text-slate-500 font-bold space-y-0.5">
+                          <div>Phone: {resp.vendor?.phone || 'N/A'}</div>
+                          <div>Email: {resp.vendor?.email || 'N/A'}</div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-4 w-full md:w-auto justify-between md:justify-end">
+                        <div className="text-right">
+                          <span className="text-[8px] text-slate-400 uppercase font-black tracking-wider block">Quote Amount</span>
+                          <span className="text-sm font-black text-[#0066FF]">
+                            ₹ {resp.price ? resp.price.toLocaleString() : (resp.quoteDetails?.allInCharges ? Number(resp.quoteDetails.allInCharges).toLocaleString() : 'N/A')}
+                          </span>
+                        </div>
+
+                        {selectedBookingForQuotes.status !== 'Accepted' ? (
+                          <button
+                            onClick={async () => {
+                              if (window.confirm(`Are you sure you want to accept the quote from ${resp.vendor?.company || resp.vendor?.name}?`)) {
+                                try {
+                                  await updateEnquiryStatus(selectedBookingForQuotes._id, 'Accepted', type, null, null, resp.vendor?._id || resp.vendor);
+                                  setSelectedBookingForQuotes(null);
+                                  loadBookings();
+                                } catch (err) {
+                                  console.error(err);
+                                  alert('Failed to accept quote');
+                                }
+                              }
+                            }}
+                            className="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-[10px] px-4 py-2 rounded-xl transition-all shadow-md shadow-emerald-500/10 cursor-pointer uppercase tracking-wider"
+                          >
+                            Accept
+                          </button>
+                        ) : (
+                          isAccepted ? (
+                            <span className="bg-emerald-100 text-emerald-800 text-[8px] font-black px-2.5 py-1.5 rounded-lg border border-emerald-200 uppercase tracking-wider">
+                              Accepted
+                            </span>
+                          ) : (
+                            <span className="bg-slate-100 text-slate-800 text-[8px] font-black px-2.5 py-1.5 rounded-lg border border-slate-200 uppercase tracking-wider">
+                              Declined
+                            </span>
+                          )
+                        )}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

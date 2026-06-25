@@ -7,7 +7,6 @@ import api from '../../api/axios';
 const VendorComplaintsTab = () => {
     const { user } = useAuth();
     const { fetchVendorEnquiries, fetchVendorBookings } = useEnquiries();
-    const [interactedItems, setInteractedItems] = useState([]);
     const [complaints, setComplaints] = useState([]);
     const [subject, setSubject] = useState('');
     const [message, setMessage] = useState('');
@@ -16,7 +15,11 @@ const VendorComplaintsTab = () => {
     const [screenshot, setScreenshot] = useState('');
     const [activeFilter, setActiveFilter] = useState('raised'); // 'raised' or 'against'
     const [complainAgainstRole, setComplainAgainstRole] = useState('customer'); // 'customer' or 'vendor'
-    const [systemVendors, setSystemVendors] = useState([]);
+
+    const [searchVal, setSearchVal] = useState('');
+    const [searchedUser, setSearchedUser] = useState(null);
+    const [searching, setSearching] = useState(false);
+    const [searchMsg, setSearchMsg] = useState('');
 
     // Upload States
     const [uploading, setUploading] = useState(false);
@@ -36,62 +39,38 @@ const VendorComplaintsTab = () => {
         }
     };
 
-    const fetchInteractions = async () => {
-        try {
-            const [myEnqsRes, directEnqsRes, myBksRes, directBksRes] = await Promise.all([
-                fetchVendorEnquiries('my').catch(() => ({ data: [] })),
-                fetchVendorEnquiries('direct').catch(() => ({ data: [] })),
-                fetchVendorBookings('my').catch(() => ({ data: [] })),
-                fetchVendorBookings('direct').catch(() => ({ data: [] }))
-            ]);
-            const myEnqs = myEnqsRes?.data || [];
-            const directEnqs = directEnqsRes?.data || [];
-            const myBks = myBksRes?.data || [];
-            const directBks = directBksRes?.data || [];
-            setInteractedItems([...myEnqs, ...directEnqs, ...myBks, ...directBks]);
-        } catch (err) {
-            console.error('Error fetching vendor interactions:', err);
-        }
-    };
-
-    const fetchSystemVendors = async () => {
-        try {
-            const res = await api.get('/auth/vendors');
-            setSystemVendors(res.data || []);
-        } catch (err) {
-            console.error('Error fetching system vendors:', err);
-        }
-    };
-
     useEffect(() => {
         fetchComplaints(activeFilter);
-        fetchInteractions();
-        if (complainAgainstRole === 'vendor') {
-            fetchSystemVendors();
-        }
-    }, [activeFilter, complainAgainstRole]);
+    }, [activeFilter]);
 
-    // Get unique list of users
-    const getUniqueUsers = () => {
-        if (complainAgainstRole === 'vendor') {
-            return systemVendors
-                .filter(v => v._id !== user?.id && v._id !== user?._id)
-                .map(v => ({ id: v._id, name: v.company ? `${v.company} (${v.name})` : v.name }));
-        }
-
-        const userMap = new Map();
-        if (interactedItems && Array.isArray(interactedItems)) {
-            interactedItems.forEach(item => {
-                if (item.client && item.client._id && item.client._id !== user?.id && item.client._id !== user?._id) {
-                    const label = item.client.company ? `${item.client.company} (${item.client.name})` : item.client.name;
-                    userMap.set(item.client._id, label);
+    useEffect(() => {
+        setSearchedUser(null);
+        setSearchMsg('');
+        setSelectedUser('');
+        
+        if (!searchVal.trim()) return;
+        
+        const delayDebounceFn = setTimeout(async () => {
+            setSearching(true);
+            try {
+                const params = complainAgainstRole === 'customer' 
+                    ? { type: 'customer', phone: searchVal.trim() }
+                    : { type: 'vendor', lsid: searchVal.trim() };
+                const res = await api.get('/auth/lookup', { params });
+                if (res.data) {
+                    setSearchedUser(res.data);
+                    setSelectedUser(res.data._id);
+                    setSearchMsg(`Matched User: ${res.data.company ? res.data.company + ' (' + res.data.name + ')' : res.data.name}`);
                 }
-            });
-        }
-        return Array.from(userMap.entries()).map(([id, name]) => ({ id, name }));
-    };
+            } catch (err) {
+                setSearchMsg(err.response?.data?.message || 'User not found in system');
+            } finally {
+                setSearching(false);
+            }
+        }, 500);
 
-    const uniqueUsers = getUniqueUsers();
+        return () => clearTimeout(delayDebounceFn);
+    }, [searchVal, complainAgainstRole]);
 
     const handleDragOver = (e) => {
         e.preventDefault();
@@ -170,6 +149,9 @@ const VendorComplaintsTab = () => {
             setPriority('Medium');
             setScreenshot('');
             setFileName('');
+            setSearchVal('');
+            setSearchedUser(null);
+            setSearchMsg('');
             fetchComplaints(activeFilter);
         } catch (err) {
             console.error('Error submitting complaint:', err);
@@ -244,47 +226,101 @@ const VendorComplaintsTab = () => {
                             <div className="flex gap-2">
                                 <button
                                     type="button"
-                                    onClick={() => { setComplainAgainstRole('customer'); setSelectedUser(''); }}
+                                    onClick={() => {
+                                        setComplainAgainstRole('customer');
+                                        setSearchVal('');
+                                        setSearchedUser(null);
+                                        setSearchMsg('');
+                                        setSelectedUser('');
+                                    }}
                                     className={`flex-1 py-2 rounded-xl text-xs font-bold border transition-all ${complainAgainstRole === 'customer'
                                         ? 'bg-[#0066FF] border-[#0066FF] text-white shadow-md shadow-[#0066FF]/10'
                                         : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100'
                                         }`}
+                                    disabled={loading}
                                 >
                                     Customer
                                 </button>
                                 <button
                                     type="button"
-                                    onClick={() => { setComplainAgainstRole('vendor'); setSelectedUser(''); }}
+                                    onClick={() => {
+                                        setComplainAgainstRole('vendor');
+                                        setSearchVal('');
+                                        setSearchedUser(null);
+                                        setSearchMsg('');
+                                        setSelectedUser('');
+                                    }}
                                     className={`flex-1 py-2 rounded-xl text-xs font-bold border transition-all ${complainAgainstRole === 'vendor'
                                         ? 'bg-red-500 border-red-500 text-white shadow-md shadow-red-500/10'
                                         : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100'
                                         }`}
+                                    disabled={loading}
                                 >
                                     Vendor
                                 </button>
                             </div>
                         </div>
 
-                        {/* Target Select */}
+                        {/* Target Input Search */}
                         <div className="space-y-1">
-                            <label className="text-[10px] font-black text-slate-400 uppercase">Select (LS ID) *</label>
-                            <select
-                                value={selectedUser}
-                                onChange={(e) => setSelectedUser(e.target.value)}
-                                className="w-full bg-[#f4f7fc] border border-slate-200 rounded-xl py-2.5 px-4 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#0066FF]/20 focus:border-[#0066FF] transition-all cursor-pointer"
+                            <label className="text-[10px] font-black text-slate-400 uppercase">
+                                {complainAgainstRole === 'customer' ? 'Customer Mobile Number *' : 'Vendor LS ID *'}
+                            </label>
+                            <input
+                                type="text"
+                                placeholder={complainAgainstRole === 'customer' ? "Enter Customer's Mobile Number" : "Enter Vendor's LS-xxxx ID"}
+                                value={searchVal}
+                                onChange={(e) => setSearchVal(e.target.value)}
+                                className="w-full bg-[#f4f7fc] border border-slate-200 rounded-xl py-2.5 px-4 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#0066FF]/20 focus:border-[#0066FF] transition-all"
                                 required
-                            >
-                                <option value="">-- Select {complainAgainstRole === 'customer' ? 'Customer' : 'Vendor'} --</option>
-                                {uniqueUsers.map((u) => (
-                                    <option key={u.id} value={u.id}>{u.name}</option>
-                                ))}
-                            </select>
-                            {uniqueUsers.length === 0 && (
-                                <p className="text-[10px] text-amber-600 font-semibold mt-1">
-                                    Note: You can file complaints against {complainAgainstRole === 'customer' ? 'customers' : 'vendors'} who have booked or raised inquiries to you.
+                            />
+                            {searching && (
+                                <p className="text-[10px] text-blue-500 font-semibold mt-1">Searching system...</p>
+                            )}
+                            {!searching && !searchedUser && searchMsg && (
+                                <p className="text-[10px] font-bold mt-1 text-red-500">
+                                    {searchMsg}
                                 </p>
                             )}
                         </div>
+
+                        {/* Matched User details as read-only dynamic fields */}
+                        {!searching && searchedUser && (
+                            <>
+                                {complainAgainstRole === 'customer' ? (
+                                    <div className="space-y-1 animate-fadeIn">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase">Customer Name</label>
+                                        <input 
+                                            type="text" 
+                                            value={searchedUser.name} 
+                                            disabled 
+                                            className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-4 text-xs font-bold text-slate-500 cursor-not-allowed" 
+                                        />
+                                    </div>
+                                ) : (
+                                    <div className="space-y-3 animate-fadeIn">
+                                        <div className="space-y-1">
+                                            <label className="text-[10px] font-black text-slate-400 uppercase">Company Name</label>
+                                            <input 
+                                                type="text" 
+                                                value={searchedUser.company || 'N/A'} 
+                                                disabled 
+                                                className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-4 text-xs font-bold text-slate-500 cursor-not-allowed" 
+                                            />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <label className="text-[10px] font-black text-slate-400 uppercase">Vendor Name</label>
+                                            <input 
+                                                type="text" 
+                                                value={searchedUser.name} 
+                                                disabled 
+                                                className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-4 text-xs font-bold text-slate-500 cursor-not-allowed" 
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+                            </>
+                        )}
 
                         {/* Subject */}
                         <div className="space-y-1">
@@ -371,7 +407,7 @@ const VendorComplaintsTab = () => {
 
                         <button
                             type="submit"
-                            disabled={loading || uploading || uniqueUsers.length === 0}
+                            disabled={loading || uploading || !selectedUser}
                             className="w-full bg-red-500 hover:bg-red-600 text-white font-extrabold text-xs py-3 rounded-xl transition-all shadow-md shadow-red-500/10 flex items-center justify-center gap-2 cursor-pointer uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             <Send size={14} />

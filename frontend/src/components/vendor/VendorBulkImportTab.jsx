@@ -3,30 +3,47 @@ import { Upload, FileSpreadsheet, CheckCircle2, ChevronRight, AlertCircle, Datab
 import * as XLSX from 'xlsx';
 import axios from 'axios';
 
-const pricingFields = [
-  { key: 'fromLocation', label: 'From Location', required: false, description: 'Origin city or port name' },
-  { key: 'toLocation', label: 'To Location', required: false, description: 'Destination city or port name' },
-  { key: 'type', label: 'Freight Type', required: false, description: 'Must be air, sea, land, warehouse, or cha' },
-  { key: 'deliverySpeed', label: 'Delivery Speed (Days)', required: false, description: 'Transit time in days' },
-  { key: 'validUntil', label: 'Valid Until (Expiry Date)', required: false, description: 'Date when pricing expires' },
-  { key: 'price', label: 'Price / Rate', required: false, description: 'Numeric rate' },
-  { key: 'currency', label: 'Currency', required: false, description: 'e.g. INR, USD, EUR' },
-  { key: 'category', label: 'Category', required: false, description: 'domestic or international' },
-  { key: 'airline', label: 'Airline', required: false, description: 'Carrier name (Air freight)' },
-  { key: 'weightRange', label: 'Weight Range', required: false, description: 'e.g. 45+Kg, 100+Kg' },
-  { key: 'truckLoad', label: 'Truck Load', required: false, description: 'FTL or LTL (Land freight)' },
-  { key: 'vehicleType', label: 'Vehicle Type', required: false, description: 'e.g. 20ft Container, Box Truck' },
-  { key: 'seaLoadType', label: 'Sea Load Type', required: false, description: 'LCL or FCL' },
-  { key: 'fclStandard', label: 'FCL Standard', required: false, description: 'e.g. 20ft Standard, 40ft Standard' },
-  { key: 'warehouseRateType', label: 'Warehouse Rate Type', required: false, description: 'e.g. Per Month, Per Day' },
-  { key: 'warehouseStorageType', label: 'Warehouse Storage Type', required: false, description: 'e.g. General, Cold' },
-  { key: 'chaServiceType', label: 'CHA Service Type', required: false, description: 'Air or Sea' },
-  { key: 'chaCargoType', label: 'CHA Cargo Type', required: false, description: 'Import or Export' },
-  { key: 'handlingType', label: 'Handling Type', required: false, description: 'e.g. General Cargo, Hazardous Goods' },
-  { key: 'additionalServices', label: 'Additional Services', required: false, description: 'e.g. Packing, Insurance' }
-];
+const getFieldsForType = (type) => {
+  const common = [
+    { key: 'fromLocation', label: 'From Location', required: false, description: 'Origin city or port name' },
+    { key: 'toLocation', label: 'To Location', required: false, description: 'Destination city or port name' },
+    { key: 'deliverySpeed', label: 'Delivery Speed (Days)', required: false, description: 'Transit time in days' },
+    { key: 'validUntil', label: 'Valid Until (Expiry Date)', required: false, description: 'Date when pricing expires' },
+    { key: 'price', label: 'Price / Rate', required: true, description: 'Numeric rate (must be a number)' },
+    { key: 'currency', label: 'Currency', required: false, description: 'e.g. INR, USD, EUR' },
+    { key: 'category', label: 'Category', required: false, description: 'domestic or international' }
+  ];
+
+  const typeSpecific = {
+    air: [
+      { key: 'airline', label: 'Airline', required: false, description: 'Carrier name (Air freight)' },
+      { key: 'weightRange', label: 'Weight Range', required: false, description: 'e.g. 45+Kg, 100+Kg' }
+    ],
+    sea: [
+      { key: 'seaLoadType', label: 'Sea Load Type', required: false, description: 'LCL or FCL' },
+      { key: 'fclStandard', label: 'FCL Standard', required: false, description: 'e.g. 20ft Standard, 40ft Standard' }
+    ],
+    land: [
+      { key: 'truckLoad', label: 'Truck Load', required: false, description: 'FTL or LTL (Land freight)' },
+      { key: 'vehicleType', label: 'Vehicle Type', required: false, description: 'e.g. 20ft Container, Box Truck' }
+    ],
+    warehouse: [
+      { key: 'warehouseRateType', label: 'Warehouse Rate Type', required: false, description: 'e.g. Per Month, Per Day' },
+      { key: 'warehouseStorageType', label: 'Warehouse Storage Type', required: false, description: 'e.g. General, Cold' }
+    ],
+    cha: [
+      { key: 'chaServiceType', label: 'CHA Service Type', required: false, description: 'Air or Sea' },
+      { key: 'chaCargoType', label: 'CHA Cargo Type', required: false, description: 'Import or Export' },
+      { key: 'handlingType', label: 'Handling Type', required: false, description: 'e.g. General Cargo, Hazardous Goods' },
+      { key: 'additionalServices', label: 'Additional Services', required: false, description: 'e.g. Packing, Insurance' }
+    ]
+  };
+
+  return [...common, ...(typeSpecific[type] || [])];
+};
 
 const VendorBulkImportTab = () => {
+  const [selectedFreightType, setSelectedFreightType] = useState('air');
   const [fileHeaders, setFileHeaders] = useState([]);
   const [rawRows, setRawRows] = useState([]);
   const [fileName, setFileName] = useState('');
@@ -66,7 +83,8 @@ const VendorBulkImportTab = () => {
 
         // Auto-match headers based on similarity
         const initialMappings = {};
-        pricingFields.forEach(field => {
+        const currentFields = getFieldsForType(selectedFreightType);
+        currentFields.forEach(field => {
           const match = headers.find(h => 
             h.toLowerCase() === field.key.toLowerCase() ||
             h.toLowerCase() === field.label.toLowerCase() ||
@@ -97,7 +115,8 @@ const VendorBulkImportTab = () => {
   // Convert raw row array to target object using mappings
   const getMappedRow = (row) => {
     const mapped = {};
-    pricingFields.forEach(field => {
+    const currentFields = getFieldsForType(selectedFreightType);
+    currentFields.forEach(field => {
       const headerName = mappings[field.key];
       if (headerName) {
         const index = fileHeaders.indexOf(headerName);
@@ -122,12 +141,7 @@ const VendorBulkImportTab = () => {
       const fromLocation = rowData.fromLocation ? String(rowData.fromLocation).trim() : 'Test Origin';
       const toLocation = rowData.toLocation ? String(rowData.toLocation).trim() : 'Test Destination';
       
-      let type = rowData.type ? String(rowData.type).toLowerCase().trim() : 'air';
-      const allowedTypes = ['air', 'sea', 'land', 'warehouse', 'cha'];
-      if (!allowedTypes.includes(type)) {
-        type = 'air'; // default fallback
-      }
-
+      const type = selectedFreightType;
       const deliverySpeed = rowData.deliverySpeed ? String(rowData.deliverySpeed).trim() : '3-5';
 
       let priceVal = 0;
@@ -213,6 +227,21 @@ const VendorBulkImportTab = () => {
       {/* STEP 1: UPLOAD SPREADSHEET */}
       {step === 1 && (
         <div className="space-y-4">
+          <div className="bg-slate-50/50 p-5 rounded-2xl border border-slate-100 space-y-3 max-w-md">
+            <label className="block text-xs font-extrabold text-[#0B1E43] uppercase tracking-wider">Select Freight Type for Import</label>
+            <select
+              value={selectedFreightType}
+              onChange={(e) => setSelectedFreightType(e.target.value)}
+              className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-xs font-bold text-[#0B1E43] focus:outline-none focus:border-[#0066FF] focus:ring-2 focus:ring-[#0066FF]/20 transition-all"
+            >
+              <option value="air">Air Freight</option>
+              <option value="sea">Sea Freight</option>
+              <option value="land">Land Freight</option>
+              <option value="warehouse">Warehouse</option>
+              <option value="cha">CHA</option>
+            </select>
+          </div>
+
           <div className="border-2 border-dashed border-slate-200 hover:border-[#0066FF] rounded-2xl p-12 text-center flex flex-col items-center justify-center gap-4 transition-all hover:bg-slate-50/40">
             <div className="w-16 h-16 rounded-2xl bg-blue-50 text-[#0066FF] flex items-center justify-center shadow-sm">
               <FileSpreadsheet size={32} />
@@ -236,9 +265,9 @@ const VendorBulkImportTab = () => {
           <div className="bg-slate-50/50 p-5 rounded-2xl border border-slate-100 space-y-3">
             <h4 className="text-xs font-extrabold text-[#0B1E43] uppercase tracking-wider">Required columns in your spreadsheet:</h4>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-xs text-slate-700 font-bold">
-              {pricingFields.filter(f => f.required).map(f => (
+              {getFieldsForType(selectedFreightType).filter(f => f.required).map(f => (
                 <div key={f.key} className="flex items-center gap-1.5 bg-white p-2.5 rounded-lg border border-slate-100">
-                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#0066FF]" />
                   <span>{f.label}</span>
                 </div>
               ))}
@@ -261,7 +290,7 @@ const VendorBulkImportTab = () => {
             <div className="bg-white border border-slate-100 rounded-2xl p-5 space-y-4 shadow-[0_4px_25px_rgba(0,0,0,0.015)]">
               <h3 className="text-sm font-extrabold text-[#0B1E43] uppercase tracking-wider border-b border-slate-100 pb-3">Field Mapping Configuration</h3>
               <div className="space-y-3 max-h-[450px] overflow-y-auto pr-2 custom-scrollbar">
-                {pricingFields.map((field) => (
+                {getFieldsForType(selectedFreightType).map((field) => (
                   <div key={field.key} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 py-2 border-b border-slate-50 last:border-0">
                     <div className="space-y-0.5">
                       <span className="text-xs font-black text-slate-700 flex items-center gap-1">
@@ -293,7 +322,7 @@ const VendorBulkImportTab = () => {
                 <table className="w-full text-left text-[11px] text-slate-700 border-collapse">
                   <thead>
                     <tr className="bg-slate-50 border-b border-slate-100 text-slate-800 font-black">
-                      {pricingFields.filter(f => mappings[f.key]).map(f => (
+                      {getFieldsForType(selectedFreightType).filter(f => mappings[f.key]).map(f => (
                         <th key={f.key} className="p-2 uppercase tracking-wide">{f.label}</th>
                       ))}
                     </tr>
@@ -303,7 +332,7 @@ const VendorBulkImportTab = () => {
                       const data = getMappedRow(row);
                       return (
                         <tr key={idx} className="hover:bg-slate-50/50">
-                          {pricingFields.filter(f => mappings[f.key]).map(f => (
+                          {getFieldsForType(selectedFreightType).filter(f => mappings[f.key]).map(f => (
                             <td key={f.key} className="p-2 font-bold truncate max-w-[120px]">
                               {f.key === 'validUntil' && data[f.key] ? (
                                 typeof data[f.key] === 'number' ? (

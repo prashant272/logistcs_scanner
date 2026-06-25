@@ -98,6 +98,14 @@ const userSchema = new mongoose.Schema({
         type: String,
         default: ''
     },
+    gst: {
+        type: String,
+        default: ''
+    },
+    serviceLocations: {
+        type: [String],
+        default: []
+    },
     companyProfile: {
         type: String,
         default: ''

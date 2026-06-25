@@ -36,6 +36,64 @@ router.get('/customers', protect, async (req, res) => {
     }
 });
 
+// Global User Lookup by Phone (for Customer) or LS ID (for Vendor)
+router.get('/lookup', protect, async (req, res) => {
+    try {
+        const { type, phone, lsid } = req.query;
+        if (type === 'customer') {
+            if (!phone) {
+                return res.status(400).json({ message: 'Phone number is required' });
+            }
+            const cleanPhone = phone.trim().replace(/[^0-9]/g, '');
+            // Find customer globally using regex on last 10 digits
+            const customer = await User.findOne({ 
+                role: 'customer', 
+                phone: { $regex: cleanPhone + '$' } 
+            }).select('name company email phone');
+            if (!customer) {
+                return res.status(404).json({ message: 'Customer not found' });
+            }
+            return res.json(customer);
+        } else if (type === 'vendor') {
+            if (!lsid) {
+                return res.status(400).json({ message: 'LS ID is required' });
+            }
+            const cleanLsid = lsid.replace(/[^0-9]/g, '');
+            // Helper to generate deterministic LSID
+            const getLSID = (id) => {
+                let hash = 0;
+                const str = id.toString();
+                for (let i = 0; i < str.length; i++) {
+                    hash = (hash * 31 + str.charCodeAt(i)) % 900000;
+                }
+                return 1000000000 + Math.abs(hash);
+            };
+
+            const vendors = await User.find({ role: 'vendor' }).select('name company email phone');
+            const targetVendor = vendors.find(v => {
+                const computed = getLSID(v._id).toString();
+                return computed === cleanLsid || `ls-${computed}` === lsid.toLowerCase().trim() || v._id.toString() === lsid.trim();
+            });
+
+            if (!targetVendor) {
+                return res.status(404).json({ message: 'Vendor not found' });
+            }
+            return res.json({
+                _id: targetVendor._id,
+                name: targetVendor.name,
+                company: targetVendor.company,
+                email: targetVendor.email,
+                phone: targetVendor.phone,
+                lsid: getLSID(targetVendor._id)
+            });
+        } else {
+            return res.status(400).json({ message: 'Invalid lookup type' });
+        }
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+});
+
 // Route for file upload (images and documents to Cloudflare R2 / AWS S3)
 router.post('/upload', protect, (req, res, next) => {
     uploadDoc.single('file')(req, res, (err) => {
@@ -53,8 +111,49 @@ router.post('/upload', protect, (req, res, next) => {
     res.json({ url: publicUrl });
 });
 
+// Public route for file upload (e.g., guest users attaching documents to enquiries)
+router.post('/upload-public', (req, res, next) => {
+    uploadDoc.single('file')(req, res, (err) => {
+        if (err) {
+            console.error("Upload error details:", err);
+            return res.status(400).json({ message: err.message });
+        }
+        next();
+    });
+}, (req, res) => {
+    if (!req.file) {
+        return res.status(400).json({ message: 'No file uploaded' });
+    }
+    const publicUrl = `${process.env.R2_PUBLIC_URL}/${req.file.key}`;
+    res.json({ url: publicUrl });
+});
+
 const GuestView = require('../models/GuestView');
 const jwt = require('jsonwebtoken');
+
+// Public route to get all distinct countries and cities of existing vendors
+router.get('/public-vendors-locations', async (req, res) => {
+    try {
+        const vendors = await User.find({ role: 'vendor' }, 'country city');
+        const locations = {};
+        vendors.forEach(v => {
+            if (v.country) {
+                const c = v.country.trim();
+                if (!locations[c]) locations[c] = new Set();
+                if (v.city) locations[c].add(v.city.trim());
+            }
+        });
+        
+        const formattedLocations = {};
+        Object.keys(locations).sort().forEach(country => {
+            formattedLocations[country] = Array.from(locations[country]).sort();
+        });
+        
+        res.json(formattedLocations);
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+});
 
 // Public route to search vendors
 router.get('/public-vendors-search', async (req, res) => {
@@ -242,11 +341,12 @@ router.post('/vendor-contact', async (req, res) => {
 // Route to get contact requests for logged in vendor (protected)
 router.get('/vendor-contact/my', protect, async (req, res) => {
     try {
-        if (req.user.role !== 'vendor') {
+        const user = await User.findById(req.user.id);
+        if (!user || user.role !== 'vendor') {
             return res.status(403).json({ message: 'Access denied. Vendor role required.' });
         }
         
-        const contacts = await VendorContact.find({ vendorId: req.user._id })
+        const contacts = await VendorContact.find({ vendorId: user._id })
             .sort({ createdAt: -1 });
             
         res.json(contacts);

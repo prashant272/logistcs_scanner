@@ -35,19 +35,19 @@ app.get("/", (req, res) => {
 
 const PORT = process.env.PORT || 5000;
 
-// Automatic cleanup of expired pricing entries (after 15 days of expiry)
+// Automatic cleanup of expired pricing entries (after 30 days of expiry)
 const runPricingCleanup = async () => {
     try {
         const Pricing = require('./models/Pricing');
-        const fifteenDaysAgo = new Date();
-        fifteenDaysAgo.setDate(fifteenDaysAgo.getDate() - 15);
-        fifteenDaysAgo.setHours(0,0,0,0);
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        thirtyDaysAgo.setHours(0,0,0,0);
         
         const result = await Pricing.deleteMany({
-            validUntil: { $lt: fifteenDaysAgo }
+            validUntil: { $lt: thirtyDaysAgo }
         });
         if (result.deletedCount > 0) {
-            console.log(`[Pricing Cleanup] Deleted ${result.deletedCount} pricing entries expired before ${fifteenDaysAgo.toLocaleDateString()}`);
+            console.log(`[Pricing Cleanup] Deleted ${result.deletedCount} pricing entries expired before ${thirtyDaysAgo.toLocaleDateString()}`);
         }
     } catch (err) {
         console.error('[Pricing Cleanup Error]', err);

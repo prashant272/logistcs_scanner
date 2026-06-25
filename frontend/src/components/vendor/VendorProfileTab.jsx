@@ -32,8 +32,12 @@ const VendorProfileTab = ({ user: propUser }) => {
     companyProfile: user?.companyProfile || '',
     serviceIn: user?.serviceIn || 'Both', // 'B2B', 'B2C', 'Both'
     services: user?.services || [], // ['Air', 'Sea', 'Land', 'Warehouse', 'CHA']
-    deductionPercentage: user?.deductionPercentage || 0.00
+    deductionPercentage: user?.deductionPercentage || 0.00,
+    gst: user?.gst || '',
+    serviceLocations: user?.serviceLocations || []
   });
+
+  const [newLocation, setNewLocation] = useState('');
 
   const [uploading, setUploading] = useState({
     profilePhoto: false,
@@ -90,12 +94,39 @@ const VendorProfileTab = ({ user: propUser }) => {
     }
   };
 
+  const handleAddLocation = (e) => {
+    e.preventDefault();
+    const loc = newLocation.trim();
+    if (loc && !formData.serviceLocations.includes(loc)) {
+      setFormData(prev => ({
+        ...prev,
+        serviceLocations: [...prev.serviceLocations, loc]
+      }));
+      setNewLocation('');
+    }
+  };
+
+  const handleRemoveLocation = (locToRemove) => {
+    setFormData(prev => ({
+      ...prev,
+      serviceLocations: prev.serviceLocations.filter(loc => loc !== locToRemove)
+    }));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setSaving(true);
     setError(null);
     setSaved(false);
 
+    if (formData.serviceIn === 'Both') {
+      const val = parseFloat(formData.deductionPercentage);
+      if (isNaN(val) || val <= 0) {
+        setError("Deduction percentage is required and must be greater than 0 when Service Mode is set to Both.");
+        return;
+      }
+    }
+
+    setSaving(true);
     try {
       const res = await updateProfile(formData);
       if (res.success) {
@@ -323,6 +354,16 @@ const VendorProfileTab = ({ user: propUser }) => {
               />
             </div>
             <div className="space-y-1.5">
+              <label className="text-xs font-bold text-[#0B1E43] uppercase tracking-wide">GST Number</label>
+              <input 
+                type="text" 
+                value={formData.gst}
+                onChange={(e) => setFormData({ ...formData, gst: e.target.value })}
+                className="w-full bg-[#f8fafc] border border-slate-200 rounded-xl px-4 py-3 text-xs text-slate-800 focus:outline-none focus:bg-white focus:border-[#0066FF] focus:ring-4 focus:ring-[#0066FF]/5 transition-all font-semibold"
+                placeholder="e.g. 22AAAAA0000A1Z5"
+              />
+            </div>
+            <div className="space-y-1.5">
               <label className="text-xs font-bold text-[#0B1E43] uppercase tracking-wide">Website URL</label>
               <input 
                 type="text" 
@@ -469,7 +510,13 @@ const VendorProfileTab = ({ user: propUser }) => {
                       name="serviceIn"
                       value={mode}
                       checked={formData.serviceIn === mode}
-                      onChange={(e) => setFormData({ ...formData, serviceIn: e.target.value })}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === 'Both') {
+                          alert('please enter deduction percentage for vendor');
+                        }
+                        setFormData({ ...formData, serviceIn: val });
+                      }}
                       className="w-4 h-4 text-[#0066FF] focus:ring-[#0066FF] border-slate-300"
                     />
                     <span>
@@ -512,15 +559,18 @@ const VendorProfileTab = ({ user: propUser }) => {
 
             {/* Deduction percentage */}
             <div className="p-5 bg-white border border-slate-200 rounded-2xl space-y-4">
-              <label className="block text-xs font-bold text-[#0B1E43] uppercase tracking-wider">Deduction Percentage (%)</label>
+              <label className="block text-xs font-bold text-[#0B1E43] uppercase tracking-wider">
+                Deduction Percentage (%) {formData.serviceIn === 'Both' && <span className="text-red-500">*</span>}
+              </label>
               <div className="relative">
                 <input 
                   type="number" 
                   step="0.01"
-                  min="0"
+                  min="0.01"
                   max="100"
+                  required={formData.serviceIn === 'Both'}
                   value={formData.deductionPercentage}
-                  onChange={(e) => setFormData({ ...formData, deductionPercentage: parseFloat(e.target.value) || 0.00 })}
+                  onChange={(e) => setFormData({ ...formData, deductionPercentage: e.target.value === '' ? '' : parseFloat(e.target.value) })}
                   className="w-full bg-[#f8fafc] border border-slate-200 rounded-xl py-3 pl-4 pr-10 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#0066FF]/20 focus:border-[#0066FF]"
                   placeholder="0.00"
                 />
@@ -529,6 +579,54 @@ const VendorProfileTab = ({ user: propUser }) => {
               <p className="text-[11px] text-slate-500 font-semibold leading-normal mt-2">
                 This percentage will reduce the display price of your quotes *only* when other vendors browse your rates.
               </p>
+            </div>
+
+            {/* Service Locations */}
+            <div className="md:col-span-3 p-5 bg-white border border-slate-200 rounded-2xl space-y-4">
+              <label className="block text-xs font-bold text-[#0B1E43] uppercase tracking-wider">Service Locations</label>
+              <div className="flex gap-2">
+                <input 
+                  type="text" 
+                  value={newLocation}
+                  onChange={(e) => setNewLocation(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      handleAddLocation(e);
+                    }
+                  }}
+                  className="flex-grow bg-[#f8fafc] border border-slate-200 rounded-xl px-4 py-3 text-xs font-semibold text-slate-800 focus:outline-none focus:bg-white focus:border-[#0066FF]"
+                  placeholder="Type a location (e.g. Mumbai, Delhi, Gujarat) and press Enter or click Add"
+                />
+                <button 
+                  type="button"
+                  onClick={handleAddLocation}
+                  className="bg-[#0066FF] hover:bg-[#0052cc] text-white text-xs font-bold px-5 py-3 rounded-xl transition-all cursor-pointer"
+                >
+                  Add
+                </button>
+              </div>
+              
+              {formData.serviceLocations && formData.serviceLocations.length > 0 ? (
+                <div className="flex flex-wrap gap-2 pt-2">
+                  {formData.serviceLocations.map((loc, idx) => (
+                    <span 
+                      key={idx} 
+                      className="bg-blue-50 text-[#0066FF] border border-[#0066FF]/20 text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-1.5"
+                    >
+                      {loc}
+                      <button 
+                        type="button" 
+                        onClick={() => handleRemoveLocation(loc)}
+                        className="hover:text-red-500 font-extrabold focus:outline-none text-[10px]"
+                      >
+                        ✕
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-[11px] text-slate-400 font-semibold italic">No service locations added yet. All locations will be served by default.</p>
+              )}
             </div>
 
           </div>

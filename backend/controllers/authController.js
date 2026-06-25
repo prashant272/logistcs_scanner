@@ -418,7 +418,7 @@ exports.updateUserProfile = async (req, res) => {
             'profilePhoto', 'uploadedDocument', 'country', 'city', 'state', 'pincode',
             'website', 'alternativeEmail', 'alternativeNumber', 'dateOfIncorporation',
             'companyAge', 'directorsNames', 'directorsCount', 'lastYearTurnover',
-            'companyProfile', 'serviceIn', 'services', 'deductionPercentage'
+            'companyProfile', 'serviceIn', 'services', 'deductionPercentage', 'gst', 'serviceLocations'
         ];
 
         fieldsToUpdate.forEach(field => {

@@ -19,6 +19,14 @@ const COUNTRY_CODES = [
 ];
 
 const SearchPrice = ({ isDashboard = false }) => {
+    const todayStr = (() => {
+        const today = new Date();
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const dd = String(today.getDate()).padStart(2, '0');
+        return `${yyyy}-${mm}-${dd}`;
+    })();
+
     const { user } = useAuth();
     const { getSuggestions, fetchLocations } = useLocations();
     const { searchRates } = usePricing();
@@ -604,6 +612,7 @@ const SearchPrice = ({ isDashboard = false }) => {
                                                 <input
                                                     type="date"
                                                     value={date}
+                                                    min={todayStr}
                                                     onChange={(e) => setDate(e.target.value)}
                                                     onClick={(e) => { try { e.target.showPicker(); } catch (err) {} }}
                                                     className="w-full bg-white border border-slate-300 rounded-xl px-4 py-3 text-xs font-bold !text-slate-900 focus:outline-none focus:border-[#0066FF] transition-all shadow-sm cursor-pointer"
@@ -769,6 +778,7 @@ const SearchPrice = ({ isDashboard = false }) => {
                                                 <input
                                                     type="date"
                                                     value={date}
+                                                    min={todayStr}
                                                     onChange={(e) => setDate(e.target.value)}
                                                     onClick={(e) => { try { e.target.showPicker(); } catch (err) {} }}
                                                     className="w-full bg-white border border-slate-300 rounded-xl px-4 py-3 text-xs font-bold !text-slate-900 focus:outline-none focus:border-[#0066FF] transition-all shadow-sm cursor-pointer"
@@ -956,6 +966,7 @@ const SearchPrice = ({ isDashboard = false }) => {
                                                 <input
                                                     type="date"
                                                     value={date}
+                                                    min={todayStr}
                                                     onChange={(e) => setDate(e.target.value)}
                                                     onClick={(e) => { try { e.target.showPicker(); } catch (err) {} }}
                                                     className="w-full bg-white border border-slate-300 rounded-xl px-4 py-3 text-xs font-bold !text-slate-900 focus:outline-none focus:border-[#0066FF] transition-all shadow-sm cursor-pointer"

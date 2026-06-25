@@ -2,6 +2,14 @@ import React, { useState } from 'react';
 import { Plane, Ship, Truck, Warehouse, ClipboardList, ArrowLeftRight, Calendar } from 'lucide-react';
 
 const PartnerStrip = () => {
+    const todayStr = (() => {
+        const today = new Date();
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const dd = String(today.getDate()).padStart(2, '0');
+        return `${yyyy}-${mm}-${dd}`;
+    })();
+
     const [activeTab, setActiveTab] = useState('air');
     
     // Form States
@@ -160,6 +168,7 @@ const PartnerStrip = () => {
                                         <input
                                             type="date"
                                             value={date}
+                                            min={todayStr}
                                             onChange={(e) => setDate(e.target.value)}
                                             onClick={(e) => { try { e.target.showPicker(); } catch (err) {} }}
                                             className="w-full border border-gray-400 bg-white text-black px-4 py-2 rounded outline-none focus:border-[#0091d5] focus:ring-1 focus:ring-[#0091d5] font-medium text-sm transition-all cursor-pointer"
@@ -285,6 +294,7 @@ const PartnerStrip = () => {
                                         <input
                                             type="date"
                                             value={date}
+                                            min={todayStr}
                                             onChange={(e) => setDate(e.target.value)}
                                             onClick={(e) => { try { e.target.showPicker(); } catch (err) {} }}
                                             className="w-full border border-gray-400 bg-white text-black px-4 py-2 rounded outline-none focus:border-[#0091d5] focus:ring-1 focus:ring-[#0091d5] font-medium text-sm transition-all cursor-pointer"
@@ -366,6 +376,7 @@ const PartnerStrip = () => {
                                         <input
                                             type="date"
                                             value={date}
+                                            min={todayStr}
                                             onChange={(e) => setDate(e.target.value)}
                                             onClick={(e) => { try { e.target.showPicker(); } catch (err) {} }}
                                             className="w-full border border-gray-400 bg-white text-black px-4 py-2 rounded outline-none focus:border-[#0091d5] focus:ring-1 focus:ring-[#0091d5] font-medium text-sm transition-all cursor-pointer"

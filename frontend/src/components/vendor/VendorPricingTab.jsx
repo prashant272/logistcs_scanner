@@ -7,6 +7,14 @@ const AIRLINES_DOMESTIC = ['IndiGo', 'Air India', 'SpiceJet', 'Vistara', 'Akasa 
 const AIRLINES_INTERNATIONAL = ['Emirates', 'Qatar Airways', 'Singapore Airlines', 'British Airways', 'Lufthansa', 'Delta Air Lines', 'Etihad Airways'];
 
 const VendorPricingTab = () => {
+  const todayStr = (() => {
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  })();
+
   const {
     rates,
     loading,
@@ -946,6 +954,7 @@ const VendorPricingTab = () => {
                   <input
                     type="date"
                     value={validUntil}
+                    min={todayStr}
                     onChange={(e) => setValidUntil(e.target.value)}
                     onClick={(e) => { try { e.target.showPicker(); } catch (err) {} }}
                     className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2 text-xs font-bold text-slate-900 focus:outline-none focus:border-[#0066FF] cursor-pointer"

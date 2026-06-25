@@ -3,18 +3,57 @@ import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { 
   ArrowLeft, Sparkles, Ship, Plane, Truck, Warehouse, Package, 
   Coins, CheckCircle2, ChevronRight, Phone, Mail, Building, 
-  FileText, X, AlertCircle, Loader2, Calendar, Clock, ToggleLeft, ToggleRight, MapPin
+  FileText, X, AlertCircle, Loader2, Calendar, Clock, ToggleLeft, ToggleRight, MapPin,
+  Paperclip, Upload
 } from 'lucide-react';
+import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
 import { useEnquiries } from '../../services/EnquiryService';
+import { useLocations } from '../../services/LocationService';
 
 import { COUNTRIES } from '../../utils/countries';
+
+const maskEmail = (email) => {
+  if (!email) return 'N/A';
+  const parts = email.split('@');
+  if (parts.length !== 2) return email;
+  const username = parts[0];
+  const domain = parts[1];
+  if (username.length <= 2) return `${username}XXX@${domain}`;
+  const visiblePart = username.substring(0, 2);
+  const maskedPart = 'x'.repeat(Math.min(username.length - 2, 4));
+  return `${visiblePart}${maskedPart}@${domain}`;
+};
+
+const maskPhone = (phone) => {
+  if (!phone) return 'N/A';
+  const str = String(phone).replace(/\s+/g, '');
+  if (str.length <= 6) return 'XXXXX';
+  const visibleStart = str.substring(0, 3);
+  const visibleEnd = str.substring(str.length - 4);
+  const maskedPart = 'x'.repeat(str.length - 7);
+  return `${visibleStart}${maskedPart}${visibleEnd}`;
+};
 
 const SearchResults = () => {
   const { state } = useLocation();
   const navigate = useNavigate();
   const { user } = useAuth();
   const { createEnquiry } = useEnquiries();
+
+  const formatLocationWithCountryCode = (locStr, countryCode) => {
+    if (!locStr) return '';
+    const match = locStr.match(/^([^(]+)\s*(?:\(([^)]+)\))?$/);
+    if (!match) return locStr;
+
+    const city = match[1].trim();
+    const code = match[2] ? match[2].trim() : '';
+
+    if (countryCode) {
+      return code ? `${city}, ${countryCode.toUpperCase()} (${code})` : `${city}, ${countryCode.toUpperCase()}`;
+    }
+    return locStr;
+  };
 
   // If no search state is passed, go back to dashboard or home page
   useEffect(() => {
@@ -55,7 +94,38 @@ const SearchResults = () => {
     return saved ? JSON.parse(saved).guestEmail : '';
   });
   const [messageInput, setMessageInput] = useState('');
-  const [clientCreditRequired, setClientCreditRequired] = useState(true);
+  const [targetPrice, setTargetPrice] = useState('');
+  const [attachment, setAttachment] = useState('');
+  const [isUploading, setIsUploading] = useState(false);
+
+  const handleFileChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const formDataPayload = new FormData();
+    formDataPayload.append('file', file);
+
+    setIsUploading(true);
+    try {
+      const { data } = await axios.post(
+        `${import.meta.env.VITE_API_BASE_URL}/auth/upload-public`,
+        formDataPayload,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        }
+      );
+      setAttachment(data.url);
+    } catch (err) {
+      console.error('File upload failed:', err);
+      alert('File upload failed. Please try again.');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const [clientCreditRequired, setClientCreditRequired] = useState(false);
   const [showWalletAlertModal, setShowWalletAlertModal] = useState(false);
   const [walletAlertStep, setWalletAlertStep] = useState(1);
   const [pendingAction, setPendingAction] = useState(null); // { type: 'enquiry' | 'book', rate: ... }
@@ -159,6 +229,9 @@ const SearchResults = () => {
 
   const handleAction = (actionType, rate) => {
     setPendingAction({ type: actionType, rate });
+    setTargetPrice('');
+    setAttachment('');
+    setClientCreditRequired(false);
     setIsGuestModalOpen(true);
   };
 
@@ -182,6 +255,8 @@ const SearchResults = () => {
       additionalServices: queryDetails.additionalServices || '',
       deliverySpeed: rate ? rate.deliverySpeed : '3-5',
       price: rate ? rate.price : null,
+      targetPrice: targetPrice ? Number(targetPrice) : null,
+      attachment: attachment || '',
       vendor: rate ? rate.vendor._id : null,
       isDirect: false, // Targeted matched enquiry
       isBooking: isBooking,
@@ -204,6 +279,8 @@ const SearchResults = () => {
       additionalServices: queryDetails.additionalServices || '',
       deliverySpeed: '3-5',
       price: null,
+      targetPrice: targetPrice ? Number(targetPrice) : null,
+      attachment: attachment || '',
       vendor: null,
       isDirect: true, // Public broadcast direct enquiry
       isBooking: isBooking,
@@ -264,6 +341,7 @@ const SearchResults = () => {
         additionalServices: queryDetails.additionalServices || '',
         deliverySpeed: '3-5',
         price: null,
+        targetPrice: targetPrice ? Number(targetPrice) : null,
         vendor: null,
         isDirect: true,
         isBooking: isBooking,
@@ -418,14 +496,14 @@ const SearchResults = () => {
                                           <div className="flex items-center gap-3">
                             <div className="flex items-center gap-2.5 bg-slate-100 hover:bg-slate-200/80 px-4 py-2.5 rounded-xl border border-slate-300 shadow-sm transition-all duration-200">
                               <MapPin size={13} className="text-[#0066FF]" />
-                              <span className="text-xs font-extrabold text-[#0B1E43]">{rate.fromLocation}</span>
+                              <span className="text-xs font-extrabold text-[#0B1E43]">{formatLocationWithCountryCode(rate.fromLocation, rate.fromLocationCountryCode)}</span>
                             </div>
                             <div className="flex flex-col items-center shrink-0">
                               <span className="text-[#0066FF] font-black text-lg leading-none tracking-widest">→</span>
                             </div>
                             <div className="flex items-center gap-2.5 bg-slate-100 hover:bg-slate-200/80 px-4 py-2.5 rounded-xl border border-slate-300 shadow-sm transition-all duration-200">
                               <MapPin size={13} className="text-[#0066FF]" />
-                              <span className="text-xs font-extrabold text-[#0B1E43]">{rate.toLocation}</span>
+                              <span className="text-xs font-extrabold text-[#0B1E43]">{formatLocationWithCountryCode(rate.toLocation, rate.toLocationCountryCode)}</span>
                             </div>
                           </div>
                         </div>
@@ -447,7 +525,7 @@ const SearchResults = () => {
                       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 pt-2 items-center">
                         {/* Left & Middle: Company details & notes (9 cols) */}
                         <div className="lg:col-span-9 space-y-4">
-                          <div className="flex items-center gap-2.5">
+                          <div className="flex items-center gap-2.5 relative group cursor-pointer w-max">
                             <h4 className="text-sm font-black text-[#0B1E43] tracking-wide uppercase">
                               {rate.vendor?.company || rate.vendor?.name}
                             </h4>
@@ -457,6 +535,39 @@ const SearchResults = () => {
                                 Verified Vendor
                               </span>
                             )}
+                            
+                            {/* Hover Tooltip for Company Details */}
+                            <div className="absolute left-0 bottom-full mb-2 w-[350px] md:w-[600px] lg:w-[700px] bg-white rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.15)] border border-slate-200 p-4 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-[9999] pointer-events-none">
+                              <h5 className="font-black text-slate-900 text-sm mb-2 pb-2 border-b border-slate-200">Company Details</h5>
+                              <div className="space-y-2 text-xs text-slate-800 font-bold mt-2">
+                                <div className="flex items-start gap-2">
+                                  <span className="text-slate-500 w-4">👤</span>
+                                  <span className="break-all">{rate.vendor?.name || 'N/A'}</span>
+                                </div>
+                                <div className="flex items-start gap-2">
+                                  <span className="text-slate-500 w-4">✉️</span>
+                                  <span className="break-all">{maskEmail(rate.vendor?.email)}</span>
+                                </div>
+                                <div className="flex items-start gap-2">
+                                  <span className="text-slate-500 w-4">📞</span>
+                                  <span>{maskPhone(rate.vendor?.phone)}</span>
+                                </div>
+                                {rate.vendor?.companyProfile && (
+                                  <div className="flex items-start gap-2 mt-2 pt-2 border-t border-slate-100">
+                                    <span className="text-slate-500 w-4">📝</span>
+                                    <span className="text-slate-700 font-bold whitespace-pre-wrap">
+                                      {rate.vendor?.companyProfile}
+                                    </span>
+                                  </div>
+                                )}
+                                {rate.vendor?.address && (
+                                  <div className="flex items-start gap-2 pt-1">
+                                    <span className="text-slate-500 w-4">📍</span>
+                                    <span>{rate.vendor?.address}</span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
                           </div>
 
                           {/* Technical details tags */}
@@ -487,19 +598,12 @@ const SearchResults = () => {
                               </div>
                             )}
 
-                            {rate.handlingType && (
-                              <div className="bg-[#f4f7fc] border border-slate-200 rounded-xl p-3 flex flex-col justify-center">
-                                <span className="text-[9px] text-slate-550 font-black uppercase tracking-wider">Handling Type</span>
-                                <span className="text-xs font-extrabold text-slate-905 mt-0.5 truncate">{rate.handlingType}</span>
-                              </div>
-                            )}
-
-                            {/* {rate.additionalServices && (
-                              <div className="bg-[#f4f7fc] border border-slate-200 rounded-xl p-3 flex flex-col justify-center col-span-2 sm:col-span-1">
-                                <span className="text-[9px] text-slate-550 font-black uppercase tracking-wider">Addl. Services</span>
-                                <span className="text-xs font-extrabold text-slate-905 mt-0.5 truncate">{rate.additionalServices}</span>
-                              </div>
-                            )} */}
+                            {rate.validUntil && (
+                               <div className="bg-[#f4f7fc] border border-slate-200 rounded-xl p-3 flex flex-col justify-center">
+                                 <span className="text-[9px] text-slate-555 font-black uppercase tracking-wider">Validity Date</span>
+                                 <span className="text-xs font-extrabold text-slate-905 mt-0.5">{validityDate}</span>
+                               </div>
+                             )}
                           </div>
 
                           {/* Beautiful Note Panel */}
@@ -513,7 +617,7 @@ const SearchResults = () => {
                         <div className="lg:col-span-3 flex flex-row lg:flex-col items-center justify-between lg:justify-center gap-4 lg:pl-6 lg:border-l lg:border-slate-150 w-full lg:w-auto h-full min-h-[120px]">
                           {/* Price Box */}
                           <div className="text-left lg:text-center w-full">
-                            <div className="text-[10px] text-slate-500 font-black uppercase tracking-wider">Freight Cost</div>
+                            <div className="text-[10px] text-slate-550 font-black uppercase tracking-wider">Ocean Freight Cost</div>
                             <div className="text-2xl font-black text-slate-800 mt-0.5 flex flex-wrap items-baseline justify-start lg:justify-center gap-1">
                               <span className="text-lg font-black text-[#0066FF]">{displayCurrency}</span>
                               <span>{rate.price.toLocaleString()}</span>
@@ -615,7 +719,7 @@ const SearchResults = () => {
                 </p>
               </div>
               <button
-                onClick={() => { setIsGuestModalOpen(false); setPendingAction(null); }}
+                onClick={() => { setIsGuestModalOpen(false); setPendingAction(null); setTargetPrice(''); setAttachment(''); setClientCreditRequired(false); }}
                 className="text-slate-400 hover:text-slate-600 cursor-pointer"
               >
                 <X size={18} />
@@ -669,6 +773,42 @@ const SearchResults = () => {
                 />
               </div>
 
+              {/* Document / Image Attachment */}
+              <div className="space-y-1">
+                <label className="block text-[10px] font-black text-slate-800 uppercase tracking-wider flex items-center gap-1">
+                  <Paperclip size={11} className="text-slate-400" /> Attach Document / Image (Optional)
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="file"
+                    accept="image/*,.pdf,.doc,.docx,.xls,.xlsx"
+                    onChange={handleFileChange}
+                    className="hidden"
+                    id="enquiry-attachment-input"
+                  />
+                  <label
+                    htmlFor="enquiry-attachment-input"
+                    className="flex items-center gap-2 px-4 py-2 border-2 border-dashed border-slate-200 hover:border-[#0066FF] rounded-xl text-xs font-bold text-slate-600 cursor-pointer transition-all bg-[#f4f7fc] hover:bg-blue-50/20"
+                  >
+                    <Upload size={14} className="text-slate-400" />
+                    {isUploading ? 'Uploading...' : (attachment ? 'Change Attachment' : 'Upload Document')}
+                  </label>
+                  {attachment && (
+                    <div className="flex items-center gap-1.5 bg-green-50 border border-green-200 text-green-700 px-3 py-1.5 rounded-xl text-xs font-bold max-w-[180px] overflow-hidden text-ellipsis whitespace-nowrap">
+                      <CheckCircle2 size={14} className="text-green-600 flex-shrink-0" />
+                      <span className="truncate">Attached!</span>
+                      <button
+                        type="button"
+                        onClick={() => setAttachment('')}
+                        className="text-red-500 hover:text-red-700 ml-1 font-bold"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+
               {/* Commodity Details */}
               <div className="space-y-1">
                 <label className="block text-[10px] font-black text-slate-800 uppercase tracking-wider flex items-center gap-1">
@@ -681,6 +821,20 @@ const SearchResults = () => {
                   onChange={(e) => setGuestCommodity(e.target.value)}
                   className="w-full bg-[#f4f7fc] border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-800 focus:outline-none focus:bg-white focus:border-[#0066FF] transition-all"
                   required
+                />
+              </div>
+
+              {/* Target Price */}
+              <div className="space-y-1">
+                <label className="block text-[10px] font-black text-slate-800 uppercase tracking-wider flex items-center gap-1">
+                  <Coins size={11} className="text-slate-400" /> My Target Price
+                </label>
+                <input
+                  type="number"
+                  placeholder="Enter your target price"
+                  value={targetPrice}
+                  onChange={(e) => setTargetPrice(e.target.value)}
+                  className="w-full bg-[#f4f7fc] border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-800 focus:outline-none focus:bg-white focus:border-[#0066FF] transition-all"
                 />
               </div>
 
@@ -708,7 +862,7 @@ const SearchResults = () => {
               {!user && (
                 <>
                   <div className="pt-2 border-t border-slate-100">
-                    <span className="text-[10px] font-black text-[#0066FF] uppercase tracking-wider">Contact Information</span>
+                     <span className="text-[10px] font-black text-[#0066FF] uppercase tracking-wider">Contact Information</span>
                   </div>
                   {/* Organization Name */}
               <div className="space-y-1">
@@ -720,21 +874,6 @@ const SearchResults = () => {
                   placeholder="Enter organization or client name"
                   value={guestCompany}
                   onChange={(e) => setGuestCompany(e.target.value)}
-                  className="w-full bg-[#f4f7fc] border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-800 focus:outline-none focus:bg-white focus:border-[#0066FF] transition-all"
-                  required
-                />
-              </div>
-
-              {/* Commodity Details */}
-              <div className="space-y-1">
-                <label className="block text-[10px] font-black text-slate-800 uppercase tracking-wider flex items-center gap-1">
-                  <FileText size={11} className="text-slate-400" /> Commodity Description
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. Machinery, Electronics"
-                  value={guestCommodity}
-                  onChange={(e) => setGuestCommodity(e.target.value)}
                   className="w-full bg-[#f4f7fc] border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-800 focus:outline-none focus:bg-white focus:border-[#0066FF] transition-all"
                   required
                 />

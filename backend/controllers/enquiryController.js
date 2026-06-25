@@ -19,6 +19,7 @@ exports.createEnquiry = async (req, res) => {
             additionalServices,
             deliverySpeed,
             price,
+            targetPrice,
             isDirect,
             isBooking,
             excludedVendor,
@@ -28,7 +29,8 @@ exports.createEnquiry = async (req, res) => {
             guestPhone,
             guestCompany,
             commodity,
-            message
+            message,
+            attachment
         } = req.body;
 
         // Check for optional token
@@ -114,6 +116,7 @@ exports.createEnquiry = async (req, res) => {
             additionalServices,
             deliverySpeed,
             price,
+            targetPrice: targetPrice || null,
             isDirect: isDirect || false,
             isBooking: isBooking || false,
             excludedVendor: validatedExcludedVendorId,
@@ -124,6 +127,7 @@ exports.createEnquiry = async (req, res) => {
             guestCompany: guestCompany || '',
             commodity: commodity || '',
             message: message || '',
+            attachment: attachment || '',
             status: 'Pending'
         });
 
@@ -258,6 +262,16 @@ exports.getVendorEnquiries = async (req, res) => {
                 select: 'name email phone company role activePlan planEndDate',
                 populate: { path: 'activePlan' }
             })
+            .populate({
+                path: 'vendor',
+                select: 'name email phone company role activePlan planEndDate',
+                populate: { path: 'activePlan' }
+            })
+            .populate({
+                path: 'responses.vendor',
+                select: 'name email phone company role activePlan planEndDate',
+                populate: { path: 'activePlan' }
+            })
             .sort({ createdAt: -1 })
             .skip(skip)
             .limit(limit);
@@ -266,7 +280,11 @@ exports.getVendorEnquiries = async (req, res) => {
             const enqObj = enq.toObject ? enq.toObject() : enq;
             // Inject myResponse if any
             if (type === 'direct' && enq.responses && enq.responses.length > 0 && !isAdmin) {
-                const myResponse = enq.responses.find(r => r.vendor && r.vendor.toString() === req.user.id);
+                const myResponse = enq.responses.find(r => {
+                    if (!r.vendor) return false;
+                    const vId = r.vendor._id ? r.vendor._id.toString() : r.vendor.toString();
+                    return vId === req.user.id;
+                });
                 if (myResponse) {
                     enqObj.myResponse = myResponse;
                 }
@@ -348,10 +366,37 @@ exports.updateEnquiryStatus = async (req, res) => {
             return res.status(404).json({ message: 'Enquiry not found' });
         }
 
-        // For direct enquiries, if accepted, we can associate the vendor who accepted it
-        if (enquiry.isDirect && status === 'Accepted') {
+        // If the logged-in user is the client (initiator) of the booking/enquiry
+        if (enquiry.client && enquiry.client.toString() === req.user.id) {
+            const { targetVendorId } = req.body;
+            if (status === 'Accepted' && targetVendorId) {
+                const response = enquiry.responses.find(r => r.vendor.toString() === targetVendorId);
+                if (response) {
+                    response.status = 'Accepted';
+                    enquiry.status = 'Accepted';
+                    enquiry.vendor = targetVendorId;
+                    enquiry.price = response.price;
+                    enquiry.quoteDetails = response.quoteDetails;
+
+                    // Set other responses to Declined
+                    enquiry.responses.forEach(r => {
+                        if (r.vendor.toString() !== targetVendorId) {
+                            r.status = 'Declined';
+                        }
+                    });
+                } else {
+                    return res.status(400).json({ message: 'Target vendor response not found' });
+                }
+            } else if (status) {
+                enquiry.status = status;
+            }
+        } else if (enquiry.isDirect && status === 'Accepted') {
             // Push to responses instead of modifying global state
-            const existingResponse = enquiry.responses.find(r => r.vendor.toString() === req.user.id);
+            const existingResponse = enquiry.responses.find(r => {
+                if (!r.vendor) return false;
+                const vId = r.vendor._id ? r.vendor._id.toString() : r.vendor.toString();
+                return vId === req.user.id;
+            });
             if (existingResponse) {
                 existingResponse.status = status;
                 if (price !== undefined && price !== null) existingResponse.price = price;

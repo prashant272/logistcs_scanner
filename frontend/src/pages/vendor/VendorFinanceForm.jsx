@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Upload, FileText, CheckCircle, AlertCircle, Building, User as UserIcon } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
 const VendorFinanceForm = () => {
+    const { user } = useAuth();
     const [loading, setLoading] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState('');
@@ -23,6 +25,44 @@ const VendorFinanceForm = () => {
     };
 
     const [formData, setFormData] = useState(defaultFormState);
+
+    useEffect(() => {
+        if (user) {
+            setFormData(prev => {
+                const nameParts = (user.name || '').trim().split(/\s+/);
+                const firstName = user.firstName || nameParts[0] || '';
+                const lastName = user.lastName || (nameParts.length > 1 ? nameParts[nameParts.length - 1] : '');
+                const middleName = nameParts.length > 2 ? nameParts.slice(1, -1).join(' ') : '';
+
+                return {
+                    ...prev,
+                    director1: {
+                        ...prev.director1,
+                        name: user.name || prev.director1.name,
+                        email: user.email || prev.director1.email,
+                        mobile: user.phone || prev.director1.mobile,
+                        city: user.city || prev.director1.city,
+                        state: user.state || prev.director1.state,
+                        address: user.address || prev.director1.address
+                    },
+                    personalDetails: {
+                        ...prev.personalDetails,
+                        panName: {
+                            salutation: prev.personalDetails.panName.salutation,
+                            firstName: firstName || prev.personalDetails.panName.firstName,
+                            middleName: middleName || prev.personalDetails.panName.middleName,
+                            lastName: lastName || prev.personalDetails.panName.lastName
+                        }
+                    },
+                    businessDetails: {
+                        ...prev.businessDetails,
+                        businessAge: user.companyAge || prev.businessDetails.businessAge,
+                        gstRegistered: user.gst ? 'Yes' : prev.businessDetails.gstRegistered
+                    }
+                };
+            });
+        }
+    }, [user]);
 
 
 

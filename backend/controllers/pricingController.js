@@ -70,12 +70,13 @@ exports.getVendorPricing = async (req, res) => {
         let query = { vendor: req.user.id };
         let pricing = await Pricing.find(query).sort({ createdAt: -1 });
 
-        const today = new Date();
-        today.setHours(0,0,0,0);
+        const fifteenDaysAgo = new Date();
+        fifteenDaysAgo.setDate(fifteenDaysAgo.getDate() - 15);
+        fifteenDaysAgo.setHours(0,0,0,0);
         let modified = false;
 
         for (let p of pricing) {
-            if (p.status === 'active' && new Date(p.validUntil) < today) {
+            if (p.status === 'active' && new Date(p.validUntil) < fifteenDaysAgo) {
                 p.status = 'disabled';
                 await p.save();
                 modified = true;
@@ -234,7 +235,11 @@ exports.searchPricing = async (req, res) => {
             }
         }
 
-        // Build query matching active options
+        // Build query matching active options (pricing remains searchable up to 15 days after expiry)
+        const fifteenDaysAgo = new Date();
+        fifteenDaysAgo.setDate(fifteenDaysAgo.getDate() - 15);
+        fifteenDaysAgo.setHours(0,0,0,0);
+
         const query = {
             $and: [
                 { $or: fromOr },
@@ -242,7 +247,7 @@ exports.searchPricing = async (req, res) => {
             ],
             type: type.toLowerCase(),
             status: 'active',
-            validUntil: { $gte: new Date() }
+            validUntil: { $gte: fifteenDaysAgo }
         };
 
         if (currentUserId) {
@@ -283,8 +288,66 @@ exports.searchPricing = async (req, res) => {
         console.log('[searchPricing] Matches count:', matches.length);
 
         if (matches.length > 0) {
+            // Extract codes/cities to lookup countryCode
+            const uniqueLocs = new Set();
+            matches.forEach(m => {
+                if (m.fromLocation) uniqueLocs.add(m.fromLocation.trim());
+                if (m.toLocation) uniqueLocs.add(m.toLocation.trim());
+            });
+
+            const locArray = Array.from(uniqueLocs);
+            const codes = [];
+            const cities = [];
+
+            const parseLocStr = (locStr) => {
+                const match = locStr.match(/^([^(]+)\s*(?:\(([^)]+)\))?$/);
+                if (match) {
+                    return {
+                        city: match[1].trim(),
+                        code: match[2] ? match[2].trim() : ''
+                    };
+                }
+                return { city: locStr.trim(), code: '' };
+            };
+
+            locArray.forEach(l => {
+                const parsed = parseLocStr(l);
+                if (parsed.code) codes.push(parsed.code.toUpperCase());
+                if (parsed.city) cities.push(parsed.city);
+            });
+
+            const Location = require('../models/Location');
+            const locations = await Location.find({
+                $or: [
+                    { code: { $in: codes } },
+                    { city: { $in: cities.map(c => new RegExp(`^${escapeRegExp(c)}$`, 'i')) } }
+                ]
+            });
+
+            const locMap = {};
+            locations.forEach(loc => {
+                if (loc.code) locMap[loc.code.toUpperCase()] = loc.countryCode;
+                if (loc.city) locMap[loc.city.toLowerCase()] = loc.countryCode;
+            });
+
             const processedResults = matches.map(match => {
                 const matchObj = match.toObject();
+
+                // Dynamic country codes lookup
+                const fromParsed = parseLocStr(matchObj.fromLocation || '');
+                const toParsed = parseLocStr(matchObj.toLocation || '');
+
+                let fromCountryCode = '';
+                if (fromParsed.code) fromCountryCode = locMap[fromParsed.code.toUpperCase()];
+                if (!fromCountryCode && fromParsed.city) fromCountryCode = locMap[fromParsed.city.toLowerCase()];
+
+                let toCountryCode = '';
+                if (toParsed.code) toCountryCode = locMap[toParsed.code.toUpperCase()];
+                if (!toCountryCode && toParsed.city) toCountryCode = locMap[toParsed.city.toLowerCase()];
+
+                matchObj.fromLocationCountryCode = fromCountryCode || '';
+                matchObj.toLocationCountryCode = toCountryCode || '';
+
                 // Apply deduction percentage only if another vendor is searching
                 if (matchObj.vendor && matchObj.vendor.deductionPercentage && userRole === 'vendor') {
                     const discount = matchObj.price * (matchObj.vendor.deductionPercentage / 100);

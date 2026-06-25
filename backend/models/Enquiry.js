@@ -118,6 +118,14 @@ const enquirySchema = new mongoose.Schema({
         type: Number,
         default: null
     },
+    targetPrice: {
+        type: Number,
+        default: null
+    },
+    attachment: {
+        type: String,
+        default: ''
+    },
     status: {
         type: String,
         enum: ['Pending', 'Accepted', 'Declined'],

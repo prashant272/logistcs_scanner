@@ -11,8 +11,10 @@ const VendorNetwork = () => {
     const [country, setCountry] = useState('');
     const [city, setCity] = useState('');
     
-    // Feature States
     const [searchResults, setSearchResults] = useState([]);
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 5;
+
     const [loading, setLoading] = useState(false);
     const [viewLoading, setViewLoading] = useState(false);
     const [error, setError] = useState('');
@@ -20,25 +22,20 @@ const VendorNetwork = () => {
     const [showBlockModal, setShowBlockModal] = useState(false);
     const [fingerprint, setFingerprint] = useState('');
 
-    const countryData = {
-        "Afghanistan": ["Kabul", "Kandahar", "Herat", "Mazar-i-Sharif"],
-        "Botswana": ["Gaborone", "Francistown", "Molepolole"],
-        "Canada": ["Toronto", "Vancouver", "Montreal", "Calgary", "Ottawa"],
-        "India": [
-            "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh",
-            "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jharkhand",
-            "Karnataka", "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur",
-            "Meghalaya", "Mizoram", "Nagaland", "Odisha", "Punjab",
-            "Rajasthan", "Sikkim", "Tamil Nadu", "Telangana", "Tripura",
-            "Uttar Pradesh", "Uttarakhand", "West Bengal", "Delhi", "Jammu and Kashmir",
-            "Chandigarh", "Puducherry"
-        ],
-        "Malaysia": ["Kuala Lumpur", "George Town", "Johor Bahru", "Ipoh"],
-        "South Africa": ["Cape Town", "Johannesburg", "Durban", "Pretoria"],
-        "United Arab Emirates": ["Dubai", "Abu Dhabi", "Sharjah", "Ajman"],
-        "United States": ["New York", "Los Angeles", "Chicago", "Houston", "Miami"],
-        "Uzbekistan": ["Tashkent", "Samarkand", "Bukhara", "Namangan"]
-    };
+    const [countryData, setCountryData] = useState({});
+
+    // Fetch dynamic vendor locations on mount
+    useEffect(() => {
+        const fetchLocations = async () => {
+            try {
+                const { data } = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/auth/public-vendors-locations`);
+                setCountryData(data);
+            } catch (err) {
+                console.error('Failed to fetch vendor locations:', err);
+            }
+        };
+        fetchLocations();
+    }, []);
 
     // Calculate light fingerprint on mount
     useEffect(() => {
@@ -65,6 +62,7 @@ const VendorNetwork = () => {
         setLoading(true);
         setError('');
         setSearchResults([]);
+        setCurrentPage(1);
         try {
             const { data } = await axios.get(
                 `${import.meta.env.VITE_API_BASE_URL}/auth/public-vendors-search`,
@@ -256,7 +254,7 @@ const VendorNetwork = () => {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100 !text-black font-semibold">
-                                    {searchResults.map((vendor) => (
+                                    {searchResults.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((vendor) => (
                                         <tr key={vendor._id} className="hover:bg-slate-50/80 transition-colors">
                                             <td className="py-4 px-6 !text-[#0066FF] font-extrabold">
                                                 LS-{vendor.lsid}
@@ -294,6 +292,32 @@ const VendorNetwork = () => {
                                 </tbody>
                             </table>
                         </div>
+
+                        {/* Pagination */}
+                        {(() => {
+                            const totalPages = Math.ceil(searchResults.length / itemsPerPage);
+                            if (totalPages <= 1) return null;
+                            
+                            return (
+                                <div className="flex justify-center items-center gap-4 p-6 border-t border-slate-100 bg-white">
+                                    <button
+                                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                        disabled={currentPage === 1}
+                                        className="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg font-bold disabled:opacity-50 hover:bg-slate-200 transition-colors"
+                                    >
+                                        Previous
+                                    </button>
+                                    <span className="text-sm font-bold text-slate-600">Page {currentPage} of {totalPages}</span>
+                                    <button
+                                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                        disabled={currentPage === totalPages}
+                                        className="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg font-bold disabled:opacity-50 hover:bg-slate-200 transition-colors"
+                                    >
+                                        Next
+                                    </button>
+                                </div>
+                            );
+                        })()}
                     </div>
                 )}
 

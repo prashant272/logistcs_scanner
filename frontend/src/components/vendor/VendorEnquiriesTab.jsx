@@ -404,17 +404,17 @@ const VendorEnquiriesTab = ({ title, type }) => {
                   <div className="flex flex-wrap gap-2 items-center pr-28">
                     {/* Container Type */}
                     <div className="bg-white border border-slate-200/80 rounded-lg px-3 py-1.5 text-center min-w-[70px] shadow-sm">
-                      <div className="text-[8px] text-slate-400 font-black uppercase tracking-wider">Container Type</div>
+                      <div className="text-[9px] text-slate-600 font-black uppercase tracking-wider">Container Type</div>
                       <div className="text-[10px] font-black text-slate-800 mt-0.5">{enq.vehicleType || '40 FT'}</div>
                     </div>
                     {/* Load Type */}
                     <div className="bg-white border border-slate-200/80 rounded-lg px-3 py-1.5 text-center min-w-[70px] shadow-sm">
-                      <div className="text-[8px] text-slate-400 font-black uppercase tracking-wider">Load Type</div>
+                      <div className="text-[9px] text-slate-600 font-black uppercase tracking-wider">Load Type</div>
                       <div className="text-[10px] font-black text-slate-800 mt-0.5">{enq.truckLoad || 'FCL'}</div>
                     </div>
                     {/* Date of Shipment / Target Delivery */}
                     <div className="bg-white border border-slate-200/80 rounded-lg px-3 py-1.5 text-center min-w-[100px] shadow-sm">
-                      <div className="text-[8px] text-slate-400 font-black uppercase tracking-wider font-mono">Date of Shipment</div>
+                      <div className="text-[9px] text-slate-600 font-black uppercase tracking-wider font-mono">Date of Shipment</div>
                       <div className="text-[10px] font-black text-slate-800 mt-0.5">{getTargetDate(enq.createdAt, enq.deliverySpeed)}</div>
                     </div>
                   </div>
@@ -509,7 +509,7 @@ const VendorEnquiriesTab = ({ title, type }) => {
                             <span className="text-[8px] font-black text-slate-455 uppercase tracking-wider block">Email ID</span>
                             <div className="flex items-center justify-center gap-1 text-[10px] font-black text-slate-800">
                               <Mail size={10} className="text-[#0066FF] shrink-0" /> 
-                              <span className="break-all truncate" title={enq.guestEmail || enq.client?.email}>{enq.guestEmail || enq.client?.email || 'N/A'}</span>
+                              <span className="break-all" title={enq.guestEmail || enq.client?.email}>{enq.guestEmail || enq.client?.email || 'N/A'}</span>
                             </div>
                           </div>
 
@@ -554,15 +554,48 @@ const VendorEnquiriesTab = ({ title, type }) => {
                       </div>
                     ) : null}
 
+                    {/* Document Attached Option */}
+                    {enq.attachment ? (
+                      <div className="flex items-center gap-1.5">
+                        <div className="inline-flex items-center gap-1 text-[9px] font-black text-slate-800 uppercase bg-emerald-50 px-2.5 py-1.5 rounded-lg border border-emerald-100/65 shadow-sm">
+                          <span>Doc Attached</span>
+                        </div>
+                        {!isAccepted ? (
+                          <div className="w-7 h-7 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-400 shadow-sm">
+                            <Lock size={11} />
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1">
+                            <a
+                              href={enq.attachment}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="w-7 h-7 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-600 hover:text-emerald-700 border border-emerald-100 flex items-center justify-center transition-all cursor-pointer shadow-sm"
+                              title="Download/View Document"
+                            >
+                              <Paperclip size={11} />
+                            </a>
+                            <button
+                              onClick={() => setViewingEnquiry(enq)}
+                              className="w-7 h-7 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-500 hover:text-blue-600 border border-blue-100 flex items-center justify-center transition-all cursor-pointer shadow-sm"
+                              title="View Details"
+                            >
+                              <Eye size={11} />
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    ) : null}
+
                     {/* Weight / Target Delivery */}
                     <div className="bg-white border border-slate-200/90 rounded-xl py-1.5 px-4 shadow-[0_4px_12px_rgba(0,0,0,0.01)] text-center min-w-[75px]">
-                      <div className="text-[8px] text-slate-400 font-black tracking-wider uppercase">Weight</div>
+                      <div className="text-[9px] text-slate-600 font-black tracking-wider uppercase">Weight</div>
                       <div className="text-[10px] font-black text-slate-800 mt-0.5">{enq.weightRange || 'N/A'}</div>
                     </div>
 
                     {/* Volume Badge */}
                     <div className="bg-white border border-slate-200/90 rounded-xl py-1.5 px-4 shadow-[0_4px_12px_rgba(0,0,0,0.01)] text-center min-w-[75px]">
-                      <div className="text-[8px] text-slate-400 font-black tracking-wider uppercase">Volume</div>
+                      <div className="text-[9px] text-slate-600 font-black tracking-wider uppercase">Volume</div>
                       <div className="text-[10px] font-black text-slate-800 mt-0.5">
                         {isAccepted 
                           ? (enq.type === 'sea' ? 'CBM - 0-5' : (enq.vehicleType || 'Standard'))
@@ -571,14 +604,19 @@ const VendorEnquiriesTab = ({ title, type }) => {
                       </div>
                     </div>
 
+                    {/* My Price Badge */}
+                    <div className="bg-white border border-slate-200/90 rounded-xl py-1.5 px-4 shadow-[0_4px_12px_rgba(0,0,0,0.01)] text-center min-w-[85px]">
+                      <div className="text-[9px] text-slate-600 font-black tracking-wider uppercase">My Price</div>
+                      <div className="text-[10px] font-black text-slate-850 mt-0.5">
+                        {enq.price ? `$ ${enq.price.toLocaleString()}` : 'N/A'}
+                      </div>
+                    </div>
+
                     {/* Target Price Badge */}
                     <div className="bg-white border border-slate-200/90 rounded-xl py-1.5 px-4 shadow-[0_4px_12px_rgba(0,0,0,0.01)] text-center min-w-[85px]">
-                      <div className="text-[8px] text-slate-400 font-black tracking-wider uppercase">Target Price</div>
+                      <div className="text-[9px] text-slate-600 font-black tracking-wider uppercase">Target Price</div>
                       <div className="text-[10px] font-black text-slate-850 mt-0.5">
-                        {isAccepted 
-                          ? (enq.price ? `$ ${enq.price.toLocaleString()}` : 'N/A')
-                          : '$ XXX'
-                        }
+                        {enq.targetPrice ? `$ ${enq.targetPrice.toLocaleString()}` : 'N/A'}
                       </div>
                     </div>
                   </div>
@@ -729,7 +767,7 @@ const VendorEnquiriesTab = ({ title, type }) => {
             </div>
             <div className="p-6 space-y-5">
               <div className="space-y-1">
-                <span className="text-[10px] text-slate-400 uppercase font-black tracking-wider">Exact Date & Time</span>
+                <span className="text-[10px] text-slate-600 uppercase font-black tracking-wider">Exact Date & Time</span>
                 <p className="text-sm font-bold text-[#0066FF]">
                   {new Date(viewingEnquiry.createdAt).toLocaleString('en-GB', {
                     day: '2-digit', month: 'short', year: 'numeric',
@@ -739,13 +777,46 @@ const VendorEnquiriesTab = ({ title, type }) => {
               </div>
               {viewingEnquiry.commodity && (
                 <div className="space-y-1">
-                  <span className="text-[10px] text-slate-400 uppercase font-black tracking-wider">Commodity Description</span>
+                  <span className="text-[10px] text-slate-600 uppercase font-black tracking-wider">Commodity Description</span>
                   <p className="text-sm font-bold text-slate-800 bg-[#f4f7fc] p-3 rounded-xl border border-slate-100">{viewingEnquiry.commodity}</p>
+                </div>
+              )}
+              {viewingEnquiry.price && (
+                <div className="space-y-1">
+                  <span className="text-[10px] text-slate-600 uppercase font-black tracking-wider">My Price (Original Rate)</span>
+                  <p className="text-sm font-bold text-slate-800 bg-[#f4f7fc] p-3 rounded-xl border border-slate-100">$ {viewingEnquiry.price.toLocaleString()}</p>
+                </div>
+              )}
+              {viewingEnquiry.targetPrice && (
+                <div className="space-y-1">
+                  <span className="text-[10px] text-slate-600 uppercase font-black tracking-wider">Target Price</span>
+                  <p className="text-sm font-bold text-[#0066FF] bg-blue-50/50 p-3 rounded-xl border border-blue-100/60">$ {viewingEnquiry.targetPrice.toLocaleString()}</p>
+                </div>
+              )}
+              {viewingEnquiry.attachment && (
+                <div className="space-y-1">
+                  <span className="text-[10px] text-slate-600 uppercase font-black tracking-wider">Attached Document / Image</span>
+                  <div className="bg-[#f4f7fc] border border-slate-200/60 rounded-xl p-3 flex items-center justify-between shadow-sm">
+                    <div className="flex items-center gap-2 overflow-hidden mr-2">
+                      <Paperclip size={14} className="text-[#0066FF] flex-shrink-0" />
+                      <span className="text-xs font-bold text-slate-700 truncate max-w-[200px]" title={viewingEnquiry.attachment.split('/').pop()}>
+                        {viewingEnquiry.attachment.split('/').pop() || 'View Document'}
+                      </span>
+                    </div>
+                    <a
+                      href={viewingEnquiry.attachment}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-3.5 py-1.5 bg-[#0066FF] hover:bg-[#0052cc] text-white text-xs font-black rounded-lg transition-all flex-shrink-0"
+                    >
+                      View
+                    </a>
+                  </div>
                 </div>
               )}
               {viewingEnquiry.message && (
                 <div className="space-y-1">
-                  <span className="text-[10px] text-slate-400 uppercase font-black tracking-wider">Message from Customer</span>
+                  <span className="text-[10px] text-slate-600 uppercase font-black tracking-wider">Message from Customer</span>
                   <div className="bg-amber-50 border border-amber-100/60 rounded-xl p-3 text-sm font-medium text-slate-700 whitespace-pre-wrap leading-relaxed">
                     {viewingEnquiry.message}
                   </div>

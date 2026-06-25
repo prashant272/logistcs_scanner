@@ -76,14 +76,15 @@ export const EnquiryProvider = ({ children }) => {
     }
   };
 
-  const updateEnquiryStatus = async (id, status, typeContext, price, quoteDetails) => {
-    console.log('[updateEnquiryStatus] id:', id, 'status:', status, 'typeContext:', typeContext, 'price:', price, 'quoteDetails:', quoteDetails);
+  const updateEnquiryStatus = async (id, status, typeContext, price, quoteDetails, targetVendorId) => {
+    console.log('[updateEnquiryStatus] id:', id, 'status:', status, 'typeContext:', typeContext, 'price:', price, 'quoteDetails:', quoteDetails, 'targetVendorId:', targetVendorId);
     try {
       setError(null);
       const payload = {};
       if (status) payload.status = status;
       if (price !== undefined && price !== null) payload.price = price;
       if (quoteDetails !== undefined) payload.quoteDetails = quoteDetails;
+      if (targetVendorId) payload.targetVendorId = targetVendorId;
       
       const res = await api.put(`/enquiries/${id}/status`, payload);
       console.log('[updateEnquiryStatus] API response:', res.data);
