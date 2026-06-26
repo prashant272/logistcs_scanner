@@ -367,8 +367,7 @@ const VendorManagement = () => {
                       </td>
                       <td className="p-4 font-mono text-[10px] text-slate-500">{vendor._id.slice(-8).toUpperCase()}</td>
                       <td className="p-4 text-slate-450 font-medium">
-                        {/* Simulate Last Login or format date */}
-                        {vendor.createdAt ? new Date(vendor.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: true }) : 'N/A'}
+                        {vendor.lastActive ? new Date(vendor.lastActive).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: true }) : 'N/A'}
                       </td>
                       {/* Document Viewer */}
                       <td className="p-4">

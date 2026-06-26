@@ -18,11 +18,20 @@ export const EnquiryProvider = ({ children }) => {
   const [submissionStatus, setSubmissionStatus] = useState(''); // '', 'submitting', 'success', 'error'
   const [limitReached, setLimitReached] = useState(false);
 
-  const fetchVendorEnquiries = async (type, page = 1, limit = 10) => {
+  const fetchVendorEnquiries = async (type, page = 1, limit = 10, search = '', filter = 'all') => {
     try {
       if (page === 1) setLoading(true);
       setError(null);
-      const res = await api.get(`/enquiries/vendor?type=${type}&page=${page}&limit=${limit}`);
+      
+      const queryParams = new URLSearchParams({
+        type,
+        page: page.toString(),
+        limit: limit.toString(),
+      });
+      if (search) queryParams.append('search', search);
+      if (filter && filter !== 'all') queryParams.append('filter', filter);
+      
+      const res = await api.get(`/enquiries/vendor?${queryParams.toString()}`);
       setLimitReached(res.headers['x-limit-reached'] === 'true');
       
       const responseData = res.data.data || res.data;
@@ -121,19 +130,33 @@ export const EnquiryProvider = ({ children }) => {
     }
   };
 
-  const fetchClientEnquiries = async (type) => {
+  const fetchClientEnquiries = async (type, page = 1, limit = 10, search = '', filter = 'all') => {
     try {
-      setLoading(true);
+      if (page === 1) setLoading(true);
       setError(null);
-      const res = await api.get(`/enquiries/client?type=${type}`);
-      setEnquiries(res.data || []);
+      const queryParams = new URLSearchParams({
+        type,
+        page: page.toString(),
+        limit: limit.toString(),
+      });
+      if (search) queryParams.append('search', search);
+      if (filter && filter !== 'all') queryParams.append('filter', filter);
+
+      const res = await api.get(`/enquiries/client?${queryParams.toString()}`);
+      
+      const responseData = res.data.data || res.data;
+      if (page === 1) {
+        setEnquiries(responseData || []);
+      } else {
+        setEnquiries(prev => [...prev, ...(responseData || [])]);
+      }
       return res.data;
     } catch (err) {
       console.error('Error fetching client enquiries:', err);
       setError(err.response?.data?.message || 'Could not retrieve enquiries.');
       throw err;
     } finally {
-      setLoading(false);
+      if (page === 1) setLoading(false);
     }
   };
 

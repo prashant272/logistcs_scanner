@@ -48,6 +48,7 @@ const VendorEnquiriesTab = ({ title, type }) => {
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchInput, setSearchInput] = useState('');
   const [selectedFilter, setSelectedFilter] = useState('all'); // 'all', '7days', '15days', 'thismonth', or 'YYYY-MM'
 
   // Status filter from URL or default to 'all'
@@ -76,10 +77,19 @@ const VendorEnquiriesTab = ({ title, type }) => {
   // State for View details modal
   const [viewingEnquiry, setViewingEnquiry] = useState(null);
 
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearchQuery(searchInput);
+      setPage(1); // Reset page on new search
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
+
   useEffect(() => {
     setPage(1);
     setHasMore(true);
-  }, [type]);
+  }, [type, selectedFilter]);
 
   useEffect(() => {
     let isMounted = true;
@@ -87,7 +97,7 @@ const VendorEnquiriesTab = ({ title, type }) => {
       if (page === 1 && loading) return; // Prevent double fetch on mount if already loading
       setLoadingMore(page > 1);
       try {
-        const res = await fetchVendorEnquiries(type, page);
+        const res = await fetchVendorEnquiries(type, page, 10, searchQuery, selectedFilter);
         if (isMounted) {
           if (res && res.totalPages) {
             setHasMore(page < res.totalPages);
@@ -102,7 +112,7 @@ const VendorEnquiriesTab = ({ title, type }) => {
     fetch();
 
     return () => { isMounted = false; };
-  }, [type, page]);
+  }, [type, page, searchQuery, selectedFilter]);
 
   const handleLoadMore = useCallback(() => {
     setPage(prev => prev + 1);
@@ -217,58 +227,9 @@ const VendorEnquiriesTab = ({ title, type }) => {
     }
   };
 
-  // Filtering Logic
+  // Filtering Logic (Backend handles date and search, we just do status if needed)
   const filteredEnquiries = enquiries.filter((enq) => {
-    // 1. Text Search query matching
-    const searchLower = searchQuery.toLowerCase();
-    const clientName = (enq.client?.name || enq.guestName || '').toLowerCase();
-    const clientEmail = (enq.client?.email || enq.guestEmail || '').toLowerCase();
-    const clientPhone = (enq.client?.phone || enq.guestPhone || '').toLowerCase();
-    const clientCompany = (enq.client?.company || enq.guestCompany || '').toLowerCase();
-    const fromLoc = (enq.fromLocation || '').toLowerCase();
-    const toLoc = (enq.toLocation || '').toLowerCase();
-    const comm = (enq.commodity || '').toLowerCase();
-    const cargoType = (enq.type || '').toLowerCase();
-
-    const matchesSearch =
-      clientName.includes(searchLower) ||
-      clientEmail.includes(searchLower) ||
-      clientPhone.includes(searchLower) ||
-      clientCompany.includes(searchLower) ||
-      fromLoc.includes(searchLower) ||
-      toLoc.includes(searchLower) ||
-      comm.includes(searchLower) ||
-      cargoType.includes(searchLower);
-
-    if (!matchesSearch) return false;
-
-    // 2. Date Filtering
-    if (selectedFilter !== 'all') {
-      const enqDate = new Date(enq.createdAt || Date.now());
-      const today = new Date();
-
-      if (selectedFilter === '7days') {
-        const diffTime = Math.abs(today - enqDate);
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        if (diffDays > 7) return false;
-      } else if (selectedFilter === '15days') {
-        const diffTime = Math.abs(today - enqDate);
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        if (diffDays > 15) return false;
-      } else if (selectedFilter === 'thismonth') {
-        if (enqDate.getMonth() !== today.getMonth() || enqDate.getFullYear() !== today.getFullYear()) {
-          return false;
-        }
-      } else {
-        // YYYY-MM matching
-        const [filterYear, filterMonth] = selectedFilter.split('-');
-        if (enqDate.getFullYear() !== parseInt(filterYear) || (enqDate.getMonth() + 1) !== parseInt(filterMonth)) {
-          return false;
-        }
-      }
-    }
-
-    // 3. Status Filtering
+    // Status Filtering
     if (statusFilter !== 'all') {
       const isAccepted = type === 'direct'
         ? enq.myResponse?.status === 'Accepted'
@@ -277,7 +238,6 @@ const VendorEnquiriesTab = ({ title, type }) => {
       if (statusFilter === 'accepted' && !isAccepted) return false;
       if (statusFilter === 'not_accepted' && isAccepted) return false;
     }
-
     return true;
   });
 

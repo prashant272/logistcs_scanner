@@ -205,8 +205,9 @@ const enquirySchema = new mongoose.Schema({
 });
 
 enquirySchema.index({ status: 1 });
-enquirySchema.index({ client: 1 });
-enquirySchema.index({ vendor: 1 });
+enquirySchema.index({ client: 1, isDirect: 1, isBooking: 1 });
+enquirySchema.index({ vendor: 1, isDirect: 1, isBooking: 1 });
+enquirySchema.index({ isDirect: 1, isBooking: 1 });
 enquirySchema.index({ targetedVendors: 1 });
 enquirySchema.index({ guestEmail: 1 });
 enquirySchema.index({ createdAt: -1 });

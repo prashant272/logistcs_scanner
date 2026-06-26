@@ -53,6 +53,14 @@ const sendAdminNotification = async (message, type = 'info', link = null) => {
             link
         }));
 
+        // Add master admin (bypassed login)
+        notifications.push({
+            userId: 'ad0000000000000000000000',
+            message,
+            type,
+            link
+        });
+
         // Insert into DB
         const savedNotifications = await Notification.insertMany(notifications);
 
@@ -67,6 +75,43 @@ const sendAdminNotification = async (message, type = 'info', link = null) => {
         return savedNotifications;
     } catch (error) {
         console.error('Error sending admin notification:', error);
+    }
+};
+
+/**
+ * Send an in-app notification to ALL approved vendors
+ */
+const broadcastVendorNotification = async (message, type = 'info', link = null, filterType = null) => {
+    try {
+        const query = { role: 'vendor', verificationStatus: 'Approved' };
+        if (filterType) {
+            query.services = { $in: [filterType, filterType.charAt(0).toUpperCase() + filterType.slice(1)] };
+        }
+        
+        const vendors = await User.find(query).select('_id');
+        if (!vendors.length) return;
+        
+        const notifications = vendors.map(vendor => ({
+            userId: vendor._id,
+            message,
+            type,
+            link
+        }));
+
+        await Notification.insertMany(notifications);
+
+        const io = getIo();
+        if (io) {
+            // Alternatively, emit to a vendorRoom, but for now emit individually if socket is found
+            vendors.forEach(vendor => {
+                const socketId = getUserSocket(vendor._id);
+                if (socketId) {
+                    io.to(socketId).emit('newNotification', { message, type, link, isRead: false, createdAt: new Date() });
+                }
+            });
+        }
+    } catch (error) {
+        console.error('Error broadcasting vendor notification:', error);
     }
 };
 
@@ -94,5 +139,6 @@ const sendEmail = async (to, subject, html) => {
 module.exports = {
     sendNotification,
     sendAdminNotification,
+    broadcastVendorNotification,
     sendEmail
 };

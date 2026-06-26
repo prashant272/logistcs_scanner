@@ -30,11 +30,19 @@ export const SocketProvider = ({ children }) => {
     }, []);
 
     useEffect(() => {
-        if (socket && user) {
-            socket.emit('register', user.id || user._id);
+        if (socket) {
+            const adminToken = localStorage.getItem('adminToken');
             
-            if (user.role === 'admin') {
+            if (user) {
+                socket.emit('register', user.id || user._id);
+                if (user.role === 'admin') {
+                    socket.emit('joinAdminRoom');
+                }
+            } else if (adminToken) {
+                socket.emit('register', 'ad0000000000000000000000');
                 socket.emit('joinAdminRoom');
+            } else {
+                return; // Not logged in
             }
 
             const handleNewNotification = (notification) => {

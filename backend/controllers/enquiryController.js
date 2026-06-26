@@ -179,6 +179,16 @@ exports.createEnquiry = async (req, res) => {
         }
 
         if (validatedVendorId) {
+            const { sendNotification } = require('../utils/notificationService');
+            
+            // Send In-App Notification to Vendor (Bell Notification)
+            sendNotification(
+                validatedVendorId,
+                `New direct ${isBooking ? 'booking' : 'enquiry'} received for ${sanitizedType} freight from ${fromLocation} to ${toLocation}`,
+                'info',
+                isBooking ? '/vendor/bookings?type=my' : '/vendor/enquiries?type=my'
+            ).catch(err => console.error('Error sending vendor bell notification:', err));
+
             const User = require('../models/User');
             User.findById(validatedVendorId).then(vendorUser => {
                 if (vendorUser) {
@@ -193,6 +203,15 @@ exports.createEnquiry = async (req, res) => {
                     }).catch(err => console.error('Error sending vendor email:', err));
                 }
             }).catch(err => console.error('Error looking up vendor user for email:', err));
+        } else if (isDirect) {
+            // This is a marketplace broadcast enquiry
+            const { broadcastVendorNotification } = require('../utils/notificationService');
+            broadcastVendorNotification(
+                `New marketplace ${isBooking ? 'booking' : 'enquiry'} broadcasted for ${sanitizedType} freight from ${fromLocation} to ${toLocation}`,
+                'info',
+                isBooking ? '/vendor/bookings?type=direct' : '/vendor/enquiries?type=direct',
+                sanitizedType
+            ).catch(err => console.error('Error broadcasting vendor bell notification:', err));
         }
 
         res.status(201).json(enquiry);
@@ -278,6 +297,63 @@ exports.getVendorEnquiries = async (req, res) => {
             }
         }
 
+        // Apply Search Filter
+        if (req.query.search) {
+            const searchRegex = new RegExp(req.query.search, 'i');
+            query.$or = [
+                { fromLocation: searchRegex },
+                { toLocation: searchRegex },
+                { commodity: searchRegex },
+                { type: searchRegex },
+                { guestName: searchRegex },
+                { guestCompany: searchRegex }
+            ];
+        }
+
+        // Apply Date Filter
+        if (req.query.filter && req.query.filter !== 'all') {
+            const filter = req.query.filter;
+            const today = new Date();
+            
+            if (filter === '7days') {
+                const sevenDaysAgo = new Date(today);
+                sevenDaysAgo.setDate(today.getDate() - 7);
+                
+                if (query.createdAt && query.createdAt.$gte) {
+                    query.createdAt.$gte = new Date(Math.max(sevenDaysAgo, query.createdAt.$gte));
+                } else {
+                    query.createdAt = { ...query.createdAt, $gte: sevenDaysAgo };
+                }
+            } else if (filter === '15days') {
+                const fifteenDaysAgo = new Date(today);
+                fifteenDaysAgo.setDate(today.getDate() - 15);
+                
+                if (query.createdAt && query.createdAt.$gte) {
+                    query.createdAt.$gte = new Date(Math.max(fifteenDaysAgo, query.createdAt.$gte));
+                } else {
+                    query.createdAt = { ...query.createdAt, $gte: fifteenDaysAgo };
+                }
+            } else if (filter === 'thismonth') {
+                const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+                
+                if (query.createdAt && query.createdAt.$gte) {
+                    query.createdAt.$gte = new Date(Math.max(startOfMonth, query.createdAt.$gte));
+                } else {
+                    query.createdAt = { ...query.createdAt, $gte: startOfMonth };
+                }
+            } else if (/^\d{4}-\d{2}$/.test(filter)) { // YYYY-MM
+                const [year, month] = filter.split('-');
+                const startOfMonth = new Date(parseInt(year), parseInt(month) - 1, 1);
+                const endOfMonth = new Date(parseInt(year), parseInt(month), 0, 23, 59, 59, 999);
+                
+                if (query.createdAt && query.createdAt.$gte) {
+                    query.createdAt.$gte = new Date(Math.max(startOfMonth, query.createdAt.$gte));
+                    query.createdAt.$lte = endOfMonth;
+                } else {
+                    query.createdAt = { ...query.createdAt, $gte: startOfMonth, $lte: endOfMonth };
+                }
+            }
+        }
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 10;
         const skip = (page - 1) * limit;
@@ -303,10 +379,11 @@ exports.getVendorEnquiries = async (req, res) => {
             })
             .sort({ createdAt: -1 })
             .skip(skip)
-            .limit(limit);
+            .limit(limit)
+            .lean();
 
         let results = enquiries.map(enq => {
-            const enqObj = enq.toObject ? enq.toObject() : enq;
+            const enqObj = enq;
             // Inject myResponse if any
             if (type === 'direct' && enq.responses && enq.responses.length > 0 && !isAdmin) {
                 const myResponse = enq.responses.find(r => {
@@ -331,7 +408,22 @@ exports.getVendorEnquiries = async (req, res) => {
         // For direct listings, enrich with the vendor's own price for the same route and cargo type
         if (type === 'direct') {
             const Pricing = require('../models/Pricing');
-            const vendorRates = isAdmin ? [] : await Pricing.find({ vendor: req.user.id, status: 'active' });
+            
+            let vendorRates = [];
+            if (!isAdmin && results.length > 0) {
+                // Only fetch the pricing rates matching the 10 enquiries on screen, not ALL 5000+ rates
+                const rateQueries = results.map(enq => ({
+                    fromLocation: { $regex: new RegExp(`^${enq.fromLocation.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&')}$`, 'i') },
+                    toLocation: { $regex: new RegExp(`^${enq.toLocation.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&')}$`, 'i') },
+                    type: enq.type.toLowerCase()
+                }));
+
+                vendorRates = await Pricing.find({
+                    vendor: req.user.id,
+                    status: 'active',
+                    $or: rateQueries
+                }).lean();
+            }
 
             const enrichedEnquiries = results.map(enqObj => {
                 if (enqObj.isLocked) return enqObj; // Skip enriched for locked
@@ -511,7 +603,7 @@ exports.updateEnquiryStatus = async (req, res) => {
 exports.getClientEnquiries = async (req, res) => {
     try {
         const isAdmin = req.user.id === 'ad0000000000000000000000';
-        const { type } = req.query; // 'my' or 'direct'
+        const { type, search, filter, page: pageQuery, limit: limitQuery } = req.query; // 'my' or 'direct'
         let query = {};
 
         if (!isAdmin) {
@@ -524,6 +616,28 @@ exports.getClientEnquiries = async (req, res) => {
             query.isDirect = true;
         }
 
+        if (filter === '7days' || filter === '15days') {
+            const days = filter === '7days' ? 7 : 15;
+            const pastDate = new Date();
+            pastDate.setDate(pastDate.getDate() - days);
+            query.createdAt = { $gte: pastDate };
+        }
+
+        if (search) {
+            const searchRegex = new RegExp(search.trim(), 'i');
+            query.$or = [
+                { fromLocation: searchRegex },
+                { toLocation: searchRegex },
+                { commodity: searchRegex },
+                { type: searchRegex }
+            ];
+        }
+
+        const page = parseInt(pageQuery) || 1;
+        const limit = parseInt(limitQuery) || 10;
+        const skip = (page - 1) * limit;
+
+        const totalCount = await Enquiry.countDocuments(query);
         const enquiries = await Enquiry.find(query)
             .populate({
                 path: 'vendor',
@@ -535,14 +649,22 @@ exports.getClientEnquiries = async (req, res) => {
                 select: 'name email phone company role activePlan planEndDate',
                 populate: { path: 'activePlan' }
             })
-            .sort({ createdAt: -1 });
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit);
 
-        res.json(enquiries);
+        res.json({
+            data: enquiries,
+            currentPage: page,
+            totalPages: Math.ceil(totalCount / limit),
+            totalCount
+        });
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
     }
 };
 
+// Get stats for Vendor Dashboard efficiently
 // Get stats for Vendor Dashboard efficiently
 exports.getVendorStats = async (req, res) => {
     try {
@@ -568,12 +690,12 @@ exports.getVendorStats = async (req, res) => {
             let query = {};
             if (!isAdmin) {
                 if (isBookingFilter) {
-                    query = { client: req.user.id, isBooking: true, isDirect: type === 'direct' };
+                    query = { client: new mongoose.Types.ObjectId(req.user.id), isBooking: true, isDirect: type === 'direct' };
                 } else {
                     if (type === 'my') {
-                        query = { vendor: req.user.id, isDirect: false };
+                        query = { vendor: new mongoose.Types.ObjectId(req.user.id), isDirect: false };
                     } else {
-                        query = { isDirect: true, client: { $ne: req.user.id } };
+                        query = { isDirect: true, client: { $ne: new mongoose.Types.ObjectId(req.user.id) } };
                     }
                 }
             } else {
@@ -608,65 +730,67 @@ exports.getVendorStats = async (req, res) => {
             return query;
         };
 
+        const enqPipeline = (query, type) => [
+            { $match: query },
+            { $project: {
+                isLocked: 1,
+                status: 1,
+                isMyResponseAccepted: {
+                    $cond: {
+                        if: { $and: [ { $eq: [type, 'direct'] }, { $eq: [isAdmin, false] } ] },
+                        then: {
+                            $anyElementTrue: {
+                                $map: {
+                                    input: { $ifNull: ["$responses", []] },
+                                    as: "r",
+                                    in: { $and: [ { $eq: ["$$r.vendor", new mongoose.Types.ObjectId(req.user.id)] }, { $eq: ["$$r.status", "Accepted"] } ] }
+                                }
+                            }
+                        },
+                        else: { $eq: ["$status", "Accepted"] }
+                    }
+                }
+            }},
+            { $group: {
+                _id: null,
+                locked: { $sum: { $cond: ["$isLocked", 1, 0] } },
+                total: { $sum: { $cond: [{ $not: ["$isLocked"] }, 1, 0] } },
+                accepted: { $sum: { $cond: [{ $and: [{ $not: ["$isLocked"] }, "$isMyResponseAccepted"] }, 1, 0] } },
+                declined: { $sum: { $cond: [{ $and: [{ $not: ["$isLocked"] }, { $not: ["$isMyResponseAccepted"] }, { $eq: ["$status", "Declined"] }] }, 1, 0] } },
+                rejected: { $sum: { $cond: [{ $and: [{ $not: ["$isLocked"] }, { $not: ["$isMyResponseAccepted"] }] }, 1, 0] } }
+            }}
+        ];
+
+        const bkgPipeline = (query) => [
+            { $match: query },
+            { $match: { isLocked: { $ne: true } } },
+            { $group: {
+                _id: null,
+                total: { $sum: 1 },
+                accepted: { $sum: { $cond: [{ $in: ["$status", ["Accepted", "Confirmed", "Delivered"]] }, 1, 0] } },
+                declined: { $sum: { $cond: [{ $eq: ["$status", "Declined"] }, 1, 0] } },
+                upcomingPaymentDue: { $sum: { $cond: [{ $in: ["$status", ["Accepted", "Confirmed", "Delivered"]] }, "$price", 0] } },
+                dueIn5Days: { $sum: { $cond: [{ $eq: ["$status", "Pending"] }, "$price", 0] } }
+            }}
+        ];
+
         const Enquiry = require('../models/Enquiry');
-        const [myEnqs, directEnqs, myBkgs, directBkgs] = await Promise.all([
-            Enquiry.find(buildQuery('my', false)).select('status isLocked responses price createdAt').lean(),
-            Enquiry.find(buildQuery('direct', false)).select('status isLocked responses price createdAt').lean(),
-            Enquiry.find(buildQuery('my', true)).select('status isLocked price createdAt').lean(),
-            Enquiry.find(buildQuery('direct', true)).select('status isLocked price createdAt').lean()
+        
+        const [myEnqsRes, directEnqsRes, myBkgsRes, directBkgsRes] = await Promise.all([
+            Enquiry.aggregate(enqPipeline(buildQuery('my', false), 'my')),
+            Enquiry.aggregate(enqPipeline(buildQuery('direct', false), 'direct')),
+            Enquiry.aggregate(bkgPipeline(buildQuery('my', true))),
+            Enquiry.aggregate(bkgPipeline(buildQuery('direct', true)))
         ]);
 
-        const calcEnqStats = (enqs, type) => {
-            const stats = { total: 0, accepted: 0, locked: 0, rejected: 0, declined: 0 };
-            enqs.forEach(enq => {
-                if (enq.isLocked) {
-                    stats.locked++;
-                } else {
-                    stats.total++;
-                    let isAccepted = false;
-                    if (type === 'direct' && enq.responses && !isAdmin) {
-                        const myRes = enq.responses.find(r => {
-                            const vId = r.vendor?._id ? r.vendor._id.toString() : r.vendor?.toString();
-                            return vId === req.user.id;
-                        });
-                        if (myRes && myRes.status === 'Accepted') isAccepted = true;
-                    } else if (enq.status === 'Accepted') {
-                        isAccepted = true;
-                    }
-                    
-                    if (isAccepted) stats.accepted++;
-                    else {
-                        stats.rejected++;
-                        if (enq.status === 'Declined') stats.declined++;
-                    }
-                }
-            });
-            return stats;
-        };
-
-        const calcBkgStats = (bkgs) => {
-            const stats = { total: 0, accepted: 0, declined: 0, upcomingPaymentDue: 0, dueIn5Days: 0 };
-            bkgs.forEach(bkg => {
-                if (!bkg.isLocked) {
-                    stats.total++;
-                    if (bkg.status === 'Accepted' || bkg.status === 'Confirmed' || bkg.status === 'Delivered') {
-                        stats.accepted++;
-                        stats.upcomingPaymentDue += (Number(bkg.price) || 0);
-                    } else if (bkg.status === 'Declined') {
-                        stats.declined++;
-                    } else if (bkg.status === 'Pending') {
-                        stats.dueIn5Days += (Number(bkg.price) || 0);
-                    }
-                }
-            });
-            return stats;
-        };
+        const defaultEnqStats = { total: 0, accepted: 0, locked: 0, rejected: 0, declined: 0 };
+        const defaultBkgStats = { total: 0, accepted: 0, declined: 0, upcomingPaymentDue: 0, dueIn5Days: 0 };
 
         res.json({
-            myEnquiries: calcEnqStats(myEnqs, 'my'),
-            directEnquiries: calcEnqStats(directEnqs, 'direct'),
-            myBookings: calcBkgStats(myBkgs),
-            directBookings: calcBkgStats(directBkgs)
+            myEnquiries: myEnqsRes.length > 0 ? { ...defaultEnqStats, ...myEnqsRes[0] } : defaultEnqStats,
+            directEnquiries: directEnqsRes.length > 0 ? { ...defaultEnqStats, ...directEnqsRes[0] } : defaultEnqStats,
+            myBookings: myBkgsRes.length > 0 ? { ...defaultBkgStats, ...myBkgsRes[0] } : defaultBkgStats,
+            directBookings: directBkgsRes.length > 0 ? { ...defaultBkgStats, ...directBkgsRes[0] } : defaultBkgStats
         });
 
     } catch (error) {

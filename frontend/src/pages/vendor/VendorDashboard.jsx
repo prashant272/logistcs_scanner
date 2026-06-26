@@ -3,6 +3,7 @@ import { useNavigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import VendorSidebar from '../../components/vendor/VendorSidebar';
 import VendorHeader from '../../components/vendor/VendorHeader';
+import VendorNotificationPopup from '../../components/vendor/VendorNotificationPopup';
 
 const VendorDashboard = () => {
     const { user, logout } = useAuth();
@@ -45,6 +46,7 @@ const VendorDashboard = () => {
                     <Outlet />
                 </main>
 
+                <VendorNotificationPopup />
             </div>
         </div>
     );

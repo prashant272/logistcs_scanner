@@ -94,14 +94,34 @@ const NotificationBell = () => {
                 <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-xl border border-slate-200 overflow-hidden z-50">
                     <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
                         <h3 className="font-semibold text-slate-800">Notifications</h3>
-                        {unreadCount > 0 && (
-                            <button 
-                                onClick={markAllAsRead}
-                                className="text-xs text-blue-600 hover:text-blue-700 font-medium"
-                            >
-                                Mark all as read
-                            </button>
-                        )}
+                        <div className="flex gap-3">
+                            {unreadCount > 0 && (
+                                <button 
+                                    onClick={markAllAsRead}
+                                    className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+                                >
+                                    Mark as read
+                                </button>
+                            )}
+                            {notifications.length > 0 && (
+                                <button 
+                                    onClick={async () => {
+                                        try {
+                                            const token = localStorage.getItem('userToken') || localStorage.getItem('adminToken');
+                                            await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/notifications/clear-all`, {
+                                                headers: { Authorization: `Bearer ${token}` }
+                                            });
+                                            setNotifications([]);
+                                        } catch (error) {
+                                            console.error("Failed to clear notifications:", error);
+                                        }
+                                    }}
+                                    className="text-xs text-red-500 hover:text-red-700 font-medium"
+                                >
+                                    Clear all
+                                </button>
+                            )}
+                        </div>
                     </div>
                     
                     <div className="max-h-96 overflow-y-auto">
