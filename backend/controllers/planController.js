@@ -281,3 +281,59 @@ exports.verifyRazorpayPayment = async (req, res) => {
         res.status(500).json({ message: 'Server error', error: error.message });
     }
 };
+
+const UpgradeActivity = require('../models/UpgradeActivity');
+
+exports.logUpgradeActivity = async (req, res) => {
+    try {
+        const { action, planId, planName, amount, notes } = req.body;
+        
+        await UpgradeActivity.create({
+            vendor: req.user.id,
+            action,
+            planDetails: { planId, planName, amount },
+            notes
+        });
+
+        res.status(201).json({ message: 'Activity logged successfully' });
+    } catch (error) {
+        console.error('Log Upgrade Activity Error:', error);
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
+
+exports.getUpgradeRequests = async (req, res) => {
+    try {
+        const activities = await UpgradeActivity.find()
+            .populate('vendor', 'name email phone company address')
+            .sort({ createdAt: -1 })
+            .lean();
+
+        const vendorsMap = new Map();
+
+        for (const act of activities) {
+            if (!act.vendor) continue;
+            
+            const vendorId = act.vendor._id.toString();
+            if (!vendorsMap.has(vendorId)) {
+                const User = require('../models/User');
+                const vendorData = await User.findById(vendorId).populate('activePlan').lean();
+                
+                vendorsMap.set(vendorId, {
+                    vendor: act.vendor,
+                    currentPlan: vendorData?.activePlan?.name || 'Free / None',
+                    latestActivity: act.createdAt,
+                    activities: []
+                });
+            }
+            
+            vendorsMap.get(vendorId).activities.push(act);
+        }
+
+        const data = Array.from(vendorsMap.values());
+        res.json({ data });
+    } catch (error) {
+        console.error('Get Upgrade Requests Error:', error);
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};

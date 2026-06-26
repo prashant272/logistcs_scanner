@@ -13,6 +13,26 @@ const PricingPlans = () => {
     const [showPaymentModal, setShowPaymentModal] = useState(false);
     const [paymentModalData, setPaymentModalData] = useState(null);
 
+    const logActivity = async (action, planDetails = {}, notes = '') => {
+        try {
+            const token = localStorage.getItem('userToken');
+            if (!token) return;
+            await axios.post(
+                `${import.meta.env.VITE_API_BASE_URL}/plans/activity`,
+                { action, ...planDetails, notes },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+        } catch (err) {
+            console.error('Failed to log activity', err);
+        }
+    };
+
+    useEffect(() => {
+        if (plans.length > 0) {
+            logActivity('Viewed Plans');
+        }
+    }, [plans]);
+
     const isOutsideIndia = user?.country && user.country.toLowerCase() !== 'india' && user.country.toLowerCase() !== 'in';
 
     const getPlanDisplayPrice = (plan) => {
@@ -201,6 +221,8 @@ const PricingPlans = () => {
                 config
             );
 
+            logActivity('Clicked Upgrade Now', { planId, planName: orderRes.data.planName, amount: orderRes.data.amount });
+
             // 3. Show Payment Breakdown Modal
             setPaymentModalData({
                 ...orderRes.data,
@@ -222,6 +244,8 @@ const PricingPlans = () => {
         setUpgradingId(paymentModalData.planId);
 
         const { orderId, amount, currency, keyId, planName, planId, config } = paymentModalData;
+
+        logActivity('Proceeded to Payment Gateway', { planId, planName, amount });
 
         // Open Razorpay Checkout Modal
         const options = {
@@ -247,6 +271,7 @@ const PricingPlans = () => {
                     );
 
                     setSuccessMessage(verifyRes.data.message || 'Subscription upgraded successfully!');
+                    logActivity('Payment Success', { planId, planName, amount });
                     
                     // Refresh user profile in context
                     if (updateProfile) {
@@ -278,6 +303,7 @@ const PricingPlans = () => {
 
         const rzp1 = new window.Razorpay(options);
         rzp1.on('payment.failed', function (response) {
+            logActivity('Payment Failed', { planId, planName, amount }, response.error?.description || 'Payment Failed');
             setError('Payment failed or was cancelled.');
             setUpgradingId(null);
         });

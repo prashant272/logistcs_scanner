@@ -78,6 +78,7 @@ const AdminInquiryListing = lazy(() => import('./pages/admin/AdminInquiryListing
 const AddRM = lazy(() => import('./pages/admin/AddRM'));
 const AdminFinanceListing = lazy(() => import('./pages/admin/AdminFinanceListing'));
 const AdminEnquiriesTab = lazy(() => import('./pages/admin/AdminEnquiriesTab'));
+const AdminUpgradationRequests = lazy(() => import('./pages/admin/AdminUpgradationRequests'));
 
 // Loading Fallback Component
 const PageLoader = () => (
@@ -162,7 +163,7 @@ function App() {
               
               {/* Request Management */}
               <Route path="invoice-request" element={<div className="p-6 bg-white rounded-2xl shadow-sm text-slate-800"><h2 className="text-xl font-bold mb-4">Invoice Request</h2><p className="text-slate-500">Review and manage invoice requests.</p></div>} />
-              <Route path="upgrade-requests" element={<div className="p-6 bg-white rounded-2xl shadow-sm text-slate-800"><h2 className="text-xl font-bold mb-4">Upgrade Requests</h2><p className="text-slate-500">Review and manage account upgrades.</p></div>} />
+              <Route path="upgrade-requests" element={<AdminUpgradationRequests />} />
               
               {/* Other sections */}
               <Route path="complaints" element={<AdminComplaints />} />

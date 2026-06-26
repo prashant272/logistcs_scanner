@@ -12,4 +12,8 @@ router.post('/', planController.createPlan);
 router.put('/:id', planController.updatePlan);
 router.delete('/:id', planController.deletePlan);
 
+// Upgrade Tracking Routes
+router.post('/activity', authMiddleware, planController.logUpgradeActivity);
+router.get('/admin/upgrade-requests', authMiddleware, planController.getUpgradeRequests);
+
 module.exports = router;
