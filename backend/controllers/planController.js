@@ -182,7 +182,10 @@ exports.createRazorpayOrder = async (req, res) => {
         const keyId = process.env.RAZORPAY_KEY_ID || 'rzp_test_SQFIjwkG0C66Mu';
         const keySecret = process.env.RAZORPAY_KEY_SECRET || '1Z1SD6PB3KZG5IVSyZ7FitVD';
 
-        const amountInPaise = Math.round(finalPrice * 100);
+        let gstAmount = Math.round((finalPrice * 18) / 100);
+        let totalPriceWithGst = finalPrice + gstAmount;
+
+        const amountInPaise = Math.round(totalPriceWithGst * 100);
 
         const authHeader = 'Basic ' + Buffer.from(keyId + ':' + keySecret).toString('base64');
         const response = await axios.post(
@@ -208,6 +211,8 @@ exports.createRazorpayOrder = async (req, res) => {
             planName: plan.name,
             planPrice: basePrice,
             finalPrice: finalPrice,
+            gstAmount: gstAmount,
+            totalPriceWithGst: totalPriceWithGst,
             discountAmount: discountAmount
         });
     } catch (error) {

@@ -10,6 +10,8 @@ const PricingPlans = () => {
     const [error, setError] = useState('');
     const [successMessage, setSuccessMessage] = useState('');
     const [upgradingId, setUpgradingId] = useState(null);
+    const [showPaymentModal, setShowPaymentModal] = useState(false);
+    const [paymentModalData, setPaymentModalData] = useState(null);
 
     const isOutsideIndia = user?.country && user.country.toLowerCase() !== 'india' && user.country.toLowerCase() !== 'in';
 
@@ -199,69 +201,87 @@ const PricingPlans = () => {
                 config
             );
 
-            const { orderId, amount, currency, keyId, planName } = orderRes.data;
-
-            // 3. Open Razorpay Checkout Modal
-            const options = {
-                key: keyId,
-                amount: amount,
-                currency: currency,
-                name: 'Logistics Scanner',
-                description: `Upgrade to ${planName} Plan`,
-                order_id: orderId,
-                handler: async function (response) {
-                    try {
-                        setUpgradingId(planId);
-                        // 4. Verify Payment on Backend
-                        const verifyRes = await axios.post(
-                            `${import.meta.env.VITE_API_BASE_URL}/plans/razorpay-verify`,
-                            {
-                                planId,
-                                razorpay_order_id: response.razorpay_order_id,
-                                razorpay_payment_id: response.razorpay_payment_id,
-                                razorpay_signature: response.razorpay_signature
-                            },
-                            config
-                        );
-
-                        setSuccessMessage(verifyRes.data.message || 'Subscription upgraded successfully!');
-                        
-                        // Refresh user profile in context
-                        if (updateProfile) {
-                            await updateProfile(verifyRes.data.user);
-                        } else {
-                            window.location.reload();
-                        }
-                    } catch (verifyErr) {
-                        console.error('Payment verification error:', verifyErr);
-                        setError(verifyErr.response?.data?.message || 'Payment verification failed.');
-                    } finally {
-                        setUpgradingId(null);
-                    }
-                },
-                prefill: {
-                    name: user?.name || '',
-                    email: user?.email || '',
-                    contact: user?.phone || ''
-                },
-                theme: {
-                    color: '#0066FF'
-                },
-                modal: {
-                    ondismiss: function() {
-                        setUpgradingId(null);
-                    }
-                }
-            };
-
-            const rzp = new window.Razorpay(options);
-            rzp.open();
-
+            // 3. Show Payment Breakdown Modal
+            setPaymentModalData({
+                ...orderRes.data,
+                planId,
+                config
+            });
+            setShowPaymentModal(true);
+            setUpgradingId(null);
         } catch (err) {
-            console.error('Upgrade plan error:', err);
-            setError(err.response?.data?.message || 'Failed to initialize subscription upgrade.');
+            console.error('Upgrade initiation error:', err);
+            setError(err.response?.data?.message || 'Failed to initiate upgrade');
             setUpgradingId(null);
         }
+    };
+
+    const proceedToPay = async () => {
+        if (!paymentModalData) return;
+        setShowPaymentModal(false);
+        setUpgradingId(paymentModalData.planId);
+
+        const { orderId, amount, currency, keyId, planName, planId, config } = paymentModalData;
+
+        // Open Razorpay Checkout Modal
+        const options = {
+            key: keyId,
+            amount: amount,
+            currency: currency,
+            name: 'Logistics Scanner',
+            description: `Upgrade to ${planName} Plan`,
+            order_id: orderId,
+            handler: async function (response) {
+                try {
+                    setUpgradingId(planId);
+                    // Verify Payment on Backend
+                    const verifyRes = await axios.post(
+                        `${import.meta.env.VITE_API_BASE_URL}/plans/razorpay-verify`,
+                        {
+                            planId,
+                            razorpay_order_id: response.razorpay_order_id,
+                            razorpay_payment_id: response.razorpay_payment_id,
+                            razorpay_signature: response.razorpay_signature
+                        },
+                        config
+                    );
+
+                    setSuccessMessage(verifyRes.data.message || 'Subscription upgraded successfully!');
+                    
+                    // Refresh user profile in context
+                    if (updateProfile) {
+                        await updateProfile(verifyRes.data.user);
+                    } else {
+                        window.location.reload();
+                    }
+                } catch (verifyErr) {
+                    console.error('Payment verification error:', verifyErr);
+                    setError(verifyErr.response?.data?.message || 'Payment verification failed.');
+                } finally {
+                    setUpgradingId(null);
+                }
+            },
+            prefill: {
+                name: user?.name || '',
+                email: user?.email || '',
+                contact: user?.phone || ''
+            },
+            theme: {
+                color: '#0066FF'
+            },
+            modal: {
+                ondismiss: function () {
+                    setUpgradingId(null);
+                }
+            }
+        };
+
+        const rzp1 = new window.Razorpay(options);
+        rzp1.on('payment.failed', function (response) {
+            setError('Payment failed or was cancelled.');
+            setUpgradingId(null);
+        });
+        rzp1.open();
     };
 
     const formatDate = (dateStr) => {
@@ -568,6 +588,65 @@ const PricingPlans = () => {
                             </div>
                         );
                     })}
+                </div>
+            )}
+
+            {/* Payment Breakdown Modal */}
+            {showPaymentModal && paymentModalData && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
+                    <div className="bg-white rounded-3xl w-full max-w-sm shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300">
+                        <div className="bg-[#0066FF] p-5 text-center relative">
+                            <h3 className="text-white font-black text-lg">Payment Summary</h3>
+                            <p className="text-white/80 text-xs font-medium mt-1">Review your plan upgrade</p>
+                        </div>
+                        
+                        <div className="p-6 space-y-4">
+                            <div className="flex justify-between items-center pb-3 border-b border-slate-100">
+                                <span className="text-slate-500 font-bold text-sm">Plan Name</span>
+                                <span className="text-slate-800 font-black text-sm">{paymentModalData.planName}</span>
+                            </div>
+                            
+                            <div className="flex justify-between items-center pb-3 border-b border-slate-100">
+                                <span className="text-slate-500 font-bold text-sm">Plan Amount</span>
+                                <span className="text-slate-800 font-black text-sm">
+                                    {paymentModalData.currency === 'INR' ? '₹' : '$'}{paymentModalData.finalPrice.toLocaleString()}
+                                </span>
+                            </div>
+
+                            <div className="flex justify-between items-center pb-3 border-b border-slate-100">
+                                <span className="text-slate-500 font-bold text-sm">GST (18%)</span>
+                                <span className="text-slate-800 font-black text-sm">
+                                    + {paymentModalData.currency === 'INR' ? '₹' : '$'}{paymentModalData.gstAmount.toLocaleString()}
+                                </span>
+                            </div>
+
+                            <div className="flex justify-between items-center pt-2">
+                                <span className="text-[#0066FF] font-black text-base">Total Amount</span>
+                                <span className="text-[#0066FF] font-black text-xl">
+                                    {paymentModalData.currency === 'INR' ? '₹' : '$'}{paymentModalData.totalPriceWithGst.toLocaleString()}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div className="p-5 bg-slate-50 flex gap-3">
+                            <button
+                                onClick={() => {
+                                    setShowPaymentModal(false);
+                                    setPaymentModalData(null);
+                                    setUpgradingId(null);
+                                }}
+                                className="flex-1 py-3 rounded-xl font-bold text-slate-600 bg-white border border-slate-200 hover:bg-slate-100 transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={proceedToPay}
+                                className="flex-1 py-3 rounded-xl font-black text-white bg-[#0066FF] hover:bg-[#0052cc] shadow-md transition-colors"
+                            >
+                                Proceed to Pay
+                            </button>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>

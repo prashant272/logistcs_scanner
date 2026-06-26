@@ -319,25 +319,10 @@ exports.getVendorEnquiries = async (req, res) => {
         });
 
         if (!hasActivePlan) {
-            const absoluteSkip = skip;
             if (totalCount > 5) {
                 res.setHeader('X-Limit-Reached', 'true');
                 res.setHeader('Access-Control-Expose-Headers', 'X-Limit-Reached');
             }
-            results = results.map((enq, index) => {
-                const absoluteIndex = absoluteSkip + index;
-                if (absoluteIndex >= 5) {
-                    return { 
-                        _id: enq._id, 
-                        isLocked: true, 
-                        type: enq.type, 
-                        createdAt: enq.createdAt,
-                        status: enq.status,
-                        myResponse: enq.myResponse
-                    };
-                }
-                return enq;
-            });
         }
 
         // For direct listings, enrich with the vendor's own price for the same route and cargo type

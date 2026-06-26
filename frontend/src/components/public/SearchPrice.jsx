@@ -461,7 +461,16 @@ const SearchPrice = ({ isDashboard = false }) => {
             guestGst,
             guestPhone: `${guestPhoneCode} ${guestPhone}`,
             guestEmail,
-            commodity: guestCommodity
+            commodity: guestCommodity,
+            warehouseRateType,
+            warehouseStorageType,
+            chaServiceType: chaType,
+            chaCargoType,
+            length,
+            width,
+            height,
+            unit,
+            quantity
         };
 
         try {
