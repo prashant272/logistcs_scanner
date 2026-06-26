@@ -20,8 +20,10 @@ export const SocketProvider = ({ children }) => {
         }
 
         const newSocket = io(import.meta.env.VITE_API_BASE_URL.replace('/api', ''), {
-            transports: ['websocket'],
             autoConnect: true,
+            reconnection: true,
+            reconnectionAttempts: 5,
+            reconnectionDelay: 1000
         });
 
         setSocket(newSocket);
