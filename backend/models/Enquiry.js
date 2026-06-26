@@ -129,11 +129,36 @@ const enquirySchema = new mongoose.Schema({
         trim: true,
         default: ''
     },
+    warehouseRateType: {
+        type: String,
+        trim: true,
+        default: ''
+    },
+    warehouseStorageType: {
+        type: String,
+        trim: true,
+        default: ''
+    },
+    chaServiceType: {
+        type: String,
+        trim: true,
+        default: ''
+    },
+    chaCargoType: {
+        type: String,
+        trim: true,
+        default: ''
+    },
     additionalServices: {
         type: String,
         trim: true,
         default: ''
     },
+    length: { type: String, trim: true, default: '' },
+    width: { type: String, trim: true, default: '' },
+    height: { type: String, trim: true, default: '' },
+    unit: { type: String, trim: true, default: '' },
+    quantity: { type: String, trim: true, default: '' },
     deliverySpeed: {
         type: String,
         trim: true,

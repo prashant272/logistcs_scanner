@@ -270,8 +270,8 @@ const CustomerEnquiriesTab = ({ title, type }) => {
                 className="bg-gradient-to-br from-white to-[#f4f8ff]/30 rounded-3xl p-6 md:p-8 border border-sky-100/70 hover:border-sky-300 hover:shadow-xl transition-all duration-300 relative shadow-[0_12px_45px_rgba(11,30,67,0.025)]"
               >
                 {/* Date of Enquiry Badge */}
-                <div className="absolute top-6 right-6 text-xs text-slate-400 font-bold">
-                  Posted on : - <span className="text-slate-700 font-black">{formatDate(enq.createdAt)}</span>
+                <div className="absolute top-4 right-6 text-xs text-slate-600 font-extrabold">
+                  Posted on : <span className="text-slate-800 font-black">{formatDate(enq.createdAt)}</span>
                 </div>
 
                 {/* Card Main Grid */}
@@ -317,10 +317,84 @@ const CustomerEnquiriesTab = ({ title, type }) => {
 
                     <div className="bg-white border border-slate-100/90 rounded-2xl py-2 px-4 shadow-sm text-center min-w-[80px]">
                       <div className="text-[10px] text-slate-400 font-black tracking-wider uppercase">Load Type</div>
-                      <div className="text-xs font-black text-slate-800 mt-0.5">
-                        {enq.type === 'sea' ? (enq.handlingType || 'LCL') : (enq.truckLoad || 'General')}
-                      </div>
+                      <span className="font-extrabold text-[#0B1E43]">
+                        {enq.type === 'sea' ? (enq.seaLoadType || enq.handlingType || enq.truckLoad || 'LCL') : (enq.truckLoad || 'General')}
+                      </span>
                     </div>
+
+                    {/* Additional Dynamic Fields */}
+                    {(enq.type === 'air' && enq.category) && (
+                      <div className="bg-white border border-slate-100/90 rounded-2xl py-2 px-4 shadow-sm text-center min-w-[80px]">
+                        <div className="text-[10px] text-slate-400 font-black tracking-wider uppercase">Category</div>
+                        <span className="font-extrabold text-[#0B1E43] capitalize">{enq.category}</span>
+                      </div>
+                    )}
+                    {(enq.type === 'air' && enq.airline) && (
+                      <div className="bg-white border border-slate-100/90 rounded-2xl py-2 px-4 shadow-sm text-center min-w-[80px]">
+                        <div className="text-[10px] text-slate-400 font-black tracking-wider uppercase">Airline</div>
+                        <span className="font-extrabold text-[#0B1E43]">{enq.airline}</span>
+                      </div>
+                    )}
+                    {enq.cbmRange && (
+                      <div className="bg-white border border-slate-100/90 rounded-2xl py-2 px-4 shadow-sm text-center min-w-[80px]">
+                        <div className="text-[10px] text-slate-400 font-black tracking-wider uppercase">Volume</div>
+                        <span className="font-extrabold text-[#0B1E43]">{enq.cbmRange}</span>
+                      </div>
+                    )}
+                    {(enq.length && enq.width && enq.height) && (
+                      <div className="bg-white border border-slate-100/90 rounded-2xl py-2 px-4 shadow-sm text-center min-w-[80px]">
+                        <div className="text-[10px] text-slate-400 font-black tracking-wider uppercase">Dimensions</div>
+                        <span className="font-extrabold text-[#0B1E43]">{`${enq.length}x${enq.width}x${enq.height} ${enq.unit || 'cm'}`}</span>
+                      </div>
+                    )}
+                    {enq.quantity && (
+                      <div className="bg-white border border-slate-100/90 rounded-2xl py-2 px-4 shadow-sm text-center min-w-[80px]">
+                        <div className="text-[10px] text-slate-400 font-black tracking-wider uppercase">Qty</div>
+                        <span className="font-extrabold text-[#0B1E43]">{enq.quantity}</span>
+                      </div>
+                    )}
+                    {enq.fclStandard && (
+                      <div className="bg-white border border-slate-100/90 rounded-2xl py-2 px-4 shadow-sm text-center min-w-[80px]">
+                        <div className="text-[10px] text-slate-400 font-black tracking-wider uppercase">Container</div>
+                        <span className="font-extrabold text-[#0B1E43]">{enq.fclStandard}</span>
+                      </div>
+                    )}
+                    {enq.fclUnit && (
+                      <div className="bg-white border border-slate-100/90 rounded-2xl py-2 px-4 shadow-sm text-center min-w-[80px]">
+                        <div className="text-[10px] text-slate-400 font-black tracking-wider uppercase">Units</div>
+                        <span className="font-extrabold text-[#0B1E43]">{enq.fclUnit}</span>
+                      </div>
+                    )}
+                    {enq.vehicleType && (
+                      <div className="bg-white border border-slate-100/90 rounded-2xl py-2 px-4 shadow-sm text-center min-w-[80px]">
+                        <div className="text-[10px] text-slate-400 font-black tracking-wider uppercase">Vehicle</div>
+                        <span className="font-extrabold text-[#0B1E43]">{enq.vehicleType}</span>
+                      </div>
+                    )}
+                    {(enq.type === 'warehouse' && enq.warehouseStorageType) && (
+                      <div className="bg-white border border-slate-100/90 rounded-2xl py-2 px-4 shadow-sm text-center min-w-[80px]">
+                        <div className="text-[10px] text-slate-400 font-black tracking-wider uppercase">Storage</div>
+                        <span className="font-extrabold text-[#0B1E43]">{enq.warehouseStorageType}</span>
+                      </div>
+                    )}
+                    {(enq.type === 'warehouse' && enq.warehouseRateType) && (
+                      <div className="bg-white border border-slate-100/90 rounded-2xl py-2 px-4 shadow-sm text-center min-w-[80px]">
+                        <div className="text-[10px] text-slate-400 font-black tracking-wider uppercase">Rate Type</div>
+                        <span className="font-extrabold text-[#0B1E43]">{enq.warehouseRateType}</span>
+                      </div>
+                    )}
+                    {(enq.type === 'cha' && enq.chaServiceType) && (
+                      <div className="bg-white border border-slate-100/90 rounded-2xl py-2 px-4 shadow-sm text-center min-w-[80px]">
+                        <div className="text-[10px] text-slate-400 font-black tracking-wider uppercase">Service</div>
+                        <span className="font-extrabold text-[#0B1E43]">{enq.chaServiceType}</span>
+                      </div>
+                    )}
+                    {(enq.type === 'cha' && enq.chaCargoType) && (
+                      <div className="bg-white border border-slate-100/90 rounded-2xl py-2 px-4 shadow-sm text-center min-w-[80px]">
+                        <div className="text-[10px] text-slate-400 font-black tracking-wider uppercase">Cargo</div>
+                        <span className="font-extrabold text-[#0B1E43]">{enq.chaCargoType}</span>
+                      </div>
+                    )}
 
                     <div className="bg-white border border-slate-100/90 rounded-2xl py-2 px-4 shadow-sm text-center min-w-[100px]">
                       <div className="text-[10px] text-slate-400 font-black tracking-wider uppercase">Target Delivery</div>

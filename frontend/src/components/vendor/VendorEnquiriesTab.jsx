@@ -429,8 +429,8 @@ const VendorEnquiriesTab = ({ title, type }) => {
                 className="bg-gradient-to-br from-white to-[#f4f8ff]/35 rounded-2xl p-5 md:p-6 border border-sky-100/75 hover:border-sky-300 hover:shadow-lg transition-all duration-300 relative shadow-[0_8px_30px_rgba(11,30,67,0.02)] space-y-4"
               >
                 {/* Date of Enquiry Badge */}
-                <div className="absolute top-5 right-5 text-[10px] text-slate-400 font-bold">
-                  Date of Enquiry : - <span className="text-slate-700 font-black">{formatDate(enq.createdAt)}</span>
+                <div className="absolute top-3 right-5 text-[10px] text-slate-600 font-extrabold">
+                  Date of Enquiry : <span className="text-slate-800 font-black">{formatDate(enq.createdAt)}</span>
                 </div>
 
                 {/* Card Top Row: Icon, Ports, and Load Details */}
@@ -458,7 +458,7 @@ const VendorEnquiriesTab = ({ title, type }) => {
                   {/* Top-Right Badges: Container, Load Type, Date of Shipment */}
                   <div className="flex flex-wrap gap-2 items-center pr-28">
                     {/* Container Type for Sea FCL */}
-                    {(enq.type === 'sea' && enq.seaLoadType === 'FCL' && enq.fclStandard) && (
+                    {(enq.type === 'sea' && (enq.seaLoadType === 'FCL' || enq.truckLoad === 'FCL') && enq.fclStandard) && (
                       <div className="bg-white border border-slate-200/80 rounded-lg px-3 py-1.5 text-center min-w-[70px] shadow-sm">
                         <div className="text-[9px] text-slate-600 font-black uppercase tracking-wider">Container Type</div>
                         <div className="text-[10px] font-black text-slate-800 mt-0.5">{enq.fclStandard}</div>
@@ -466,7 +466,7 @@ const VendorEnquiriesTab = ({ title, type }) => {
                     )}
                     
                     {/* Units for Sea FCL */}
-                    {(enq.type === 'sea' && enq.seaLoadType === 'FCL' && enq.fclUnit) && (
+                    {(enq.type === 'sea' && (enq.seaLoadType === 'FCL' || enq.truckLoad === 'FCL') && enq.fclUnit) && (
                       <div className="bg-white border border-slate-200/80 rounded-lg px-3 py-1.5 text-center min-w-[70px] shadow-sm">
                         <div className="text-[9px] text-slate-600 font-black uppercase tracking-wider">Units</div>
                         <div className="text-[10px] font-black text-slate-800 mt-0.5">{enq.fclUnit}</div>
@@ -482,16 +482,100 @@ const VendorEnquiriesTab = ({ title, type }) => {
                     )}
 
                     {/* Load Type */}
-                    {(enq.type === 'sea' && enq.seaLoadType) && (
+                    {(enq.type === 'sea' && (enq.seaLoadType || enq.truckLoad)) && (
                       <div className="bg-white border border-slate-200/80 rounded-lg px-3 py-1.5 text-center min-w-[70px] shadow-sm">
                         <div className="text-[9px] text-slate-600 font-black uppercase tracking-wider">Load Type</div>
-                        <div className="text-[10px] font-black text-slate-800 mt-0.5">{enq.seaLoadType}</div>
+                        <div className="text-[10px] font-black text-slate-800 mt-0.5">{enq.seaLoadType || enq.truckLoad}</div>
                       </div>
                     )}
                     {(enq.type === 'land' && enq.truckLoad) && (
                       <div className="bg-white border border-slate-200/80 rounded-lg px-3 py-1.5 text-center min-w-[70px] shadow-sm">
                         <div className="text-[9px] text-slate-600 font-black uppercase tracking-wider">Load Type</div>
                         <div className="text-[10px] font-black text-slate-800 mt-0.5">{enq.truckLoad}</div>
+                      </div>
+                    )}
+
+                    {/* Air Specific */}
+                    {(enq.type === 'air' && enq.category) && (
+                      <div className="bg-white border border-slate-200/80 rounded-lg px-3 py-1.5 text-center min-w-[70px] shadow-sm">
+                        <div className="text-[9px] text-slate-600 font-black uppercase tracking-wider">Category</div>
+                        <div className="text-[10px] font-black text-slate-800 mt-0.5 capitalize">{enq.category}</div>
+                      </div>
+                    )}
+                    {(enq.type === 'air' && enq.airline) && (
+                      <div className="bg-white border border-slate-200/80 rounded-lg px-3 py-1.5 text-center min-w-[70px] shadow-sm">
+                        <div className="text-[9px] text-slate-600 font-black uppercase tracking-wider">Airline</div>
+                        <div className="text-[10px] font-black text-slate-800 mt-0.5">{enq.airline}</div>
+                      </div>
+                    )}
+
+                    {/* Weight and Volume */}
+                    {enq.weightRange && (
+                      <div className="bg-white border border-slate-200/80 rounded-lg px-3 py-1.5 text-center min-w-[70px] shadow-sm">
+                        <div className="text-[9px] text-slate-600 font-black uppercase tracking-wider">Weight</div>
+                        <div className="text-[10px] font-black text-slate-800 mt-0.5">{enq.weightRange}</div>
+                      </div>
+                    )}
+                    {enq.cbmRange && (
+                      <div className="bg-white border border-slate-200/80 rounded-lg px-3 py-1.5 text-center min-w-[70px] shadow-sm">
+                        <div className="text-[9px] text-slate-600 font-black uppercase tracking-wider">Volume</div>
+                        <div className="text-[10px] font-black text-slate-800 mt-0.5">{enq.cbmRange}</div>
+                      </div>
+                    )}
+
+                    {/* Dimensions & Quantity (LCL) */}
+                    {(enq.length && enq.width && enq.height) && (
+                      <div className="bg-white border border-slate-200/80 rounded-lg px-3 py-1.5 text-center min-w-[70px] shadow-sm">
+                        <div className="text-[9px] text-slate-600 font-black uppercase tracking-wider">Dimensions</div>
+                        <div className="text-[10px] font-black text-slate-800 mt-0.5">{`${enq.length}x${enq.width}x${enq.height} ${enq.unit || 'cm'}`}</div>
+                      </div>
+                    )}
+                    {enq.quantity && (
+                      <div className="bg-white border border-slate-200/80 rounded-lg px-3 py-1.5 text-center min-w-[70px] shadow-sm">
+                        <div className="text-[9px] text-slate-600 font-black uppercase tracking-wider">Quantity</div>
+                        <div className="text-[10px] font-black text-slate-800 mt-0.5">{enq.quantity}</div>
+                      </div>
+                    )}
+
+                    {/* Warehouse Specific */}
+                    {(enq.type === 'warehouse' && enq.warehouseStorageType) && (
+                      <div className="bg-white border border-slate-200/80 rounded-lg px-3 py-1.5 text-center min-w-[70px] shadow-sm">
+                        <div className="text-[9px] text-slate-600 font-black uppercase tracking-wider">Storage</div>
+                        <div className="text-[10px] font-black text-slate-800 mt-0.5">{enq.warehouseStorageType}</div>
+                      </div>
+                    )}
+                    {(enq.type === 'warehouse' && enq.warehouseRateType) && (
+                      <div className="bg-white border border-slate-200/80 rounded-lg px-3 py-1.5 text-center min-w-[70px] shadow-sm">
+                        <div className="text-[9px] text-slate-600 font-black uppercase tracking-wider">Rate Type</div>
+                        <div className="text-[10px] font-black text-slate-800 mt-0.5">{enq.warehouseRateType}</div>
+                      </div>
+                    )}
+
+                    {/* CHA Specific */}
+                    {(enq.type === 'cha' && enq.chaServiceType) && (
+                      <div className="bg-white border border-slate-200/80 rounded-lg px-3 py-1.5 text-center min-w-[70px] shadow-sm">
+                        <div className="text-[9px] text-slate-600 font-black uppercase tracking-wider">CHA Service</div>
+                        <div className="text-[10px] font-black text-slate-800 mt-0.5">{enq.chaServiceType}</div>
+                      </div>
+                    )}
+                    {(enq.type === 'cha' && enq.chaCargoType) && (
+                      <div className="bg-white border border-slate-200/80 rounded-lg px-3 py-1.5 text-center min-w-[70px] shadow-sm">
+                        <div className="text-[9px] text-slate-600 font-black uppercase tracking-wider">Cargo</div>
+                        <div className="text-[10px] font-black text-slate-800 mt-0.5">{enq.chaCargoType}</div>
+                      </div>
+                    )}
+
+                    {/* Additional Options */}
+                    {(enq.handlingType && enq.handlingType !== 'General Cargo') && (
+                      <div className="bg-white border border-slate-200/80 rounded-lg px-3 py-1.5 text-center min-w-[70px] shadow-sm">
+                        <div className="text-[9px] text-slate-600 font-black uppercase tracking-wider">Handling</div>
+                        <div className="text-[10px] font-black text-slate-800 mt-0.5">{enq.handlingType}</div>
+                      </div>
+                    )}
+                    {enq.additionalServices && (
+                      <div className="bg-white border border-slate-200/80 rounded-lg px-3 py-1.5 text-center min-w-[70px] shadow-sm">
+                        <div className="text-[9px] text-slate-600 font-black uppercase tracking-wider">Services</div>
+                        <div className="text-[10px] font-black text-slate-800 mt-0.5">{enq.additionalServices}</div>
                       </div>
                     )}
                     {/* Date of Shipment / Target Delivery */}
