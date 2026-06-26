@@ -19,7 +19,7 @@ export const SocketProvider = ({ children }) => {
             Notification.requestPermission();
         }
 
-        const newSocket = io(import.meta.env.VITE_API_BASE_URL.replace('/api', ''), {
+        const newSocket = io(import.meta.env.VITE_API_BASE_URL.replace(/\/api\/?$/, ''), {
             autoConnect: true,
             reconnection: true,
             reconnectionAttempts: 5,

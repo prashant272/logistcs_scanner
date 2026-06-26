@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSocket } from '../../context/SocketContext';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
 const VendorNotificationPopup = () => {
     const socket = useSocket();
