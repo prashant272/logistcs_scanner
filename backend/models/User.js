@@ -163,6 +163,10 @@ const userSchema = new mongoose.Schema({
         type: Number,
         default: 0
     },
+    creditScore: {
+        type: Number,
+        default: 100
+    },
     lastActive: {
         type: Date,
         default: Date.now

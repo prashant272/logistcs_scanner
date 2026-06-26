@@ -1,4 +1,5 @@
 const FinanceApplication = require('../models/FinanceApplication');
+const { sendNotification, sendAdminNotification, sendEmail } = require('../utils/notificationService');
 
 // @desc    Submit a new Finance Application
 // @route   POST /api/finance
@@ -254,6 +255,9 @@ exports.submitInvoice = async (req, res) => {
             invoiceFile
         });
 
+        // Notify Admin
+        await sendAdminNotification(`New invoice uploaded by ${vendorName} for ₹${amount}.`, 'info', '/admin/finance/invoice-requests');
+
         res.status(201).json({ message: 'Invoice submitted successfully', invoice });
     } catch (error) {
         console.error('Submit Invoice Error:', error);
@@ -292,7 +296,7 @@ exports.getAllInvoices = async (req, res) => {
 // @access  Admin
 exports.updateInvoiceStatus = async (req, res) => {
     try {
-        const { status, rejectionReason, approvedAmount, timelineDate } = req.body;
+        const { status, rejectionReason, approvedAmount, processingFee, timelineDate } = req.body;
         
         const invoice = await InvoiceRequest.findById(req.params.id);
         if (!invoice) return res.status(404).json({ message: 'Invoice not found' });
@@ -303,27 +307,35 @@ exports.updateInvoiceStatus = async (req, res) => {
             if (!vendor) return res.status(404).json({ message: 'Vendor not found' });
 
             const finalAmount = approvedAmount || invoice.amount;
+            const fee = parseFloat(processingFee) || 0;
+            const totalDeduction = finalAmount + fee;
             
             // Deduct from wallet
-            vendor.walletBalance = (vendor.walletBalance || 0) - finalAmount;
+            vendor.walletBalance = (vendor.walletBalance || 0) - totalDeduction;
             await vendor.save();
 
             // Create Transaction
             await WalletTransaction.create({
                 vendor: vendor._id,
                 type: 'Debit',
-                amount: finalAmount,
-                description: `Invoice Approved - Payment Deducted`,
+                amount: totalDeduction,
+                description: `Invoice Approved - Base: ₹${finalAmount}, Processing Fee: ₹${fee}`,
                 referenceId: invoice._id,
                 balanceAfter: vendor.walletBalance
             });
 
             invoice.approvedAmount = finalAmount;
+            invoice.processingFee = fee;
             invoice.timelineDate = timelineDate;
+
+            await sendNotification(vendor._id, `Your invoice ${invoice.lsId} has been Approved! ₹${totalDeduction} deducted.`, 'success', '/vendor/upload-invoice');
         }
 
         invoice.status = status;
-        if (rejectionReason) invoice.rejectionReason = rejectionReason;
+        if (status === 'Rejected') {
+            if (rejectionReason) invoice.rejectionReason = rejectionReason;
+            await sendNotification(invoice.vendor, `Your invoice ${invoice.lsId} was Rejected. Reason: ${rejectionReason}`, 'error', '/vendor/upload-invoice');
+        }
         
         await invoice.save();
 
@@ -431,6 +443,8 @@ exports.submitRepayment = async (req, res) => {
         invoice.repaymentProofFile = repaymentProofFile;
         await invoice.save();
 
+        await sendAdminNotification(`Vendor ${invoice.vendorName} uploaded repayment proof for Invoice ${invoice.lsId}.`, 'info', '/admin/finance/invoice-requests');
+
         res.status(200).json({ message: 'Repayment submitted successfully. Waiting for admin approval.', invoice });
     } catch (error) {
         console.error('Submit Repayment Error:', error);
@@ -455,7 +469,11 @@ exports.approveRepayment = async (req, res) => {
 
         const User = require('../models/User');
         const user = await User.findById(invoice.vendor._id);
+        
         user.walletBalance = (user.walletBalance || 0) + totalPaid;
+        // Increase credit score slightly for successful payment (max 100 or some cap, let's say no cap)
+        user.creditScore = (user.creditScore || 100) + 5; 
+        
         await user.save();
 
         await WalletTransaction.create({
@@ -466,6 +484,8 @@ exports.approveRepayment = async (req, res) => {
             referenceId: invoice._id,
             balanceAfter: user.walletBalance
         });
+
+        await sendNotification(user._id, `Your repayment for invoice ${invoice.lsId} has been verified and cleared! Credit score +5.`, 'success', '/vendor/upload-invoice');
 
         res.status(200).json({ message: 'Repayment approved and wallet restored.', invoice });
     } catch (error) {

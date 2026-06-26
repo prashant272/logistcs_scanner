@@ -13,6 +13,7 @@ const AdminInvoiceRequests = () => {
     const [formData, setFormData] = useState({
         rejectionReason: '',
         approvedAmount: '',
+        processingFee: '',
         timelineDate: '',
         paymentProofFile: '',
         penaltyAmount: ''
@@ -52,6 +53,7 @@ const AdminInvoiceRequests = () => {
                 await axios.put(`${import.meta.env.VITE_API_BASE_URL}/finance/admin/invoices/${selectedInvoice._id}/status`, {
                     status: 'Approved',
                     approvedAmount: parseFloat(formData.approvedAmount),
+                    processingFee: parseFloat(formData.processingFee) || 0,
                     timelineDate: formData.timelineDate
                 }, { headers: { Authorization: `Bearer ${token}` }});
             } else if (actionType === 'pay') {
@@ -88,7 +90,7 @@ const AdminInvoiceRequests = () => {
             // Close modal & refresh
             setSelectedInvoice(null);
             setActionType('');
-            setFormData({ rejectionReason: '', approvedAmount: '', timelineDate: '', paymentProofFile: '', penaltyAmount: '' });
+            setFormData({ rejectionReason: '', approvedAmount: '', processingFee: '', timelineDate: '', paymentProofFile: '', penaltyAmount: '' });
             fetchInvoices();
         } catch (err) {
             console.error('Action error:', err);
@@ -102,7 +104,7 @@ const AdminInvoiceRequests = () => {
         setSelectedInvoice(invoice);
         setActionType(type);
         if (type === 'approve') {
-            setFormData({ ...formData, approvedAmount: invoice.amount });
+            setFormData({ ...formData, approvedAmount: invoice.amount, processingFee: invoice.processingFee || '' });
         }
     };
 
@@ -201,32 +203,10 @@ const AdminInvoiceRequests = () => {
                                             )}
                                         </td>
                                         <td className="p-4">
-                                            <div className="flex flex-col gap-2 items-center">
-                                                {inv.status === 'Pending' && (
-                                                    <>
-                                                        <button onClick={() => openModal(inv, 'approve')} className="w-full bg-[#0066FF] text-white px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider hover:bg-[#0052cc] transition-colors">
-                                                            Approve
-                                                        </button>
-                                                        <button onClick={() => openModal(inv, 'reject')} className="w-full bg-red-50 text-red-600 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider hover:bg-red-100 transition-colors">
-                                                            Reject
-                                                        </button>
-                                                    </>
-                                                )}
-                                                {inv.status === 'Approved' && (
-                                                    <>
-                                                        <button onClick={() => openModal(inv, 'pay')} className="w-full bg-green-600 text-white px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider hover:bg-green-700 transition-colors shadow-sm shadow-green-600/20">
-                                                            Upload Pay Proof
-                                                        </button>
-                                                        <button onClick={() => openModal(inv, 'penalty')} className="w-full bg-amber-100 text-amber-700 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider hover:bg-amber-200 transition-colors mt-1">
-                                                            Apply Penalty
-                                                        </button>
-                                                    </>
-                                                )}
-                                                {inv.status === 'Repayment Pending' && (
-                                                    <button onClick={() => openModal(inv, 'approve_repayment')} className="w-full bg-[#0066FF] text-white px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider hover:bg-[#0052cc] transition-colors shadow-sm shadow-blue-600/20">
-                                                        Verify Repayment
-                                                    </button>
-                                                )}
+                                            <div className="flex justify-center">
+                                                <button onClick={() => openModal(inv, 'view')} className="bg-slate-100 text-slate-700 hover:bg-slate-200 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-colors flex items-center gap-2">
+                                                    <FileText className="w-4 h-4" /> View Details
+                                                </button>
                                             </div>
                                         </td>
                                     </tr>
@@ -239,17 +219,123 @@ const AdminInvoiceRequests = () => {
 
             {/* Modal */}
             {selectedInvoice && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
-                    <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300">
-                        <div className="p-6 border-b border-slate-100 flex justify-between items-center">
-                            <h3 className="text-xl font-black text-[#0B1E43]">
-                                {actionType === 'approve' ? 'Approve Invoice' : actionType === 'reject' ? 'Reject Invoice' : actionType === 'penalty' ? 'Apply Penalty' : actionType === 'approve_repayment' ? 'Verify Repayment' : 'Upload Payment Proof'}
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 overflow-y-auto">
+                    <div className="bg-white rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300 my-8">
+                        <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                            <h3 className="text-xl font-black text-[#0B1E43] flex items-center gap-3">
+                                {actionType === 'view' && <span className="bg-[#0B1E43] text-white px-3 py-1 rounded-lg text-sm">Invoice Details</span>}
+                                {actionType === 'approve' && 'Approve Invoice'}
+                                {actionType === 'reject' && 'Reject Invoice'}
+                                {actionType === 'penalty' && 'Apply Penalty'}
+                                {actionType === 'approve_repayment' && 'Verify Repayment'}
+                                {actionType === 'pay' && 'Upload Payment Proof'}
                             </h3>
-                            <button onClick={() => setSelectedInvoice(null)} className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-50 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors">
+                            <button onClick={() => setSelectedInvoice(null)} className="w-8 h-8 flex items-center justify-center rounded-full bg-white text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors shadow-sm">
                                 <XCircle className="w-5 h-5" />
                             </button>
                         </div>
 
+                        {actionType === 'view' ? (
+                            <div className="p-8 space-y-8">
+                                {/* Details Grid */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="space-y-4">
+                                        <div>
+                                            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">Vendor Info</h4>
+                                            <p className="text-sm font-bold text-[#0B1E43]">{selectedInvoice.vendorName || selectedInvoice.vendor?.name}</p>
+                                            <p className="text-xs font-semibold text-slate-500">LS ID: {selectedInvoice.lsId}</p>
+                                        </div>
+                                        <div>
+                                            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">Bank Details</h4>
+                                            <p className="text-sm font-bold text-[#0B1E43]">{selectedInvoice.bankDetails?.accountName}</p>
+                                            <p className="text-xs font-semibold text-slate-600">A/C: {selectedInvoice.bankDetails?.accountNo}</p>
+                                            <p className="text-xs font-semibold text-slate-600">IFSC: {selectedInvoice.bankDetails?.ifscCode}</p>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-4">
+                                        <div>
+                                            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">Amounts</h4>
+                                            <p className="text-sm font-semibold text-slate-600">Requested: <span className="font-black text-[#0B1E43]">₹{selectedInvoice.amount.toLocaleString()}</span></p>
+                                            {selectedInvoice.approvedAmount && (
+                                                <p className="text-sm font-semibold text-green-600">Approved: <span className="font-black">₹{selectedInvoice.approvedAmount.toLocaleString()}</span></p>
+                                            )}
+                                            {selectedInvoice.processingFee > 0 && (
+                                                <p className="text-sm font-semibold text-amber-600">Processing Fee: <span className="font-black">₹{selectedInvoice.processingFee.toLocaleString()}</span></p>
+                                            )}
+                                            {selectedInvoice.penaltyAmount > 0 && (
+                                                <p className="text-sm font-semibold text-red-600">Penalty: <span className="font-black">₹{selectedInvoice.penaltyAmount.toLocaleString()}</span></p>
+                                            )}
+                                        </div>
+                                        <div>
+                                            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">Documents</h4>
+                                            <a href={selectedInvoice.invoiceFile} target="_blank" rel="noreferrer" className="text-xs font-bold text-[#0066FF] hover:underline flex items-center gap-1">
+                                                <FileText className="w-3.5 h-3.5" /> View Original Invoice
+                                            </a>
+                                            {selectedInvoice.paymentProofFile && (
+                                                <a href={selectedInvoice.paymentProofFile} target="_blank" rel="noreferrer" className="text-xs font-bold text-green-600 hover:underline flex items-center gap-1 mt-1">
+                                                    <CheckCircle2 className="w-3.5 h-3.5" /> View Admin Payment Proof
+                                                </a>
+                                            )}
+                                            {selectedInvoice.repaymentProofFile && (
+                                                <a href={selectedInvoice.repaymentProofFile} target="_blank" rel="noreferrer" className="text-xs font-bold text-amber-600 hover:underline flex items-center gap-1 mt-1">
+                                                    <CheckCircle2 className="w-3.5 h-3.5" /> View Vendor Repayment Proof
+                                                </a>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Status & Timeline */}
+                                <div className="bg-slate-50 rounded-2xl p-4 flex items-center justify-between border border-slate-100">
+                                    <div>
+                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-1">Current Status</span>
+                                        <span className={`px-3 py-1 rounded-lg text-xs font-black uppercase tracking-wider ${getStatusColor(selectedInvoice.status)}`}>
+                                            {selectedInvoice.status}
+                                        </span>
+                                    </div>
+                                    {selectedInvoice.timelineDate && (
+                                        <div className="text-right">
+                                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-1">Repayment Deadline</span>
+                                            <span className="text-sm font-bold text-[#0B1E43]">
+                                                {new Date(selectedInvoice.timelineDate).toLocaleDateString()}
+                                            </span>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Action Buttons */}
+                                <div className="border-t border-slate-100 pt-6 flex flex-wrap gap-3">
+                                    {selectedInvoice.status === 'Pending' && (
+                                        <>
+                                            <button onClick={() => setActionType('approve')} className="bg-[#0066FF] text-white px-6 py-2.5 rounded-xl text-sm font-black transition-colors hover:bg-[#0052cc]">
+                                                Approve Invoice
+                                            </button>
+                                            <button onClick={() => setActionType('reject')} className="bg-red-50 text-red-600 px-6 py-2.5 rounded-xl text-sm font-black transition-colors hover:bg-red-100">
+                                                Reject
+                                            </button>
+                                        </>
+                                    )}
+                                    {selectedInvoice.status === 'Approved' && (
+                                        <>
+                                            <button onClick={() => setActionType('pay')} className="bg-green-600 text-white px-6 py-2.5 rounded-xl text-sm font-black transition-colors hover:bg-green-700">
+                                                Upload Pay Proof
+                                            </button>
+                                            <button onClick={() => setActionType('penalty')} className="bg-amber-100 text-amber-700 px-6 py-2.5 rounded-xl text-sm font-black transition-colors hover:bg-amber-200">
+                                                Apply Penalty
+                                            </button>
+                                        </>
+                                    )}
+                                    {selectedInvoice.status === 'Repayment Pending' && (
+                                        <button onClick={() => setActionType('approve_repayment')} className="bg-[#0066FF] text-white px-6 py-2.5 rounded-xl text-sm font-black transition-colors hover:bg-[#0052cc]">
+                                            Verify Vendor Repayment
+                                        </button>
+                                    )}
+                                    {['Paid', 'Cleared', 'Rejected'].includes(selectedInvoice.status) && (
+                                        <p className="text-sm font-bold text-slate-400 italic">No further actions required.</p>
+                                    )}
+                                </div>
+                            </div>
+                        ) : (
                         <form onSubmit={handleAction} className="p-6 space-y-5">
                             {actionType === 'reject' && (
                                 <div className="space-y-2">
@@ -281,6 +367,16 @@ const AdminInvoiceRequests = () => {
                                             onChange={(e) => setFormData({...formData, approvedAmount: e.target.value})}
                                             className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-semibold focus:outline-none focus:border-[#0066FF] transition-colors"
                                             required
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-bold text-slate-700">Processing Fee (Deducted from Wallet)</label>
+                                        <input
+                                            type="number"
+                                            value={formData.processingFee}
+                                            onChange={(e) => setFormData({...formData, processingFee: e.target.value})}
+                                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-semibold focus:outline-none focus:border-[#0066FF] transition-colors"
+                                            placeholder="e.g. 500 (Optional)"
                                         />
                                     </div>
                                     <div className="space-y-2">
@@ -364,10 +460,10 @@ const AdminInvoiceRequests = () => {
                             <div className="pt-4 flex gap-3">
                                 <button
                                     type="button"
-                                    onClick={() => setSelectedInvoice(null)}
+                                    onClick={() => setActionType('view')}
                                     className="flex-1 px-4 py-3 rounded-xl font-bold text-sm text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors"
                                 >
-                                    Cancel
+                                    Back to Details
                                 </button>
                                 <button
                                     type="submit"
@@ -385,6 +481,7 @@ const AdminInvoiceRequests = () => {
                                 </button>
                             </div>
                         </form>
+                        )}
                     </div>
                 </div>
             )}

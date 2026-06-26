@@ -23,9 +23,9 @@ const UploadInvoiceTab = () => {
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
     
-    // Repay Modal State
-    const [repayModalOpen, setRepayModalOpen] = useState(false);
-    const [selectedRepayInvoice, setSelectedRepayInvoice] = useState(null);
+    // Modal State
+    const [selectedInvoice, setSelectedInvoice] = useState(null);
+    const [actionType, setActionType] = useState('view');
     const [repayProofFile, setRepayProofFile] = useState(null);
     const [repaySubmitting, setRepaySubmitting] = useState(false);
     
@@ -144,12 +144,11 @@ const UploadInvoiceTab = () => {
 
             const uploadedProofUrl = uploadRes.data.url;
 
-            await axios.post(`${import.meta.env.VITE_API_BASE_URL}/finance/invoice/${selectedRepayInvoice._id}/repay`, {
+            await axios.post(`${import.meta.env.VITE_API_BASE_URL}/finance/invoice/${selectedInvoice._id}/repay`, {
                 repaymentProofFile: uploadedProofUrl
             }, { headers: { Authorization: `Bearer ${token}` }});
 
-            setRepayModalOpen(false);
-            setSelectedRepayInvoice(null);
+            setSelectedInvoice(null);
             setRepayProofFile(null);
             fetchMyInvoices();
             setSuccess('Repayment submitted! Waiting for Admin verification.');
@@ -334,17 +333,17 @@ const UploadInvoiceTab = () => {
                                             )}
                                         </td>
                                         <td className="p-4 text-center">
-                                            {(inv.status === 'Approved' || inv.status === 'Paid') ? (
+                                            <div className="flex justify-center">
                                                 <button 
                                                     onClick={() => {
-                                                        setSelectedRepayInvoice(inv);
-                                                        setRepayModalOpen(true);
+                                                        setSelectedInvoice(inv);
+                                                        setActionType('view');
                                                     }}
-                                                    className="bg-amber-100 text-amber-700 hover:bg-amber-200 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-colors"
+                                                    className="bg-slate-100 text-slate-700 hover:bg-slate-200 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-colors flex items-center gap-2"
                                                 >
-                                                    Repay Invoice
+                                                    <FileText className="w-4 h-4" /> View Details
                                                 </button>
-                                            ) : '-'}
+                                            </div>
                                         </td>
                                     </tr>
                                 ))
@@ -354,16 +353,92 @@ const UploadInvoiceTab = () => {
                 </div>
             </div>
 
-            {/* Repay Modal */}
-            {repayModalOpen && selectedRepayInvoice && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
-                    <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300">
-                        <div className="p-6 border-b border-slate-100 flex justify-between items-center">
-                            <h3 className="text-xl font-black text-[#0B1E43]">Repay Invoice</h3>
-                            <button onClick={() => { setRepayModalOpen(false); setSelectedRepayInvoice(null); }} className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-50 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors">
+            {/* View & Repay Modal */}
+            {selectedInvoice && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 overflow-y-auto">
+                    <div className="bg-white rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300 my-8">
+                        <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                            <h3 className="text-xl font-black text-[#0B1E43] flex items-center gap-3">
+                                {actionType === 'view' ? <span className="bg-[#0B1E43] text-white px-3 py-1 rounded-lg text-sm">Invoice Details</span> : 'Repay Invoice'}
+                            </h3>
+                            <button onClick={() => setSelectedInvoice(null)} className="w-8 h-8 flex items-center justify-center rounded-full bg-white text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors shadow-sm">
                                 <XCircle className="w-5 h-5" />
                             </button>
                         </div>
+                        
+                        {actionType === 'view' ? (
+                            <div className="p-8 space-y-8">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="space-y-4">
+                                        <div>
+                                            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">Bank Details</h4>
+                                            <p className="text-sm font-bold text-[#0B1E43]">{selectedInvoice.bankDetails?.accountName}</p>
+                                            <p className="text-xs font-semibold text-slate-600">A/C: {selectedInvoice.bankDetails?.accountNo}</p>
+                                            <p className="text-xs font-semibold text-slate-600">IFSC: {selectedInvoice.bankDetails?.ifscCode}</p>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-4">
+                                        <div>
+                                            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">Amounts</h4>
+                                            <p className="text-sm font-semibold text-slate-600">Requested: <span className="font-black text-[#0B1E43]">₹{selectedInvoice.amount.toLocaleString()}</span></p>
+                                            {selectedInvoice.approvedAmount && (
+                                                <p className="text-sm font-semibold text-green-600">Approved: <span className="font-black">₹{selectedInvoice.approvedAmount.toLocaleString()}</span></p>
+                                            )}
+                                            {selectedInvoice.processingFee > 0 && (
+                                                <p className="text-sm font-semibold text-amber-600">Processing Fee: <span className="font-black">₹{selectedInvoice.processingFee.toLocaleString()}</span></p>
+                                            )}
+                                            {selectedInvoice.penaltyAmount > 0 && (
+                                                <p className="text-sm font-semibold text-red-600">Penalty: <span className="font-black">₹{selectedInvoice.penaltyAmount.toLocaleString()}</span></p>
+                                            )}
+                                        </div>
+                                        <div>
+                                            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">Documents</h4>
+                                            <a href={selectedInvoice.invoiceFile} target="_blank" rel="noreferrer" className="text-xs font-bold text-[#0066FF] hover:underline flex items-center gap-1">
+                                                <FileText className="w-3.5 h-3.5" /> View Original Invoice
+                                            </a>
+                                            {selectedInvoice.paymentProofFile && (
+                                                <a href={selectedInvoice.paymentProofFile} target="_blank" rel="noreferrer" className="text-xs font-bold text-green-600 hover:underline flex items-center gap-1 mt-1">
+                                                    <CheckCircle2 className="w-3.5 h-3.5" /> View Admin Payment Proof
+                                                </a>
+                                            )}
+                                            {selectedInvoice.repaymentProofFile && (
+                                                <a href={selectedInvoice.repaymentProofFile} target="_blank" rel="noreferrer" className="text-xs font-bold text-amber-600 hover:underline flex items-center gap-1 mt-1">
+                                                    <CheckCircle2 className="w-3.5 h-3.5" /> View Your Repayment Proof
+                                                </a>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="bg-slate-50 rounded-2xl p-4 flex items-center justify-between border border-slate-100">
+                                    <div>
+                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-1">Current Status</span>
+                                        <span className={`px-3 py-1 rounded-lg text-xs font-black uppercase tracking-wider ${getStatusColor(selectedInvoice.status)}`}>
+                                            {selectedInvoice.status}
+                                        </span>
+                                    </div>
+                                    {selectedInvoice.timelineDate && (
+                                        <div className="text-right">
+                                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-1">Repayment Deadline</span>
+                                            <span className="text-sm font-bold text-[#0B1E43]">
+                                                {new Date(selectedInvoice.timelineDate).toLocaleDateString()}
+                                            </span>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="border-t border-slate-100 pt-6 flex flex-wrap gap-3">
+                                    {(selectedInvoice.status === 'Approved' || selectedInvoice.status === 'Paid') && (
+                                        <button onClick={() => setActionType('repay')} className="bg-amber-600 text-white px-6 py-2.5 rounded-xl text-sm font-black transition-colors hover:bg-amber-700">
+                                            Repay Invoice
+                                        </button>
+                                    )}
+                                    {['Pending', 'Repayment Pending', 'Cleared', 'Rejected'].includes(selectedInvoice.status) && (
+                                        <p className="text-sm font-bold text-slate-400 italic">No further actions required.</p>
+                                    )}
+                                </div>
+                            </div>
+                        ) : (
                         <form onSubmit={handleRepaySubmit} className="p-6 space-y-5">
                             <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2 mb-4 text-center">
                                 <p className="text-sm font-bold text-slate-500">Please transfer the amount to:</p>
@@ -374,7 +449,7 @@ const UploadInvoiceTab = () => {
                                     <span className="text-xs font-bold text-slate-500">Amount to Pay</span>
                                     <span className="text-xl font-black text-amber-600 flex items-center justify-center">
                                         <IndianRupee className="w-5 h-5 mr-0.5" />
-                                        {((selectedRepayInvoice.approvedAmount || selectedRepayInvoice.amount) + selectedRepayInvoice.penaltyAmount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                        {((selectedInvoice.approvedAmount || selectedInvoice.amount) + selectedInvoice.penaltyAmount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                                     </span>
                                 </div>
                             </div>
@@ -390,15 +465,25 @@ const UploadInvoiceTab = () => {
                                 />
                             </div>
 
-                            <button
-                                type="submit"
-                                disabled={repaySubmitting}
-                                className="w-full bg-amber-600 text-white px-4 py-3 rounded-xl font-black text-sm transition-colors hover:bg-amber-700 flex items-center justify-center gap-2"
-                            >
-                                {repaySubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
-                                Submit Repayment
-                            </button>
+                            <div className="pt-4 flex gap-3">
+                                <button
+                                    type="button"
+                                    onClick={() => setActionType('view')}
+                                    className="flex-1 px-4 py-3 rounded-xl font-bold text-sm text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors"
+                                >
+                                    Back to Details
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={repaySubmitting}
+                                    className="flex-1 bg-amber-600 text-white px-4 py-3 rounded-xl font-black text-sm transition-colors hover:bg-amber-700 flex items-center justify-center gap-2"
+                                >
+                                    {repaySubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
+                                    Submit Repayment
+                                </button>
+                            </div>
                         </form>
+                        )}
                     </div>
                 </div>
             )}

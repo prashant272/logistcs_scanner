@@ -10,6 +10,8 @@ import WhatsAppButton from './components/common/WhatsAppButton';
 import CartDrawer from './components/public/CartDrawer';
 import { CartProvider } from './context/CartContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { SocketProvider } from './context/SocketContext';
+import { Toaster } from 'react-hot-toast';
 import { LocationProvider } from './services/LocationService';
 import { PricingProvider } from './services/PricingService';
 import { EnquiryProvider } from './services/EnquiryService';
@@ -123,16 +125,16 @@ const CustomerPrivateRoute = ({ children }) => {
   return children;
 };
 
-// ... existing imports ...
-
 function App() {
   return (
     <AuthProvider>
-      <LocationProvider>
-        <PricingProvider>
-          <EnquiryProvider>
-            <CartProvider>
-              <Router>
+      <SocketProvider>
+        <LocationProvider>
+          <PricingProvider>
+            <EnquiryProvider>
+              <CartProvider>
+                <Toaster position="top-right" />
+                <Router>
                 <ScrollRestoration />
                 <ScrollToTopButton />
                 <WhatsAppButton />
@@ -240,10 +242,11 @@ function App() {
           </Routes>
           </Suspense>
         </Router>
-            </CartProvider>
-          </EnquiryProvider>
-        </PricingProvider>
-      </LocationProvider>
+              </CartProvider>
+            </EnquiryProvider>
+          </PricingProvider>
+        </LocationProvider>
+      </SocketProvider>
     </AuthProvider>
   );
 }

@@ -1,7 +1,10 @@
 const express = require("express");
 const dotenv = require("dotenv");
 const cors = require("cors");
+const http = require("http");
 const connectDB = require("./config/db");
+const { initSocket } = require('./utils/socketSetup');
+const { initCronJobs } = require('./cron/cronJobs');
 
 dotenv.config();
 connectDB();
@@ -27,6 +30,7 @@ app.use("/api/coupons", require("./routes/couponRoutes"));
 app.use("/api/complaints", require("./routes/complaintRoutes"));
 app.use("/api/rm", require("./routes/rmRoutes"));
 app.use("/api/finance", require("./routes/financeRoutes"));
+app.use("/api/notifications", require("./routes/notificationRoutes"));
 app.use("/api/ihc", require("./routes/ihcRoutes"));
 app.use("/api/upload", require("./routes/uploadRoutes"));
 
@@ -55,7 +59,15 @@ const runPricingCleanup = async () => {
     }
 };
 
-app.listen(PORT, () => {
+const server = http.createServer(app);
+
+// Initialize Socket.io
+initSocket(server);
+
+// Initialize Cron Jobs
+initCronJobs();
+
+server.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
     // Run cleanup 10 seconds after startup, then every 24 hours
     setTimeout(runPricingCleanup, 10000);

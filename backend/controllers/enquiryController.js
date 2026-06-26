@@ -158,6 +158,9 @@ exports.createEnquiry = async (req, res) => {
         });
 
         // Notifications
+        const { sendAdminNotification } = require('../utils/notificationService');
+        await sendAdminNotification(`New ${isBooking ? 'Booking' : 'Enquiry'} received from ${fromLocation} to ${toLocation}`, 'info', '/admin/enquiry-management');
+
         let customerEmail = guestEmail;
         if (validatedClientId) {
             const User = require('../models/User');

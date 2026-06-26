@@ -25,6 +25,7 @@ const invoiceRequestSchema = new mongoose.Schema({
     },
     rejectionReason: { type: String, default: '' },
     approvedAmount: { type: Number },
+    processingFee: { type: Number, default: 0 },
     timelineDate: { type: Date }, // Deadline to repay
     penaltyAmount: { type: Number, default: 0 },
     paymentProofFile: { type: String, default: '' }, // Admin uploaded proof of external payment

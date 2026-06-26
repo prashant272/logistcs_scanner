@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Menu, Search, Bell, LogOut } from 'lucide-react';
+import { Menu, Search, LogOut } from 'lucide-react';
+import NotificationBell from '../common/NotificationBell';
 
 const VendorHeader = ({ isSidebarOpen, setSidebarOpen, user, logout, searchQuery, setSearchQuery }) => {
     const navigate = useNavigate();
@@ -35,12 +36,7 @@ const VendorHeader = ({ isSidebarOpen, setSidebarOpen, user, logout, searchQuery
                 </div>
 
                 {/* Notification Bell */}
-                <button className="relative p-2.5 bg-[#f4f7fc] hover:bg-slate-100 rounded-xl !text-slate-600 transition-all border border-transparent hover:border-slate-200/50 cursor-pointer">
-                    <Bell size={16} />
-                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-[9px] font-black text-white flex items-center justify-center rounded-full border border-white animate-pulse">
-                        3
-                    </span>
-                </button>
+                <NotificationBell />
 
                 {/* Available Wallet Balance */}
                 {user?.role === 'vendor' && (
