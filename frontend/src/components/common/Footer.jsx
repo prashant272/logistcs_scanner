@@ -40,7 +40,6 @@ const Footer = () => {
                             <li><Link to="/terms" className="!text-slate-900 hover:!text-[#0066FF] font-bold text-sm">Terms & Conditions</Link></li>
                             <li><Link to="/privacy" className="!text-slate-900 hover:!text-[#0066FF] font-bold text-sm">Privacy Policy</Link></li>
                             <li><Link to="/refund" className="!text-slate-900 hover:!text-[#0066FF] font-bold text-sm">Refund Policy</Link></li>
-                            <li><Link to="/plan-rates" className="!text-slate-900 hover:!text-[#0066FF] font-bold text-sm">Plan Rates</Link></li>
                             <li><Link to="/support" className="!text-slate-900 hover:!text-[#0066FF] font-bold text-sm">Support</Link></li>
                             <li><Link to="/contact" className="!text-slate-900 hover:!text-[#0066FF] font-bold text-sm">Contact Us</Link></li>
                         </ul>

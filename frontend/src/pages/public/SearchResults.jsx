@@ -90,10 +90,7 @@ const SearchResults = () => {
   const [guestCommodity, setGuestCommodity] = useState('');
   const [guestPhoneCode, setGuestPhoneCode] = useState('+91');
   const [guestPhone, setGuestPhone] = useState('');
-  const [guestEmail, setGuestEmail] = useState(() => {
-    const saved = localStorage.getItem('guestInfo');
-    return saved ? JSON.parse(saved).guestEmail : '';
-  });
+  const [guestEmail, setGuestEmail] = useState('');
   const [messageInput, setMessageInput] = useState('');
   const [targetPrice, setTargetPrice] = useState('');
   const [attachment, setAttachment] = useState('');
@@ -157,43 +154,9 @@ const SearchResults = () => {
           // User logged in: Automatically trigger broadcast
           handleAutoBroadcast();
         }
-      } else if (savedGuest) {
-        // Guest user with saved info: Automatically trigger broadcast using saved info
-        const guestInfo = JSON.parse(savedGuest);
-        setPendingAction({ type: 'enquiry', rate: null });
-        setLoading(true);
-        const broadcastPayload = {
-          fromLocation: searchPayload.fromLocation,
-          toLocation: searchPayload.toLocation,
-          type: searchPayload.type,
-          category: queryDetails.airCategory,
-          airline: queryDetails.airAirline,
-          weightRange: queryDetails.weight,
-          truckLoad: queryDetails.loadType,
-          vehicleType: queryDetails.vehicleType,
-          seaLoadType: searchPayload.seaLoadType || queryDetails.loadType,
-          fclStandard: searchPayload.fclStandard || queryDetails.fclStandard,
-          cbmRange: queryDetails.lclVolumeRange,
-          handlingType: queryDetails.handlingType || 'General Cargo',
-          additionalServices: queryDetails.additionalServices || '',
-          deliverySpeed: '3-5',
-          price: null,
-          vendor: null,
-          isDirect: true,
-          isBooking: !!(user && user.role === 'vendor'),
-          ...guestInfo
-        };
-        createEnquiry(broadcastPayload)
-          .then(() => {
-            setSuccess(true);
-          })
-          .catch(err => {
-            console.error(err);
-            setError("Failed to broadcast enquiry.");
-          })
-          .finally(() => setLoading(false));
       } else {
         // Guest user: Prompt for details to raise broadcast
+        // We no longer auto-broadcast using savedGuest to prevent accidental submissions from previous users
         setPendingAction({ type: 'enquiry', rate: null });
         setIsGuestModalOpen(true);
       }
@@ -706,11 +669,28 @@ const SearchResults = () => {
             </div>
           ) : (
             <div className="bg-white rounded-3xl p-12 text-center border border-slate-100 shadow-[0_12px_45px_rgba(11,30,67,0.015)] space-y-4 max-w-lg mx-auto">
-              <Loader2 className="animate-spin text-[#0066FF] w-8 h-8 mx-auto" />
-              <h3 className="font-extrabold text-slate-800 text-sm uppercase tracking-wider">No matching rates found</h3>
-              <p className="text-xs text-slate-400 font-semibold leading-relaxed">
-                Auto-broadcasting your enquiry to all our verified cargo carriers. You will receive quotes on your email/phone shortly.
-              </p>
+              {!user ? (
+                <>
+                  <h3 className="font-extrabold text-slate-800 text-sm uppercase tracking-wider">No matching rates found</h3>
+                  <p className="text-xs text-slate-400 font-semibold leading-relaxed">
+                    Please provide your contact details in the form to broadcast your enquiry to all our verified cargo carriers.
+                  </p>
+                  <button
+                    onClick={() => setIsGuestModalOpen(true)}
+                    className="mt-4 bg-[#0066FF] hover:bg-[#0052cc] text-white font-extrabold text-xs px-6 py-2.5 rounded-xl transition-all shadow-md cursor-pointer"
+                  >
+                    Provide Details
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Loader2 className="animate-spin text-[#0066FF] w-8 h-8 mx-auto" />
+                  <h3 className="font-extrabold text-slate-800 text-sm uppercase tracking-wider">No matching rates found</h3>
+                  <p className="text-xs text-slate-400 font-semibold leading-relaxed">
+                    Auto-broadcasting your enquiry to all our verified cargo carriers. You will receive quotes on your email/phone shortly.
+                  </p>
+                </>
+              )}
             </div>
           )
         )}
@@ -958,7 +938,7 @@ const SearchResults = () => {
               {/* Email Address */}
               <div className="space-y-1">
                 <label className="block text-[10px] font-black text-slate-800 uppercase tracking-wider flex items-center gap-1">
-                  <Mail size={11} className="text-slate-400" /> Email Address
+                  <Mail size={11} className="text-slate-400" /> Work Email
                 </label>
                 <input
                   type="email"
