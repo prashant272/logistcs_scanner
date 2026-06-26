@@ -11,6 +11,21 @@ const PricingPlans = () => {
     const [successMessage, setSuccessMessage] = useState('');
     const [upgradingId, setUpgradingId] = useState(null);
 
+    const isOutsideIndia = user?.country && user.country.toLowerCase() !== 'india' && user.country.toLowerCase() !== 'in';
+
+    const getPlanDisplayPrice = (plan) => {
+        if (plan.price === 0) return { currency: '', amount: 0, text: 'Free' };
+        const sym = isOutsideIndia ? '$' : '₹';
+        const locale = isOutsideIndia ? 'en-US' : 'en-IN';
+        return { currency: sym, amount: plan.price, text: `${sym}${plan.price.toLocaleString(locale)}` };
+    };
+
+    const getCouponFinalDisplay = (coupon, plan) => {
+        const sym = isOutsideIndia ? '$' : '₹';
+        const locale = isOutsideIndia ? 'en-US' : 'en-IN';
+        return { currency: sym, amount: coupon.finalPrice, text: `${sym}${coupon.finalPrice.toLocaleString(locale)}` };
+    };
+
     // Coupon states
     const [couponCodes, setCouponCodes] = useState({}); // { planId: 'code' }
     const [appliedCoupons, setAppliedCoupons] = useState({}); // { planId: { code, discountAmount, finalPrice } }
@@ -326,7 +341,7 @@ const PricingPlans = () => {
                     <div className="bg-slate-50/70 p-3 rounded-2xl border border-slate-100/50">
                         <span className="text-[8px] font-black text-slate-400 uppercase tracking-wider block">Price Paid</span>
                         <span className="font-extrabold text-slate-800 text-sm mt-0.5 block">
-                            ₹{user?.activePlan?.price !== undefined ? user.activePlan.price.toLocaleString('en-IN') : '0'}
+                            {user?.activePlan?.price !== undefined ? getPlanDisplayPrice(user.activePlan).text : '0'}
                         </span>
                     </div>
                     <div className="bg-slate-50/70 p-3 rounded-2xl border border-slate-100/50">
@@ -400,19 +415,19 @@ const PricingPlans = () => {
                                             <div className="flex flex-col items-center">
                                                 <div className="flex items-center gap-1.5">
                                                     <span className="text-sm font-semibold text-slate-400 line-through">
-                                                        ₹{plan.price.toLocaleString('en-IN')}.00
+                                                        {getPlanDisplayPrice(plan).text}.00
                                                     </span>
                                                     <span className="text-3xl font-black text-green-600 tracking-tight">
-                                                        ₹{appliedCoupons[plan._id].finalPrice.toLocaleString('en-IN')}.00
+                                                        {getCouponFinalDisplay(appliedCoupons[plan._id], plan).text}.00
                                                     </span>
                                                 </div>
                                                 <span className="text-[9px] text-green-600 font-extrabold uppercase mt-1">
-                                                    Code {appliedCoupons[plan._id].code} Applied (₹{appliedCoupons[plan._id].discountAmount} Off)
+                                                    Code {appliedCoupons[plan._id].code} Applied ({getPlanDisplayPrice(plan).currency}{appliedCoupons[plan._id].discountAmount} Off)
                                                 </span>
                                             </div>
                                         ) : (
                                             <span className={`text-3xl font-black tracking-tight ${isCurrent ? 'text-slate-600' : 'text-[#0066FF]'}`}>
-                                                ₹{plan.price.toLocaleString('en-IN')}.00
+                                                {getPlanDisplayPrice(plan).text}{plan.price > 0 ? '.00' : ''}
                                             </span>
                                         )}
                                         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-1">/ {plan.duration}</span>
@@ -487,7 +502,7 @@ const PricingPlans = () => {
                                                 </tr>
                                                 <tr className="border-b border-slate-350">
                                                     <td className="p-2 bg-slate-50/80 border-r border-slate-350 font-extrabold text-slate-500">Monthly Price</td>
-                                                    <td className="p-2">₹{plan.price.toLocaleString('en-IN')}</td>
+                                                    <td className="p-2">{getPlanDisplayPrice(plan).text}</td>
                                                 </tr>
                                                 <tr className="border-b border-slate-350">
                                                     <td className="p-2 bg-slate-50/80 border-r border-slate-350 font-extrabold text-slate-500">Enquiry Limit</td>

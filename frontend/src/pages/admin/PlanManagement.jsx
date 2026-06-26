@@ -5,7 +5,7 @@ import {
   DollarSign, Clock, Users, ShieldAlert, Bold, Italic, Link as LinkIcon, 
   List, ListOrdered, Undo, Redo, Image, Quote, Table, Video
 } from 'lucide-react';
-import CountrySelect from '../../components/common/CountrySelect';
+import MultiCountrySelect from '../../components/common/MultiCountrySelect';
 
 const PlanManagement = () => {
   const [plans, setPlans] = useState([]);
@@ -18,12 +18,12 @@ const PlanManagement = () => {
   const [editId, setEditId] = useState(null);
   const [planName, setPlanName] = useState('');
   const [price, setPrice] = useState('');
+  const [currency, setCurrency] = useState('INR');
   const [status, setStatus] = useState('Active');
   const [inquiryLimit, setInquiryLimit] = useState('');
   const [duration, setDuration] = useState('Monthly');
   const [userType, setUserType] = useState('customer');
-  const [country, setCountry] = useState('');
-  const [phoneCode, setPhoneCode] = useState(''); // dummy for CountrySelect
+  const [countries, setCountries] = useState([]);
   
   const editorRef = useRef(null);
 
@@ -57,11 +57,12 @@ const PlanManagement = () => {
     setEditId(plan._id);
     setPlanName(plan.name || '');
     setPrice(plan.price !== undefined ? plan.price : '');
+    setCurrency(plan.currency || 'INR');
     setStatus(plan.status || 'Active');
     setInquiryLimit(plan.inquiryLimit !== undefined ? plan.inquiryLimit : '');
     setDuration(plan.duration || 'Monthly');
     setUserType(plan.userType || 'customer');
-    setCountry(plan.country || '');
+    setCountries(plan.country ? plan.country.split(',').map(c => c.trim()) : []);
     if (editorRef.current) {
       editorRef.current.innerHTML = plan.description || '';
     }
@@ -73,11 +74,12 @@ const PlanManagement = () => {
     setEditId(null);
     setPlanName('');
     setPrice('');
+    setCurrency('INR');
     setStatus('Active');
     setInquiryLimit('');
     setDuration('Monthly');
     setUserType('customer');
-    setCountry('');
+    setCountries([]);
     if (editorRef.current) {
       editorRef.current.innerHTML = '';
     }
@@ -90,7 +92,7 @@ const PlanManagement = () => {
     setError('');
     setSuccess('');
     
-    if (!planName || !price || !inquiryLimit || !duration || !userType || !country) {
+    if (!planName || !price || !inquiryLimit || !duration || !userType || countries.length === 0) {
       setError('Please fill in all required fields.');
       return;
     }
@@ -107,11 +109,12 @@ const PlanManagement = () => {
       const payload = {
         name: planName,
         price: Number(price),
+        currency,
         status,
         inquiryLimit: Number(inquiryLimit),
         duration,
         userType,
-        country,
+        country: countries.join(', '),
         description: descriptionHtml
       };
 
@@ -229,16 +232,26 @@ const PlanManagement = () => {
 
               <div className="group">
                 <label className="block text-xs font-bold !text-slate-900 mb-1">
-                  Price <span className="text-red-500">*</span>
+                  Price & Currency <span className="text-red-500">*</span>
                 </label>
-                <input
-                  type="number"
-                  placeholder="Price"
-                  value={price}
-                  onChange={(e) => setPrice(e.target.value)}
-                  className="w-full bg-[#f4f7fc] border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-800 focus:outline-none focus:bg-white focus:border-[#00b2fe] transition-all"
-                  required
-                />
+                <div className="flex bg-[#f4f7fc] border border-slate-200 rounded-xl focus-within:bg-white focus-within:border-[#00b2fe] transition-all overflow-hidden">
+                  <select
+                    value={currency}
+                    onChange={(e) => setCurrency(e.target.value)}
+                    className="bg-slate-100 border-r border-slate-200 px-3 py-2.5 text-xs font-black text-slate-700 focus:outline-none cursor-pointer"
+                  >
+                    <option value="INR">INR (₹)</option>
+                    <option value="USD">USD ($)</option>
+                  </select>
+                  <input
+                    type="number"
+                    placeholder="Enter Price"
+                    value={price}
+                    onChange={(e) => setPrice(e.target.value)}
+                    className="w-full bg-transparent px-4 py-2.5 text-xs font-bold text-slate-800 focus:outline-none"
+                    required
+                  />
+                </div>
               </div>
             </div>
 
@@ -308,14 +321,10 @@ const PlanManagement = () => {
 
             {/* Country Dropdown */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              <CountrySelect
-                selectedCountry={country}
-                selectedPhoneCode={phoneCode}
-                onChange={({ country, phoneCode }) => {
-                  setCountry(country);
-                  setPhoneCode(phoneCode);
-                }}
-                label="Select Country"
+              <MultiCountrySelect
+                selectedCountries={countries}
+                onChange={setCountries}
+                label="Select Countries"
                 required={true}
                 showCustomOthersInput={false}
               />
@@ -415,16 +424,18 @@ const PlanManagement = () => {
                   <div className="bg-white/10 border border-white/10 px-3 py-1.5 rounded-2xl text-right">
                     <span className="text-[8px] text-white/70 block uppercase font-bold tracking-wider">Country</span>
                     <span className="font-extrabold text-xs flex items-center gap-1 mt-0.5">
-                      <Globe size={11} /> {country || 'Not Selected'}
+                      <Globe size={11} /> <span className="truncate max-w-[100px]" title={countries.length > 0 ? countries.join(', ') : 'Not Selected'}>{countries.length > 0 ? countries.join(', ') : 'Not Selected'}</span>
                     </span>
                   </div>
                 </div>
 
                 {/* Price Display */}
                 <div className="py-2">
-                  <div className="flex items-baseline">
-                    <span className="text-3xl font-black">₹{price ? Number(price).toLocaleString('en-IN') : '0'}</span>
-                    <span className="text-xs font-semibold text-white/80 ml-1">/ {duration}</span>
+                  <div className="flex flex-col">
+                    <div className="flex items-baseline">
+                      <span className="text-3xl font-black">{currency === 'USD' ? '$' : '₹'}{price ? Number(price).toLocaleString(currency === 'INR' ? 'en-IN' : 'en-US') : '0'}</span>
+                      <span className="text-xs font-semibold text-white/80 ml-1">/ {duration} ({currency})</span>
+                    </div>
                   </div>
                   <span className="text-[10px] text-white/80 font-bold block mt-1">
                     Limit: <span className="font-black text-white">{inquiryLimit || '0'}</span> Enquiries
@@ -495,9 +506,11 @@ const PlanManagement = () => {
                       <td className="p-4 uppercase tracking-wider text-slate-500">{p.userType}</td>
                       <td className="p-4 flex items-center gap-1.5 mt-1.5">
                         <Globe size={13} className="text-slate-400" />
-                        <span>{p.country}</span>
+                        <span className="truncate max-w-[120px]" title={p.country}>{p.country}</span>
                       </td>
-                      <td className="p-4 font-extrabold text-slate-800">₹ {p.price.toLocaleString()}</td>
+                      <td className="p-4 font-extrabold text-slate-800">
+                        {p.currency === 'USD' ? '$' : '₹'} {p.price?.toLocaleString(p.currency === 'INR' ? 'en-IN' : 'en-US')}
+                      </td>
                       <td className="p-4 text-slate-500">{p.duration}</td>
                       <td className="p-4 font-mono text-slate-700">{p.inquiryLimit} Enquiries</td>
                       <td className="p-4">

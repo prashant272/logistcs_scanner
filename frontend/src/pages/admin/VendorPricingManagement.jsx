@@ -62,10 +62,11 @@ const VendorPricingManagement = () => {
       const config = {
         headers: { Authorization: `Bearer ${token}` }
       };
-      const { data } = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/admin/vendors`, config);
-      setVendors(data || []);
-      if (data && data.length > 0) {
-        setSelectedVendorId(data[0]._id);
+      const { data } = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/admin/vendors?limit=1000`, config);
+      const vendorsList = data.data || [];
+      setVendors(vendorsList);
+      if (vendorsList.length > 0) {
+        setSelectedVendorId(vendorsList[0]._id);
       }
       setLoadingVendors(false);
     } catch (err) {

@@ -10,6 +10,11 @@ const planSchema = new mongoose.Schema({
         type: Number,
         required: true
     },
+    currency: {
+        type: String,
+        enum: ['INR', 'USD'],
+        default: 'INR'
+    },
     status: {
         type: String,
         enum: ['Active', 'Inactive'],

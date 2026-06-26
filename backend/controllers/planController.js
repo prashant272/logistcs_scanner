@@ -11,12 +11,10 @@ exports.getPlans = async (req, res) => {
         let query = {};
         if (userType) query.userType = userType;
         if (country) {
-            const countryParts = country.split(',').map(part => part.trim()).filter(Boolean);
-            const regexes = countryParts.map(part => new RegExp(`^${part}$`, 'i'));
             query.$or = [
-                { country: { $in: regexes } },
-                { country: 'Others' },
-                { country: country }
+                { country: { $regex: new RegExp(`\\b${country}\\b`, 'i') } },
+                { country: { $regex: /Others/i } },
+                { country: { $regex: /Worldwide/i } }
             ];
         }
         if (activeOnly === 'true') {
@@ -33,7 +31,7 @@ exports.getPlans = async (req, res) => {
 // Create a plan
 exports.createPlan = async (req, res) => {
     try {
-        const { name, price, status, inquiryLimit, duration, userType, country, description } = req.body;
+        const { name, price, currency, status, inquiryLimit, duration, userType, country, description } = req.body;
         if (!name || !price || !inquiryLimit || !duration || !userType || !country) {
             return res.status(400).json({ message: 'Missing required fields' });
         }
@@ -41,6 +39,7 @@ exports.createPlan = async (req, res) => {
         const plan = await Plan.create({
             name,
             price: Number(price),
+            currency: currency || 'INR',
             status: status || 'Active',
             inquiryLimit: Number(inquiryLimit),
             duration,
@@ -151,21 +150,32 @@ exports.createRazorpayOrder = async (req, res) => {
             return res.status(400).json({ message: 'Selected plan is inactive' });
         }
 
-        let finalPrice = plan.price;
+        let isOutsideIndia = false;
+        if (req.user) {
+            const user = await User.findById(req.user.id);
+            if (user && user.country && user.country.toLowerCase() !== 'india' && user.country.toLowerCase() !== 'in') {
+                isOutsideIndia = true;
+            }
+        }
+
+        let basePrice = plan.price;
+        let currencyCode = isOutsideIndia ? 'USD' : 'INR';
+
+        let finalPrice = basePrice;
         let discountAmount = 0;
 
         if (couponCode) {
             const coupon = await Coupon.findOne({ code: couponCode.toUpperCase() });
             if (coupon && coupon.status === 'Active' && new Date(coupon.expiryDate) >= new Date()) {
                 if (coupon.discountType === 'Percent') {
-                    discountAmount = (plan.price * coupon.discountValue) / 100;
+                    discountAmount = (basePrice * coupon.discountValue) / 100;
                 } else {
                     discountAmount = coupon.discountValue;
                 }
-                if (discountAmount > plan.price) {
-                    discountAmount = plan.price;
+                if (discountAmount > basePrice) {
+                    discountAmount = basePrice;
                 }
-                finalPrice = plan.price - discountAmount;
+                finalPrice = basePrice - discountAmount;
             }
         }
 
@@ -179,7 +189,7 @@ exports.createRazorpayOrder = async (req, res) => {
             'https://api.razorpay.com/v1/orders',
             {
                 amount: amountInPaise,
-                currency: 'INR',
+                currency: currencyCode,
                 receipt: `rcpt_${plan._id.toString().slice(-6)}_${Date.now().toString().slice(-8)}`
             },
             {
@@ -196,7 +206,7 @@ exports.createRazorpayOrder = async (req, res) => {
             currency: response.data.currency,
             keyId: keyId,
             planName: plan.name,
-            planPrice: plan.price,
+            planPrice: basePrice,
             finalPrice: finalPrice,
             discountAmount: discountAmount
         });
