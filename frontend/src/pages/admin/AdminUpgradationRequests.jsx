@@ -206,7 +206,7 @@ const AdminUpgradationRequests = () => {
                                                                 <span className="text-xs font-bold text-slate-500">Amount</span>
                                                                 <span className="text-sm font-black text-[#0066FF] flex items-center">
                                                                     <IndianRupee className="w-3.5 h-3.5 mr-0.5" />
-                                                                    {act.planDetails.amount}
+                                                                    {act.planDetails.amount / 100}
                                                                 </span>
                                                             </div>
                                                         )}
