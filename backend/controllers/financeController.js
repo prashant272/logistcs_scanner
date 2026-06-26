@@ -234,3 +234,242 @@ exports.verifyRazorpayPayment = async (req, res) => {
         res.status(500).json({ message: 'Server error', error: error.message });
     }
 };
+
+const InvoiceRequest = require('../models/InvoiceRequest');
+const WalletTransaction = require('../models/WalletTransaction');
+
+// @desc    Submit Invoice Request
+// @route   POST /api/finance/invoice
+// @access  Vendor
+exports.submitInvoice = async (req, res) => {
+    try {
+        const { lsId, vendorName, bankDetails, amount, invoiceFile } = req.body;
+        
+        const invoice = await InvoiceRequest.create({
+            vendor: req.user.id,
+            lsId,
+            vendorName,
+            bankDetails,
+            amount,
+            invoiceFile
+        });
+
+        res.status(201).json({ message: 'Invoice submitted successfully', invoice });
+    } catch (error) {
+        console.error('Submit Invoice Error:', error);
+        res.status(500).json({ message: 'Server Error' });
+    }
+};
+
+// @desc    Get Vendor Invoices
+// @route   GET /api/finance/invoice/my
+// @access  Vendor
+exports.getMyInvoices = async (req, res) => {
+    try {
+        const invoices = await InvoiceRequest.find({ vendor: req.user.id }).sort({ createdAt: -1 });
+        res.status(200).json(invoices);
+    } catch (error) {
+        console.error('Get My Invoices Error:', error);
+        res.status(500).json({ message: 'Server Error' });
+    }
+};
+
+// @desc    Get All Invoices (Admin)
+// @route   GET /api/admin/finance/invoices
+// @access  Admin
+exports.getAllInvoices = async (req, res) => {
+    try {
+        const invoices = await InvoiceRequest.find().populate('vendor', 'name email phone company lsId').sort({ createdAt: -1 });
+        res.status(200).json(invoices);
+    } catch (error) {
+        console.error('Get All Invoices Error:', error);
+        res.status(500).json({ message: 'Server Error' });
+    }
+};
+
+// @desc    Update Invoice Status & Timeline
+// @route   PUT /api/admin/finance/invoices/:id/status
+// @access  Admin
+exports.updateInvoiceStatus = async (req, res) => {
+    try {
+        const { status, rejectionReason, approvedAmount, timelineDate } = req.body;
+        
+        const invoice = await InvoiceRequest.findById(req.params.id);
+        if (!invoice) return res.status(404).json({ message: 'Invoice not found' });
+
+        if (status === 'Approved' && invoice.status !== 'Approved') {
+            const User = require('../models/User');
+            const vendor = await User.findById(invoice.vendor);
+            if (!vendor) return res.status(404).json({ message: 'Vendor not found' });
+
+            const finalAmount = approvedAmount || invoice.amount;
+            
+            // Deduct from wallet
+            vendor.walletBalance = (vendor.walletBalance || 0) - finalAmount;
+            await vendor.save();
+
+            // Create Transaction
+            await WalletTransaction.create({
+                vendor: vendor._id,
+                type: 'Debit',
+                amount: finalAmount,
+                description: `Invoice Approved - Payment Deducted`,
+                referenceId: invoice._id,
+                balanceAfter: vendor.walletBalance
+            });
+
+            invoice.approvedAmount = finalAmount;
+            invoice.timelineDate = timelineDate;
+        }
+
+        invoice.status = status;
+        if (rejectionReason) invoice.rejectionReason = rejectionReason;
+        
+        await invoice.save();
+
+        res.status(200).json({ message: 'Invoice status updated', invoice });
+    } catch (error) {
+        console.error('Update Invoice Status Error:', error);
+        res.status(500).json({ message: 'Server Error' });
+    }
+};
+
+// @desc    Upload Payment Proof and Mark Paid
+// @route   POST /api/admin/finance/invoices/:id/pay
+// @access  Admin
+exports.payInvoice = async (req, res) => {
+    try {
+        const { paymentProofFile } = req.body;
+        const invoice = await InvoiceRequest.findById(req.params.id);
+        if (!invoice) return res.status(404).json({ message: 'Invoice not found' });
+
+        invoice.status = 'Paid';
+        invoice.paymentProofFile = paymentProofFile;
+        await invoice.save();
+
+        res.status(200).json({ message: 'Payment proof uploaded successfully', invoice });
+    } catch (error) {
+        console.error('Pay Invoice Error:', error);
+        res.status(500).json({ message: 'Server Error' });
+    }
+};
+
+// @desc    Apply Penalty
+// @route   POST /api/admin/finance/invoices/:id/penalty
+// @access  Admin
+exports.applyPenalty = async (req, res) => {
+    try {
+        const { penaltyAmount } = req.body;
+        const invoice = await InvoiceRequest.findById(req.params.id);
+        if (!invoice) return res.status(404).json({ message: 'Invoice not found' });
+
+        const User = require('../models/User');
+        const vendor = await User.findById(invoice.vendor);
+        if (!vendor) return res.status(404).json({ message: 'Vendor not found' });
+
+        // Deduct penalty from wallet
+        vendor.walletBalance = (vendor.walletBalance || 0) - penaltyAmount;
+        await vendor.save();
+
+        await WalletTransaction.create({
+            vendor: vendor._id,
+            type: 'Debit',
+            amount: penaltyAmount,
+            description: `Penalty for late payment of Invoice`,
+            referenceId: invoice._id,
+            balanceAfter: vendor.walletBalance
+        });
+
+        invoice.penaltyAmount = (invoice.penaltyAmount || 0) + penaltyAmount;
+        await invoice.save();
+
+        res.status(200).json({ message: 'Penalty applied successfully', invoice });
+    } catch (error) {
+        console.error('Apply Penalty Error:', error);
+        res.status(500).json({ message: 'Server Error' });
+    }
+};
+
+// @desc    Get Wallet Ledger
+// @route   GET /api/finance/wallet/ledger
+// @access  Vendor
+exports.getWalletLedger = async (req, res) => {
+    try {
+        const transactions = await WalletTransaction.find({ vendor: req.user.id })
+            .populate('referenceId')
+            .sort({ createdAt: -1 });
+        
+        const User = require('../models/User');
+        const user = await User.findById(req.user.id).select('walletBalance');
+        
+        res.status(200).json({ 
+            balance: user ? user.walletBalance : 0, 
+            transactions 
+        });
+    } catch (error) {
+        console.error('Get Wallet Ledger Error:', error);
+        res.status(500).json({ message: 'Server Error' });
+    }
+};
+
+exports.submitRepayment = async (req, res) => {
+    try {
+        const { repaymentProofFile } = req.body;
+        
+        if (!repaymentProofFile) {
+            return res.status(400).json({ message: 'Repayment proof is required' });
+        }
+
+        const invoice = await InvoiceRequest.findById(req.params.id);
+        if (!invoice) return res.status(404).json({ message: 'Invoice not found' });
+        
+        if (!invoice.vendor || String(invoice.vendor) !== String(req.user.id)) {
+            return res.status(403).json({ message: 'Not authorized' });
+        }
+
+        invoice.status = 'Repayment Pending';
+        invoice.repaymentProofFile = repaymentProofFile;
+        await invoice.save();
+
+        res.status(200).json({ message: 'Repayment submitted successfully. Waiting for admin approval.', invoice });
+    } catch (error) {
+        console.error('Submit Repayment Error:', error);
+        res.status(500).json({ message: 'Server Error' });
+    }
+};
+
+exports.approveRepayment = async (req, res) => {
+    try {
+        const invoice = await InvoiceRequest.findById(req.params.id).populate('vendor');
+        if (!invoice) return res.status(404).json({ message: 'Invoice not found' });
+
+        if (invoice.status !== 'Repayment Pending') {
+            return res.status(400).json({ message: 'Invoice is not pending repayment approval' });
+        }
+
+        invoice.status = 'Cleared';
+        await invoice.save();
+
+        // Calculate total to refund to wallet
+        const totalPaid = (invoice.approvedAmount || invoice.amount) + invoice.penaltyAmount;
+
+        const User = require('../models/User');
+        const user = await User.findById(invoice.vendor._id);
+        user.walletBalance = (user.walletBalance || 0) + totalPaid;
+        await user.save();
+
+        await WalletTransaction.create({
+            vendor: user._id,
+            amount: totalPaid,
+            type: 'Credit',
+            description: `Invoice Repayment Cleared (Base: ₹${invoice.approvedAmount}, Penalty: ₹${invoice.penaltyAmount})`,
+            referenceId: invoice._id,
+            balanceAfter: user.walletBalance
+        });
+
+        res.status(200).json({ message: 'Repayment approved and wallet restored.', invoice });
+    } catch (error) {
+        console.error('Approve Repayment Error:', error);
+        res.status(500).json({ message: 'Server Error' });
+    }
+};

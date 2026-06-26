@@ -1,7 +1,10 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Menu, Search, Bell, LogOut } from 'lucide-react';
 
 const VendorHeader = ({ isSidebarOpen, setSidebarOpen, user, logout, searchQuery, setSearchQuery }) => {
+    const navigate = useNavigate();
+    
     return (
         <header className="bg-white border-b border-slate-100 h-20 flex items-center justify-between px-6 md:px-8 z-10 shrink-0">
             {/* Left: Sidebar Toggle and Dashboard Title */}
@@ -41,11 +44,15 @@ const VendorHeader = ({ isSidebarOpen, setSidebarOpen, user, logout, searchQuery
 
                 {/* Available Wallet Balance */}
                 {user?.role === 'vendor' && (
-                    <div className={`flex items-center gap-2 px-4 py-2 rounded-xl border ${
-                        user.walletBalance && user.walletBalance > 0
-                            ? 'bg-emerald-50 border-emerald-100'
-                            : 'bg-red-50 border-red-100'
-                    }`}>
+                    <div 
+                        onClick={() => navigate('/vendor/wallet')}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-xl border cursor-pointer transition-colors hover:shadow-sm ${
+                            user.walletBalance && user.walletBalance > 0
+                                ? 'bg-emerald-50 border-emerald-100 hover:bg-emerald-100'
+                                : 'bg-red-50 border-red-100 hover:bg-red-100'
+                        }`}
+                        title="Click to view wallet ledger"
+                    >
                         <span className="text-[9px] font-black text-slate-550 uppercase tracking-wider">Available Wallet:</span>
                         <span className={`text-xs font-black ${
                             user.walletBalance && user.walletBalance > 0 ? 'text-emerald-600' : 'text-red-650'

@@ -50,14 +50,15 @@ const VendorDashboardMain = lazy(() => import('./components/vendor/VendorDashboa
 const VendorEnquiriesTab = lazy(() => import('./components/vendor/VendorEnquiriesTab'));
 const VendorBookingsTab = lazy(() => import('./components/vendor/VendorBookingsTab'));
 const VendorPricingTab = lazy(() => import('./components/vendor/VendorPricingTab'));
-const VendorInvoiceUploadTab = lazy(() => import('./components/vendor/VendorInvoiceUploadTab'));
 const VendorBulkImportTab = lazy(() => import('./components/vendor/VendorBulkImportTab'));
 const VendorProfileTab = lazy(() => import('./components/vendor/VendorProfileTab'));
 const FinanceSection = lazy(() => import('./components/vendor/FinanceSection'));
 const PricingPlans = lazy(() => import('./pages/vendor/PricingPlans'));
 const VendorComplaintsTab = lazy(() => import('./components/vendor/VendorComplaintsTab'));
 const VendorFinanceForm = lazy(() => import('./pages/vendor/VendorFinanceForm'));
-const VendorFinanceList = lazy(() => import('./pages/vendor/VendorFinanceList'));
+const VendorFinanceDashboard = lazy(() => import('./pages/vendor/VendorFinanceDashboard'));
+const UploadInvoiceTab = lazy(() => import('./components/vendor/UploadInvoiceTab'));
+const WalletLedgerTab = lazy(() => import('./components/vendor/WalletLedgerTab'));
 const VendorContactListTab = lazy(() => import('./components/vendor/VendorContactListTab'));
 
 // Lazy loaded admin pages
@@ -79,6 +80,7 @@ const AddRM = lazy(() => import('./pages/admin/AddRM'));
 const AdminFinanceListing = lazy(() => import('./pages/admin/AdminFinanceListing'));
 const AdminEnquiriesTab = lazy(() => import('./pages/admin/AdminEnquiriesTab'));
 const AdminUpgradationRequests = lazy(() => import('./pages/admin/AdminUpgradationRequests'));
+const AdminInvoiceRequests = lazy(() => import('./pages/admin/AdminInvoiceRequests'));
 
 // Loading Fallback Component
 const PageLoader = () => (
@@ -162,7 +164,7 @@ function App() {
               <Route path="finance-enquiry-list" element={<AdminFinanceListing />} />
               
               {/* Request Management */}
-              <Route path="invoice-request" element={<div className="p-6 bg-white rounded-2xl shadow-sm text-slate-800"><h2 className="text-xl font-bold mb-4">Invoice Request</h2><p className="text-slate-500">Review and manage invoice requests.</p></div>} />
+              <Route path="invoice-request" element={<AdminInvoiceRequests />} />
               <Route path="upgrade-requests" element={<AdminUpgradationRequests />} />
               
               {/* Other sections */}
@@ -193,8 +195,9 @@ function App() {
               <Route path="my-bookings" element={<VendorBookingsTab title="My Bookings" type="my" />} />
               <Route path="my-pricing" element={<VendorPricingTab />} />
               <Route path="finance" element={<VendorFinanceForm />} />
-              <Route path="finance-list" element={<VendorFinanceList />} />
-              <Route path="upload-invoice" element={<VendorInvoiceUploadTab />} />
+              <Route path="finance-list" element={<VendorFinanceDashboard />} />
+              <Route path="upload-invoice" element={<UploadInvoiceTab />} />
+              <Route path="wallet" element={<WalletLedgerTab />} />
               <Route path="bulk-import" element={<VendorBulkImportTab />} />
               <Route path="view-profile" element={<VendorProfileTab />} />
               <Route path="upgrade" element={<PricingPlans />} />
