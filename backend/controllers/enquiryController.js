@@ -186,7 +186,7 @@ exports.createEnquiry = async (req, res) => {
                 validatedVendorId,
                 `New direct ${isBooking ? 'booking' : 'enquiry'} received for ${sanitizedType} freight from ${fromLocation} to ${toLocation}`,
                 'info',
-                isBooking ? '/vendor/bookings?type=my' : '/vendor/enquiries?type=my'
+                isBooking ? '/vendor/my-bookings' : '/vendor/my-enquiries'
             ).catch(err => console.error('Error sending vendor bell notification:', err));
 
             const User = require('../models/User');
@@ -209,7 +209,7 @@ exports.createEnquiry = async (req, res) => {
             broadcastVendorNotification(
                 `New marketplace ${isBooking ? 'booking' : 'enquiry'} broadcasted for ${sanitizedType} freight from ${fromLocation} to ${toLocation}`,
                 'info',
-                isBooking ? '/vendor/bookings?type=direct' : '/vendor/enquiries?type=direct',
+                isBooking ? '/vendor/direct-booking' : '/vendor/direct-enquiries',
                 sanitizedType
             ).catch(err => console.error('Error broadcasting vendor bell notification:', err));
         }

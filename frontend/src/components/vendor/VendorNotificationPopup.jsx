@@ -40,7 +40,7 @@ const VendorNotificationPopup = () => {
                 const { data } = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/notifications`, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
-                const unreadEnquiry = data.find(n => !n.isRead && n.link && (n.link.includes('/vendor/enquiries') || n.link.includes('/vendor/bookings')));
+                const unreadEnquiry = data.find(n => !n.isRead && n.link && (n.link.includes('enquiries') || n.link.includes('booking')));
                 if (unreadEnquiry) {
                     setPopupNotif(unreadEnquiry);
                 }
@@ -55,7 +55,7 @@ const VendorNotificationPopup = () => {
         if (!socket) return;
         const handleNotif = (notif) => {
             // Filter to only show popup for enquiries/bookings
-            const isEnquiryOrBooking = notif.link && (notif.link.includes('/vendor/enquiries') || notif.link.includes('/vendor/bookings'));
+            const isEnquiryOrBooking = notif.link && (notif.link.includes('enquiries') || notif.link.includes('booking'));
             if (isEnquiryOrBooking) {
                 setPopupNotif(notif);
                 playBeep();
