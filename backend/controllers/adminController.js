@@ -641,6 +641,16 @@ exports.updateVendorEnquiryLimit = async (req, res) => {
         }
 
         vendor.topupEnquiryLimit = Number(limit);
+        
+        // If admin updates the limit manually, we should ensure it doesn't instantly expire.
+        // Sync it with the main plan's end date, or if they don't have one, just clear the topup expiry
+        // so it's a permanent override until changed.
+        if (vendor.planEndDate) {
+            vendor.topupPlanEndDate = vendor.planEndDate;
+        } else {
+            vendor.topupPlanEndDate = null;
+        }
+        
         await vendor.save();
 
         res.json({ message: 'Vendor enquiry limit updated successfully', vendor });

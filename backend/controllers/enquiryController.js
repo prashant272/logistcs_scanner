@@ -482,8 +482,8 @@ exports.updateEnquiryStatus = async (req, res) => {
             if (hasActivePlan && vendorUser.activePlan.inquiryLimit) {
                 inquiryLimit = vendorUser.activePlan.inquiryLimit;
                 
-                // Add top-up limit if active
-                if (vendorUser.topupPlanEndDate && new Date(vendorUser.topupPlanEndDate) > new Date()) {
+                // Add top-up limit if active (or if manually granted without an expiry date)
+                if (!vendorUser.topupPlanEndDate || new Date(vendorUser.topupPlanEndDate) > new Date()) {
                     inquiryLimit += (vendorUser.topupEnquiryLimit || 0);
                 }
             }
