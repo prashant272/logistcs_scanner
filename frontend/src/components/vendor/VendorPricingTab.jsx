@@ -759,10 +759,11 @@ const VendorPricingTab = () => {
                           onChange={(e) => setFclStandard(e.target.value)}
                           className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 focus:outline-none focus:border-[#0066FF]"
                         >
-                          <option value="">Select Standard</option>
-                          <option value="20ft">20ft Standard</option>
-                          <option value="40ft">40ft Standard</option>
-                          <option value="40ft HC">40ft High Cube</option>
+                         <option value="20ft">20ft Standard</option>
+<option value="40ft">40ft Standard</option>
+<option value="40ft HC">40ft High Cube</option>
+<option value="20ft Reefer">20ft REFRIGERATED</option>
+<option value="40ft Reefer">40ft REFRIGERATED</option>
                         </select>
                       </div>
                     )}

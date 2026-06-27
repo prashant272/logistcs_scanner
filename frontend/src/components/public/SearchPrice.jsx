@@ -729,10 +729,11 @@ const SearchPrice = ({ isDashboard = false }) => {
                                             <div className="flex justify-center items-center gap-4 pt-2 pb-4 w-full">
                                                 <div className="w-48">
                                                     <select value={fclStandard} onChange={(e) => setFclStandard(e.target.value)} className="w-full bg-white border border-slate-300 rounded-xl px-3 py-3 text-xs font-bold !text-slate-900 focus:outline-none focus:border-[#0066FF] shadow-sm cursor-pointer">
-                                                        <option value="">Select FCL Standard</option>
                                                         <option value="20ft">20ft Standard</option>
-                                                        <option value="40ft">40ft Standard</option>
-                                                        <option value="40ft HC">40ft High Cube</option>
+<option value="40ft">40ft Standard</option>
+<option value="40ft HC">40ft High Cube</option>
+<option value="20ft Reefer">20ft REFRIGERATED</option>
+<option value="40ft Reefer">40ft REFRIGERATED</option>
                                                     </select>
                                                 </div>
                                                 <div className="w-40">
