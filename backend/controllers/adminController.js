@@ -64,11 +64,25 @@ exports.getVendors = async (req, res) => {
             } else if (statusFilter === 'Login') {
                 const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000);
                 query.lastActive = { $gte: fifteenMinutesAgo };
-            } else if (statusFilter === 'Premium Vendors' || statusFilter === 'Paid Vendors') {
+            } else if (statusFilter === 'Premium Vendors') {
                 const Plan = require('../models/Plan');
-                const paidPlans = await Plan.find({ price: { $gt: 0 } }).select('_id');
-                const paidPlanIds = paidPlans.map(p => p._id);
-                query.activePlan = { $in: paidPlanIds };
+                // Find plans containing the word 'Premium'
+                const premiumPlans = await Plan.find({ 
+                    price: { $gt: 0 },
+                    name: { $regex: /premium/i }
+                }).select('_id');
+                const premiumPlanIds = premiumPlans.map(p => p._id);
+                query.activePlan = { $in: premiumPlanIds };
+                query.planEndDate = { $gt: new Date() };
+            } else if (statusFilter === 'Paid Vendors') {
+                const Plan = require('../models/Plan');
+                // Find plans NOT containing the word 'Premium' but with price > 0
+                const otherPaidPlans = await Plan.find({ 
+                    price: { $gt: 0 },
+                    name: { $not: /premium/i }
+                }).select('_id');
+                const otherPaidPlanIds = otherPaidPlans.map(p => p._id);
+                query.activePlan = { $in: otherPaidPlanIds };
                 query.planEndDate = { $gt: new Date() };
             }
         }
@@ -77,6 +91,7 @@ exports.getVendors = async (req, res) => {
         const vendors = await User.find(query)
             .select('-password')
             .populate('assignedRM')
+            .populate('activePlan')
             .sort({ createdAt: -1 })
             .skip(skip)
             .limit(limit);
@@ -605,6 +620,73 @@ exports.adminAddUser = async (req, res) => {
         }
 
         res.status(201).json({ message: 'User added successfully', user });
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
+
+// Update vendor enquiry limit manually (by admin)
+exports.updateVendorEnquiryLimit = async (req, res) => {
+    try {
+        const vendorId = req.params.id;
+        const { limit } = req.body;
+
+        if (limit === undefined || isNaN(limit)) {
+            return res.status(400).json({ message: 'Valid limit is required' });
+        }
+
+        const vendor = await User.findById(vendorId);
+        if (!vendor || vendor.role !== 'vendor') {
+            return res.status(404).json({ message: 'Vendor not found' });
+        }
+
+        vendor.topupEnquiryLimit = Number(limit);
+        await vendor.save();
+
+        res.json({ message: 'Vendor enquiry limit updated successfully', vendor });
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
+
+// Update vendor plan manually (by admin)
+exports.updateVendorPlan = async (req, res) => {
+    try {
+        const vendorId = req.params.id;
+        const { planId } = req.body;
+
+        const vendor = await User.findById(vendorId);
+        if (!vendor || vendor.role !== 'vendor') {
+            return res.status(404).json({ message: 'Vendor not found' });
+        }
+
+        if (!planId) {
+            // Revert to free plan
+            vendor.activePlan = null;
+            vendor.planEndDate = null;
+        } else {
+            const Plan = require('../models/Plan');
+            const plan = await Plan.findById(planId);
+            if (!plan) {
+                return res.status(404).json({ message: 'Plan not found' });
+            }
+
+            vendor.activePlan = plan._id;
+            
+            // Set end date based on duration
+            const endDate = new Date();
+            if (plan.duration === 'Yearly') {
+                endDate.setFullYear(endDate.getFullYear() + 1);
+            } else {
+                endDate.setMonth(endDate.getMonth() + 1);
+            }
+            vendor.planEndDate = endDate;
+        }
+
+        await vendor.save();
+
+        const updatedVendor = await User.findById(vendorId).populate('activePlan').select('-password');
+        res.json({ message: 'Vendor plan updated successfully', vendor: updatedVendor });
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
     }

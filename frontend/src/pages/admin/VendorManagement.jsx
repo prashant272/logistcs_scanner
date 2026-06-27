@@ -15,7 +15,9 @@ const VendorManagement = () => {
   const [statusFilter, setStatusFilter] = useState('All Status');
   const [uploadingVendorId, setUploadingVendorId] = useState(null);
   const [rms, setRms] = useState([]);
+  const [plans, setPlans] = useState([]);
   const [assigningRmId, setAssigningRmId] = useState(null);
+  const [updatingPlanId, setUpdatingPlanId] = useState(null);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -29,6 +31,7 @@ const VendorManagement = () => {
 
   useEffect(() => {
     fetchRMs();
+    fetchPlans();
   }, []);
 
   // Debounce search
@@ -89,6 +92,34 @@ const VendorManagement = () => {
       setRms(data || []);
     } catch (err) {
       console.error('Error fetching RMs:', err);
+    }
+  };
+
+  const fetchPlans = async () => {
+    try {
+      const { data } = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/plans`);
+      setPlans(data || []);
+    } catch (err) {
+      console.error('Error fetching plans:', err);
+    }
+  };
+
+  const handleAssignPlan = async (vendorId, planId) => {
+    try {
+      setUpdatingPlanId(vendorId);
+      const token = localStorage.getItem('adminToken');
+      const config = { headers: { Authorization: `Bearer ${token}` } };
+      const { data } = await axios.put(`${import.meta.env.VITE_API_BASE_URL}/admin/vendors/${vendorId}/plan`, { planId }, config);
+      
+      alert('Plan updated successfully!');
+      
+      // Update local state
+      setVendors(prev => prev.map(v => v._id === vendorId ? { ...v, activePlan: data.vendor.activePlan, planEndDate: data.vendor.planEndDate, topupEnquiryLimit: data.vendor.topupEnquiryLimit } : v));
+    } catch (err) {
+      console.error('Update plan failed:', err);
+      alert(err.response?.data?.message || 'Failed to update plan');
+    } finally {
+      setUpdatingPlanId(null);
     }
   };
 
@@ -235,6 +266,21 @@ const VendorManagement = () => {
     }
   };
 
+  const handleUpdateLimit = async (vendorId, limit) => {
+    try {
+      const token = localStorage.getItem('adminToken');
+      const config = { headers: { Authorization: `Bearer ${token}` } };
+      await axios.put(`${import.meta.env.VITE_API_BASE_URL}/admin/vendors/${vendorId}/enquiry-limit`, { limit }, config);
+      alert('Limit updated successfully!');
+      
+      // Update local state
+      setVendors(prev => prev.map(v => v._id === vendorId ? { ...v, topupEnquiryLimit: Number(limit) } : v));
+    } catch (err) {
+      console.error('Update limit failed:', err);
+      alert('Failed to update limit');
+    }
+  };
+
   const filteredVendors = vendors;
 
   return (
@@ -322,6 +368,9 @@ const VendorManagement = () => {
                   <th className="p-4">Country</th>
                   <th className="p-4">Mobile</th>
                   <th className="p-4">Created</th>
+                  <th className="p-4">Current Plan</th>
+                  <th className="p-4 text-center">Change Plan</th>
+                  <th className="p-4">Enquiry Limit</th>
                   <th className="p-4">Carrier ID</th>
                   <th className="p-4">Last Login</th>
                   <th className="p-4">Document</th>
@@ -334,6 +383,8 @@ const VendorManagement = () => {
                 {filteredVendors.map((vendor, index) => {
                   const firstName = vendor.firstName || vendor.name?.split(' ')[0] || 'N/A';
                   const lastName = vendor.lastName || vendor.name?.split(' ').slice(1).join(' ') || 'N/A';
+                  const baseLimit = vendor.activePlan?.inquiryLimit || 5;
+                  const totalLimit = baseLimit + (vendor.topupEnquiryLimit || 0);
                   
                   return (
                     <tr 
@@ -364,6 +415,48 @@ const VendorManagement = () => {
                       <td className="p-4 text-slate-700">{vendor.phone || 'N/A'}</td>
                       <td className="p-4 text-slate-450 font-medium">
                         {vendor.createdAt ? new Date(vendor.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A'}
+                      </td>
+                      {/* New Columns */}
+                      <td className="p-4 text-slate-700">
+                        {vendor.activePlan && vendor.activePlan.name ? (
+                          <span className="bg-purple-100 text-purple-700 px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider">
+                            {vendor.activePlan.name}
+                          </span>
+                        ) : (
+                          <span className="bg-slate-100 text-slate-500 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">
+                            Free Plan
+                          </span>
+                        )}
+                      </td>
+                      <td className="p-4 text-center">
+                        <select
+                          disabled={updatingPlanId === vendor._id}
+                          value={vendor.activePlan?._id || ''}
+                          onChange={(e) => handleAssignPlan(vendor._id, e.target.value)}
+                          className="bg-white border border-slate-200/80 rounded-xl px-2 py-1.5 text-[10px] text-slate-700 font-bold focus:outline-none focus:border-[#0066FF] focus:ring-1 focus:ring-[#0066FF] transition-all cursor-pointer shadow-sm w-32"
+                        >
+                          <option value="">Free Plan</option>
+                          {plans.map(plan => (
+                            <option key={plan._id} value={plan._id}>{plan.name}</option>
+                          ))}
+                        </select>
+                      </td>
+                      <td className="p-4">
+                        <div className="flex items-center gap-2">
+                          <input 
+                            type="number"
+                            defaultValue={totalLimit}
+                            className="w-16 bg-white border border-slate-200 rounded p-1 text-[10px] text-center font-bold focus:outline-none focus:border-[#0066FF]"
+                            onBlur={(e) => {
+                              const newVal = parseInt(e.target.value);
+                              if (newVal !== totalLimit && !isNaN(newVal)) {
+                                // Calculate extra needed to reach the new total
+                                const newExtra = newVal - baseLimit;
+                                handleUpdateLimit(vendor._id, newExtra);
+                              }
+                            }}
+                          />
+                        </div>
                       </td>
                       <td className="p-4 font-mono text-[10px] text-slate-500">{vendor._id.slice(-8).toUpperCase()}</td>
                       <td className="p-4 text-slate-450 font-medium">
