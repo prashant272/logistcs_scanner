@@ -12,6 +12,7 @@ const PricingPlans = () => {
     const [upgradingId, setUpgradingId] = useState(null);
     const [showPaymentModal, setShowPaymentModal] = useState(false);
     const [paymentModalData, setPaymentModalData] = useState(null);
+    const [activeTab, setActiveTab] = useState('regular');
 
     const logActivity = async (action, planDetails = {}, notes = '') => {
         try {
@@ -414,222 +415,247 @@ const PricingPlans = () => {
                 </div>
             </div>
 
-            {/* Plans List Grid: Rendered in a Single Row */}
-            {regularPlans.length === 0 ? (
-                <div className="bg-white rounded-3xl p-12 text-center border border-slate-100 max-w-md mx-auto">
-                    <p className="text-slate-400 text-xs font-bold uppercase tracking-wider">
-                        No active premium plans configured for your region or profile yet.
-                    </p>
-                </div>
-            ) : (
-                <div className="flex flex-col lg:flex-row items-stretch justify-center gap-8 pt-6 overflow-x-auto pb-4 lg:overflow-x-visible">
-                    {regularPlans.map((plan) => {
-                        const isCurrent = plan._id === 'free_tier_static_id' ? !activePlanId : activePlanId === plan._id;
-                        
-                        // Parse description HTML into dynamic comparison rows
-                        const parsedRows = parseDescriptionToRows(plan.description);
+            {/* Tabs for switching between Regular and Top-up Plans */}
+            <div className="flex justify-center gap-4 border-b border-slate-200 pb-2 max-w-xl mx-auto mt-12 mb-6">
+                <button
+                    onClick={() => setActiveTab('regular')}
+                    className={`pb-2 px-4 text-sm font-black uppercase tracking-wider border-b-2 transition-colors ${
+                        activeTab === 'regular' 
+                            ? 'border-[#0066FF] text-[#0066FF]' 
+                            : 'border-transparent text-slate-400 hover:text-slate-600'
+                    }`}
+                >
+                    Regular Plans
+                </button>
+                <button
+                    onClick={() => setActiveTab('topup')}
+                    className={`pb-2 px-4 text-sm font-black uppercase tracking-wider border-b-2 transition-colors ${
+                        activeTab === 'topup' 
+                            ? 'border-purple-600 text-purple-600' 
+                            : 'border-transparent text-slate-400 hover:text-slate-600'
+                    }`}
+                >
+                    Top-up Plans
+                </button>
+            </div>
 
-                        return (
-                            <div 
-                                key={plan._id}
-                                className={`bg-white rounded-3xl border flex flex-col justify-between relative transition-all duration-300 w-full lg:w-80 shrink-0 ${
-                                    isCurrent 
-                                        ? 'border-slate-300 bg-slate-50/20 shadow-md scale-95 opacity-90' 
-                                        : 'border-[#0066FF] shadow-[0_20px_50px_rgba(0,102,255,0.12)] scale-100 lg:scale-105 z-10 hover:scale-[1.07]'
-                                }`}
-                                style={{ minHeight: '620px' }}
-                            >
-                                {/* Ribbon */}
-                                {isCurrent ? (
-                                    <div className="absolute top-0 right-0 overflow-hidden w-28 h-28">
-                                        <div className="absolute top-4 right-[-32px] transform rotate-45 bg-slate-400 text-white text-[8px] font-black uppercase tracking-widest py-1 w-32 text-center shadow-sm">
-                                            OWNED
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <div className="absolute top-0 right-0 overflow-hidden w-28 h-28">
-                                        <div className="absolute top-4 right-[-32px] transform rotate-45 bg-[#0066FF] text-white text-[8px] font-black uppercase tracking-widest py-1 w-32 text-center shadow-sm">
-                                            UPGRADE
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Header section: Plan Details, Price & Coupon */}
-                                <div className={`p-6 flex flex-col items-center text-center space-y-4 border-b border-slate-100 rounded-t-3xl ${
-                                    isCurrent ? 'bg-slate-100/50' : 'bg-white'
-                                }`}>
-                                    <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">{plan.name}</h3>
-                                    <div className="flex flex-col items-center">
-                                        {appliedCoupons[plan._id] ? (
-                                            <div className="flex flex-col items-center">
-                                                <div className="flex items-center gap-1.5">
-                                                    <span className="text-sm font-semibold text-slate-400 line-through">
-                                                        {getPlanDisplayPrice(plan).text}.00
-                                                    </span>
-                                                    <span className="text-3xl font-black text-green-600 tracking-tight">
-                                                        {getCouponFinalDisplay(appliedCoupons[plan._id], plan).text}.00
-                                                    </span>
-                                                </div>
-                                                <span className="text-[9px] text-green-600 font-extrabold uppercase mt-1">
-                                                    Code {appliedCoupons[plan._id].code} Applied ({getPlanDisplayPrice(plan).currency}{appliedCoupons[plan._id].discountAmount} Off)
-                                                </span>
-                                            </div>
-                                        ) : (
-                                            <span className={`text-3xl font-black tracking-tight ${isCurrent ? 'text-slate-600' : 'text-[#0066FF]'}`}>
-                                                {getPlanDisplayPrice(plan).text}{plan.price > 0 ? '.00' : ''}
-                                            </span>
-                                        )}
-                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-1">/ {plan.duration}</span>
-                                    </div>
-                                    
-                                    {/* Coupon Input with Apply Button */}
-                                    <div className="w-full">
-                                        <div className="flex gap-2 w-full pt-1">
-                                            <input 
-                                                type="text" 
-                                                placeholder="Enter Coupon Code" 
-                                                disabled={isCurrent || plan.price === 0}
-                                                value={couponCodes[plan._id] || ''}
-                                                onChange={(e) => setCouponCodes(prev => ({ ...prev, [plan._id]: e.target.value }))}
-                                                className="flex-grow bg-[#f4f7fc] border border-slate-200 rounded-xl px-3 py-2 text-center text-xs font-bold text-slate-700 focus:outline-none focus:border-[#0066FF] placeholder-slate-400/90 disabled:opacity-60 transition-colors uppercase"
-                                            />
-                                            <button
-                                                type="button"
-                                                disabled={isCurrent || !couponCodes[plan._id] || plan.price === 0}
-                                                onClick={() => handleApplyCoupon(plan._id)}
-                                                className="bg-slate-200 hover:bg-[#0066FF] hover:text-white border border-slate-200 px-3 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all disabled:opacity-60 disabled:pointer-events-none cursor-pointer"
-                                            >
-                                                Apply
-                                            </button>
-                                        </div>
-                                        {couponErrors[plan._id] && (
-                                            <div className="text-[9px] text-red-500 font-bold text-center mt-1.5 uppercase tracking-wide">
-                                                {couponErrors[plan._id]}
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    {/* Upgrade Action Button */}
-                                    <button
-                                        type="button"
-                                        disabled={isCurrent || upgradingId === plan._id || plan.price === 0}
-                                        onClick={() => handleUpgrade(plan._id)}
-                                        className={`w-full flex justify-center items-center py-3.5 rounded-2xl text-xs font-black uppercase tracking-wider transition-all duration-300 cursor-pointer ${
-                                            isCurrent 
-                                                ? 'bg-slate-450 text-slate-700 cursor-default border border-slate-300'
-                                                : plan.price === 0
-                                                    ? 'bg-slate-200 text-slate-500 cursor-default'
-                                                    : 'bg-[#0066FF] hover:bg-[#0052cc] text-white shadow-md shadow-[#0066FF]/10 active:scale-98 disabled:opacity-75'
-                                        }`}
-                                    >
-                                        {upgradingId === plan._id ? (
-                                            <Loader2 className="w-4 h-4 animate-spin" />
-                                        ) : isCurrent ? (
-                                            'Current Active Plan'
-                                        ) : plan.price === 0 ? (
-                                            'Free Plan'
-                                        ) : (
-                                            <span>Upgrade Now</span>
-                                        )}
-                                    </button>
-                                </div>
-
-                                {/* Comparison Table */}
-                                <div className="flex-1 p-4 bg-slate-50/20 flex flex-col justify-between rounded-b-3xl">
-                                    <div className="border border-slate-350 rounded-xl overflow-hidden bg-white shadow-sm">
-                                        <table className="w-full text-[10px] text-left border-collapse table-fixed">
-                                            <thead>
-                                                <tr className="bg-slate-100 border-b border-slate-350 font-black text-slate-800 uppercase tracking-wider text-[9px]">
-                                                    <th className="p-2 border-r border-slate-350 w-1/2">Features / Plans</th>
-                                                    <th className="p-2 w-1/2">{plan.name} {plan.price > 0 ? '(Paid)' : ''}</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody className="divide-y divide-slate-350 text-slate-700 font-semibold">
-                                                <tr className="border-b border-slate-350">
-                                                    <td className="p-2 bg-slate-50/80 border-r border-slate-350 font-extrabold text-slate-500">Alternate Name</td>
-                                                    <td className="p-2">{plan.name} pricing</td>
-                                                </tr>
-                                                <tr className="border-b border-slate-350">
-                                                    <td className="p-2 bg-slate-50/80 border-r border-slate-350 font-extrabold text-slate-500">Monthly Price</td>
-                                                    <td className="p-2">{getPlanDisplayPrice(plan).text}</td>
-                                                </tr>
-                                                <tr className="border-b border-slate-350">
-                                                    <td className="p-2 bg-slate-50/80 border-r border-slate-350 font-extrabold text-slate-500">Enquiry Limit</td>
-                                                    <td className="p-2">
-                                                        {plan.price === 0 
-                                                            ? '5 Enquiries (Direct + My combined)' 
-                                                            : `${plan.inquiryLimit} Enquiries`
-                                                        }
-                                                    </td>
-                                                </tr>
-                                                <tr className="border-b border-slate-350">
-                                                    <td className="p-2 bg-slate-50/80 border-r border-slate-350 font-extrabold text-slate-500">Act as a White Label Site</td>
-                                                    <td className="p-2">{plan.price > 1000 ? 'Yes' : 'No'}</td>
-                                                </tr>
-                                                <tr className="border-b border-slate-350">
-                                                    <td className="p-2 bg-slate-50/80 border-r border-slate-350 font-extrabold text-slate-500">Vendor Profile Listing</td>
-                                                    <td className="p-2">{plan.price > 0 ? '✓' : '✕'}</td>
-                                                </tr>
-                                                <tr className="border-b border-slate-350">
-                                                    <td className="p-2 bg-slate-50/80 border-r border-slate-350 font-extrabold text-slate-500">Worldwide Visibility</td>
-                                                    <td className="p-2">{plan.price > 0 ? '✓' : 'Limited'}</td>
-                                                </tr>
-                                                <tr className="border-b border-slate-350">
-                                                    <td className="p-2 bg-slate-50/80 border-r border-slate-350 font-extrabold text-slate-500">Direct enquiries</td>
-                                                    <td className="p-2">{plan.price > 0 ? 'Unlimited' : 'Limited to 5'}</td>
-                                                </tr>
-                                                <tr className="border-b border-slate-350">
-                                                    <td className="p-2 bg-slate-50/80 border-r border-slate-350 font-extrabold text-slate-500">Dedicated Account Manager</td>
-                                                    <td className="p-2">{plan.price > 5000 ? '✓' : '✕'}</td>
-                                                </tr>
-                                                <tr className="border-b border-slate-350">
-                                                    <td className="p-2 bg-slate-50/80 border-r border-slate-350 font-extrabold text-slate-500">Support</td>
-                                                    <td className="p-2">{plan.price > 0 ? 'Premium 24/7' : 'Standard'}</td>
-                                                </tr>
-                                                
-                                                {/* Render dynamic key-value rows parsed from description */}
-                                                {parsedRows.map((row, idx) => {
-                                                    // Avoid duplicating static keys
-                                                    const isStaticKey = ['alternate name', 'monthly price', 'enquiry limit', 'act as a white label site', 'vendor profile listing', 'worldwide visibility', 'direct enquiries', 'dedicated account manager', 'support'].includes(row.key.toLowerCase());
-                                                    if (isStaticKey) return null;
-                                                    return (
-                                                        <tr key={idx} className="border-b border-slate-350">
-                                                            <td className="p-2 bg-slate-50/80 border-r border-slate-350 font-extrabold text-slate-500">{row.key}</td>
-                                                            <td className="p-2">{row.value}</td>
-                                                        </tr>
-                                                    );
-                                                })}
-                                            </tbody>
-                                        </table>
-                                    </div>
-
-                                    {/* Fallback description render if no key-values parsed */}
-                                    {plan.description && parsedRows.length === 0 && (
-                                        <div className="mt-4 pt-4 border-t border-slate-200 text-[10px] text-slate-500 font-semibold">
-                                            <span className="text-[9px] uppercase font-black tracking-widest text-slate-400 block mb-2">Additional Specifications</span>
-                                            <div 
-                                                className="space-y-1.5 text-slate-600 pricing-plan-description" 
-                                                dangerouslySetInnerHTML={{ __html: plan.description }}
-                                            />
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        );
-                    })}
-                </div>
-            )}
-
-            {/* Top-up Plans Section */}
-            {topupPlans.length > 0 && (
-                <div className="mt-12 space-y-6 border-t border-slate-200 pt-12">
-                    <div className="text-center space-y-2">
-                        <h2 className="text-2xl font-black text-[#0B1E43] tracking-tight">Need More Enquiries?</h2>
-                        <p className="text-slate-500 text-xs font-semibold uppercase tracking-wider">
-                            Buy a Top-up plan to instantly boost your limit
+            {/* Content based on Active Tab */}
+            {activeTab === 'regular' ? (
+                /* Regular Plans List Grid */
+                regularPlans.length === 0 ? (
+                    <div className="bg-white rounded-3xl p-12 text-center border border-slate-100 max-w-md mx-auto">
+                        <p className="text-slate-400 text-xs font-bold uppercase tracking-wider">
+                            No active premium plans configured for your region or profile yet.
                         </p>
                     </div>
-                    <div className="flex flex-wrap justify-center gap-6">
+                ) : (
+                    <div className="flex flex-col lg:flex-row items-stretch justify-center gap-8 pt-6 overflow-x-auto pb-4 lg:overflow-x-visible">
+                        {regularPlans.map((plan) => {
+                            const isCurrent = plan._id === 'free_tier_static_id' ? !activePlanId : activePlanId === plan._id;
+                            
+                            // Parse description HTML into dynamic comparison rows
+                            const parsedRows = parseDescriptionToRows(plan.description);
+
+                            return (
+                                <div 
+                                    key={plan._id}
+                                    className={`bg-white rounded-3xl border flex flex-col justify-between relative transition-all duration-300 w-full lg:w-80 shrink-0 ${
+                                        isCurrent 
+                                            ? 'border-slate-300 bg-slate-50/20 shadow-md scale-95 opacity-90' 
+                                            : 'border-[#0066FF] shadow-[0_20px_50px_rgba(0,102,255,0.12)] scale-100 lg:scale-105 z-10 hover:scale-[1.07]'
+                                    }`}
+                                    style={{ minHeight: '620px' }}
+                                >
+                                    {/* Ribbon */}
+                                    {isCurrent ? (
+                                        <div className="absolute top-0 right-0 overflow-hidden w-28 h-28">
+                                            <div className="absolute top-4 right-[-32px] transform rotate-45 bg-slate-400 text-white text-[8px] font-black uppercase tracking-widest py-1 w-32 text-center shadow-sm">
+                                                OWNED
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="absolute top-0 right-0 overflow-hidden w-28 h-28">
+                                            <div className="absolute top-4 right-[-32px] transform rotate-45 bg-[#0066FF] text-white text-[8px] font-black uppercase tracking-widest py-1 w-32 text-center shadow-sm">
+                                                UPGRADE
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Header section: Plan Details, Price & Coupon */}
+                                    <div className={`p-6 flex flex-col items-center text-center space-y-4 border-b border-slate-100 rounded-t-3xl ${
+                                        isCurrent ? 'bg-slate-100/50' : 'bg-white'
+                                    }`}>
+                                        <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">{plan.name}</h3>
+                                        <div className="flex flex-col items-center">
+                                            {appliedCoupons[plan._id] ? (
+                                                <div className="flex flex-col items-center">
+                                                    <div className="flex items-center gap-1.5">
+                                                        <span className="text-sm font-semibold text-slate-400 line-through">
+                                                            {getPlanDisplayPrice(plan).text}.00
+                                                        </span>
+                                                        <span className="text-3xl font-black text-green-600 tracking-tight">
+                                                            {getCouponFinalDisplay(appliedCoupons[plan._id], plan).text}.00
+                                                        </span>
+                                                    </div>
+                                                    <span className="text-[9px] text-green-600 font-extrabold uppercase mt-1">
+                                                        Code {appliedCoupons[plan._id].code} Applied ({getPlanDisplayPrice(plan).currency}{appliedCoupons[plan._id].discountAmount} Off)
+                                                    </span>
+                                                </div>
+                                            ) : (
+                                                <span className={`text-3xl font-black tracking-tight ${isCurrent ? 'text-slate-600' : 'text-[#0066FF]'}`}>
+                                                    {getPlanDisplayPrice(plan).text}{plan.price > 0 ? '.00' : ''}
+                                                </span>
+                                            )}
+                                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-1">/ {plan.duration}</span>
+                                        </div>
+                                        
+                                        {/* Coupon Input with Apply Button */}
+                                        <div className="w-full">
+                                            <div className="flex gap-2 w-full pt-1">
+                                                <input 
+                                                    type="text" 
+                                                    placeholder="Enter Coupon Code" 
+                                                    disabled={isCurrent || plan.price === 0}
+                                                    value={couponCodes[plan._id] || ''}
+                                                    onChange={(e) => setCouponCodes(prev => ({ ...prev, [plan._id]: e.target.value }))}
+                                                    className="flex-grow bg-[#f4f7fc] border border-slate-200 rounded-xl px-3 py-2 text-center text-xs font-bold text-slate-700 focus:outline-none focus:border-[#0066FF] placeholder-slate-400/90 disabled:opacity-60 transition-colors uppercase"
+                                                />
+                                                <button
+                                                    type="button"
+                                                    disabled={isCurrent || !couponCodes[plan._id] || plan.price === 0}
+                                                    onClick={() => handleApplyCoupon(plan._id)}
+                                                    className="bg-slate-200 hover:bg-[#0066FF] hover:text-white border border-slate-200 px-3 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all disabled:opacity-60 disabled:pointer-events-none cursor-pointer"
+                                                >
+                                                    Apply
+                                                </button>
+                                            </div>
+                                            {couponErrors[plan._id] && (
+                                                <div className="text-[9px] text-red-500 font-bold text-center mt-1.5 uppercase tracking-wide">
+                                                    {couponErrors[plan._id]}
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Upgrade Action Button */}
+                                        <button
+                                            type="button"
+                                            disabled={isCurrent || upgradingId === plan._id || plan.price === 0}
+                                            onClick={() => handleUpgrade(plan._id)}
+                                            className={`w-full flex justify-center items-center py-3.5 rounded-2xl text-xs font-black uppercase tracking-wider transition-all duration-300 cursor-pointer ${
+                                                isCurrent 
+                                                    ? 'bg-slate-450 text-slate-700 cursor-default border border-slate-300'
+                                                    : plan.price === 0
+                                                        ? 'bg-slate-200 text-slate-500 cursor-default'
+                                                        : 'bg-[#0066FF] hover:bg-[#0052cc] text-white shadow-md shadow-[#0066FF]/10 active:scale-98 disabled:opacity-75'
+                                            }`}
+                                        >
+                                            {upgradingId === plan._id ? (
+                                                <Loader2 className="w-4 h-4 animate-spin" />
+                                            ) : isCurrent ? (
+                                                'Current Active Plan'
+                                            ) : plan.price === 0 ? (
+                                                'Free Plan'
+                                            ) : (
+                                                <span>Upgrade Now</span>
+                                            )}
+                                        </button>
+                                    </div>
+
+                                    {/* Comparison Table */}
+                                    <div className="flex-1 p-4 bg-slate-50/20 flex flex-col justify-between rounded-b-3xl">
+                                        <div className="border border-slate-350 rounded-xl overflow-hidden bg-white shadow-sm">
+                                            <table className="w-full text-[10px] text-left border-collapse table-fixed">
+                                                <thead>
+                                                    <tr className="bg-slate-100 border-b border-slate-350 font-black text-slate-800 uppercase tracking-wider text-[9px]">
+                                                        <th className="p-2 border-r border-slate-350 w-1/2">Features / Plans</th>
+                                                        <th className="p-2 w-1/2">{plan.name} {plan.price > 0 ? '(Paid)' : ''}</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-slate-350 text-slate-700 font-semibold">
+                                                    <tr className="border-b border-slate-350">
+                                                        <td className="p-2 bg-slate-50/80 border-r border-slate-350 font-extrabold text-slate-500">Alternate Name</td>
+                                                        <td className="p-2">{plan.name} pricing</td>
+                                                    </tr>
+                                                    <tr className="border-b border-slate-350">
+                                                        <td className="p-2 bg-slate-50/80 border-r border-slate-350 font-extrabold text-slate-500">Monthly Price</td>
+                                                        <td className="p-2">{getPlanDisplayPrice(plan).text}</td>
+                                                    </tr>
+                                                    <tr className="border-b border-slate-350">
+                                                        <td className="p-2 bg-slate-50/80 border-r border-slate-350 font-extrabold text-slate-500">Enquiry Limit</td>
+                                                        <td className="p-2">
+                                                            {plan.price === 0 
+                                                                ? '5 Enquiries (Direct + My combined)' 
+                                                                : `${plan.inquiryLimit} Enquiries`
+                                                            }
+                                                        </td>
+                                                    </tr>
+                                                    <tr className="border-b border-slate-350">
+                                                        <td className="p-2 bg-slate-50/80 border-r border-slate-350 font-extrabold text-slate-500">Act as a White Label Site</td>
+                                                        <td className="p-2">{plan.price > 1000 ? 'Yes' : 'No'}</td>
+                                                    </tr>
+                                                    <tr className="border-b border-slate-350">
+                                                        <td className="p-2 bg-slate-50/80 border-r border-slate-350 font-extrabold text-slate-500">Vendor Profile Listing</td>
+                                                        <td className="p-2">{plan.price > 0 ? '✓' : '✕'}</td>
+                                                    </tr>
+                                                    <tr className="border-b border-slate-350">
+                                                        <td className="p-2 bg-slate-50/80 border-r border-slate-350 font-extrabold text-slate-500">Worldwide Visibility</td>
+                                                        <td className="p-2">{plan.price > 0 ? '✓' : 'Limited'}</td>
+                                                    </tr>
+                                                    <tr className="border-b border-slate-350">
+                                                        <td className="p-2 bg-slate-50/80 border-r border-slate-350 font-extrabold text-slate-500">Direct enquiries</td>
+                                                        <td className="p-2">{plan.price > 0 ? 'Unlimited' : 'Limited to 5'}</td>
+                                                    </tr>
+                                                    <tr className="border-b border-slate-350">
+                                                        <td className="p-2 bg-slate-50/80 border-r border-slate-350 font-extrabold text-slate-500">Dedicated Account Manager</td>
+                                                        <td className="p-2">{plan.price > 5000 ? '✓' : '✕'}</td>
+                                                    </tr>
+                                                    <tr className="border-b border-slate-350">
+                                                        <td className="p-2 bg-slate-50/80 border-r border-slate-350 font-extrabold text-slate-500">Support</td>
+                                                        <td className="p-2">{plan.price > 0 ? 'Premium 24/7' : 'Standard'}</td>
+                                                    </tr>
+                                                    
+                                                    {/* Render dynamic key-value rows parsed from description */}
+                                                    {parsedRows.map((row, idx) => {
+                                                        // Avoid duplicating static keys
+                                                        const isStaticKey = ['alternate name', 'monthly price', 'enquiry limit', 'act as a white label site', 'vendor profile listing', 'worldwide visibility', 'direct enquiries', 'dedicated account manager', 'support'].includes(row.key.toLowerCase());
+                                                        if (isStaticKey) return null;
+                                                        return (
+                                                            <tr key={idx} className="border-b border-slate-350">
+                                                                <td className="p-2 bg-slate-50/80 border-r border-slate-350 font-extrabold text-slate-500">{row.key}</td>
+                                                                <td className="p-2">{row.value}</td>
+                                                            </tr>
+                                                        );
+                                                    })}
+                                                </tbody>
+                                            </table>
+                                        </div>
+
+                                        {/* Fallback description render if no key-values parsed */}
+                                        {plan.description && parsedRows.length === 0 && (
+                                            <div className="mt-4 pt-4 border-t border-slate-200 text-[10px] text-slate-500 font-semibold">
+                                                <span className="text-[9px] uppercase font-black tracking-widest text-slate-400 block mb-2">Additional Specifications</span>
+                                                <div 
+                                                    className="space-y-1.5 text-slate-600 pricing-plan-description" 
+                                                    dangerouslySetInnerHTML={{ __html: plan.description }}
+                                                />
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                )
+            ) : (
+                /* Top-up Plans List Grid */
+                topupPlans.length === 0 ? (
+                    <div className="bg-white rounded-3xl p-12 text-center border border-slate-100 max-w-md mx-auto">
+                        <p className="text-slate-400 text-xs font-bold uppercase tracking-wider">
+                            No Top-up plans configured yet.
+                        </p>
+                    </div>
+                ) : (
+                    <div className="flex flex-wrap justify-center gap-6 pt-6">
                         {topupPlans.map((plan) => (
                             <div key={plan._id} className="bg-gradient-to-br from-white to-purple-50 rounded-2xl border border-purple-100 shadow-sm p-5 flex flex-col justify-between w-full max-w-xs relative overflow-hidden group hover:shadow-md transition-all">
                                 <div className="absolute top-0 right-0 w-16 h-16 bg-purple-500/10 rounded-full blur-xl -mr-4 -mt-4"></div>
@@ -670,7 +696,7 @@ const PricingPlans = () => {
                             </div>
                         ))}
                     </div>
-                </div>
+                )
             )}
 
             {/* Payment Breakdown Modal */}
