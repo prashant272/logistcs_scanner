@@ -248,7 +248,7 @@ const VendorEnquiriesTab = ({ title, type }) => {
           <div>
             <h4 className="text-sm font-black uppercase tracking-wider">Free Limit Reached</h4>
             <p className="text-xs font-semibold text-white/90 mt-1">
-              You are currently viewing a limited list of 5 enquiries. Please purchase a premium subscription plan matching your country to unlock all direct booking requests and matched leads.
+              You have reached your limit of accepting enquiries. Please purchase a premium subscription plan matching your country to unlock more direct booking requests and matched leads.
             </p>
           </div>
           <button

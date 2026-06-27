@@ -398,8 +398,29 @@ exports.getVendorEnquiries = async (req, res) => {
             return enqObj;
         });
 
-        if (!hasActivePlan) {
-            if (totalCount > 5) {
+        let isLimitReached = false;
+        if (!isAdmin && currentUser) {
+            let inquiryLimit = 5;
+            if (hasActivePlan && currentUser.activePlan && currentUser.activePlan.inquiryLimit) {
+                inquiryLimit = currentUser.activePlan.inquiryLimit;
+            }
+            if (!currentUser.topupPlanEndDate || new Date(currentUser.topupPlanEndDate) > new Date()) {
+                inquiryLimit += (currentUser.topupEnquiryLimit || 0);
+            }
+
+            const startOfMonth = new Date();
+            startOfMonth.setDate(1);
+            startOfMonth.setHours(0,0,0,0);
+
+            const acceptedCount = await Enquiry.countDocuments({
+                $or: [
+                    { vendor: req.user.id, status: 'Accepted', createdAt: { $gte: startOfMonth } },
+                    { 'responses': { $elemMatch: { vendor: req.user.id, status: 'Accepted' } }, createdAt: { $gte: startOfMonth } }
+                ]
+            });
+
+            if (acceptedCount >= inquiryLimit) {
+                isLimitReached = true;
                 res.setHeader('X-Limit-Reached', 'true');
                 res.setHeader('Access-Control-Expose-Headers', 'X-Limit-Reached');
             }
