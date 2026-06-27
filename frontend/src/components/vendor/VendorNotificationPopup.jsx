@@ -82,7 +82,13 @@ const VendorNotificationPopup = () => {
         }
 
         if (shouldNavigate && notif && notif.link) {
-            navigate(notif.link);
+            let finalLink = notif.link;
+            if (finalLink.includes('/vendor/enquiries?type=direct')) finalLink = '/vendor/direct-enquiries';
+            else if (finalLink.includes('/vendor/enquiries?type=my')) finalLink = '/vendor/my-enquiries';
+            else if (finalLink.includes('/vendor/bookings?type=direct')) finalLink = '/vendor/direct-booking';
+            else if (finalLink.includes('/vendor/bookings?type=my')) finalLink = '/vendor/my-bookings';
+            
+            navigate(finalLink);
         }
     };
 
