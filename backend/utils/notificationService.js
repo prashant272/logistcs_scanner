@@ -18,7 +18,7 @@ const transporter = nodemailer.createTransport({
 const sendNotification = async (userId, message, type = 'info', link = null) => {
     try {
         // Save to DB
-        const notification = await Notification.create({
+        const savedNotif = await Notification.create({
             userId,
             message,
             type,
@@ -29,10 +29,10 @@ const sendNotification = async (userId, message, type = 'info', link = null) => 
         const socketId = getUserSocket(userId);
         const io = getIo();
         if (socketId && io) {
-            io.to(socketId).emit('newNotification', notification);
+            io.to(socketId).emit('newNotification', savedNotif);
         }
         
-        return notification;
+        return savedNotif;
     } catch (error) {
         console.error('Error sending notification:', error);
     }
@@ -98,15 +98,14 @@ const broadcastVendorNotification = async (message, type = 'info', link = null, 
             link
         }));
 
-        await Notification.insertMany(notifications);
+        const savedNotifications = await Notification.insertMany(notifications);
 
         const io = getIo();
         if (io) {
-            // Alternatively, emit to a vendorRoom, but for now emit individually if socket is found
-            vendors.forEach(vendor => {
-                const socketId = getUserSocket(vendor._id);
+            savedNotifications.forEach(savedNotif => {
+                const socketId = getUserSocket(savedNotif.userId);
                 if (socketId) {
-                    io.to(socketId).emit('newNotification', { message, type, link, isRead: false, createdAt: new Date() });
+                    io.to(socketId).emit('newNotification', savedNotif);
                 }
             });
         }
