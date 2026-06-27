@@ -405,16 +405,37 @@ const VendorEnquiriesTab = ({ title, type }) => {
                         <MapPin size={12} className="text-[#0066FF]" />
                         <span>{enq.fromLocation}</span>
                       </div>
-                      <span className="text-slate-300 font-black">→</span>
-                      <div className="flex items-center gap-2 bg-[#f4f7fc] px-3 py-2 rounded-xl border border-slate-150 shadow-sm">
-                        <MapPin size={12} className="text-[#0066FF]" />
-                        <span>{enq.toLocation}</span>
-                      </div>
+                      
+                      {enq.type === 'cha' ? (
+                        <>
+                          <span className="text-slate-300 font-black">-</span>
+                          <div className="flex items-center gap-2 bg-[#f4f7fc] px-3 py-2 rounded-xl border border-slate-150 shadow-sm text-slate-700">
+                            <span className="text-[#0066FF]">{enq.chaServiceType || 'CHA'}</span>
+                            <span>{enq.chaCargoType || 'Customs Clearance'}</span>
+                          </div>
+                        </>
+                      ) : enq.type !== 'warehouse' && (
+                        <>
+                          <span className="text-slate-300 font-black">→</span>
+                          <div className="flex items-center gap-2 bg-[#f4f7fc] px-3 py-2 rounded-xl border border-slate-150 shadow-sm">
+                            <MapPin size={12} className="text-[#0066FF]" />
+                            <span>{enq.toLocation}</span>
+                          </div>
+                        </>
+                      )}
                     </div>
                   </div>
 
                   {/* Top-Right Badges: Container, Load Type, Date of Shipment */}
                   <div className="flex flex-wrap gap-2 items-center">
+                    {/* Enquiry Type Badge for CHA */}
+                    {enq.type === 'cha' && (
+                      <div className="bg-[#0066FF]/10 border border-[#0066FF]/20 rounded-lg px-3 py-1.5 text-center min-w-[60px] shadow-sm">
+                        <div className="text-[9px] text-[#0066FF] font-black uppercase tracking-wider">Type</div>
+                        <div className="text-[10px] font-black text-[#0052cc] mt-0.5">CHA</div>
+                      </div>
+                    )}
+                    
                     {/* Container Type for Sea FCL */}
                     {(enq.type === 'sea' && enq.seaLoadType === 'FCL' && enq.fclStandard) && (
                       <div className="bg-white border border-slate-200/80 rounded-lg px-3 py-1.5 text-center min-w-[70px] shadow-sm">

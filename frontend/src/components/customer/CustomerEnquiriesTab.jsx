@@ -227,17 +227,19 @@ const CustomerEnquiriesTab = ({ title, type }) => {
                           <div className="flex items-start gap-1.5">
                             <MapPin size={13} className="text-red-500 shrink-0 mt-0.5" />
                             <div>
-                              <span className="text-[9px] text-slate-400 uppercase font-bold block">From</span>
+                              <span className="text-[9px] text-slate-400 uppercase font-bold block">{enq.type === 'cha' ? 'Port/Airport' : enq.type === 'warehouse' ? 'Location' : 'From'}</span>
                               <span className="font-black text-slate-800">{enq.fromLocation}</span>
                             </div>
                           </div>
-                          <div className="flex items-start gap-1.5">
-                            <MapPin size={13} className="text-emerald-500 shrink-0 mt-0.5" />
-                            <div>
-                              <span className="text-[9px] text-slate-400 uppercase font-bold block">To</span>
-                              <span className="font-black text-slate-800">{enq.toLocation}</span>
+                          {enq.type !== 'cha' && enq.type !== 'warehouse' && (
+                            <div className="flex items-start gap-1.5">
+                              <MapPin size={13} className="text-emerald-500 shrink-0 mt-0.5" />
+                              <div>
+                                <span className="text-[9px] text-slate-400 uppercase font-bold block">To</span>
+                                <span className="font-black text-slate-800">{enq.toLocation}</span>
+                              </div>
                             </div>
-                          </div>
+                          )}
                         </div>
                       </div>
 
@@ -406,11 +408,24 @@ const CustomerEnquiriesTab = ({ title, type }) => {
                         <Building2 size={14} className="text-slate-400" />
                         <span>{enq.fromLocation}</span>
                       </div>
-                      <span className="text-[#0066FF] font-black text-lg">↔</span>
-                      <div className="flex items-center gap-2 bg-[#f4f7fc] px-3.5 py-2 rounded-xl border border-slate-150">
-                        <Building2 size={14} className="text-slate-400" />
-                        <span>{enq.toLocation}</span>
-                      </div>
+                      {enq.type === 'cha' ? (
+                        <>
+                          <span className="text-slate-300 font-black">-</span>
+                          <div className="flex items-center gap-2 bg-[#f4f7fc] px-3.5 py-2 rounded-xl border border-slate-150 text-[#0066FF]">
+                            <Building2 size={14} className="text-[#0066FF]" />
+                            <span className="font-black">{enq.chaServiceType || 'CHA'}</span>
+                            <span className="text-slate-700">{enq.chaCargoType || 'Customs Clearance'}</span>
+                          </div>
+                        </>
+                      ) : enq.type !== 'warehouse' && (
+                        <>
+                          <span className="text-[#0066FF] font-black text-lg">↔</span>
+                          <div className="flex items-center gap-2 bg-[#f4f7fc] px-3.5 py-2 rounded-xl border border-slate-150">
+                            <Building2 size={14} className="text-slate-400" />
+                            <span>{enq.toLocation}</span>
+                          </div>
+                        </>
+                      )}
                     </div>
 
                     {/* Quoted display or Status */}

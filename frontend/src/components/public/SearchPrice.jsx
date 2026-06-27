@@ -411,7 +411,9 @@ const SearchPrice = ({ isDashboard = false }) => {
             deliverySpeed: matchedRate ? matchedRate.deliverySpeed : '3-4',
             price: matchedRate ? matchedRate.price : null,
             vendor: matchedRate ? matchedRate.vendor._id : null,
-            isDirect: matchedRate ? false : true
+            isDirect: matchedRate ? false : true,
+            chaServiceType: activeTab === 'cha' ? chaType : undefined,
+            chaCargoType: activeTab === 'cha' ? chaCargoType : undefined
         };
 
         try {

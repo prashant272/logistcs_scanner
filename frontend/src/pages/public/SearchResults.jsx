@@ -416,14 +416,23 @@ const SearchResults = () => {
             </div>
             <div>
               <div className="flex items-center gap-2 text-xs font-black text-[#0066FF] uppercase tracking-wider">
-                <span>{searchPayload.type} Freight</span>
+                <span>{searchPayload.type} {searchPayload.type === 'cha' ? (queryDetails.chaServiceType || 'Service') : 'Freight'}</span>
                 <span className="text-slate-300">•</span>
-                <span className="text-slate-500">{queryDetails.airCategory || queryDetails.storageType || 'General Cargo'}</span>
+                <span className="text-slate-500">
+                  {searchPayload.type === 'cha' ? (queryDetails.chaCargoType || 'Customs Clearance') :
+                   searchPayload.type === 'air' ? (queryDetails.airCategory || 'General Cargo') :
+                   searchPayload.type === 'warehouse' ? (queryDetails.storageType || 'General Cargo') :
+                   'General Cargo'}
+                </span>
               </div>
               <h2 className="text-base font-extrabold text-[#0B1E43] tracking-tight mt-0.5 flex flex-wrap items-center gap-2">
                 <span>{searchPayload.fromLocation}</span>
-                <span className="text-[#0066FF]">↔</span>
-                <span>{searchPayload.toLocation}</span>
+                {searchPayload.type !== 'cha' && searchPayload.type !== 'warehouse' && (
+                  <>
+                    <span className="text-[#0066FF]">↔</span>
+                    <span>{searchPayload.toLocation}</span>
+                  </>
+                )}
               </h2>
             </div>
           </div>
