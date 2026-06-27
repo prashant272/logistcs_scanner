@@ -655,14 +655,15 @@ const PricingPlans = () => {
                                     </div>
                                     <button
                                         type="button"
-                                        disabled={upgradingId === plan._id}
+                                        disabled={upgradingId === plan._id || !user?.activePlan?.price || user.activePlan.price <= 0}
                                         onClick={() => handleUpgrade(plan._id)}
-                                        className="w-full flex justify-center items-center py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-300 cursor-pointer bg-purple-600 hover:bg-purple-700 text-white shadow-md shadow-purple-600/20 disabled:opacity-75"
+                                        className="w-full flex justify-center items-center py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-300 cursor-pointer bg-purple-600 hover:bg-purple-700 text-white shadow-md shadow-purple-600/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        title={(!user?.activePlan?.price || user.activePlan.price <= 0) ? 'You must be on a paid Premium Plan to buy a Top-up' : ''}
                                     >
                                         {upgradingId === plan._id ? (
                                             <Loader2 className="w-4 h-4 animate-spin" />
                                         ) : (
-                                            'Buy Top-up'
+                                            (!user?.activePlan?.price || user.activePlan.price <= 0) ? 'Requires Paid Plan' : 'Buy Top-up'
                                         )}
                                     </button>
                                 </div>

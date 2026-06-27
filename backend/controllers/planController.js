@@ -104,9 +104,15 @@ exports.upgradeUserPlan = async (req, res) => {
         if (!user) return res.status(404).json({ message: 'User not found' });
 
         if (plan.planType === 'Topup') {
-            // Check if user has an active regular plan
+            // Check if user has an active regular plan that was paid for (price > 0)
             if (!user.activePlan || !user.planEndDate || user.planEndDate < new Date()) {
                 return res.status(400).json({ message: 'You must have an active regular plan to purchase a top-up.' });
+            }
+            
+            // Populate activePlan if it's just an ID
+            const activePlanDoc = await Plan.findById(user.activePlan);
+            if (!activePlanDoc || activePlanDoc.price <= 0) {
+                return res.status(400).json({ message: 'You can only purchase a top-up if you are on a paid premium plan.' });
             }
         }
 
@@ -174,6 +180,17 @@ exports.createRazorpayOrder = async (req, res) => {
         let isOutsideIndia = false;
         if (req.user) {
             const user = await User.findById(req.user.id);
+            
+            if (plan.planType === 'Topup') {
+                if (!user.activePlan || !user.planEndDate || user.planEndDate < new Date()) {
+                    return res.status(400).json({ message: 'You must have an active regular plan to purchase a top-up.' });
+                }
+                const activePlanDoc = await Plan.findById(user.activePlan);
+                if (!activePlanDoc || activePlanDoc.price <= 0) {
+                    return res.status(400).json({ message: 'You can only purchase a top-up if you are on a paid premium plan.' });
+                }
+            }
+
             if (user && user.country && user.country.toLowerCase() !== 'india' && user.country.toLowerCase() !== 'in') {
                 isOutsideIndia = true;
             }
@@ -275,6 +292,11 @@ exports.verifyRazorpayPayment = async (req, res) => {
         if (plan.planType === 'Topup') {
             if (!user.activePlan || !user.planEndDate || user.planEndDate < new Date()) {
                 return res.status(400).json({ message: 'You must have an active regular plan to purchase a top-up.' });
+            }
+            
+            const activePlanDoc = await Plan.findById(user.activePlan);
+            if (!activePlanDoc || activePlanDoc.price <= 0) {
+                return res.status(400).json({ message: 'You can only purchase a top-up if you are on a paid premium plan.' });
             }
         }
 
