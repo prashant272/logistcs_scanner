@@ -31,7 +31,7 @@ exports.getPlans = async (req, res) => {
 // Create a plan
 exports.createPlan = async (req, res) => {
     try {
-        const { name, price, currency, status, inquiryLimit, duration, userType, country, description } = req.body;
+        const { name, price, currency, status, inquiryLimit, duration, userType, country, description, planType } = req.body;
         if (!name || !price || !inquiryLimit || !duration || !userType || !country) {
             return res.status(400).json({ message: 'Missing required fields' });
         }
@@ -41,6 +41,7 @@ exports.createPlan = async (req, res) => {
             price: Number(price),
             currency: currency || 'INR',
             status: status || 'Active',
+            planType: planType || 'Regular',
             inquiryLimit: Number(inquiryLimit),
             duration,
             userType,
@@ -99,6 +100,16 @@ exports.upgradeUserPlan = async (req, res) => {
             return res.status(400).json({ message: 'Selected plan is inactive' });
         }
 
+        const user = await User.findById(req.user.id);
+        if (!user) return res.status(404).json({ message: 'User not found' });
+
+        if (plan.planType === 'Topup') {
+            // Check if user has an active regular plan
+            if (!user.activePlan || !user.planEndDate || user.planEndDate < new Date()) {
+                return res.status(400).json({ message: 'You must have an active regular plan to purchase a top-up.' });
+            }
+        }
+
         // Determine plan end date based on duration
         const planStartDate = new Date();
         const planEndDate = new Date();
@@ -114,13 +125,23 @@ exports.upgradeUserPlan = async (req, res) => {
             planEndDate.setMonth(planEndDate.getMonth() + 1); // default to 1 month
         }
 
-        const updatedUser = await User.findByIdAndUpdate(
-            req.user.id,
-            {
+        let updateData = {};
+        if (plan.planType === 'Topup') {
+            updateData = {
+                $inc: { topupEnquiryLimit: plan.inquiryLimit },
+                topupPlanEndDate: planEndDate
+            };
+        } else {
+            updateData = {
                 activePlan: plan._id,
                 planStartDate,
                 planEndDate
-            },
+            };
+        }
+
+        const updatedUser = await User.findByIdAndUpdate(
+            req.user.id,
+            updateData,
             { new: true }
         ).populate('activePlan');
 
@@ -248,6 +269,15 @@ exports.verifyRazorpayPayment = async (req, res) => {
             return res.status(400).json({ message: 'Payment verification failed: Signature mismatch' });
         }
 
+        const user = await User.findById(req.user.id);
+        if (!user) return res.status(404).json({ message: 'User not found' });
+
+        if (plan.planType === 'Topup') {
+            if (!user.activePlan || !user.planEndDate || user.planEndDate < new Date()) {
+                return res.status(400).json({ message: 'You must have an active regular plan to purchase a top-up.' });
+            }
+        }
+
         const planStartDate = new Date();
         const planEndDate = new Date();
         if (plan.duration === 'Monthly') {
@@ -262,13 +292,23 @@ exports.verifyRazorpayPayment = async (req, res) => {
             planEndDate.setMonth(planEndDate.getMonth() + 1);
         }
 
-        const updatedUser = await User.findByIdAndUpdate(
-            req.user.id,
-            {
+        let updateData = {};
+        if (plan.planType === 'Topup') {
+            updateData = {
+                $inc: { topupEnquiryLimit: plan.inquiryLimit },
+                topupPlanEndDate: planEndDate
+            };
+        } else {
+            updateData = {
                 activePlan: plan._id,
                 planStartDate,
                 planEndDate
-            },
+            };
+        }
+
+        const updatedUser = await User.findByIdAndUpdate(
+            req.user.id,
+            updateData,
             { new: true }
         ).populate('activePlan');
 

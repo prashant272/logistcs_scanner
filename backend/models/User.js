@@ -154,6 +154,13 @@ const userSchema = new mongoose.Schema({
     planEndDate: {
         type: Date
     },
+    topupEnquiryLimit: {
+        type: Number,
+        default: 0
+    },
+    topupPlanEndDate: {
+        type: Date
+    },
     assignedRM: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'RM',

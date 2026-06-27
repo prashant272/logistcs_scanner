@@ -20,6 +20,7 @@ const PlanManagement = () => {
   const [price, setPrice] = useState('');
   const [currency, setCurrency] = useState('INR');
   const [status, setStatus] = useState('Active');
+  const [planType, setPlanType] = useState('Regular');
   const [inquiryLimit, setInquiryLimit] = useState('');
   const [duration, setDuration] = useState('Monthly');
   const [userType, setUserType] = useState('customer');
@@ -59,6 +60,7 @@ const PlanManagement = () => {
     setPrice(plan.price !== undefined ? plan.price : '');
     setCurrency(plan.currency || 'INR');
     setStatus(plan.status || 'Active');
+    setPlanType(plan.planType || 'Regular');
     setInquiryLimit(plan.inquiryLimit !== undefined ? plan.inquiryLimit : '');
     setDuration(plan.duration || 'Monthly');
     setUserType(plan.userType || 'customer');
@@ -76,6 +78,7 @@ const PlanManagement = () => {
     setPrice('');
     setCurrency('INR');
     setStatus('Active');
+    setPlanType('Regular');
     setInquiryLimit('');
     setDuration('Monthly');
     setUserType('customer');
@@ -111,6 +114,7 @@ const PlanManagement = () => {
         price: Number(price),
         currency,
         status,
+        planType,
         inquiryLimit: Number(inquiryLimit),
         duration,
         userType,
@@ -232,6 +236,23 @@ const PlanManagement = () => {
 
               <div className="group">
                 <label className="block text-xs font-bold !text-slate-900 mb-1">
+                  Plan Type <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={planType}
+                  onChange={(e) => setPlanType(e.target.value)}
+                  className="w-full bg-[#f4f7fc] border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-800 focus:outline-none focus:bg-white focus:border-[#00b2fe] cursor-pointer transition-all"
+                >
+                  <option value="Regular">Regular Plan</option>
+                  <option value="Topup">Top-up Plan</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Input Row 2 */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div className="group">
+                <label className="block text-xs font-bold !text-slate-900 mb-1">
                   Price & Currency <span className="text-red-500">*</span>
                 </label>
                 <div className="flex bg-[#f4f7fc] border border-slate-200 rounded-xl focus-within:bg-white focus-within:border-[#00b2fe] transition-all overflow-hidden">
@@ -253,10 +274,7 @@ const PlanManagement = () => {
                   />
                 </div>
               </div>
-            </div>
 
-            {/* Input Row 2 */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div className="group">
                 <label className="block text-xs font-bold !text-slate-900 mb-1">
                   Status <span className="text-red-500">*</span>
@@ -270,7 +288,10 @@ const PlanManagement = () => {
                   <option value="Inactive">Inactive</option>
                 </select>
               </div>
+            </div>
 
+            {/* Input Row 3 */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div className="group">
                 <label className="block text-xs font-bold !text-slate-900 mb-1">
                   Inquiry Limit <span className="text-red-500">*</span>
@@ -490,6 +511,7 @@ const PlanManagement = () => {
                 <thead className="bg-slate-50 text-[#0B1E43] uppercase text-[9px] font-black tracking-widest border-b border-slate-150">
                   <tr>
                     <th className="p-4">Plan Name</th>
+                    <th className="p-4">Type</th>
                     <th className="p-4">User Type</th>
                     <th className="p-4">Country</th>
                     <th className="p-4">Price</th>
@@ -503,6 +525,11 @@ const PlanManagement = () => {
                   {plans.map((p) => (
                     <tr key={p._id} className="hover:bg-slate-50/50 transition-colors">
                       <td className="p-4 text-[#0B1E43] font-black">{p.name}</td>
+                      <td className="p-4">
+                        <span className={`px-2 py-1 rounded text-[10px] font-black uppercase tracking-wider ${p.planType === 'Topup' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}`}>
+                          {p.planType || 'Regular'}
+                        </span>
+                      </td>
                       <td className="p-4 uppercase tracking-wider text-slate-500">{p.userType}</td>
                       <td className="p-4 flex items-center gap-1.5 mt-1.5">
                         <Globe size={13} className="text-slate-400" />

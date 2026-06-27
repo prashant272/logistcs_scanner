@@ -15,6 +15,11 @@ const planSchema = new mongoose.Schema({
         enum: ['INR', 'USD'],
         default: 'INR'
     },
+    planType: {
+        type: String,
+        enum: ['Regular', 'Topup'],
+        default: 'Regular'
+    },
     status: {
         type: String,
         enum: ['Active', 'Inactive'],

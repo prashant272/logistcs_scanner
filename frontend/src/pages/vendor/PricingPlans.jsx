@@ -342,6 +342,9 @@ const PricingPlans = () => {
         return a.price - b.price;
     });
 
+    const regularPlans = sortedPlans.filter(p => p.planType !== 'Topup');
+    const topupPlans = sortedPlans.filter(p => p.planType === 'Topup');
+
     return (
         <div className="max-w-7xl mx-auto space-y-8 px-4 pb-12">
             {/* Header */}
@@ -399,7 +402,7 @@ const PricingPlans = () => {
                     <div className="bg-slate-50/70 p-3 rounded-2xl border border-slate-100/50">
                         <span className="text-[8px] font-black text-slate-400 uppercase tracking-wider block">Enquiry Limit</span>
                         <span className="font-extrabold text-slate-800 text-xs mt-0.5 block">
-                            {user?.activePlan?.inquiryLimit ? `${user.activePlan.inquiryLimit} Enquiries` : '5 Enquiries (Direct+My)'}
+                            {user?.activePlan?.inquiryLimit ? `${user.activePlan.inquiryLimit + (user?.topupEnquiryLimit || 0)} Enquiries` : '5 Enquiries (Direct+My)'}
                         </span>
                     </div>
                     <div className="bg-slate-50/70 p-3 rounded-2xl border border-slate-100/50">
@@ -412,7 +415,7 @@ const PricingPlans = () => {
             </div>
 
             {/* Plans List Grid: Rendered in a Single Row */}
-            {sortedPlans.length === 0 ? (
+            {regularPlans.length === 0 ? (
                 <div className="bg-white rounded-3xl p-12 text-center border border-slate-100 max-w-md mx-auto">
                     <p className="text-slate-400 text-xs font-bold uppercase tracking-wider">
                         No active premium plans configured for your region or profile yet.
@@ -420,7 +423,7 @@ const PricingPlans = () => {
                 </div>
             ) : (
                 <div className="flex flex-col lg:flex-row items-stretch justify-center gap-8 pt-6 overflow-x-auto pb-4 lg:overflow-x-visible">
-                    {sortedPlans.map((plan) => {
+                    {regularPlans.map((plan) => {
                         const isCurrent = plan._id === 'free_tier_static_id' ? !activePlanId : activePlanId === plan._id;
                         
                         // Parse description HTML into dynamic comparison rows
@@ -614,6 +617,58 @@ const PricingPlans = () => {
                             </div>
                         );
                     })}
+                </div>
+            )}
+
+            {/* Top-up Plans Section */}
+            {topupPlans.length > 0 && (
+                <div className="mt-12 space-y-6 border-t border-slate-200 pt-12">
+                    <div className="text-center space-y-2">
+                        <h2 className="text-2xl font-black text-[#0B1E43] tracking-tight">Need More Enquiries?</h2>
+                        <p className="text-slate-500 text-xs font-semibold uppercase tracking-wider">
+                            Buy a Top-up plan to instantly boost your limit
+                        </p>
+                    </div>
+                    <div className="flex flex-wrap justify-center gap-6">
+                        {topupPlans.map((plan) => (
+                            <div key={plan._id} className="bg-gradient-to-br from-white to-purple-50 rounded-2xl border border-purple-100 shadow-sm p-5 flex flex-col justify-between w-full max-w-xs relative overflow-hidden group hover:shadow-md transition-all">
+                                <div className="absolute top-0 right-0 w-16 h-16 bg-purple-500/10 rounded-full blur-xl -mr-4 -mt-4"></div>
+                                <div className="space-y-4 relative z-10">
+                                    <div className="flex justify-between items-start">
+                                        <div>
+                                            <h3 className="text-sm font-black text-purple-900 uppercase tracking-widest">{plan.name}</h3>
+                                            <span className="text-[10px] bg-purple-100 text-purple-700 px-2 py-0.5 rounded uppercase font-bold tracking-wider mt-1 inline-block">Top-up</span>
+                                        </div>
+                                        <div className="text-right">
+                                            <span className="text-xl font-black text-slate-800">{getPlanDisplayPrice(plan).text}</span>
+                                        </div>
+                                    </div>
+                                    <div className="bg-white/60 p-3 rounded-xl border border-white space-y-2">
+                                        <div className="flex justify-between items-center text-xs">
+                                            <span className="font-bold text-slate-500">Extra Limits</span>
+                                            <span className="font-black text-purple-700">+{plan.inquiryLimit} Enquiries</span>
+                                        </div>
+                                        <div className="flex justify-between items-center text-xs">
+                                            <span className="font-bold text-slate-500">Validity</span>
+                                            <span className="font-black text-slate-700">{plan.duration}</span>
+                                        </div>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        disabled={upgradingId === plan._id}
+                                        onClick={() => handleUpgrade(plan._id)}
+                                        className="w-full flex justify-center items-center py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-300 cursor-pointer bg-purple-600 hover:bg-purple-700 text-white shadow-md shadow-purple-600/20 disabled:opacity-75"
+                                    >
+                                        {upgradingId === plan._id ? (
+                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                        ) : (
+                                            'Buy Top-up'
+                                        )}
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
                 </div>
             )}
 
