@@ -235,7 +235,7 @@ exports.getVendorEnquiries = async (req, res) => {
             };
         } else {
             const User = require('../models/User');
-            currentUser = await User.findById(req.user.id);
+            currentUser = await User.findById(req.user.id).populate('activePlan');
             if (!currentUser || (currentUser.verificationStatus !== 'Approved' && currentUser.role === 'vendor')) {
                 return res.json([]); // Return empty list of leads if vendor is not approved
             }
@@ -501,13 +501,13 @@ exports.updateEnquiryStatus = async (req, res) => {
             const hasActivePlan = vendorUser && vendorUser.activePlan && vendorUser.planEndDate && new Date(vendorUser.planEndDate) > new Date();
             
             let inquiryLimit = 5;
-            if (hasActivePlan && vendorUser.activePlan.inquiryLimit) {
+            if (hasActivePlan && vendorUser.activePlan && vendorUser.activePlan.inquiryLimit) {
                 inquiryLimit = vendorUser.activePlan.inquiryLimit;
-                
-                // Add top-up limit if active (or if manually granted without an expiry date)
-                if (!vendorUser.topupPlanEndDate || new Date(vendorUser.topupPlanEndDate) > new Date()) {
-                    inquiryLimit += (vendorUser.topupEnquiryLimit || 0);
-                }
+            }
+            
+            // Add top-up limit if active (or if manually granted without an expiry date)
+            if (!vendorUser.topupPlanEndDate || new Date(vendorUser.topupPlanEndDate) > new Date()) {
+                inquiryLimit += (vendorUser.topupEnquiryLimit || 0);
             }
 
             const startOfMonth = new Date();
