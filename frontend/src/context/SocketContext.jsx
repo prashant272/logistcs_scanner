@@ -20,6 +20,7 @@ export const SocketProvider = ({ children }) => {
         }
 
         const newSocket = io(import.meta.env.VITE_API_BASE_URL.replace(/\/api\/?$/, ''), {
+            path: '/api/socket.io',
             autoConnect: true,
             reconnection: true,
             reconnectionAttempts: 5,

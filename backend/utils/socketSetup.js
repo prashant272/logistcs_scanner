@@ -5,6 +5,7 @@ const userSockets = new Map(); // Map userId to socketId
 
 const initSocket = (server) => {
     io = socketIo(server, {
+        path: '/api/socket.io',
         cors: {
             origin: "*", // allow all origins for now, configure strictly in production
             methods: ["GET", "POST"]
