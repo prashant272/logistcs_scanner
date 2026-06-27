@@ -418,6 +418,7 @@ exports.getVendorEnquiries = async (req, res) => {
                     { 'responses': { $elemMatch: { vendor: req.user.id, status: 'Accepted' } }, createdAt: { $gte: startOfMonth } }
                 ]
             });
+            console.log(`[getVendorEnquiries limit check] user=${req.user.id}, acceptedCount=${acceptedCount}, inquiryLimit=${inquiryLimit}`);
 
             if (acceptedCount >= inquiryLimit) {
                 isLimitReached = true;
