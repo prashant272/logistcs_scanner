@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { Eye, EyeOff } from 'lucide-react';
 
 const AdminLogin = () => {
     const [email, setEmail] = useState('admin@biryaniyoyo.com');
-    const [password, setPassword] = useState('admin@2026');
+    const [password, setPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
     const navigate = useNavigate();
 
@@ -36,12 +38,21 @@ const AdminLogin = () => {
                     </div>
                     <div>
                         <label className="block text-gray-400 mb-2">Password</label>
-                        <input
-                            type="password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            className="w-full bg-black/40 border border-white/10 rounded p-3 text-white focus:border-gold focus:outline-none"
-                        />
+                        <div className="relative">
+                            <input
+                                type={showPassword ? "text" : "password"}
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                className="w-full bg-black/40 border border-white/10 rounded p-3 pr-10 text-white focus:border-gold focus:outline-none"
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setShowPassword(!showPassword)}
+                                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-white"
+                            >
+                                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                            </button>
+                        </div>
                     </div>
                     <button className="w-full bg-gold text-black font-bold py-3 hover:bg-white transition-colors uppercase tracking-widest">
                         Login
