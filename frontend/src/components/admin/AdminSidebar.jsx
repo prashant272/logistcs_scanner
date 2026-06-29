@@ -98,7 +98,7 @@ const AdminSidebar = ({ isSidebarOpen, logout }) => {
     ];
 
     return (
-        <aside className={`bg-gradient-to-b from-[#0B1E43] via-[#081633] to-[#050f24] text-white ${isSidebarOpen ? 'w-64' : 'w-0 md:w-20'} transition-all duration-300 flex flex-col shrink-0 h-screen fixed left-0 top-0 overflow-y-auto z-20 border-r border-white/5`}>
+        <aside className={`bg-gradient-to-b from-[#0B1E43] via-[#081633] to-[#050f24] text-white transition-all duration-300 flex flex-col shrink-0 h-screen fixed left-0 top-0 overflow-y-auto z-40 border-r border-white/5 ${isSidebarOpen ? 'translate-x-0 w-64' : '-translate-x-full md:translate-x-0 md:w-20'}`}>
             {/* Logo Section */}
             <div className="p-5 flex items-center justify-between border-b border-white/5 h-20 overflow-hidden shrink-0">
                 <div className="flex items-center gap-3">

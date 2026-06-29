@@ -5,7 +5,7 @@ import AdminHeader from '../../components/admin/AdminHeader';
 
 const AdminDashboard = () => {
     const navigate = useNavigate();
-    const [isSidebarOpen, setSidebarOpen] = useState(true);
+    const [isSidebarOpen, setSidebarOpen] = useState(window.innerWidth >= 768);
     const [searchQuery, setSearchQuery] = useState('');
 
     const handleLogout = () => {
@@ -16,6 +16,13 @@ const AdminDashboard = () => {
     return (
         <div className="w-full h-screen bg-[#f4f7fc] text-slate-800 font-sans flex overflow-hidden">
             
+            {/* Mobile Overlay */}
+            {isSidebarOpen && (
+                <div 
+                    className="fixed inset-0 bg-black/50 z-30 md:hidden"
+                    onClick={() => setSidebarOpen(false)}
+                />
+            )}
             {/* Sidebar Component */}
             <AdminSidebar 
                 isSidebarOpen={isSidebarOpen} 

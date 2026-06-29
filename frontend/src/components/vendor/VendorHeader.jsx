@@ -5,13 +5,13 @@ import NotificationBell from '../common/NotificationBell';
 
 const VendorHeader = ({ isSidebarOpen, setSidebarOpen, user, logout, searchQuery, setSearchQuery }) => {
     const navigate = useNavigate();
-    
+
     return (
         <header className="bg-white border-b border-slate-100 h-20 flex items-center justify-between px-6 md:px-8 z-10 shrink-0">
             {/* Left: Sidebar Toggle and Dashboard Title */}
             <div className="flex items-center gap-4">
-                <button 
-                    onClick={() => setSidebarOpen(!isSidebarOpen)} 
+                <button
+                    onClick={() => setSidebarOpen(!isSidebarOpen)}
                     className="p-2 hover:bg-slate-50 rounded-xl !text-slate-500 transition-colors border border-transparent hover:border-slate-100 cursor-pointer"
                 >
                     <Menu size={18} />
@@ -40,19 +40,17 @@ const VendorHeader = ({ isSidebarOpen, setSidebarOpen, user, logout, searchQuery
 
                 {/* Available Wallet Balance */}
                 {user?.role === 'vendor' && (
-                    <div 
+                    <div
                         onClick={() => navigate('/vendor/wallet')}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-xl border cursor-pointer transition-colors hover:shadow-sm ${
-                            user.walletBalance && user.walletBalance > 0
+                        className={`flex items-center gap-2 px-4 py-2 rounded-xl border cursor-pointer transition-colors hover:shadow-sm ${user.walletBalance && user.walletBalance > 0
                                 ? 'bg-emerald-50 border-emerald-100 hover:bg-emerald-100'
                                 : 'bg-red-50 border-red-100 hover:bg-red-100'
-                        }`}
+                            }`}
                         title="Click to view wallet ledger"
                     >
                         <span className="text-[9px] font-black text-slate-550 uppercase tracking-wider">Available Wallet:</span>
-                        <span className={`text-xs font-black ${
-                            user.walletBalance && user.walletBalance > 0 ? 'text-emerald-600' : 'text-red-650'
-                        }`}>
+                        <span className={`text-xs font-black ${user.walletBalance && user.walletBalance > 0 ? 'text-emerald-600' : 'text-red-650'
+                            }`}>
                             {user.walletBalance && user.walletBalance > 0 ? `₹${user.walletBalance.toLocaleString('en-IN')}` : 'Not Approved'}
                         </span>
                     </div>
@@ -80,7 +78,7 @@ const VendorHeader = ({ isSidebarOpen, setSidebarOpen, user, logout, searchQuery
 
                 {/* Revert as Admin Button (If Admin Token exists) */}
                 {localStorage.getItem('adminToken') && (
-                    <button 
+                    <button
                         onClick={() => {
                             localStorage.removeItem('userToken');
                             window.location.href = '/admin/vendors';
@@ -92,7 +90,7 @@ const VendorHeader = ({ isSidebarOpen, setSidebarOpen, user, logout, searchQuery
                 )}
 
                 {/* Logout button */}
-                <button 
+                <button
                     onClick={logout}
                     className="flex items-center gap-1.5 text-xs font-bold !text-red-500 hover:bg-red-50 px-3.5 py-2.5 rounded-xl border border-transparent hover:border-red-100 transition-all cursor-pointer"
                 >

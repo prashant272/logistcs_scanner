@@ -7,7 +7,7 @@ import CustomerHeader from '../../components/customer/CustomerHeader';
 const CustomerDashboard = () => {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
-    const [isSidebarOpen, setSidebarOpen] = useState(true);
+    const [isSidebarOpen, setSidebarOpen] = useState(window.innerWidth >= 768);
 
     const handleLogout = () => {
         navigate('/', { replace: true });
@@ -18,6 +18,14 @@ const CustomerDashboard = () => {
 
     return (
         <div className="w-full h-screen bg-[#f4f7fc] text-slate-800 font-sans flex overflow-hidden">
+            
+            {/* Mobile Overlay */}
+            {isSidebarOpen && (
+                <div 
+                    className="fixed inset-0 bg-black/50 z-30 md:hidden"
+                    onClick={() => setSidebarOpen(false)}
+                />
+            )}
             
             {/* Customer Sidebar Component */}
             <CustomerSidebar 

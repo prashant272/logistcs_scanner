@@ -301,8 +301,8 @@ const VendorEnquiriesTab = ({ title, type }) => {
                 key={filter.id}
                 onClick={() => setSelectedFilter(filter.id)}
                 className={`px-4 py-2 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer border ${selectedFilter === filter.id
-                    ? 'bg-[#0066FF] border-[#0066FF] text-white shadow-md shadow-[#0066FF]/15'
-                    : 'bg-white border-slate-200 text-slate-500 hover:text-slate-800 hover:bg-slate-50'
+                  ? 'bg-[#0066FF] border-[#0066FF] text-white shadow-md shadow-[#0066FF]/15'
+                  : 'bg-white border-slate-200 text-slate-500 hover:text-slate-800 hover:bg-slate-50'
                   }`}
               >
                 {filter.label}
@@ -321,8 +321,8 @@ const VendorEnquiriesTab = ({ title, type }) => {
                 key={f.id}
                 onClick={() => setStatusFilter(f.id)}
                 className={`px-4 py-1.5 rounded-lg text-[10px] uppercase tracking-wider font-bold transition-all duration-200 cursor-pointer border ${statusFilter === f.id
-                    ? 'bg-slate-800 border-slate-800 text-white shadow-md'
-                    : 'bg-white border-slate-200 text-slate-500 hover:text-slate-800 hover:bg-slate-50'
+                  ? 'bg-slate-800 border-slate-800 text-white shadow-md'
+                  : 'bg-white border-slate-200 text-slate-500 hover:text-slate-800 hover:bg-slate-50'
                   }`}
               >
                 {f.label}
@@ -387,7 +387,7 @@ const VendorEnquiriesTab = ({ title, type }) => {
                 className="bg-gradient-to-br from-white to-[#f4f8ff]/35 rounded-2xl p-5 md:p-6 border border-sky-100/75 hover:border-sky-300 hover:shadow-lg transition-all duration-300 relative shadow-[0_8px_30px_rgba(11,30,67,0.02)] space-y-4"
               >
                 {/* Date of Enquiry Badge */}
-                <div className="absolute top-3 right-5 text-[10px] text-slate-700 font-extrabold">
+                <div className="md:absolute md:top-3 md:right-5 text-[10px] text-slate-700 font-extrabold text-right w-full md:w-auto pb-1 md:pb-0 border-b border-slate-100 md:border-none mb-2 md:mb-0">
                   Date of Enquiry : <span className="text-slate-900 font-black">{formatDate(enq.createdAt)}</span>
                 </div>
 
@@ -405,7 +405,7 @@ const VendorEnquiriesTab = ({ title, type }) => {
                         <MapPin size={12} className="text-[#0066FF]" />
                         <span>{enq.fromLocation}</span>
                       </div>
-                      
+
                       {enq.type === 'cha' ? (
                         <>
                           <span className="text-slate-300 font-black">-</span>
@@ -435,7 +435,7 @@ const VendorEnquiriesTab = ({ title, type }) => {
                         <div className="text-[10px] font-black text-[#0052cc] mt-0.5">CHA</div>
                       </div>
                     )}
-                    
+
                     {/* Container Type for Sea FCL */}
                     {(enq.type === 'sea' && enq.seaLoadType === 'FCL' && enq.fclStandard) && (
                       <div className="bg-white border border-slate-200/80 rounded-lg px-3 py-1.5 text-center min-w-[70px] shadow-sm">
@@ -520,22 +520,22 @@ const VendorEnquiriesTab = ({ title, type }) => {
                           Hidden Before Accept
                         </span>
 
-                        <div className="grid grid-cols-3 divide-x divide-red-100/80 text-center pt-1">
-                          <div className="px-1 space-y-0.5">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-red-100/80 text-center pt-1">
+                          <div className="px-1 py-2 sm:py-0 space-y-0.5">
                             <span className="text-[8px] font-black text-slate-450 uppercase tracking-wider block">Mobile No.</span>
                             <div className="w-10 h-6 bg-white border border-slate-200 rounded flex items-center justify-center shadow-sm mx-auto">
                               <Lock size={10} className="text-slate-400" />
                             </div>
                           </div>
 
-                          <div className="px-1 space-y-0.5">
+                          <div className="px-1 py-2 sm:py-0 space-y-0.5">
                             <span className="text-[8px] font-black text-slate-450 uppercase tracking-wider block">Email ID</span>
                             <div className="w-10 h-6 bg-white border border-slate-200 rounded flex items-center justify-center shadow-sm mx-auto">
                               <Lock size={10} className="text-slate-400" />
                             </div>
                           </div>
 
-                          <div className="px-1 space-y-0.5">
+                          <div className="px-1 py-2 sm:py-0 space-y-0.5">
                             <span className="text-[8px] font-black text-slate-450 uppercase tracking-wider block">Commodity</span>
                             <div className="w-10 h-6 bg-white border border-slate-200 rounded flex items-center justify-center shadow-sm mx-auto">
                               <Lock size={10} className="text-slate-400" />
@@ -549,8 +549,8 @@ const VendorEnquiriesTab = ({ title, type }) => {
                           Visible After Accept
                         </span>
 
-                        <div className="grid grid-cols-3 divide-x divide-emerald-100 text-center pt-1">
-                          <div className="px-2 space-y-0.5 min-w-0">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-emerald-100 text-center pt-1 mt-1">
+                          <div className="px-2 py-2 sm:py-0 space-y-0.5 min-w-0">
                             <span className="text-[8px] font-black text-slate-455 uppercase tracking-wider block">Mobile No.</span>
                             <div className="flex items-center justify-center gap-1 text-[10px] font-black text-slate-800">
                               <Phone size={10} className="text-[#0066FF] shrink-0" />
@@ -558,7 +558,7 @@ const VendorEnquiriesTab = ({ title, type }) => {
                             </div>
                           </div>
 
-                          <div className="px-2 space-y-0.5 min-w-0">
+                          <div className="px-2 py-2 sm:py-0 space-y-0.5 min-w-0">
                             <span className="text-[8px] font-black text-slate-455 uppercase tracking-wider block">Email ID</span>
                             <div className="flex items-center justify-center gap-1 text-[10px] font-black text-slate-800">
                               <Mail size={10} className="text-[#0066FF] shrink-0" />
@@ -566,7 +566,7 @@ const VendorEnquiriesTab = ({ title, type }) => {
                             </div>
                           </div>
 
-                          <div className="px-2 space-y-0.5 min-w-0">
+                          <div className="px-2 py-2 sm:py-0 space-y-0.5 min-w-0">
                             <span className="text-[8px] font-black text-slate-455 uppercase tracking-wider block">Commodity</span>
                             <div className="flex items-center justify-center gap-1 text-[10px] font-black text-slate-800">
                               <Package size={10} className="text-[#0066FF] shrink-0" />
@@ -663,10 +663,10 @@ const VendorEnquiriesTab = ({ title, type }) => {
                         <div className="text-[10px] font-black text-slate-850 mt-0.5">
                           {isAccepted ? (
                             enq.type === 'sea' && enq.seaLoadType === 'FCL' ? (enq.fclUnit ? `${enq.fclUnit} ${enq.fclStandard ? `x ${enq.fclStandard}` : 'Container'}` : 'N/A') :
-                            enq.type === 'sea' && enq.seaLoadType === 'LCL' ? (enq.quantity ? `${enq.quantity} Boxes` : 'N/A') :
-                            enq.type === 'air' ? (enq.weightRange ? `${enq.weightRange}` : 'N/A') :
-                            enq.type === 'land' ? (enq.truckLoad ? `${enq.truckLoad}` : 'N/A') :
-                            (enq.fclUnit || enq.quantity || enq.weightRange || 'N/A')
+                              enq.type === 'sea' && enq.seaLoadType === 'LCL' ? (enq.quantity ? `${enq.quantity} Boxes` : 'N/A') :
+                                enq.type === 'air' ? (enq.weightRange ? `${enq.weightRange}` : 'N/A') :
+                                  enq.type === 'land' ? (enq.truckLoad ? `${enq.truckLoad}` : 'N/A') :
+                                    (enq.fclUnit || enq.quantity || enq.weightRange || 'N/A')
                           ) : (
                             <span className="flex items-center justify-center gap-1 text-slate-400">
                               <Lock size={10} />

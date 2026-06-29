@@ -13,10 +13,10 @@ import { Calendar, RotateCcw, Menu, AlertCircle } from 'lucide-react';
 const vendorStatsFetcher = async ([key, filterType, customStart, customEnd]) => {
     const token = localStorage.getItem('userToken');
     const config = { headers: { Authorization: `Bearer ${token}` } };
-    
+
     const profileRes = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/auth/profile`, config);
     const status = profileRes.data.verificationStatus || (profileRes.data.isVerified ? 'Approved' : 'Pending');
-    
+
     let stats = { profile: profileRes.data, status, financeApp: null };
     stats.myEnquiries = { total: 0, accepted: 0, locked: 0, rejected: 0, declined: 0 };
     stats.directEnquiries = { total: 0, accepted: 0, locked: 0, rejected: 0, declined: 0 };
@@ -26,14 +26,14 @@ const vendorStatsFetcher = async ([key, filterType, customStart, customEnd]) => 
     try {
         const finRes = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/finance/my`, config);
         if (finRes.data && finRes.data.length > 0) stats.financeApp = finRes.data[0];
-    } catch(e){}
+    } catch (e) { }
 
     if (status === 'Approved') {
         let url = `${import.meta.env.VITE_API_BASE_URL}/enquiries/vendor/stats?`;
-        
+
         let startDate, endDate;
         const now = new Date();
-        
+
         if (filterType === 'Custom Date' && customStart && customEnd) {
             startDate = new Date(customStart);
             endDate = new Date(customEnd);
@@ -69,8 +69,8 @@ const VendorDashboardMain = () => {
     const [customEnd, setCustomEnd] = useState('');
 
     const { data: stats, isLoading: loadingStats } = useSWR(
-        ['vendorDashboardStats', filterType, customStart, customEnd], 
-        vendorStatsFetcher, 
+        ['vendorDashboardStats', filterType, customStart, customEnd],
+        vendorStatsFetcher,
         { refreshInterval: 30000, revalidateOnFocus: true }
     );
 
@@ -109,7 +109,7 @@ const VendorDashboardMain = () => {
         } else {
             return 'All Time Data';
         }
-        
+
         const options = { day: '2-digit', month: 'short', year: 'numeric' };
         return `${start.toLocaleDateString('en-GB', options)} - ${now.toLocaleDateString('en-GB', options)}`;
     };
@@ -126,7 +126,7 @@ const VendorDashboardMain = () => {
                     <AlertCircle size={48} className="text-amber-500 mb-4" />
                     <h2 className="text-2xl font-black text-[#0B1E43] tracking-tight mb-2">Profile Action Required</h2>
                     <p className="text-sm font-bold text-slate-500 leading-relaxed max-w-lg">
-                        {vendorStatus === 'Declined' 
+                        {vendorStatus === 'Declined'
                             ? 'Your profile registration has been declined. Please update your document or contact support.'
                             : 'Please go to the Profile tab and upload supporting documents like GST, Business PAN Card, or any other business supported documents.'}
                     </p>
@@ -135,18 +135,17 @@ const VendorDashboardMain = () => {
 
             {/* Verification Status Warning Card (kept for admin or other edge cases if needed) */}
             {user?.role === 'admin' && vendorStatus !== 'Approved' && (
-                <div className={`p-5 rounded-3xl border flex items-center gap-4 shadow-[0_8px_30px_rgba(11,30,67,0.02)] ${
-                    vendorStatus === 'Declined' 
-                        ? 'bg-red-50/80 border-red-100 text-red-800' 
+                <div className={`p-5 rounded-3xl border flex items-center gap-4 shadow-[0_8px_30px_rgba(11,30,67,0.02)] ${vendorStatus === 'Declined'
+                        ? 'bg-red-50/80 border-red-100 text-red-800'
                         : 'bg-amber-50/80 border-amber-100 text-amber-800'
-                }`}>
+                    }`}>
                     <AlertCircle size={22} className={vendorStatus === 'Declined' ? 'text-red-500 shrink-0' : 'text-amber-500 shrink-0'} />
                     <div>
                         <h4 className="font-black text-xs uppercase tracking-wider">
                             Profile Status: {vendorStatus || 'Pending'}
                         </h4>
                         <p className="text-xs font-bold mt-1 text-slate-500 leading-relaxed">
-                            {vendorStatus === 'Declined' 
+                            {vendorStatus === 'Declined'
                                 ? 'Your profile registration has been declined. Please update your document or contact support.'
                                 : 'your profile should me pending and representive contact you shortly'}
                         </p>
@@ -182,31 +181,30 @@ const VendorDashboardMain = () => {
                                         setCustomEnd('');
                                     }
                                 }}
-                                className={`px-4 py-2 rounded-lg text-xs font-bold transition-all duration-200 cursor-pointer ${
-                                    filterType === t
+                                className={`px-4 py-2 rounded-lg text-xs font-bold transition-all duration-200 cursor-pointer ${filterType === t
                                         ? 'bg-[#0066FF] text-white shadow-md shadow-[#0066FF]/15'
                                         : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100/50'
-                                }`}
+                                    }`}
                             >
                                 {t}
                             </button>
                         ))}
                     </div>
-                    
+
                     {filterType === 'Custom Date' && (
                         <div className="flex items-center gap-2 bg-slate-50 p-1.5 rounded-xl border border-blue-200 animate-in fade-in zoom-in duration-200">
-                            <input 
-                                type="date" 
+                            <input
+                                type="date"
                                 value={customStart}
                                 onChange={(e) => setCustomStart(e.target.value)}
-                                className="text-xs font-bold text-slate-700 bg-white p-2 rounded-lg border border-slate-200 outline-none focus:border-blue-500" 
+                                className="text-xs font-bold text-slate-700 bg-white p-2 rounded-lg border border-slate-200 outline-none focus:border-blue-500"
                             />
                             <span className="text-slate-400 font-bold">to</span>
-                            <input 
-                                type="date" 
+                            <input
+                                type="date"
                                 value={customEnd}
                                 onChange={(e) => setCustomEnd(e.target.value)}
-                                className="text-xs font-bold text-slate-700 bg-white p-2 rounded-lg border border-slate-200 outline-none focus:border-blue-500" 
+                                className="text-xs font-bold text-slate-700 bg-white p-2 rounded-lg border border-slate-200 outline-none focus:border-blue-500"
                             />
                         </div>
                     )}
@@ -223,7 +221,7 @@ const VendorDashboardMain = () => {
                         Apply Filter
                     </button>
 
-                    <button 
+                    <button
                         onClick={() => {
                             handleFilterChange('All Time');
                             setCustomStart('');
@@ -240,35 +238,35 @@ const VendorDashboardMain = () => {
                 <>
                     {/* Main Layout Grid */}
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-                        
+
                         {/* LEFT COLUMN: Data cards (8/12 width) */}
                         <div className="lg:col-span-8 space-y-6">
-                            
+
                             {/* MY ENQUIRIES */}
-                            <EnquiryCardSection 
-                                title="My Enquiries" 
-                                type="my" 
-                                enquiryCount={myEnqTotal} 
-                                acceptedCount={myEnqAccepted} 
-                                rejectedCount={myEnqRejected} 
+                            <EnquiryCardSection
+                                title="My Enquiries"
+                                type="my"
+                                enquiryCount={myEnqTotal}
+                                acceptedCount={myEnqAccepted}
+                                rejectedCount={myEnqRejected}
                                 lockedCount={myEnqLockedCount}
                             />
 
                             {/* DIRECT ENQUIRIES */}
-                            <EnquiryCardSection 
-                                title="Direct Enquiries" 
-                                type="direct" 
-                                enquiryCount={directEnqTotal} 
-                                acceptedCount={directEnqAccepted} 
-                                rejectedCount={directEnqRejected} 
+                            <EnquiryCardSection
+                                title="Direct Enquiries"
+                                type="direct"
+                                enquiryCount={directEnqTotal}
+                                acceptedCount={directEnqAccepted}
+                                rejectedCount={directEnqRejected}
                                 lockedCount={directEnqLockedCount}
                             />
 
                             {/* BOOKING AND FINANCE GRID */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <BookingSection 
-                                    myBookingsCount={myBookingsCount} 
-                                    directBookingsCount={directBookingsCount} 
+                                <BookingSection
+                                    myBookingsCount={myBookingsCount}
+                                    directBookingsCount={directBookingsCount}
                                 />
                                 <FinanceSection stats={stats} />
                             </div>
@@ -280,19 +278,19 @@ const VendorDashboardMain = () => {
 
                         {/* RIGHT COLUMN: Profile details, RM Detail, Finance query (4/12 width) */}
                         <div className="lg:col-span-4 space-y-6">
-                            
+
                             {/* USER PROFILE CARD */}
                             <UserProfileSection user={user} />
 
                             {/* RM DETAIL CARD */}
                             {user?.assignedRM ? (
-                                <RelationshipManagerCard 
-                                    title="Assigned RM" 
-                                    name={user.assignedRM.name} 
-                                    role="Relationship Manager" 
-                                    phone={user.assignedRM.mobile} 
-                                    email={user.assignedRM.email} 
-                                    isFinance={false} 
+                                <RelationshipManagerCard
+                                    title="Assigned RM"
+                                    name={user.assignedRM.name}
+                                    role="Relationship Manager"
+                                    phone={user.assignedRM.mobile}
+                                    email={user.assignedRM.email}
+                                    isFinance={false}
                                 />
                             ) : (
                                 <div className="bg-slate-50 border border-slate-200 rounded-3xl p-6 text-center shadow-sm">
@@ -301,13 +299,13 @@ const VendorDashboardMain = () => {
                             )}
 
                             {/* FINANCE QUERY CARD */}
-                            <RelationshipManagerCard 
-                                title="Finance Detail" 
-                                name={financeApp?.adminStatus ? `Status: ${financeApp.adminStatus}` : "Not Applied"} 
-                                role={financeApp?.approvedAmount ? `Amount: ₹${financeApp.approvedAmount}` : "Finance Application"} 
-                                phone={financeApp?.processingFees ? `Fees: ₹${financeApp.processingFees}` : "Pending/N/A"} 
-                                email="info@logisticscanner.com" 
-                                isFinance={true} 
+                            <RelationshipManagerCard
+                                title="Finance Detail"
+                                name={financeApp?.adminStatus ? `Status: ${financeApp.adminStatus}` : "Not Applied"}
+                                role={financeApp?.approvedAmount ? `Amount: ₹${financeApp.approvedAmount}` : "Finance Application"}
+                                phone={financeApp?.processingFees ? `Fees: ₹${financeApp.processingFees}` : "Pending/N/A"}
+                                email="info@logisticscanner.com"
+                                isFinance={true}
                             />
 
                         </div>
