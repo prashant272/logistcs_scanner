@@ -501,7 +501,16 @@ const SearchResults = () => {
               <h3 className="text-xs font-black text-[#0B1E43] uppercase tracking-widest flex items-center gap-2">
                 <Sparkles size={14} className="text-[#0066FF]" /> Matched Vendor Rates
               </h3>
-              <span className="text-xs text-slate-400 font-bold">{searchResults.length} Match(es) found</span>
+              <div className="flex items-center gap-4">
+                <span className="text-xs text-slate-400 font-bold hidden sm:inline-block">{searchResults.length} Match(es) found</span>
+                <button
+                  type="button"
+                  onClick={user ? handleAutoBroadcast : () => { setPendingAction(null); setIsGuestModalOpen(true); }}
+                  className="bg-[#0B1E43] hover:bg-[#06122a] text-white text-[10px] font-black uppercase tracking-wider px-4 py-2 rounded-lg transition-all shadow-md cursor-pointer"
+                >
+                  Direct Enquiry
+                </button>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 gap-6">
@@ -536,16 +545,63 @@ const SearchResults = () => {
                           </div>
                         </div>
 
-                        {/* Right Specs Badges */}
                         <div className="flex flex-wrap gap-2.5 items-center">
-                          <div className="bg-blue-50 border border-blue-200 rounded-xl px-3 py-2 text-center min-w-[90px] shadow-sm">
-                            <div className="text-[9px] text-blue-705 font-black uppercase tracking-wider">Container / Size</div>
-                            <div className="text-xs font-black text-slate-900 mt-0.5">{rate.vehicleType || rate.fclStandard || '40 FT'}</div>
-                          </div>
-                          <div className="bg-indigo-50 border border-indigo-200 rounded-xl px-3 py-2 text-center min-w-[90px] shadow-sm">
-                            <div className="text-[9px] text-indigo-700 font-black uppercase tracking-wider">Load Type</div>
-                            <div className="text-xs font-black text-slate-900 mt-0.5">{rate.truckLoad || rate.seaLoadType || 'FCL'}</div>
-                          </div>
+                          {rate.type === 'air' ? (
+                            <>
+                              <div className="bg-blue-50 border border-blue-200 rounded-xl px-3 py-2 text-center min-w-[90px] shadow-sm">
+                                <div className="text-[9px] text-blue-705 font-black uppercase tracking-wider">Weight Class</div>
+                                <div className="text-xs font-black text-slate-900 mt-0.5">{rate.weightRange || 'N/A'}</div>
+                              </div>
+                              <div className="bg-indigo-50 border border-indigo-200 rounded-xl px-3 py-2 text-center min-w-[90px] shadow-sm">
+                                <div className="text-[9px] text-indigo-700 font-black uppercase tracking-wider">Category</div>
+                                <div className="text-xs font-black text-slate-900 mt-0.5 capitalize">{rate.category || 'N/A'}</div>
+                              </div>
+                            </>
+                          ) : rate.type === 'surface' || rate.type === 'land' ? (
+                            <>
+                              <div className="bg-blue-50 border border-blue-200 rounded-xl px-3 py-2 text-center min-w-[90px] shadow-sm">
+                                <div className="text-[9px] text-blue-705 font-black uppercase tracking-wider">Vehicle Type</div>
+                                <div className="text-xs font-black text-slate-900 mt-0.5">{rate.vehicleType || 'Truck'}</div>
+                              </div>
+                              <div className="bg-indigo-50 border border-indigo-200 rounded-xl px-3 py-2 text-center min-w-[90px] shadow-sm">
+                                <div className="text-[9px] text-indigo-700 font-black uppercase tracking-wider">Load Type</div>
+                                <div className="text-xs font-black text-slate-900 mt-0.5">{rate.truckLoad || 'FTL'}</div>
+                              </div>
+                            </>
+                          ) : rate.type === 'warehouse' ? (
+                            <>
+                              <div className="bg-blue-50 border border-blue-200 rounded-xl px-3 py-2 text-center min-w-[90px] shadow-sm">
+                                <div className="text-[9px] text-blue-705 font-black uppercase tracking-wider">Storage Type</div>
+                                <div className="text-xs font-black text-slate-900 mt-0.5">{rate.warehouseStorageType || 'N/A'}</div>
+                              </div>
+                              <div className="bg-indigo-50 border border-indigo-200 rounded-xl px-3 py-2 text-center min-w-[90px] shadow-sm">
+                                <div className="text-[9px] text-indigo-700 font-black uppercase tracking-wider">Rate Type</div>
+                                <div className="text-xs font-black text-slate-900 mt-0.5">{rate.warehouseRateType || 'N/A'}</div>
+                              </div>
+                            </>
+                          ) : rate.type === 'cha' ? (
+                            <>
+                              <div className="bg-blue-50 border border-blue-200 rounded-xl px-3 py-2 text-center min-w-[90px] shadow-sm">
+                                <div className="text-[9px] text-blue-705 font-black uppercase tracking-wider">Service Type</div>
+                                <div className="text-xs font-black text-slate-900 mt-0.5">{rate.chaServiceType || 'N/A'}</div>
+                              </div>
+                              <div className="bg-indigo-50 border border-indigo-200 rounded-xl px-3 py-2 text-center min-w-[90px] shadow-sm">
+                                <div className="text-[9px] text-indigo-700 font-black uppercase tracking-wider">Cargo Type</div>
+                                <div className="text-xs font-black text-slate-900 mt-0.5">{rate.chaCargoType || 'N/A'}</div>
+                              </div>
+                            </>
+                          ) : (
+                            <>
+                              <div className="bg-blue-50 border border-blue-200 rounded-xl px-3 py-2 text-center min-w-[90px] shadow-sm">
+                                <div className="text-[9px] text-blue-705 font-black uppercase tracking-wider">Container / Size</div>
+                                <div className="text-xs font-black text-slate-900 mt-0.5">{rate.vehicleType || rate.fclStandard || '40 FT'}</div>
+                              </div>
+                              <div className="bg-indigo-50 border border-indigo-200 rounded-xl px-3 py-2 text-center min-w-[90px] shadow-sm">
+                                <div className="text-[9px] text-indigo-700 font-black uppercase tracking-wider">Load Type</div>
+                                <div className="text-xs font-black text-slate-900 mt-0.5">{rate.truckLoad || rate.seaLoadType || 'FCL'}</div>
+                              </div>
+                            </>
+                          )}
                         </div>
                       </div>
 
@@ -645,7 +701,13 @@ const SearchResults = () => {
                         <div className="lg:col-span-3 flex flex-row lg:flex-col items-center justify-between lg:justify-center gap-4 lg:pl-6 lg:border-l lg:border-slate-150 w-full lg:w-auto h-full min-h-[120px]">
                           {/* Price Box */}
                           <div className="text-left lg:text-center w-full">
-                            <div className="text-[10px] text-slate-550 font-black uppercase tracking-wider">Ocean Freight Cost</div>
+                            <div className="text-[10px] text-slate-550 font-black uppercase tracking-wider">
+                              {rate.type === 'air' ? 'Air Freight Cost' : 
+                               rate.type === 'surface' || rate.type === 'land' ? 'Surface Freight Cost' : 
+                               rate.type === 'warehouse' ? 'Warehouse Cost' : 
+                               rate.type === 'cha' ? 'CHA Service Cost' : 
+                               'Ocean Freight Cost'}
+                            </div>
                             <div className="text-2xl font-black text-slate-800 mt-0.5 flex flex-wrap items-baseline justify-start lg:justify-center gap-1">
                               <span className="text-lg font-black text-[#0066FF]">{displayCurrency}</span>
                               <span>{rate.price.toLocaleString()}</span>

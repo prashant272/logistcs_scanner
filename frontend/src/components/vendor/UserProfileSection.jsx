@@ -20,8 +20,7 @@ const UserProfileSection = ({ user }) => {
       setCurrentDateTime(now.toLocaleDateString('en-GB', options).replace(',', ''));
     };
     updateDateTime();
-    const interval = setInterval(updateDateTime, 60000);
-    return () => clearInterval(interval);
+    // Interval intentionally removed to prevent live time updates as per user request
   }, []);
 
   return (
