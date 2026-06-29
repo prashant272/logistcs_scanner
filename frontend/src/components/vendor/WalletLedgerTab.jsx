@@ -234,14 +234,17 @@ const WalletLedgerTab = () => {
                         <form onSubmit={handleRepaySubmit} className="p-6 space-y-5">
                             <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2 mb-4 text-center">
                                 <p className="text-sm font-bold text-slate-500">Please transfer the amount to:</p>
-                                <p className="text-lg font-black text-[#0B1E43]">Logistics Scanner Pvt Ltd</p>
-                                <p className="text-sm font-black text-slate-700">A/C: 1234567890123</p>
-                                <p className="text-sm font-black text-slate-700 mb-2">IFSC: HDFC0001234</p>
+                                <p className="text-lg font-black text-[#0B1E43]">BNB WORLDWIDE PVT LTD</p>
+                                <p className="text-sm font-black text-slate-700">Bank: AXIS BANK</p>
+                                <p className="text-sm font-black text-slate-700">A/C: 925020028362256</p>
+                                <p className="text-sm font-black text-slate-700">IFSC: UTIB0001147</p>
+                                <p className="text-sm font-black text-slate-700">Branch: JANAK PURI B BLOCK</p>
+                                <p className="text-sm font-black text-slate-700 mb-2">SWIFT: AXISINBB207</p>
                                 <div className="pt-2 border-t border-slate-200">
                                     <span className="text-xs font-bold text-slate-500">Amount to Pay</span>
                                     <span className="text-xl font-black text-amber-600 flex items-center justify-center">
                                         <IndianRupee className="w-5 h-5 mr-0.5" />
-                                        {((selectedRepayInvoice.approvedAmount || selectedRepayInvoice.amount) + selectedRepayInvoice.penaltyAmount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                        {((selectedRepayInvoice.approvedAmount || selectedRepayInvoice.amount) + selectedRepayInvoice.penaltyAmount + (selectedRepayInvoice.processingFee || 0)).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                                     </span>
                                 </div>
                             </div>

@@ -465,7 +465,7 @@ exports.approveRepayment = async (req, res) => {
         await invoice.save();
 
         // Calculate total to refund to wallet
-        const totalPaid = (invoice.approvedAmount || invoice.amount) + invoice.penaltyAmount;
+        const totalPaid = (invoice.approvedAmount || invoice.amount) + invoice.penaltyAmount + (invoice.processingFee || 0);
 
         const User = require('../models/User');
         const user = await User.findById(invoice.vendor._id);
@@ -480,7 +480,7 @@ exports.approveRepayment = async (req, res) => {
             vendor: user._id,
             amount: totalPaid,
             type: 'Credit',
-            description: `Invoice Repayment Cleared (Base: ₹${invoice.approvedAmount}, Penalty: ₹${invoice.penaltyAmount})`,
+            description: `Invoice Repayment Cleared (Base: ₹${invoice.approvedAmount}, Fee: ₹${invoice.processingFee || 0}, Penalty: ₹${invoice.penaltyAmount})`,
             referenceId: invoice._id,
             balanceAfter: user.walletBalance
         });

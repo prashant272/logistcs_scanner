@@ -12,6 +12,12 @@ const AdminLogin = () => {
 
     const handleLogin = async (e) => {
         e.preventDefault();
+        
+        if (!password) {
+            setError('Password is required');
+            return;
+        }
+        
         try {
             const { data } = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/admin/login`, { email, password });
             localStorage.setItem('adminToken', data.token);
@@ -26,7 +32,7 @@ const AdminLogin = () => {
             <div className="bg-dark-800 p-8 rounded-lg border border-white/10 w-full max-w-md shadow-2xl">
                 <h2 className="text-3xl font-display text-gold-gradient mb-6 text-center">Admin Login</h2>
                 {error && <p className="text-red-500 text-center mb-4">{error}</p>}
-                <form onSubmit={handleLogin} className="space-y-6">
+                <div className="space-y-6">
                     <div className="hidden">
                         <label className="block text-gray-400 mb-2">Email</label>
                         <input
@@ -34,6 +40,7 @@ const AdminLogin = () => {
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             className="w-full bg-black/40 border border-white/10 rounded p-3 text-white focus:border-gold focus:outline-none"
+                            autoComplete="off"
                         />
                     </div>
                     <div>
@@ -44,6 +51,7 @@ const AdminLogin = () => {
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                                 className="w-full bg-black/40 border border-white/10 rounded p-3 pr-10 text-white focus:border-gold focus:outline-none"
+                                autoComplete="new-password"
                             />
                             <button
                                 type="button"
@@ -54,10 +62,10 @@ const AdminLogin = () => {
                             </button>
                         </div>
                     </div>
-                    <button className="w-full bg-gold text-black font-bold py-3 hover:bg-white transition-colors uppercase tracking-widest">
+                    <button onClick={handleLogin} className="w-full bg-gold text-black font-bold py-3 hover:bg-white transition-colors uppercase tracking-widest">
                         Login
                     </button>
-                </form>
+                </div>
             </div>
         </div>
     );

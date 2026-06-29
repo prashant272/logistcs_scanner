@@ -215,7 +215,7 @@ const CustomerEnquiriesTab = ({ title, type }) => {
                             {getEnquiryIcon(enq.type)}
                             <span className="font-extrabold">{enq.type} Freight</span>
                           </div>
-                          <div>Weight/Size: <span className="font-black text-slate-800">{enq.weightRange || 'N/A'}</span></div>
+                          <div>{enq.type === 'sea' && (enq.seaLoadType?.toUpperCase() === 'FCL' || enq.truckLoad?.toUpperCase() === 'FCL') ? 'Container' : 'Weight/Size'}: <span className="font-black text-slate-800">{enq.type === 'sea' && (enq.seaLoadType?.toUpperCase() === 'FCL' || enq.truckLoad?.toUpperCase() === 'FCL') ? (enq.fclStandard || 'N/A') : (enq.weightRange || 'N/A')}</span></div>
                           <div>Date booked: <span className="font-black text-slate-800">{formatDate(enq.createdAt)}</span></div>
                         </div>
                       </div>
@@ -307,10 +307,17 @@ const CustomerEnquiriesTab = ({ title, type }) => {
 
                     {/* Middle Column: Specs Badges */}
                     <div className="flex flex-wrap gap-3 max-w-md items-center md:justify-center">
-                      <div className="bg-white border border-slate-100/90 rounded-2xl py-2 px-4 shadow-sm text-center min-w-[80px]">
-                        <div className="text-[10px] text-slate-400 font-black tracking-wider uppercase">Weight</div>
-                        <div className="text-xs font-black text-slate-800 mt-0.5">{enq.weightRange || 'N/A'}</div>
-                      </div>
+                      {enq.type === 'sea' && (enq.seaLoadType?.toUpperCase() === 'FCL' || enq.truckLoad?.toUpperCase() === 'FCL') ? (
+                        <div className="bg-white border border-slate-100/90 rounded-2xl py-2 px-4 shadow-sm text-center min-w-[80px]">
+                          <div className="text-[10px] text-slate-400 font-black tracking-wider uppercase">Container Type</div>
+                          <div className="text-xs font-black text-slate-800 mt-0.5">{enq.fclStandard || 'N/A'}</div>
+                        </div>
+                      ) : (
+                        <div className="bg-white border border-slate-100/90 rounded-2xl py-2 px-4 shadow-sm text-center min-w-[80px]">
+                          <div className="text-[10px] text-slate-400 font-black tracking-wider uppercase">Weight</div>
+                          <div className="text-xs font-black text-slate-800 mt-0.5">{enq.weightRange || 'N/A'}</div>
+                        </div>
+                      )}
 
                       <div className="bg-white border border-slate-100/90 rounded-2xl py-2 px-4 shadow-sm text-center min-w-[80px]">
                         <div className="text-[10px] text-slate-400 font-black tracking-wider uppercase">Load Type</div>
@@ -350,12 +357,7 @@ const CustomerEnquiriesTab = ({ title, type }) => {
                           <span className="font-extrabold text-[#0B1E43]">{enq.quantity}</span>
                         </div>
                       )}
-                      {enq.fclStandard && (
-                        <div className="bg-white border border-slate-100/90 rounded-2xl py-2 px-4 shadow-sm text-center min-w-[80px]">
-                          <div className="text-[10px] text-slate-400 font-black tracking-wider uppercase">Container</div>
-                          <span className="font-extrabold text-[#0B1E43]">{enq.fclStandard}</span>
-                        </div>
-                      )}
+                      {/* Container Type moved to primary badge if FCL */}
                       {enq.fclUnit && (
                         <div className="bg-white border border-slate-100/90 rounded-2xl py-2 px-4 shadow-sm text-center min-w-[80px]">
                           <div className="text-[10px] text-slate-400 font-black tracking-wider uppercase">Units</div>

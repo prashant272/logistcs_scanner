@@ -1,5 +1,20 @@
 import React, { useState, Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import axios from 'axios';
+
+// Global Axios Interceptor for handling 401 Unauthorized
+axios.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response && error.response.status === 401) {
+      localStorage.removeItem('adminToken');
+      // For user/vendor tokens as well if needed in future
+      localStorage.removeItem('token'); 
+      window.location.href = '/admin/login';
+    }
+    return Promise.reject(error);
+  }
+);
 
 // Core layout/context components (static import for fast first paint)
 import Navbar from './components/common/Navbar';

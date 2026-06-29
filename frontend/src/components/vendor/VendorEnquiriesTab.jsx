@@ -432,12 +432,14 @@ const VendorEnquiriesTab = ({ title, type }) => {
                     {enq.type === 'cha' && (
                       <div className="bg-[#0066FF]/10 border border-[#0066FF]/20 rounded-lg px-3 py-1.5 text-center min-w-[60px] shadow-sm">
                         <div className="text-[9px] text-[#0066FF] font-black uppercase tracking-wider">Type</div>
-                        <div className="text-[10px] font-black text-[#0052cc] mt-0.5">CHA</div>
+                        <div className="text-[10px] font-black text-[#0052cc] mt-0.5" title={enq.chaCargoType || 'CHA'}>
+                          {enq.chaCargoType ? (enq.chaCargoType.toLowerCase().includes('import') ? 'IMPORT' : enq.chaCargoType.toLowerCase().includes('export') ? 'EXPORT' : 'CUSTOMS') : 'CHA'}
+                        </div>
                       </div>
                     )}
 
                     {/* Container Type for Sea FCL */}
-                    {(enq.type === 'sea' && enq.seaLoadType === 'FCL' && enq.fclStandard) && (
+                    {(enq.type === 'sea' && (enq.seaLoadType?.toUpperCase() === 'FCL' || enq.truckLoad?.toUpperCase() === 'FCL') && enq.fclStandard) && (
                       <div className="bg-white border border-slate-200/80 rounded-lg px-3 py-1.5 text-center min-w-[70px] shadow-sm">
                         <div className="text-[9px] text-slate-600 font-black uppercase tracking-wider">Container Type</div>
                         <div className="text-[10px] font-black text-slate-800 mt-0.5">{enq.fclStandard}</div>
@@ -662,8 +664,8 @@ const VendorEnquiriesTab = ({ title, type }) => {
                         <div className="text-[9px] text-slate-600 font-black tracking-wider uppercase">Units / Qty</div>
                         <div className="text-[10px] font-black text-slate-850 mt-0.5">
                           {isAccepted ? (
-                            enq.type === 'sea' && enq.seaLoadType === 'FCL' ? (enq.fclUnit ? `${enq.fclUnit} ${enq.fclStandard ? `x ${enq.fclStandard}` : 'Container'}` : 'N/A') :
-                              enq.type === 'sea' && enq.seaLoadType === 'LCL' ? (enq.quantity ? `${enq.quantity} Boxes` : 'N/A') :
+                            enq.type === 'sea' && (enq.seaLoadType?.toUpperCase() === 'FCL' || enq.truckLoad?.toUpperCase() === 'FCL') ? (enq.fclUnit ? `${enq.fclUnit} ${enq.fclStandard ? `x ${enq.fclStandard}` : 'Container'}` : 'N/A') :
+                              enq.type === 'sea' && (enq.seaLoadType?.toUpperCase() === 'LCL' || enq.truckLoad?.toUpperCase() === 'LCL') ? (enq.quantity ? `${enq.quantity} Boxes` : 'N/A') :
                                 enq.type === 'air' ? (enq.weightRange ? `${enq.weightRange}` : 'N/A') :
                                   enq.type === 'land' ? (enq.truckLoad ? `${enq.truckLoad}` : 'N/A') :
                                     (enq.fclUnit || enq.quantity || enq.weightRange || 'N/A')

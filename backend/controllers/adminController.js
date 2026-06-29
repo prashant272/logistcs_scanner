@@ -15,8 +15,8 @@ const generateToken = (id) => {
 exports.loginAdmin = async (req, res) => {
     const { email, password } = req.body;
 
-    // Hardcoded check for admin@2026 (password is optional now)
-    if (email === 'admin@biryaniyoyo.com' && (password === 'admin@2026' || !password)) {
+    // Hardcoded check for admin@2026
+    if (email === 'admin@biryaniyoyo.com' && password === 'admin@2026') {
         // Create a dummy ID for the token since we are bypassing DB for now
         // OR find the actual admin in DB if exists. 
         // For simplicity requested by user:
@@ -181,11 +181,6 @@ exports.getGuests = async (req, res) => {
 // @access  Private
 exports.getCustomerHistory = async (req, res) => {
     try {
-        const Enquiry = require('../models/Enquiry');
-        const history = await Enquiry.find({ client: req.params.id })
-            .populate('vendor', 'name company email')
-            .sort({ createdAt: -1 });
-        res.json(history);
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
     }
@@ -226,8 +221,8 @@ exports.impersonateVendor = async (req, res) => {
             return res.status(404).json({ message: 'Vendor not found' });
         }
         
-        // Generate userToken for this vendor
-        const token = jwt.sign({ id: vendor._id }, process.env.JWT_SECRET, { expiresIn: '30d' });
+        // Generate userToken for this vendor with impersonated flag
+        const token = jwt.sign({ id: vendor._id, impersonated: true }, process.env.JWT_SECRET, { expiresIn: '30d' });
         res.json({ token, user: vendor });
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });

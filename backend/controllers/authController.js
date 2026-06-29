@@ -287,7 +287,7 @@ exports.getUserProfile = async (req, res) => {
             });
         }
         const user = await User.findById(req.user.id).select('-password').populate('activePlan').populate('assignedRM');
-        if (user) {
+        if (user && !req.user.impersonated) {
             user.lastActive = new Date();
             await user.save().catch(err => console.error("Error saving lastActive:", err));
         }

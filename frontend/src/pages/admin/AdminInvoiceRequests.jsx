@@ -164,12 +164,22 @@ const AdminInvoiceRequests = () => {
                                             </div>
                                         </td>
                                         <td className="p-4">
-                                            <div className="flex flex-col gap-2">
-                                                <span className="text-sm font-black text-[#0066FF] flex items-center">
+                                            <div className="flex flex-col gap-1">
+                                                <span className="text-sm font-black text-[#0066FF] flex items-center" title="Requested Amount">
                                                     <IndianRupee className="w-3.5 h-3.5 mr-0.5" />
                                                     {inv.amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                                                 </span>
-                                                <a href={inv.invoiceFile} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-[#0066FF] hover:text-[#0052cc] text-[10px] font-black uppercase tracking-wider bg-blue-50 px-2 py-1 rounded-md w-fit">
+                                                {inv.approvedAmount > 0 && (
+                                                    <>
+                                                        <span className="text-[10px] font-bold text-green-600 flex items-center" title="Approved Amount">
+                                                            Appr: ₹{inv.approvedAmount.toLocaleString('en-IN')}
+                                                        </span>
+                                                        <span className="text-[10px] font-bold text-amber-600 flex items-center" title="Disbursed (Paid) Amount">
+                                                            Paid: ₹{(inv.approvedAmount - (inv.processingFee || 0)).toLocaleString('en-IN')}
+                                                        </span>
+                                                    </>
+                                                )}
+                                                <a href={inv.invoiceFile} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-[#0066FF] hover:text-[#0052cc] text-[10px] font-black uppercase tracking-wider bg-blue-50 px-2 py-1 rounded-md w-fit mt-1">
                                                     <FileText className="w-3 h-3" /> View Doc
                                                 </a>
                                             </div>
