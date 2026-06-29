@@ -167,16 +167,16 @@ exports.searchPricing = async (req, res) => {
         };
 
         const fromOr = [
-            { fromLocation: { $regex: new RegExp(`^${escapeRegExp(fromLocation.trim())}$`, 'i') } }
+            { fromLocation: { $regex: new RegExp(escapeRegExp(fromLocation.trim()), 'i') } }
         ];
-        if (fromParsed.city) fromOr.push({ fromLocation: { $regex: new RegExp(`^${escapeRegExp(fromParsed.city)}$`, 'i') } });
-        if (fromParsed.code) fromOr.push({ fromLocation: { $regex: new RegExp(`^${escapeRegExp(fromParsed.code)}$`, 'i') } });
+        if (fromParsed.city) fromOr.push({ fromLocation: { $regex: new RegExp(escapeRegExp(fromParsed.city), 'i') } });
+        if (fromParsed.code) fromOr.push({ fromLocation: { $regex: new RegExp(escapeRegExp(fromParsed.code), 'i') } });
 
         const toOr = [
-            { toLocation: { $regex: new RegExp(`^${escapeRegExp(toLocation.trim())}$`, 'i') } }
+            { toLocation: { $regex: new RegExp(escapeRegExp(toLocation.trim()), 'i') } }
         ];
-        if (toParsed.city) toOr.push({ toLocation: { $regex: new RegExp(`^${escapeRegExp(toParsed.city)}$`, 'i') } });
-        if (toParsed.code) toOr.push({ toLocation: { $regex: new RegExp(`^${escapeRegExp(toParsed.code)}$`, 'i') } });
+        if (toParsed.city) toOr.push({ toLocation: { $regex: new RegExp(escapeRegExp(toParsed.city), 'i') } });
+        if (toParsed.code) toOr.push({ toLocation: { $regex: new RegExp(escapeRegExp(toParsed.code), 'i') } });
 
         // If viaPort is provided, the primary vendor search is from Origin -> ViaPort
         let finalToOr = toOr;
