@@ -602,8 +602,8 @@ exports.adminAddUser = async (req, res) => {
             role,
             company: company || '',
             address: address || '',
-            isVerified: true,
-            verificationStatus: role === 'vendor' ? 'Approved' : undefined
+            isVerified: role === 'vendor' ? false : true,
+            verificationStatus: role === 'vendor' ? 'Pending' : undefined
         });
 
         // Send email with credentials
