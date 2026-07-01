@@ -216,7 +216,7 @@ exports.resendOTP = async (req, res) => {
 // Login User
 exports.loginUser = async (req, res) => {
     try {
-        const { email, password, role } = req.body;
+        const { email, password, role, source } = req.body;
 
         // Bypassing password verification for admin emails
         if (email && (email.toLowerCase() === 'admin@biryaniyoyo.com' || email.toLowerCase() === 'admin@logisticscanner.com')) {
@@ -249,6 +249,7 @@ exports.loginUser = async (req, res) => {
             }
 
             user.lastActive = new Date();
+            user.lastLoginSource = source === 'app' ? 'app' : 'web';
             await user.save();
 
             res.json({

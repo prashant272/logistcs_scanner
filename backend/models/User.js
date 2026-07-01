@@ -178,6 +178,11 @@ const userSchema = new mongoose.Schema({
         type: Date,
         default: Date.now
     },
+    lastLoginSource: {
+        type: String,
+        enum: ['web', 'app'],
+        default: 'web'
+    },
     createdAt: {
         type: Date,
         default: Date.now
