@@ -3,7 +3,7 @@ import axios from 'axios';
 import useInfiniteScroll from '../../hooks/useInfiniteScroll';
 import { 
   ShieldCheck, Truck, Mail, Phone, MapPin, Building, Calendar, 
-  Search, ExternalLink, LogIn, CheckCircle2, AlertCircle, Upload, RefreshCw, Plus, X, Loader2
+  Search, ExternalLink, LogIn, CheckCircle2, AlertCircle, Upload, RefreshCw, Plus, X, Loader2, Activity
 } from 'lucide-react';
 
 const VendorManagement = () => {
@@ -18,6 +18,11 @@ const VendorManagement = () => {
   const [plans, setPlans] = useState([]);
   const [assigningRmId, setAssigningRmId] = useState(null);
   const [updatingPlanId, setUpdatingPlanId] = useState(null);
+  
+  // Activity Modal State
+  const [activityModalOpen, setActivityModalOpen] = useState(false);
+  const [activityData, setActivityData] = useState(null);
+  const [loadingActivity, setLoadingActivity] = useState(false);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -100,7 +105,41 @@ const VendorManagement = () => {
       const { data } = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/plans`);
       setPlans(data || []);
     } catch (err) {
-      console.error('Error fetching plans:', err);
+      console.error('Error toggling verification:', err);
+    }
+  };
+
+  const handleViewActivity = async (vendorId) => {
+    setLoadingActivity(true);
+    setActivityData(null);
+    setActivityModalOpen(true);
+    try {
+      const token = localStorage.getItem('adminToken');
+      const { data } = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/admin/vendor-history/${vendorId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setActivityData(data);
+    } catch (err) {
+      console.error('Error fetching activity:', err);
+      alert('Failed to fetch vendor activity');
+      setActivityModalOpen(false);
+    } finally {
+      setLoadingActivity(false);
+    }
+  };
+
+  const handleUnacceptEnquiry = async (vendorId, enquiryId) => {
+    if (!window.confirm("Are you sure you want to revert this acceptance? The enquiry will be set back to Pending for this vendor.")) return;
+    try {
+      const token = localStorage.getItem('adminToken');
+      await axios.put(`${import.meta.env.VITE_API_BASE_URL}/admin/vendor-history/${vendorId}/unaccept/${enquiryId}`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      // Refresh the modal data
+      handleViewActivity(vendorId);
+    } catch (err) {
+      console.error('Error unaccepting enquiry:', err);
+      alert(err.response?.data?.message || 'Failed to revert acceptance');
     }
   };
 
@@ -361,6 +400,7 @@ const VendorManagement = () => {
               <thead className="bg-[#f8fafc] text-[#0B1E43] uppercase text-[10px] font-black tracking-widest border-b border-slate-100">
                 <tr>
                   <th className="p-4 text-center">Dashboard</th>
+                  <th className="p-4 text-center">Activity</th>
                   <th className="p-4">First Name</th>
                   <th className="p-4">Last Name</th>
                   <th className="p-4">Email</th>
@@ -399,7 +439,16 @@ const VendorManagement = () => {
                           className="bg-[#0066FF] hover:bg-[#0052cc] text-white text-[10px] font-black px-3 py-1.5 rounded-lg flex items-center gap-1.5 mx-auto cursor-pointer shadow-sm shadow-[#0066FF]/10 uppercase tracking-wider"
                           title="Login directly as this vendor"
                         >
-                          <LogIn size={12} /> Login
+                          <LogIn size={12} />
+                        </button>
+                      </td>
+                      <td className="p-4 text-center">
+                        <button
+                          onClick={() => handleViewActivity(vendor._id)}
+                          className="bg-indigo-100 hover:bg-indigo-200 text-indigo-700 text-[10px] font-black p-1.5 rounded-lg flex items-center gap-1.5 mx-auto cursor-pointer transition-colors"
+                          title="View Vendor Activity"
+                        >
+                          <Activity size={14} />
                         </button>
                       </td>
                       <td className="p-4 text-slate-800">{firstName}</td>
@@ -602,6 +651,129 @@ const VendorManagement = () => {
         </div>
       )}
 
+      {/* Activity Modal */}
+      {activityModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#0B1E43]/40 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
+            <div className="flex justify-between items-center p-6 border-b border-slate-100 bg-gradient-to-r from-indigo-50/50 to-white">
+              <div>
+                <h3 className="text-xl font-extrabold text-[#0B1E43] flex items-center gap-2">
+                  <Activity className="text-indigo-600" size={24} /> 
+                  Vendor Activity History
+                </h3>
+                {activityData?.vendor && (
+                  <p className="text-xs text-slate-500 font-bold mt-1">
+                    {activityData.vendor.name} - {activityData.vendor.company}
+                  </p>
+                )}
+              </div>
+              <button 
+                onClick={() => setActivityModalOpen(false)}
+                className="p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-colors cursor-pointer"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className="p-6 overflow-y-auto">
+              {loadingActivity ? (
+                <div className="flex flex-col items-center justify-center py-12">
+                  <Loader2 className="w-10 h-10 text-indigo-600 animate-spin mb-4" />
+                  <p className="text-slate-500 font-bold">Loading activity data...</p>
+                </div>
+              ) : activityData ? (
+                <div className="space-y-6">
+                  {/* Last Login Card */}
+                  <div className="bg-white border border-slate-100 p-5 rounded-2xl shadow-sm flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600">
+                        <LogIn size={20} />
+                      </div>
+                      <div>
+                        <p className="text-[10px] uppercase tracking-widest text-slate-400 font-black mb-1">Last Login Date</p>
+                        <p className="font-bold text-slate-700">
+                          {activityData.vendor.lastActive 
+                            ? new Date(activityData.vendor.lastActive).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })
+                            : 'Never'
+                          }
+                        </p>
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-[10px] uppercase tracking-widest text-slate-400 font-black mb-1 text-right">Account Created</p>
+                      <p className="font-bold text-slate-700">
+                        {new Date(activityData.vendor.createdAt).toLocaleDateString('en-IN', { dateStyle: 'medium' })}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Accepted Enquiries Table */}
+                  <div>
+                    <h4 className="text-sm font-extrabold text-[#0B1E43] uppercase tracking-wider mb-4 flex items-center justify-between">
+                      Accepted Enquiries ({activityData.history.length})
+                    </h4>
+                    
+                    {activityData.history.length === 0 ? (
+                      <div className="bg-slate-50 border border-dashed border-slate-200 rounded-2xl p-8 text-center">
+                        <p className="text-slate-400 font-bold">No accepted enquiries found for this vendor.</p>
+                      </div>
+                    ) : (
+                      <div className="border border-slate-100 rounded-2xl overflow-hidden">
+                        <table className="w-full text-left text-sm">
+                          <thead className="bg-[#f8fafc] text-[#0B1E43] text-[10px] font-black uppercase tracking-widest border-b border-slate-100">
+                            <tr>
+                              <th className="p-4">Action Date (Accepted)</th>
+                              <th className="p-4">Creation Date</th>
+                              <th className="p-4">Route</th>
+                              <th className="p-4">Type</th>
+                              <th className="p-4 text-center">Nature</th>
+                              <th className="p-4 text-center">Action</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-50">
+                            {activityData.history.map((item, idx) => (
+                              <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
+                                <td className="p-4 font-bold text-green-600">
+                                  {new Date(item.acceptedAt).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                </td>
+                                <td className="p-4 font-bold text-slate-600 text-xs">
+                                  {new Date(item.enquiryCreated).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                </td>
+                                <td className="p-4 font-bold text-slate-700">
+                                  {item.fromLocation} <span className="text-slate-400 mx-1">→</span> {item.toLocation}
+                                </td>
+                                <td className="p-4 uppercase text-[10px] font-black tracking-widest text-slate-500">
+                                  {item.type}
+                                </td>
+                                <td className="p-4 text-center">
+                                  <span className={`px-2 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider ${item.isDirect ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}`}>
+                                    {item.isDirect ? 'Direct' : 'Public'}
+                                  </span>
+                                </td>
+                                <td className="p-4 text-center">
+                                  <button
+                                    onClick={() => handleUnacceptEnquiry(activityData.vendor._id, item.enquiryId)}
+                                    className="px-3 py-1 bg-rose-50 text-rose-600 hover:bg-rose-100 font-black uppercase text-[9px] tracking-wider rounded-lg transition-colors border border-rose-100"
+                                    title="Revert Acceptance"
+                                  >
+                                    Revoke
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center text-red-500 font-bold py-8">Failed to load data.</div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

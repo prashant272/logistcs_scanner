@@ -186,6 +186,86 @@ exports.getCustomerHistory = async (req, res) => {
     }
 };
 
+// @desc    Get history of enquiries accepted by a vendor
+// @route   GET /api/admin/vendor-history/:id
+// @access  Private
+exports.getVendorHistory = async (req, res) => {
+    try {
+        const User = require('../models/User');
+        const Enquiry = require('../models/Enquiry');
+        
+        const vendor = await User.findById(req.params.id).select('name company email lastActive createdAt');
+        if (!vendor) {
+            return res.status(404).json({ message: 'Vendor not found' });
+        }
+
+        const enquiries = await Enquiry.find({
+            'responses': { $elemMatch: { vendor: req.params.id, status: { $in: ['Accepted', 'Quoted'] } } }
+        }).select('fromLocation toLocation type createdAt responses isDirect').sort({ createdAt: -1 });
+
+        let history = [];
+        enquiries.forEach(e => {
+            const response = e.responses.find(r => r.vendor && r.vendor.toString() === req.params.id);
+            if (response && ['Accepted', 'Quoted'].includes(response.status)) {
+                history.push({
+                    enquiryId: e._id,
+                    fromLocation: e.fromLocation,
+                    toLocation: e.toLocation,
+                    type: e.type,
+                    isDirect: e.isDirect,
+                    enquiryCreated: e.createdAt,
+                    acceptedAt: response.createdAt,
+                    status: response.status
+                });
+            }
+        });
+
+        // Sort history by accepted date descending (newest first)
+        history.sort((a, b) => b.acceptedAt - a.acceptedAt);
+
+        res.json({
+            vendor: vendor,
+            history: history
+        });
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
+
+// @desc    Unaccept an enquiry for a vendor (Admin action)
+// @route   PUT /api/admin/vendor-history/:vendorId/unaccept/:enquiryId
+// @access  Private
+exports.adminUnacceptEnquiry = async (req, res) => {
+    try {
+        const Enquiry = require('../models/Enquiry');
+        const { vendorId, enquiryId } = req.params;
+
+        const enquiry = await Enquiry.findById(enquiryId);
+        if (!enquiry) {
+            return res.status(404).json({ message: 'Enquiry not found' });
+        }
+
+        // Find the response
+        const responseIndex = enquiry.responses.findIndex(r => r.vendor && r.vendor.toString() === vendorId);
+        if (responseIndex === -1) {
+            return res.status(404).json({ message: 'Vendor response not found in this enquiry' });
+        }
+
+        // Remove the response completely to revert the acceptance
+        enquiry.responses.splice(responseIndex, 1);
+
+        // If direct enquiry, revert the whole enquiry status
+        if (enquiry.isDirect && enquiry.vendor && enquiry.vendor.toString() === vendorId) {
+            enquiry.status = 'Pending';
+        }
+
+        await enquiry.save();
+        res.json({ message: 'Enquiry acceptance reverted successfully' });
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
+
 // @desc    Get history of enquiries & bookings for a guest by email or phone
 // @route   GET /api/admin/guest-history
 // @access  Private

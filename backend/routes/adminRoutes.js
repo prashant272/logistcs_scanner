@@ -4,9 +4,11 @@ const {
     loginAdmin, 
     getVendors, 
     getCustomers, 
-    getGuests, 
-    getCustomerHistory, 
+    getGuests,
+    getCustomerHistory,
     getGuestHistory,
+    getVendorHistory,
+    adminUnacceptEnquiry,
     impersonateVendor,
     toggleVendorVerification,
     adminGetVendorPricing,
@@ -31,6 +33,8 @@ router.get("/vendors", auth, getVendors);
 router.get("/customers", auth, getCustomers);
 router.get("/guests", auth, getGuests);
 router.get("/customer-history/:id", auth, getCustomerHistory);
+router.get("/vendor-history/:id", auth, getVendorHistory);
+router.put("/vendor-history/:vendorId/unaccept/:enquiryId", auth, adminUnacceptEnquiry);
 router.get("/guest-history", auth, getGuestHistory);
 router.get("/impersonate/:vendorId", auth, impersonateVendor);
 router.put("/vendors/:id/verify", auth, toggleVendorVerification);

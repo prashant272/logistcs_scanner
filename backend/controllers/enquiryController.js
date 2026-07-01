@@ -84,7 +84,7 @@ exports.createEnquiry = async (req, res) => {
         } else if (guestEmail) {
             // Check if user already exists
             let guestUser = await User.findOne({ email: guestEmail.toLowerCase() });
-            
+
             if (!guestUser) {
                 // Create a new customer account automatically
                 const generatedPassword = Math.random().toString(36).slice(-8) + Math.floor(Math.random() * 1000);
@@ -105,7 +105,7 @@ exports.createEnquiry = async (req, res) => {
                 sendGuestAccountCreatedEmail(guestEmail, guestName, generatedPassword)
                     .catch(err => console.error('Error sending guest account email:', err));
             }
-            
+
             // Link the enquiry to this user
             validatedClientId = guestUser._id;
         }
@@ -180,7 +180,7 @@ exports.createEnquiry = async (req, res) => {
 
         if (validatedVendorId) {
             const { sendNotification } = require('../utils/notificationService');
-            
+
             // Send In-App Notification to Vendor (Bell Notification)
             sendNotification(
                 validatedVendorId,
@@ -314,11 +314,11 @@ exports.getVendorEnquiries = async (req, res) => {
         if (req.query.filter && req.query.filter !== 'all') {
             const filter = req.query.filter;
             const today = new Date();
-            
+
             if (filter === '7days') {
                 const sevenDaysAgo = new Date(today);
                 sevenDaysAgo.setDate(today.getDate() - 7);
-                
+
                 if (query.createdAt && query.createdAt.$gte) {
                     query.createdAt.$gte = new Date(Math.max(sevenDaysAgo, query.createdAt.$gte));
                 } else {
@@ -327,7 +327,7 @@ exports.getVendorEnquiries = async (req, res) => {
             } else if (filter === '15days') {
                 const fifteenDaysAgo = new Date(today);
                 fifteenDaysAgo.setDate(today.getDate() - 15);
-                
+
                 if (query.createdAt && query.createdAt.$gte) {
                     query.createdAt.$gte = new Date(Math.max(fifteenDaysAgo, query.createdAt.$gte));
                 } else {
@@ -335,7 +335,7 @@ exports.getVendorEnquiries = async (req, res) => {
                 }
             } else if (filter === 'thismonth') {
                 const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-                
+
                 if (query.createdAt && query.createdAt.$gte) {
                     query.createdAt.$gte = new Date(Math.max(startOfMonth, query.createdAt.$gte));
                 } else {
@@ -345,7 +345,7 @@ exports.getVendorEnquiries = async (req, res) => {
                 const [year, month] = filter.split('-');
                 const startOfMonth = new Date(parseInt(year), parseInt(month) - 1, 1);
                 const endOfMonth = new Date(parseInt(year), parseInt(month), 0, 23, 59, 59, 999);
-                
+
                 if (query.createdAt && query.createdAt.$gte) {
                     query.createdAt.$gte = new Date(Math.max(startOfMonth, query.createdAt.$gte));
                     query.createdAt.$lte = endOfMonth;
@@ -410,7 +410,7 @@ exports.getVendorEnquiries = async (req, res) => {
 
             const startOfMonth = new Date();
             startOfMonth.setDate(1);
-            startOfMonth.setHours(0,0,0,0);
+            startOfMonth.setHours(0, 0, 0, 0);
 
             const acceptedCount = await Enquiry.countDocuments({
                 $or: [
@@ -430,7 +430,7 @@ exports.getVendorEnquiries = async (req, res) => {
         // For direct listings, enrich with the vendor's own price for the same route and cargo type
         if (type === 'direct') {
             const Pricing = require('../models/Pricing');
-            
+
             let vendorRates = [];
             if (!isAdmin && results.length > 0) {
                 // Only fetch the pricing rates matching the 10 enquiries on screen, not ALL 5000+ rates
@@ -495,16 +495,16 @@ exports.updateEnquiryStatus = async (req, res) => {
         }
 
         // --- Monthly Limit Check for Vendors ---
-        if (status === 'Accepted' && (!enquiry.client || enquiry.client.toString() !== req.user.id)) {
+        if (['Accepted', 'Quoted'].includes(status) && (!enquiry.client || enquiry.client.toString() !== req.user.id)) {
             const User = require('../models/User');
             const vendorUser = await User.findById(req.user.id).populate('activePlan');
             const hasActivePlan = vendorUser && vendorUser.activePlan && vendorUser.planEndDate && new Date(vendorUser.planEndDate) > new Date();
-            
+
             let inquiryLimit = 5;
             if (hasActivePlan && vendorUser.activePlan && vendorUser.activePlan.inquiryLimit) {
                 inquiryLimit = vendorUser.activePlan.inquiryLimit;
             }
-            
+
             // Add top-up limit if active (or if manually granted without an expiry date)
             if (!vendorUser.topupPlanEndDate || new Date(vendorUser.topupPlanEndDate) > new Date()) {
                 inquiryLimit += (vendorUser.topupEnquiryLimit || 0);
@@ -512,29 +512,31 @@ exports.updateEnquiryStatus = async (req, res) => {
 
             const startOfMonth = new Date();
             startOfMonth.setDate(1);
-            startOfMonth.setHours(0,0,0,0);
+            startOfMonth.setHours(0, 0, 0, 0);
 
-            let alreadyAcceptedThis = false;
+            let alreadyRespondedThis = false;
             if (enquiry.isDirect) {
-                const existing = enquiry.responses.find(r => r.vendor && r.vendor.toString() === req.user.id && r.status === 'Accepted');
-                if (existing) alreadyAcceptedThis = true;
-            } else {
-                if (enquiry.vendor && enquiry.vendor.toString() === req.user.id && enquiry.status === 'Accepted') {
-                    alreadyAcceptedThis = true;
+                if (enquiry.vendor && enquiry.vendor.toString() === req.user.id && ['Accepted', 'Quoted'].includes(enquiry.status)) {
+                    alreadyRespondedThis = true;
                 }
+                const existing = enquiry.responses.find(r => r.vendor && r.vendor.toString() === req.user.id);
+                if (existing) alreadyRespondedThis = true;
+            } else {
+                const existing = enquiry.responses.find(r => r.vendor && r.vendor.toString() === req.user.id);
+                if (existing) alreadyRespondedThis = true;
             }
 
-            if (!alreadyAcceptedThis) {
+            if (!alreadyRespondedThis) {
                 const acceptedCount = await Enquiry.countDocuments({
                     $or: [
-                        { vendor: req.user.id, status: 'Accepted', createdAt: { $gte: startOfMonth } },
-                        { 'responses': { $elemMatch: { vendor: req.user.id, status: 'Accepted' } }, createdAt: { $gte: startOfMonth } }
+                        { vendor: req.user.id, status: { $in: ['Accepted', 'Quoted'] }, updatedAt: { $gte: startOfMonth } },
+                        { 'responses': { $elemMatch: { vendor: req.user.id } }, updatedAt: { $gte: startOfMonth } }
                     ]
                 });
 
                 if (acceptedCount >= inquiryLimit) {
-                    return res.status(403).json({ 
-                        message: `Monthly limit reached. You can only accept/quote ${inquiryLimit} enquiries per month on your current plan. Please upgrade your plan.` 
+                    return res.status(403).json({
+                        message: `Monthly limit reached. You can only accept/quote ${inquiryLimit} enquiries per month on your current plan. Please upgrade your plan.`
                     });
                 }
             }
@@ -606,7 +608,7 @@ exports.updateEnquiryStatus = async (req, res) => {
             const User = require('../models/User');
             const vendorUser = await User.findById(req.user.id);
             let customerEmail = enquiry.guestEmail;
-            
+
             if (enquiry.client) {
                 const clientUser = await User.findById(enquiry.client);
                 if (clientUser) customerEmail = clientUser.email;
@@ -741,68 +743,186 @@ exports.getVendorStats = async (req, res) => {
                 }
             }
 
-            if (req.query.startDate && req.query.endDate) {
-                const startDate = new Date(req.query.startDate);
-                const endDate = new Date(req.query.endDate);
-                endDate.setHours(23, 59, 59, 999);
-                if (query.createdAt && query.createdAt.$gte) {
-                     query.createdAt = {
-                        $gte: new Date(Math.max(startDate, query.createdAt.$gte)),
-                        $lte: endDate
-                     };
-                } else {
-                     query.createdAt = { $gte: startDate, $lte: endDate };
-                }
-            }
+            // Date filter moved to individual pipeline stages to separate 'Total' (createdAt) and 'Accepted' (action date).
             return query;
         };
 
+        let startDate = null;
+        let endDate = null;
+        if (req.query.startDate && req.query.endDate) {
+            startDate = new Date(req.query.startDate);
+            endDate = new Date(req.query.endDate);
+            endDate.setHours(23, 59, 59, 999);
+        }
+
         const enqPipeline = (query, type) => [
             { $match: query },
-            { $project: {
-                isLocked: 1,
-                status: 1,
-                isMyResponseAccepted: {
-                    $cond: {
-                        if: { $and: [ { $eq: [type, 'direct'] }, { $eq: [isAdmin, false] } ] },
-                        then: {
-                            $anyElementTrue: {
-                                $map: {
-                                    input: { $ifNull: ["$responses", []] },
-                                    as: "r",
-                                    in: { $and: [ { $eq: ["$$r.vendor", new mongoose.Types.ObjectId(req.user.id)] }, { $eq: ["$$r.status", "Accepted"] } ] }
+            {
+                $project: {
+                    isLocked: 1,
+                    status: 1,
+                    createdAt: 1,
+                    myResponse: {
+                        $cond: {
+                            if: { $eq: [isAdmin, false] },
+                            then: {
+                                $first: {
+                                    $filter: {
+                                        input: { $ifNull: ["$responses", []] },
+                                        as: "r",
+                                        cond: { $eq: ["$$r.vendor", new mongoose.Types.ObjectId(req.user.id)] }
+                                    }
                                 }
-                            }
-                        },
-                        else: { $eq: ["$status", "Accepted"] }
+                            },
+                            else: null
+                        }
                     }
                 }
-            }},
-            { $group: {
-                _id: null,
-                locked: { $sum: { $cond: ["$isLocked", 1, 0] } },
-                total: { $sum: { $cond: [{ $not: ["$isLocked"] }, 1, 0] } },
-                accepted: { $sum: { $cond: [{ $and: [{ $not: ["$isLocked"] }, "$isMyResponseAccepted"] }, 1, 0] } },
-                declined: { $sum: { $cond: [{ $and: [{ $not: ["$isLocked"] }, { $not: ["$isMyResponseAccepted"] }, { $eq: ["$status", "Declined"] }] }, 1, 0] } },
-                rejected: { $sum: { $cond: [{ $and: [{ $not: ["$isLocked"] }, { $not: ["$isMyResponseAccepted"] }] }, 1, 0] } }
-            }}
+            },
+            {
+                $project: {
+                    isLocked: 1,
+                    status: 1,
+                    createdAt: 1,
+                    myResponse: 1,
+                    isMyResponseAccepted: {
+                        $cond: {
+                            if: { $eq: [isAdmin, false] },
+                            then: { $eq: ["$myResponse.status", "Accepted"] },
+                            else: { $eq: ["$status", "Accepted"] }
+                        }
+                    },
+                    isMyResponseDeclined: {
+                        $cond: {
+                            if: { $eq: [isAdmin, false] },
+                            then: { $eq: ["$myResponse.status", "Declined"] },
+                            else: { $eq: ["$status", "Declined"] }
+                        }
+                    }
+                }
+            },
+            {
+                $group: {
+                    _id: null,
+                    locked: { $sum: { $cond: ["$isLocked", 1, 0] } },
+                    total: { 
+                        $sum: { 
+                            $cond: [
+                                { $and: [
+                                    { $not: ["$isLocked"] },
+                                    startDate ? { $gte: ["$createdAt", startDate] } : true,
+                                    endDate ? { $lte: ["$createdAt", endDate] } : true
+                                ] }, 
+                                1, 0
+                            ] 
+                        } 
+                    },
+                    accepted: { 
+                        $sum: { 
+                            $cond: [
+                                { $and: [
+                                    { $not: ["$isLocked"] },
+                                    "$isMyResponseAccepted",
+                                    startDate ? {
+                                        $cond: {
+                                            if: { $eq: [isAdmin, false] },
+                                            then: { $gte: ["$myResponse.createdAt", startDate] },
+                                            else: { $gte: ["$createdAt", startDate] }
+                                        }
+                                    } : true,
+                                    endDate ? {
+                                        $cond: {
+                                            if: { $eq: [isAdmin, false] },
+                                            then: { $lte: ["$myResponse.createdAt", endDate] },
+                                            else: { $lte: ["$createdAt", endDate] }
+                                        }
+                                    } : true
+                                ] }, 
+                                1, 0
+                            ] 
+                        } 
+                    },
+                    declined: { 
+                        $sum: { 
+                            $cond: [
+                                { $and: [
+                                    { $not: ["$isLocked"] },
+                                    "$isMyResponseDeclined",
+                                    startDate ? {
+                                        $cond: {
+                                            if: { $eq: [isAdmin, false] },
+                                            then: { $gte: ["$myResponse.createdAt", startDate] },
+                                            else: { $gte: ["$createdAt", startDate] }
+                                        }
+                                    } : true,
+                                    endDate ? {
+                                        $cond: {
+                                            if: { $eq: [isAdmin, false] },
+                                            then: { $lte: ["$myResponse.createdAt", endDate] },
+                                            else: { $lte: ["$createdAt", endDate] }
+                                        }
+                                    } : true
+                                ] }, 
+                                1, 0
+                            ] 
+                        } 
+                    },
+                    rejected: { 
+                        $sum: { 
+                            $cond: [
+                                { $and: [
+                                    { $not: ["$isLocked"] },
+                                    { $not: ["$isMyResponseAccepted"] },
+                                    { $not: ["$isMyResponseDeclined"] },
+                                    startDate ? { $gte: ["$createdAt", startDate] } : true,
+                                    endDate ? { $lte: ["$createdAt", endDate] } : true
+                                ] }, 
+                                1, 0
+                            ] 
+                        } 
+                    }
+                }
+            },
+            {
+                $project: {
+                    locked: 1,
+                    total: 1,
+                    accepted: 1,
+                    declined: 1,
+                    // Mathematically force 'rejected' (Not Accepted) to be Total - Accepted as requested
+                    rejected: { $max: [0, { $subtract: ["$total", "$accepted"] }] }
+                }
+            }
         ];
 
         const bkgPipeline = (query) => [
             { $match: query },
             { $match: { isLocked: { $ne: true } } },
-            { $group: {
-                _id: null,
-                total: { $sum: 1 },
-                accepted: { $sum: { $cond: [{ $in: ["$status", ["Accepted", "Confirmed", "Delivered"]] }, 1, 0] } },
-                declined: { $sum: { $cond: [{ $eq: ["$status", "Declined"] }, 1, 0] } },
-                upcomingPaymentDue: { $sum: { $cond: [{ $in: ["$status", ["Accepted", "Confirmed", "Delivered"]] }, "$price", 0] } },
-                dueIn5Days: { $sum: { $cond: [{ $eq: ["$status", "Pending"] }, "$price", 0] } }
-            }}
+            ...(startDate ? [{ $match: { createdAt: { $gte: startDate, $lte: endDate } } }] : []),
+            {
+                $group: {
+                    _id: null,
+                    total: { $sum: 1 },
+                    accepted: { $sum: { $cond: [{ $in: ["$status", ["Accepted", "Confirmed", "Delivered"]] }, 1, 0] } },
+                    declined: { $sum: { $cond: [{ $eq: ["$status", "Declined"] }, 1, 0] } },
+                    upcomingPaymentDue: { $sum: { $cond: [{ $in: ["$status", ["Accepted", "Confirmed", "Delivered"]] }, "$price", 0] } },
+                    dueIn5Days: { $sum: { $cond: [{ $eq: ["$status", "Pending"] }, "$price", 0] } }
+                }
+            },
+            {
+                $project: {
+                    total: 1,
+                    accepted: 1,
+                    declined: 1,
+                    upcomingPaymentDue: 1,
+                    dueIn5Days: 1,
+                    rejected: { $max: [0, { $subtract: ["$total", "$accepted"] }] }
+                }
+            }
         ];
 
         const Enquiry = require('../models/Enquiry');
-        
+
         const [myEnqsRes, directEnqsRes, myBkgsRes, directBkgsRes] = await Promise.all([
             Enquiry.aggregate(enqPipeline(buildQuery('my', false), 'my')),
             Enquiry.aggregate(enqPipeline(buildQuery('direct', false), 'direct')),
