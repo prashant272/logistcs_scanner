@@ -13,6 +13,7 @@ const CustomerSidebar = ({ isSidebarOpen, logout }) => {
         { name: 'Live Price', path: '/customer/search-price', icon: <Search size={18} /> },
         { name: 'Direct Enquiry', path: '/customer/direct-enquiry', icon: <MessageSquare size={18} /> },
         { name: 'My Enquiry', path: '/customer/my-enquiry', icon: <FileText size={18} /> },
+        { name: 'PTL Bookings', path: '/customer/ptl-bookings', icon: <Truck size={18} /> },
         { name: 'Complaint', path: '/customer/complaint', icon: <AlertTriangle size={18} /> },
          { name: 'My Profile', path: '/customer/profile', icon: <User size={18} /> }
     ];
@@ -20,13 +21,13 @@ const CustomerSidebar = ({ isSidebarOpen, logout }) => {
     return (
         <aside className={`bg-gradient-to-b from-[#0B1E43] via-[#081633] to-[#050f24] text-white transition-all duration-300 flex flex-col shrink-0 h-screen fixed left-0 top-0 overflow-y-auto z-40 border-r border-white/5 ${isSidebarOpen ? 'translate-x-0 w-64' : '-translate-x-full md:translate-x-0 md:w-20'}`}>
             {/* Logo Section */}
-            <div className="border-b border-white/5 h-20 overflow-hidden w-full flex items-center justify-center bg-white p-3">
+            <Link to="/" className="block border-b border-white/5 h-20 overflow-hidden w-full flex items-center justify-center bg-white p-3 hover:opacity-90 transition-opacity">
                 {isSidebarOpen ? (
                     <img src="/logo.png" alt="Logistics Scanner Logo" className="max-h-full max-w-full object-contain" />
                 ) : (
                     <img src="/logo.png" alt="Logistics Scanner Logo" className="h-10 w-10 object-contain p-1" />
                 )}
-            </div>
+            </Link>
 
             {/* Sidebar Navigation */}
             <nav className="flex-1 py-6 px-3 space-y-1 overflow-y-auto custom-scrollbar">

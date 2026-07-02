@@ -181,7 +181,58 @@ exports.getGuests = async (req, res) => {
 // @access  Private
 exports.getCustomerHistory = async (req, res) => {
     try {
+        const Enquiry = require('../models/Enquiry');
+        const PtlBooking = require('../models/PtlBooking');
+        const User = require('../models/User');
+
+        const customer = await User.findById(req.params.id);
+        if (!customer) {
+            return res.status(404).json({ message: 'Customer not found' });
+        }
+
+        const enquiries = await Enquiry.find({ client: req.params.id })
+            .populate('responses.vendor', 'name company')
+            .sort({ createdAt: -1 });
+
+        let history = [];
+
+        enquiries.forEach(enq => {
+            history.push({
+                _id: enq._id,
+                isBooking: false,
+                fromLocation: enq.fromLocation || '',
+                toLocation: enq.toLocation || '',
+                type: enq.type || 'LTL',
+                price: null,
+                vendor: null,
+                responses: enq.responses || [],
+                status: (enq.responses && enq.responses.length > 0) ? 'Responded' : 'Pending',
+                createdAt: enq.createdAt
+            });
+        });
+
+        const bookings = await PtlBooking.find({ user: req.params.id })
+            .populate('vendor', 'name company')
+            .sort({ createdAt: -1 });
+
+        bookings.forEach(booking => {
+            history.push({
+                _id: booking._id,
+                isBooking: true,
+                fromLocation: booking.pickup_details?.city || 'N/A',
+                toLocation: booking.drop_details?.city || 'N/A',
+                type: 'Booking',
+                price: booking.booking_details?.total_amount || 0,
+                vendor: booking.vendor,
+                status: booking.status || 'Accepted',
+                createdAt: booking.createdAt
+            });
+        });
+
+        history.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        res.json(history);
     } catch (error) {
+        console.error("Error in getCustomerHistory:", error);
         res.status(500).json({ message: 'Server error', error: error.message });
     }
 };

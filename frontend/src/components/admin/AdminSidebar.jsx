@@ -94,13 +94,20 @@ const AdminSidebar = ({ isSidebarOpen, logout }) => {
             items: [
                 { name: 'CMS Settings', path: '/admin/cms-settings', icon: <Settings size={16} /> }
             ]
+        },
+        {
+            category: 'PTL Delivery',
+            items: [
+                { name: 'PTL Bookings', path: '/admin/ptl-bookings', icon: <Truck size={16} /> },
+                { name: 'Delhivery Settings', path: '/admin/delhivery-settings', icon: <Settings size={16} /> }
+            ]
         }
     ];
 
     return (
         <aside className={`bg-gradient-to-b from-[#0B1E43] via-[#081633] to-[#050f24] text-white transition-all duration-300 flex flex-col shrink-0 h-screen fixed left-0 top-0 overflow-y-auto z-40 border-r border-white/5 ${isSidebarOpen ? 'translate-x-0 w-64' : '-translate-x-full md:translate-x-0 md:w-20'}`}>
             {/* Logo Section */}
-            <div className="p-5 flex items-center justify-between border-b border-white/5 h-20 overflow-hidden shrink-0">
+            <Link to="/" className="block p-5 flex items-center justify-between border-b border-white/5 h-20 overflow-hidden shrink-0 hover:opacity-90 transition-opacity">
                 <div className="flex items-center gap-3">
                     <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-[#0066FF] to-[#00b2fe] flex items-center justify-center shrink-0 shadow-lg shadow-[#0066FF]/25">
                         <Truck className="text-white w-5 h-5" />
@@ -110,7 +117,7 @@ const AdminSidebar = ({ isSidebarOpen, logout }) => {
                         <span className="text-[10px] tracking-[0.25em] text-[#00b2fe] font-black">ADMIN</span>
                     </div>
                 </div>
-            </div>
+            </Link>
 
             {/* Sidebar Navigation */}
             <nav className="flex-1 py-4 px-3 space-y-3 overflow-y-auto custom-scrollbar">

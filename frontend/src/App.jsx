@@ -7,10 +7,13 @@ axios.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response && error.response.status === 401) {
-      localStorage.removeItem('adminToken');
-      // For user/vendor tokens as well if needed in future
-      localStorage.removeItem('token'); 
-      window.location.href = '/admin/login';
+      if (window.location.pathname.startsWith('/admin')) {
+          localStorage.removeItem('adminToken');
+          window.location.href = '/admin/login';
+      } else {
+          localStorage.removeItem('userToken');
+          window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   }
@@ -98,6 +101,11 @@ const AdminFinanceListing = lazy(() => import('./pages/admin/AdminFinanceListing
 const AdminEnquiriesTab = lazy(() => import('./pages/admin/AdminEnquiriesTab'));
 const AdminUpgradationRequests = lazy(() => import('./pages/admin/AdminUpgradationRequests'));
 const AdminInvoiceRequests = lazy(() => import('./pages/admin/AdminInvoiceRequests'));
+const DelhiverySettings = lazy(() => import('./pages/admin/DelhiverySettings'));
+const AdminPtlBookings = lazy(() => import('./pages/admin/AdminPtlBookings'));
+const PtlBookingsTab = lazy(() => import('./components/common/PtlBookingsTab'));
+const DelhiveryCalculator = lazy(() => import('./pages/public/DelhiveryCalculator'));
+const DelhiveryCreateOrder = lazy(() => import('./pages/public/DelhiveryCreateOrder'));
 
 // Loading Fallback Component
 const PageLoader = () => (
@@ -187,6 +195,10 @@ function App() {
               {/* Other sections */}
               <Route path="complaints" element={<AdminComplaints />} />
               <Route path="cms-settings" element={<div className="p-6 bg-white rounded-2xl shadow-sm text-slate-800"><h2 className="text-xl font-bold mb-4">CMS Settings</h2><p className="text-slate-500">Content Management System settings.</p></div>} />
+              
+              {/* PTL Delivery */}
+              <Route path="delhivery-settings" element={<DelhiverySettings />} />
+              <Route path="ptl-bookings" element={<AdminPtlBookings />} />
             </Route>
 
             {/* Customer Dashboard Routes (No Navbar/Footer) */}
@@ -196,6 +208,7 @@ function App() {
               <Route path="search-results" element={<SearchResults />} />
               <Route path="direct-enquiry" element={<CustomerEnquiriesTab title="Direct Enquiry" type="direct" />} />
               <Route path="my-enquiry" element={<CustomerEnquiriesTab title="My Enquiry" type="my" />} />
+              <Route path="ptl-bookings" element={<PtlBookingsTab />} />
               <Route path="complaint" element={<CustomerComplaintsTab />} />
               <Route path="profile" element={<CustomerProfileTab />} />
             </Route>
@@ -210,6 +223,7 @@ function App() {
               <Route path="direct-enquiries" element={<VendorEnquiriesTab title="Direct Enquiries" type="direct" />} />
               <Route path="direct-booking" element={<VendorBookingsTab title="Direct Bookings" type="direct" />} />
               <Route path="my-bookings" element={<VendorBookingsTab title="My Bookings" type="my" />} />
+              <Route path="ptl-bookings" element={<PtlBookingsTab />} />
               <Route path="my-pricing" element={<VendorPricingTab />} />
               <Route path="finance" element={<VendorFinanceForm />} />
               <Route path="finance-list" element={<VendorFinanceDashboard />} />
@@ -238,6 +252,8 @@ function App() {
                     <Route path="/vendor-network" element={<VendorNetwork />} />
                     <Route path="/vendor-network/profile/:id" element={<VendorPublicProfile />} />
                     <Route path="/track" element={<TrackShipment />} />
+                    <Route path="/ptl-calculator" element={<DelhiveryCalculator />} />
+                    <Route path="/ptl-calculator/order" element={<DelhiveryCreateOrder />} />
                     <Route path="/search-results" element={<SearchResults />} />
                     <Route path="/terms" element={<Terms />} />
                     <Route path="/privacy" element={<Privacy />} />

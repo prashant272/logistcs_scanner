@@ -72,15 +72,18 @@ const Navbar = () => {
                 <div className="hidden md:flex items-center space-x-4">
                     {user ? (
                         <div className="flex items-center gap-4">
-                            <span className={`font-bold text-sm ${showWhiteBg ? 'text-gray-950' : 'text-white'}`}>
+                            <Link 
+                                to={user.role === 'customer' ? '/customer' : user.role === 'vendor' ? '/vendor' : '/admin'}
+                                className={`font-black text-xs uppercase tracking-widest transition-colors ${showWhiteBg ? 'text-gray-950 hover:text-[#0066FF]' : '!text-black hover:!text-[#0066FF]'}`}
+                            >
                                 {user.name.split(' ')[0]}
-                            </span>
+                            </Link>
                             <button 
                                 onClick={logout} 
-                                className={`text-xs uppercase tracking-widest cursor-pointer font-bold ${
+                                className={`text-xs uppercase tracking-widest cursor-pointer font-black transition-colors ${
                                     showWhiteBg 
                                         ? 'text-gray-500 hover:text-[#0091d5]' 
-                                        : 'text-gray-300 hover:text-white'
+                                        : '!text-black hover:!text-[#0091d5]'
                                 }`}
                             >
                                 Logout

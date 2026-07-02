@@ -290,22 +290,49 @@ const CustomerManagement = () => {
                             {record.type}
                           </td>
                           <td className="p-4 font-black text-[#0B1E43]">
-                            {record.price ? `₹ ${record.price.toLocaleString('en-IN')}` : 'Not Quoted'}
+                            {record.isBooking ? (
+                                record.price ? `₹ ${record.price.toLocaleString('en-IN')}` : 'Not Quoted'
+                            ) : (
+                                record.responses && record.responses.length > 0 ? (
+                                    <span className="text-slate-400 text-[10px] uppercase">Multiple Quotes</span>
+                                ) : 'Not Quoted'
+                            )}
                           </td>
                           <td className="p-4 text-slate-700">
-                            {record.vendor ? (
-                              <div>
-                                <p className="font-extrabold text-slate-800">{record.vendor.name}</p>
-                                <span className="text-[9px] text-slate-400 block uppercase font-bold tracking-wider">{record.vendor.company}</span>
-                              </div>
+                            {record.isBooking ? (
+                                record.vendor ? (
+                                  <div>
+                                    <p className="font-extrabold text-slate-800">{record.vendor.name}</p>
+                                    <span className="text-[9px] text-slate-400 block uppercase font-bold tracking-wider">{record.vendor.company}</span>
+                                  </div>
+                                ) : (
+                                  <span className="text-slate-400 italic">Broadcasted</span>
+                                )
                             ) : (
-                              <span className="text-slate-400 italic">Broadcasted</span>
+                                record.responses && record.responses.length > 0 ? (
+                                    <div className="flex flex-col gap-2 min-w-[150px]">
+                                       {record.responses.map(resp => (
+                                           <div key={resp._id} className="flex flex-col border-b border-slate-50 last:border-0 pb-1.5 last:pb-0">
+                                               <p className="font-extrabold text-slate-800 flex justify-between items-center gap-2">
+                                                   <span className="truncate">{resp.vendor?.name || 'Unknown'}</span>
+                                                   <span className={`text-[8px] px-1.5 py-0.5 rounded uppercase tracking-wider font-black whitespace-nowrap ${resp.status === 'Accepted' ? 'bg-green-50 text-green-600' : 'bg-amber-50 text-amber-500'}`}>{resp.status}</span>
+                                               </p>
+                                               <span className="text-[9px] text-slate-400 block uppercase font-bold tracking-wider">
+                                                   {resp.vendor?.company || 'N/A'} {resp.price && `• ₹${resp.price.toLocaleString('en-IN')}`}
+                                               </span>
+                                           </div>
+                                       ))}
+                                    </div>
+                                ) : (
+                                    <span className="text-slate-400 italic text-[10px] uppercase font-bold tracking-wider">No responses</span>
+                                )
                             )}
                           </td>
                           <td className="p-4">
                             <span className={`inline-flex items-center gap-1 font-black uppercase text-[10px] tracking-wider ${
                               record.status === 'Accepted' ? 'text-green-600' :
                               record.status === 'Declined' ? 'text-red-500' :
+                              record.status === 'Responded' ? 'text-[#0066FF]' :
                               'text-amber-500'
                             }`}>
                               {record.status === 'Accepted' && <CheckCircle2 size={12} />}

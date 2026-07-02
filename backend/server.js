@@ -33,6 +33,7 @@ app.use("/api/finance", require("./routes/financeRoutes"));
 app.use("/api/notifications", require("./routes/notificationRoutes"));
 app.use("/api/ihc", require("./routes/ihcRoutes"));
 app.use("/api/upload", require("./routes/uploadRoutes"));
+app.use("/api/delhivery", require("./routes/delhiveryRoutes"));
 
 app.get("/", (req, res) => {
     res.send("logistics scanner API Running...");

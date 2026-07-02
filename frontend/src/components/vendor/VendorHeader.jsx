@@ -23,17 +23,7 @@ const VendorHeader = ({ isSidebarOpen, setSidebarOpen, user, logout, searchQuery
 
             {/* Right: Actions */}
             <div className="flex items-center gap-4 md:gap-5">
-                {/* Search Input */}
-                <div className="relative hidden lg:block w-64">
-                    <input
-                        type="text"
-                        placeholder="Search enquiries, bookings..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full bg-[#f4f7fc] border border-transparent rounded-xl pl-4 pr-10 py-2.5 text-xs !text-slate-800 focus:outline-none focus:bg-white focus:border-[#0066FF] focus:ring-4 focus:ring-[#0066FF]/5 transition-all placeholder:!text-slate-400 font-bold"
-                    />
-                    <Search className="absolute right-3.5 top-1/2 -translate-y-1/2 !text-slate-400 w-4 h-4" />
-                </div>
+
 
                 {/* Notification Bell */}
                 <NotificationBell />

@@ -47,6 +47,15 @@ const SearchPrice = ({ isDashboard = false }) => {
     const [unit, setUnit] = useState('cm');
     const [quantity, setQuantity] = useState('');
     const [loadType, setLoadType] = useState('');
+    
+    // Redirect to dedicated PTL Calculator when PTL is selected
+    useEffect(() => {
+        if (activeTab === 'land' && loadType === 'PTL') {
+            navigate('/ptl-calculator');
+            setLoadType(''); // reset so if they come back it's not stuck
+        }
+    }, [activeTab, loadType, navigate]);
+
     const [fclStandard, setFclStandard] = useState('');
     const [fclUnit, setFclUnit] = useState('');
     const [lclWeightRange, setLclWeightRange] = useState('');
@@ -284,7 +293,39 @@ const SearchPrice = ({ isDashboard = false }) => {
         };
 
         try {
-            const data = await searchRates(payload);
+            let data;
+            
+            if (activeTab === 'land' && loadType === 'PTL') {
+                const token = localStorage.getItem('token');
+                // Calculate total weight in grams based on quantity and weight
+                // Assuming weight is entered as a number in kg for PTL, wait, they select weight range or enter number?
+                // Let's pass what we have to a custom payload
+                const delhiveryPayload = {
+                    origin_pin: origin,
+                    dest_pin: destination,
+                    weight_g: (parseFloat(weight) || 1) * 1000,
+                };
+                // Redirect to search-results with a special flag
+                const res = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/delhivery/estimate`, delhiveryPayload, {
+                    headers: token ? { Authorization: `Bearer ${token}` } : {}
+                });
+                data = {
+                    matched: true,
+                    results: [{
+                        _id: 'delhivery_ptl_api',
+                        vendor: { name: 'Delhivery', company: 'Delhivery (Automated)' },
+                        type: 'land',
+                        truckLoad: 'PTL',
+                        deliverySpeed: 3,
+                        price: res.data.finalPrice,
+                        is_delhivery: true,
+                        raw_data: res.data
+                    }]
+                };
+            } else {
+                data = await searchRates(payload);
+            }
+            
             setSearching(false);
             const targetPath = user 
                 ? (user.role === 'customer' ? '/customer/search-results' : '/vendor/search-results')
@@ -997,6 +1038,21 @@ const SearchPrice = ({ isDashboard = false }) => {
                                                     required
                                                 />
                                             </div>
+
+                                            {loadType === 'PTL' && (
+                                                <div className="lg:col-span-2 space-y-1.5">
+                                                    <label className="block text-[11px] font-black text-slate-900 uppercase tracking-wider">Weight (KG)</label>
+                                                    <input
+                                                        type="number"
+                                                        placeholder="e.g. 50"
+                                                        value={weight}
+                                                        onChange={(e) => setWeight(e.target.value)}
+                                                        className="w-full bg-white border border-slate-300 rounded-xl px-4 py-3 text-xs font-bold !text-slate-900 focus:outline-none focus:border-[#0066FF] transition-all shadow-sm"
+                                                        required
+                                                        min="1"
+                                                    />
+                                                </div>
+                                            )}
 
                                             <div className="lg:col-span-1 max-lg:hidden">
                                                 <button

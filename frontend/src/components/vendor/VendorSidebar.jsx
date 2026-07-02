@@ -26,6 +26,7 @@ const VendorSidebar = ({ isSidebarOpen, logout, user }) => {
         { name: 'Direct Enquiries', path: '/vendor/direct-enquiries', icon: <MessageSquare size={18} /> },
         { name: 'Direct Booking', path: '/vendor/direct-booking', icon: <Truck size={18} /> },
         { name: 'My Bookings', path: '/vendor/my-bookings', icon: <Calendar size={18} /> },
+        { name: 'PTL Bookings', path: '/vendor/ptl-bookings', icon: <Truck size={18} /> },
         { name: 'My Pricing', path: '/vendor/my-pricing', icon: <DollarSign size={18} /> },
         { name: 'Finance Form', path: '/vendor/finance', icon: <Wallet size={18} /> },
         { name: 'Finance List', path: '/vendor/finance-list', icon: <FileSpreadsheet size={18} /> },
@@ -39,13 +40,13 @@ const VendorSidebar = ({ isSidebarOpen, logout, user }) => {
     return (
         <aside className={`bg-gradient-to-b from-[#0B1E43] via-[#081633] to-[#050f24] text-white transition-all duration-300 flex flex-col shrink-0 h-screen fixed left-0 top-0 overflow-y-auto z-40 border-r border-white/5 ${isSidebarOpen ? 'translate-x-0 w-64' : '-translate-x-full md:translate-x-0 md:w-20'}`}>
             {/* Logo Section */}
-            <div className="border-b border-white/5 h-20 overflow-hidden w-full flex items-center justify-center bg-white p-3">
+            <Link to="/" className="block border-b border-white/5 h-20 overflow-hidden w-full flex items-center justify-center bg-white p-3 hover:opacity-90 transition-opacity">
                 {isSidebarOpen ? (
                     <img src="/logo.png" alt="Logistics Scanner Logo" className="max-h-full max-w-full object-contain" />
                 ) : (
                     <img src="/logo.png" alt="Logistics Scanner Logo" className="h-10 w-10 object-contain p-1" />
                 )}
-            </div>
+            </Link>
 
             {/* Sidebar Navigation */}
             <nav className="flex-1 py-6 px-3 space-y-1 overflow-y-auto custom-scrollbar">

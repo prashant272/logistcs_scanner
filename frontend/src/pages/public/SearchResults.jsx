@@ -296,8 +296,25 @@ const SearchResults = () => {
     };
 
     try {
-      // Trigger targeted enquiry
-      await createEnquiry(primaryPayload);
+      if (rate && rate.is_delhivery) {
+        const token = localStorage.getItem('token');
+        await axios.post(`${import.meta.env.VITE_API_BASE_URL}/delhivery/book`, {
+          origin_pin: searchPayload.fromLocation,
+          dest_pin: searchPayload.toLocation,
+          weight_g: queryDetails.weight ? parseFloat(queryDetails.weight) * 1000 : 1000,
+          basePrice: rate.raw_data?.basePrice || rate.price,
+          finalPrice: rate.price,
+          payment_mode: 'Prepaid',
+          pickup_address: 'Default Pickup Address',
+          drop_address: 'Default Drop Address',
+          dimensions: '10x10x10'
+        }, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {}
+        });
+      } else {
+        // Trigger targeted enquiry
+        await createEnquiry(primaryPayload);
+      }
       
       setSuccess(true);
       setIsGuestModalOpen(false);
