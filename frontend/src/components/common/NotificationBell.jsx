@@ -1,14 +1,25 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Bell, CheckCircle2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useSocket } from '../../context/SocketContext';
 
-const NotificationBell = () => {
+const NotificationBell = ({ align = 'right' }) => {
     const [notifications, setNotifications] = useState([]);
     const [isOpen, setIsOpen] = useState(false);
     const navigate = useNavigate();
     const socket = useSocket();
+    const dropdownRef = useRef(null);
+    
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+                setIsOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
     
     useEffect(() => {
         // Fetch existing notifications
@@ -88,7 +99,7 @@ const NotificationBell = () => {
     };
 
     return (
-        <div className="relative">
+        <div className="relative" ref={dropdownRef}>
             <button 
                 onClick={() => setIsOpen(!isOpen)}
                 className="relative p-2 rounded-full hover:bg-slate-100 transition-colors"
@@ -102,7 +113,7 @@ const NotificationBell = () => {
             </button>
 
             {isOpen && (
-                <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-xl border border-slate-200 overflow-hidden z-50">
+                <div className={`absolute ${align === 'left' ? 'left-0' : 'right-0'} mt-2 w-80 bg-white rounded-xl shadow-xl border border-slate-200 overflow-hidden z-50`}>
                     <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
                         <h3 className="font-semibold text-slate-800">Notifications</h3>
                         <div className="flex gap-3">

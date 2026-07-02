@@ -7,7 +7,7 @@ const VendorHeader = ({ isSidebarOpen, setSidebarOpen, user, logout, searchQuery
     const navigate = useNavigate();
 
     return (
-        <header className="bg-white border-b border-slate-100 h-20 flex items-center justify-between px-6 md:px-8 z-10 shrink-0">
+        <header className="relative bg-white border-b border-slate-100 h-20 flex items-center justify-between px-6 md:px-8 z-50 shrink-0">
             {/* Left: Sidebar Toggle and Dashboard Title */}
             <div className="flex items-center gap-4">
                 <button
@@ -26,7 +26,7 @@ const VendorHeader = ({ isSidebarOpen, setSidebarOpen, user, logout, searchQuery
 
 
                 {/* Notification Bell */}
-                <NotificationBell />
+                <NotificationBell align="left" />
 
                 {/* Available Wallet Balance */}
                 {user?.role === 'vendor' && (

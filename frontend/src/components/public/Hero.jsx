@@ -16,7 +16,7 @@ const Hero = () => {
     return (
         <section className="relative w-full min-h-[500px] lg:min-h-[580px] bg-gradient-to-r from-white via-[#f5f9ff] to-[#e0f0ff] pt-28 pb-28 lg:pb-36 font-sans border-b border-slate-100/50 flex items-center overflow-hidden">
             {/* Background Animation & Overlays */}
-            <div className="absolute inset-0 z-0 select-none">
+            <div className="absolute inset-0 z-0 select-none hidden md:block">
                 <GlobeBackground />
             </div>
 
