@@ -28,6 +28,25 @@ const vendorStatsFetcher = async ([key, filterType, customStart, customEnd]) => 
         if (finRes.data && finRes.data.length > 0) stats.financeApp = finRes.data[0];
     } catch (e) { }
 
+    stats.invoiceStats = { count: 0, upcomingPaymentDue: 0, dueIn5Days: 0 };
+    try {
+        const invoiceRes = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/finance/invoice/my`, config);
+        if (invoiceRes.data && Array.isArray(invoiceRes.data)) {
+            stats.invoiceStats.count = invoiceRes.data.length;
+            
+            const upcoming = invoiceRes.data
+                .filter(i => i.status === 'Approved')
+                .reduce((acc, curr) => acc + (curr.approvedAmount || curr.amount || 0), 0);
+            stats.invoiceStats.upcomingPaymentDue = upcoming;
+            
+            const nowTime = Date.now();
+            const due5 = invoiceRes.data
+                .filter(i => i.status === 'Approved' && i.timelineDate && (new Date(i.timelineDate).getTime() - nowTime) <= 5 * 24 * 60 * 60 * 1000)
+                .reduce((acc, curr) => acc + (curr.approvedAmount || curr.amount || 0), 0);
+            stats.invoiceStats.dueIn5Days = due5;
+        }
+    } catch (e) { }
+
     if (status === 'Approved') {
         let url = `${import.meta.env.VITE_API_BASE_URL}/enquiries/vendor/stats?`;
 

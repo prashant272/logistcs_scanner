@@ -386,9 +386,11 @@ const VendorEnquiriesTab = ({ title, type }) => {
                 key={enq._id}
                 className="bg-gradient-to-br from-white to-[#f4f8ff]/35 rounded-2xl p-5 md:p-6 border border-sky-100/75 hover:border-sky-300 hover:shadow-lg transition-all duration-300 relative shadow-[0_8px_30px_rgba(11,30,67,0.02)] space-y-4"
               >
-                {/* Date of Enquiry Badge */}
-                <div className="md:absolute md:top-3 md:right-5 text-[10px] text-slate-700 font-extrabold text-right w-full md:w-auto pb-1 md:pb-0 border-b border-slate-100 md:border-none mb-2 md:mb-0">
-                  Date of Enquiry : <span className="text-slate-900 font-black">{formatDate(enq.createdAt)}</span>
+                {/* Date of Enquiry (Original Style but fixed layout) */}
+                <div className="flex justify-end w-full mb-2.5 -mt-4">
+                  <div className="text-[10px] text-slate-700 font-extrabold pb-1 md:pb-0 border-b border-slate-100 md:border-none">
+                    Date of Enquiry : <span className="text-slate-900 font-black">{formatDate(enq.createdAt)}</span>
+                  </div>
                 </div>
 
                 {/* Card Top Row: Icon, Ports, and Load Details */}
@@ -426,17 +428,17 @@ const VendorEnquiriesTab = ({ title, type }) => {
                     </div>
                   </div>
 
-                  {/* Top-Right Badges: Container, Load Type, Date of Shipment */}
+                  {/* Top-Right Badges: Mode, Container, Load Type, Date of Shipment */}
                   <div className="flex flex-wrap gap-2 items-center">
-                    {/* Enquiry Type Badge for CHA */}
-                    {enq.type === 'cha' && (
-                      <div className="bg-[#0066FF]/10 border border-[#0066FF]/20 rounded-lg px-3 py-1.5 text-center min-w-[60px] shadow-sm">
-                        <div className="text-[9px] text-[#0066FF] font-black uppercase tracking-wider">Type</div>
-                        <div className="text-[10px] font-black text-[#0052cc] mt-0.5" title={enq.chaCargoType || 'CHA'}>
-                          {enq.chaCargoType ? (enq.chaCargoType.toLowerCase().includes('import') ? 'IMPORT' : enq.chaCargoType.toLowerCase().includes('export') ? 'EXPORT' : 'CUSTOMS') : 'CHA'}
-                        </div>
+                    {/* Mode / Type Badge */}
+                    <div className="bg-[#0066FF]/10 border border-[#0066FF]/20 rounded-lg px-3 py-1.5 text-center min-w-[60px] shadow-sm">
+                      <div className="text-[9px] text-[#0066FF] font-black uppercase tracking-wider">{enq.type === 'cha' ? 'Type' : 'Mode'}</div>
+                      <div className="text-[10px] font-black text-[#0052cc] mt-0.5" title={enq.type === 'cha' ? (enq.chaCargoType || 'CHA') : ''}>
+                        {enq.type === 'cha' 
+                          ? (enq.chaCargoType ? (enq.chaCargoType.toLowerCase().includes('import') ? 'IMPORT' : enq.chaCargoType.toLowerCase().includes('export') ? 'EXPORT' : 'CUSTOMS') : 'CHA')
+                          : (enq.type ? enq.type.toUpperCase() : 'N/A')}
                       </div>
-                    )}
+                    </div>
 
                     {/* Container Type for Sea FCL */}
                     {(enq.type === 'sea' && (enq.seaLoadType?.toUpperCase() === 'FCL' || enq.truckLoad?.toUpperCase() === 'FCL') && enq.fclStandard) && (

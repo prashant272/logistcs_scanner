@@ -3,10 +3,10 @@ import { Link } from 'react-router-dom';
 import { Wallet, FileText, AlertTriangle } from 'lucide-react';
 
 const FinanceSection = ({ stats }) => {
-  // Extract counts and amounts directly from stats API
-  const invoicesCount = (stats?.myBookings?.accepted || 0) + (stats?.directBookings?.accepted || 0);
-  const upcomingPaymentDue = (stats?.myBookings?.upcomingPaymentDue || 0) + (stats?.directBookings?.upcomingPaymentDue || 0);
-  const dueIn5Days = (stats?.myBookings?.dueIn5Days || 0) + (stats?.directBookings?.dueIn5Days || 0);
+  // Extract counts and amounts directly from stats API (invoiceStats)
+  const invoicesCount = stats?.invoiceStats?.count || 0;
+  const upcomingPaymentDue = stats?.invoiceStats?.upcomingPaymentDue || 0;
+  const dueIn5Days = stats?.invoiceStats?.dueIn5Days || 0;
 
   return (
     <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-[0_12px_40px_rgba(11,30,67,0.03)] space-y-5">
@@ -25,7 +25,7 @@ const FinanceSection = ({ stats }) => {
               <span className="text-xs font-black !text-slate-800">{invoicesCount} Invoices</span>
             </div>
           </div>
-          <Link to="/vendor/finance" className="text-[10px] text-[#0066FF] font-black hover:underline uppercase tracking-wider">
+          <Link to="/vendor/upload-invoice" className="text-[10px] text-[#0066FF] font-black hover:underline uppercase tracking-wider">
             View Details →
           </Link>
         </div>
@@ -41,7 +41,7 @@ const FinanceSection = ({ stats }) => {
               <span className="text-xs font-black !text-green-600">₹ {upcomingPaymentDue.toLocaleString('en-IN')}</span>
             </div>
           </div>
-          <Link to="/vendor/finance" className="text-[10px] text-[#0066FF] font-black hover:underline uppercase tracking-wider">
+          <Link to="/vendor/finance-list" className="text-[10px] text-[#0066FF] font-black hover:underline uppercase tracking-wider">
             View Details →
           </Link>
         </div>
@@ -57,7 +57,7 @@ const FinanceSection = ({ stats }) => {
               <span className="text-xs font-black !text-red-600">₹ {dueIn5Days.toLocaleString('en-IN')}</span>
             </div>
           </div>
-          <Link to="/vendor/finance" className="text-[10px] text-[#0066FF] font-black hover:underline uppercase tracking-wider">
+          <Link to="/vendor/finance-list" className="text-[10px] text-[#0066FF] font-black hover:underline uppercase tracking-wider">
             View Details →
           </Link>
         </div>

@@ -61,10 +61,15 @@ const NotificationBell = () => {
         setIsOpen(false);
         if (notif.link) {
             let finalLink = notif.link;
+            
+            // Fix routing for vendor links
             if (finalLink.includes('/vendor/enquiries?type=direct')) finalLink = '/vendor/direct-enquiries';
             else if (finalLink.includes('/vendor/enquiries?type=my')) finalLink = '/vendor/my-enquiries';
-            else if (finalLink.includes('/vendor/bookings?type=direct')) finalLink = '/vendor/direct-booking';
+            else if (finalLink === '/vendor/enquiries' || (finalLink.includes('/vendor/enquiries') && !finalLink.includes('direct'))) finalLink = '/vendor/my-enquiries';
+            
+            if (finalLink.includes('/vendor/bookings?type=direct')) finalLink = '/vendor/direct-booking';
             else if (finalLink.includes('/vendor/bookings?type=my')) finalLink = '/vendor/my-bookings';
+            else if (finalLink === '/vendor/bookings' || (finalLink.includes('/vendor/bookings') && !finalLink.includes('direct'))) finalLink = '/vendor/my-bookings';
             
             navigate(finalLink);
         }

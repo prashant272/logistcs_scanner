@@ -71,8 +71,19 @@ const VendorHeader = ({ isSidebarOpen, setSidebarOpen, user, logout, searchQuery
                     </div>
                 </div>
 
+                {/* Vendor Network Button */}
+                <button 
+                    onClick={() => navigate('/vendor-network')}
+                    className="hidden md:block border-2 border-[#0066FF] text-[#0066FF] hover:bg-[#0066FF] hover:text-white text-[11px] font-bold px-4 py-2 rounded-xl transition-all cursor-pointer uppercase tracking-wider"
+                >
+                    Vendor Network
+                </button>
+
                 {/* View Profile Button */}
-                <button className="hidden md:block bg-gradient-to-r from-[#0066FF] to-[#00b2fe] hover:opacity-95 text-white text-[11px] font-bold px-4 py-2.5 rounded-xl transition-all shadow-sm shadow-[#0066FF]/10 cursor-pointer uppercase tracking-wider">
+                <button 
+                    onClick={() => navigate('/vendor/view-profile')}
+                    className="hidden md:block bg-gradient-to-r from-[#0066FF] to-[#00b2fe] hover:opacity-95 text-white text-[11px] font-bold px-4 py-2.5 rounded-xl transition-all shadow-sm shadow-[#0066FF]/10 cursor-pointer uppercase tracking-wider"
+                >
                     Profile
                 </button>
 
