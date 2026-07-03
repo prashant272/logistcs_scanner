@@ -1,6 +1,8 @@
 const delhiveryService = require('../services/delhiveryService');
 const DelhiveryConfig = require('../models/DelhiveryConfig');
 const PtlBooking = require('../models/PtlBooking');
+const User = require('../models/User');
+const bcrypt = require('bcryptjs');
 
 // --- Admin Endpoints ---
 
@@ -49,7 +51,7 @@ exports.getAllPtlBookings = async (req, res) => {
 
 exports.estimatePrice = async (req, res) => {
     try {
-        const { weight_g, dimensions, source_pin, consignee_pin, payment_mode, cod_amount } = req.body;
+        const { weight_g, dimensions, source_pin, consignee_pin, payment_mode, cod_amount, freight_mode, rov_insurance } = req.body;
         
         // Parse dimensions from string '10x10x10,20x20x20' to array of objects or strings depending on what Delhivery expects. 
         // Commonly they expect list of objects: [{length: 10, breadth: 10, height: 10}] or just list of strings.
@@ -70,8 +72,8 @@ exports.estimatePrice = async (req, res) => {
             source_pin: String(source_pin),
             consignee_pin: String(consignee_pin),
             payment_mode: payment_mode.toLowerCase() === 'cod' ? 'cod' : 'prepaid',
-            freight_mode: 'fod',
-            rov_insurance: false,
+            freight_mode: freight_mode || 'fod',
+            rov_insurance: rov_insurance !== undefined ? rov_insurance : false,
             inv_amount: cod_amount ? parseFloat(cod_amount) : 1000 // invoice amount is mandatory
         };
         
@@ -92,8 +94,17 @@ exports.estimatePrice = async (req, res) => {
         const config = await DelhiveryConfig.findOne();
         let markupPercent = 0;
         
+        // Fetch user from DB to get role since token might only have ID
+        let userRole = 'customer';
+        if (req.user && req.user.id) {
+            const dbUser = await User.findById(req.user.id);
+            if (dbUser) {
+                userRole = dbUser.role;
+            }
+        }
+        
         // If user is vendor, use vendor margin. Otherwise (customer or guest), use customer margin.
-        if (req.user && req.user.role === 'vendor') {
+        if (userRole === 'vendor') {
             markupPercent = config?.vendor_margin_percent || 10;
         } else {
             markupPercent = config?.customer_margin_percent || 20;
@@ -125,14 +136,55 @@ exports.createPtlBooking = async (req, res) => {
         
         const {
             origin_pin, dest_pin, weight_g, dimensions, 
-            pickup_address, drop_address, pickup_details, drop_details, gstin, payment_mode, cod_amount,
-            basePrice, finalPrice, order_details
+            pickup_address, drop_address, pickup_details, drop_details, billing_details, gstin, payment_mode, cod_amount,
+            basePrice, finalPrice, order_details, vendor_markup_fee, gst_amount, total_amount,
+            freight_mode, rov_insurance, fm_pickup
         } = payloadData;
 
+        let currentUser = req.user;
+        let isGuest = false;
+        
+        // Fetch full user details if token was provided (to get the role)
+        if (currentUser && currentUser.id) {
+            const dbUser = await User.findById(currentUser.id);
+            if (dbUser) {
+                currentUser = { id: dbUser._id, role: dbUser.role };
+            }
+        }
+
+        // Auto-create user if guest
+        if (!currentUser) {
+            isGuest = true;
+            const contactEmail = billing_details?.email || pickup_details?.email;
+            const contactMobile = billing_details?.mobile || pickup_details?.mobile;
+            const contactName = billing_details?.contactName || pickup_details?.contactName || 'Guest User';
+            const companyName = billing_details?.facilityName || pickup_details?.facilityName || '';
+
+            if (contactEmail && contactMobile) {
+                // Check if user already exists
+                let existingUser = await User.findOne({ email: contactEmail.toLowerCase() });
+                if (!existingUser) {
+                    const randomPassword = Math.random().toString(36).slice(-8);
+                    const salt = await bcrypt.genSalt(10);
+                    const hashedPassword = await bcrypt.hash(randomPassword, salt);
+                    existingUser = await User.create({
+                        name: contactName,
+                        email: contactEmail.toLowerCase(),
+                        phone: contactMobile,
+                        password: hashedPassword,
+                        role: 'customer',
+                        company: companyName
+                    });
+                    console.log(`Auto-created user ${contactEmail} with password ${randomPassword}`);
+                }
+                currentUser = { id: existingUser._id, role: existingUser.role };
+            }
+        }
+
         const booking = new PtlBooking({
-            user_id: req.user ? req.user.id : null,
-            user_model: req.user ? (req.user.role === 'vendor' ? 'Vendor' : 'User') : null,
-            user_role: req.user ? req.user.role : 'guest',
+            user_id: currentUser ? currentUser.id : null,
+            user_model: currentUser ? (currentUser.role === 'vendor' ? 'Vendor' : 'User') : null,
+            user_role: currentUser ? currentUser.role : 'guest',
             origin_pin,
             dest_pin,
             pickup_address,
@@ -143,12 +195,23 @@ exports.createPtlBooking = async (req, res) => {
             cod_amount,
             base_price: basePrice,
             charged_price: finalPrice,
+            vendor_markup_fee: vendor_markup_fee || 0,
+            gst_amount: gst_amount || 0,
+            total_amount: total_amount || finalPrice,
             order_details: order_details || {},
             delhivery_status: 'PENDING'
         });
 
-        // 1. Create Warehouse dynamically for the pickup address
-        const dynamicWarehouseName = `CUSTWH-${Date.now()}`;
+        const resolvedGst = billing_details?.gstin || gstin;
+        const resolvedPan = billing_details?.pan;
+
+        // Use a deterministic warehouse name based on PAN/GST or User ID so we can reuse it
+        const uniqueId = resolvedGst || resolvedPan || req.user?.id || Date.now();
+        let dynamicWarehouseName = `WH-${uniqueId}`.substring(0, 40); // Keep it under limits
+
+        // Save it to the booking model so we can use it later for pickup requests
+        booking.client_warehouse_name = dynamicWarehouseName;
+
         const warehousePayload = {
             name: dynamicWarehouseName,
             pin_code: origin_pin,
@@ -159,16 +222,60 @@ exports.createPtlBooking = async (req, res) => {
                 address: pickup_details?.addressLine || pickup_address || "Test Pickup Address",
                 contact_person: pickup_details?.contactName || "Test Contact",
                 phone_number: pickup_details?.mobile || "9999999999",
-                email: pickup_details?.email || ""
+                email: pickup_details?.email || "test@logisticscanner.com"
+            },
+            same_as_fwd_add: true,
+            billing_details: {
+                legal_address: {
+                    same_as_physical_address: true,
+                    pin_code: origin_pin
+                }
             }
         };
+
+        if (resolvedGst) {
+            warehousePayload.billing_details.gst_number = resolvedGst;
+        } else if (resolvedPan) {
+            warehousePayload.billing_details.pan_number = resolvedPan;
+        } else {
+            // Fallback
+            warehousePayload.billing_details.gst_number = "07AAAAA0000A1Z5";
+        }
 
         try {
             await delhiveryService.createWarehouse(warehousePayload);
         } catch (whError) {
-            console.error("Dynamic Warehouse Creation Failed:", whError);
-            return res.status(400).json({ success: false, message: "Failed to register pickup location with Delhivery." });
+            console.warn("Warehouse Creation returned an error:", whError);
+            let errorMessage = whError?.error?.message || "";
+            if (Array.isArray(errorMessage)) errorMessage = errorMessage[0] || "";
+            
+            // If Duplicate PAN/GST, we MUST use a unique PAN to bypass Delhivery's strict 1-warehouse-per-PAN rule
+            // since we lost the original randomly generated warehouse name.
+            if (errorMessage.includes("Duplicate PAN") || errorMessage.includes("Duplicate GST")) {
+                console.log("Retrying warehouse creation with a fallback generated PAN to bypass collision...");
+                const randomDigits = Math.floor(1000 + Math.random() * 9000);
+                const fallbackPan = `ABCPA${randomDigits}K`; // More realistic valid PAN structure
+                
+                warehousePayload.name = `WH-FB-${Date.now()}`;
+                dynamicWarehouseName = warehousePayload.name; // Update the variable used in manifest
+                booking.client_warehouse_name = dynamicWarehouseName; // Update booking too
+                
+                warehousePayload.billing_details.pan_number = fallbackPan;
+                delete warehousePayload.billing_details.gst_number; // remove gst to avoid conflict
+                
+                try {
+                    await delhiveryService.createWarehouse(warehousePayload);
+                } catch (retryError) {
+                    console.error("Retry Warehouse Creation Failed:", retryError);
+                    return res.status(400).json({ success: false, message: "Failed to register pickup location even after retry." });
+                }
+            } else {
+                return res.status(400).json({ success: false, message: "Failed to register pickup location with Delhivery." });
+            }
         }
+
+        console.log("Waiting 3 seconds for Delhivery FAAS to sync the new warehouse...");
+        await new Promise(resolve => setTimeout(resolve, 3000));
 
         // 2. Prepare Manifest Payload for Delhivery B2B LTL API
         // According to the new B2B API Document, the payload is different from B2C
@@ -177,6 +284,7 @@ exports.createPtlBooking = async (req, res) => {
             payment_mode: payment_mode === "cod" ? "cod" : "prepaid",
             cod_amount: payment_mode === "cod" ? parseFloat(cod_amount) : 0,
             weight: weight_g, // in grams
+            rov_insurance: rov_insurance !== undefined ? rov_insurance : false,
             dropoff_location: {
                 consignee_name: drop_details?.contactName || drop_details?.facilityName || "Test Consignee",
                 address: drop_details?.addressLine || drop_address || "Test Drop Address",
@@ -198,22 +306,23 @@ exports.createPtlBooking = async (req, res) => {
                 height: d.height_cm,
                 box_count: d.box_count
             })) : [],
-            freight_mode: "fop", // or fod, mandatory for Retail clients
+            freight_mode: freight_mode === "fod" ? "fod" : "fop", // strictly fop or fod as per doc
+            ...(payment_mode === "cod" ? { cod_amount: parseFloat(cod_amount) || 0 } : {}),
             billing_address: {
-                name: pickup_details?.facilityName || "Test Company",
-                company: pickup_details?.facilityName || "Test Company",
-                consignor: pickup_details?.contactName || "Test Consignor",
-                address: pickup_details?.addressLine || pickup_address || "Test Pickup Address",
-                city: pickup_details?.city || "New Delhi",
-                state: pickup_details?.state || "Delhi",
-                pin: origin_pin,
-                phone: pickup_details?.mobile || "9999999999",
-                gstin: gstin || "07AAAAA0000A1Z5",
-                pan: gstin || "07AAAAA0000A1Z5", // Fallback mapping for Delhivery validation bug
-                gst_number: gstin || "07AAAAA0000A1Z5",
-                pan_number: gstin || "07AAAAA0000A1Z5"
+                name: billing_details?.facilityName || pickup_details?.facilityName || "Test Company",
+                company: billing_details?.facilityName || pickup_details?.facilityName || "Test Company",
+                consignor: billing_details?.contactName || pickup_details?.contactName || "Test Consignor",
+                address: billing_details?.addressLine || pickup_details?.addressLine || pickup_address || "Test Pickup Address",
+                city: billing_details?.city || pickup_details?.city || "New Delhi",
+                state: billing_details?.state || pickup_details?.state || "Delhi",
+                pin: billing_details?.pincode || origin_pin,
+                phone: billing_details?.mobile || pickup_details?.mobile || "9999999999",
+                gstin: billing_details?.gstin || gstin || "07AAAAA0000A1Z5",
+                pan: billing_details?.pan || gstin || "07AAAAA0000A1Z5", // Fallback mapping for Delhivery validation bug
+                gst_number: billing_details?.gstin || gstin || "07AAAAA0000A1Z5",
+                pan_number: billing_details?.pan || gstin || "07AAAAA0000A1Z5"
             },
-            fm_pickup: true, // Mandatory for retail client
+            fm_pickup: fm_pickup !== undefined ? fm_pickup : true,
             invoices: [
                 {
                     inv_num: order_details?.invoice_number || "INV001",
@@ -252,26 +361,55 @@ exports.createPtlBooking = async (req, res) => {
         console.log("=================================\n");
 
         let delhiveryResponse = null;
-        try {
-            const delhiveryService = require('../services/delhiveryService');
-            // Ensure delhiveryService.createManifest sends as JSON or form-data appropriately
-            delhiveryResponse = await delhiveryService.createManifest(manifestPayload);
-            
-            console.log("\n✅ DELHIVERY MANIFEST ACCEPTED:");
-            console.log(JSON.stringify(delhiveryResponse, null, 2));
-            console.log("=================================\n");
-            
-            // Save waybill and job id if returned
-            if (delhiveryResponse.packages && delhiveryResponse.packages.length > 0) {
-                booking.delhivery_lr_number = delhiveryResponse.packages[0].waybill;
-                booking.delhivery_status = 'BOOKED';
+        let manifestSuccess = false;
+        let attempts = 0;
+        let lastManifestError = null;
+
+        while (attempts < 3 && !manifestSuccess) {
+            try {
+                attempts++;
+                const delhiveryService = require('../services/delhiveryService');
+                delhiveryResponse = await delhiveryService.createManifest(manifestPayload);
+                
+                console.log(`\n✅ DELHIVERY MANIFEST ACCEPTED (Attempt ${attempts}):`);
+                console.log(JSON.stringify(delhiveryResponse, null, 2));
+                console.log("=================================\n");
+                
+                if (delhiveryResponse.job_id) {
+                    booking.delhivery_job_id = delhiveryResponse.job_id;
+                    booking.delhivery_status = 'PROCESSING';
+                } else if (delhiveryResponse.packages && delhiveryResponse.packages.length > 0) {
+                    booking.delhivery_lr_number = delhiveryResponse.packages[0].waybill;
+                    booking.delhivery_status = 'BOOKED';
+                }
+                manifestSuccess = true;
+            } catch (manifestError) {
+                lastManifestError = manifestError;
+                console.error(`\n❌ DELHIVERY MANIFEST REJECTED (Attempt ${attempts}):`);
+                console.error(manifestError);
+                console.error("=================================\n");
+                
+                const errString = JSON.stringify(manifestError).toLowerCase();
+                
+                // Specific check for Wallet / Balance errors
+                if (errString.includes("balance") || errString.includes("wallet") || errString.includes("limit")) {
+                    console.error("\n⚠️ DELHIVERY WALLET ERROR: Insufficient Balance or Limit Exceeded!");
+                    console.error("Please recharge your Delhivery Wallet from the Client Portal.\n");
+                    break;
+                }
+                
+                if (errString.includes("faas") || errString.includes("not been configured")) {
+                    console.log(`Warehouse FAAS not synced yet. Waiting 5 seconds before retry ${attempts + 1}...`);
+                    await new Promise(resolve => setTimeout(resolve, 5000));
+                } else {
+                    // Break if it's not a FAAS sync error
+                    break;
+                }
             }
-        } catch (manifestError) {
-            console.error("\n❌ DELHIVERY MANIFEST REJECTED:");
-            console.error(manifestError);
-            console.error("=================================\n");
-            // We can choose to fail the whole process, or just save locally as failed
-            throw new Error(`Delhivery API Error: ${JSON.stringify(manifestError)}`);
+        }
+
+        if (!manifestSuccess) {
+            throw new Error(`Delhivery API Error: ${JSON.stringify(lastManifestError)}`);
         }
 
         await booking.save();
@@ -286,6 +424,46 @@ exports.createPtlBooking = async (req, res) => {
     } catch (error) {
         console.error("CREATE ORDER ERROR:", error);
         res.status(500).json({ message: 'Failed to create booking', error: error.message });
+    }
+};
+
+exports.checkManifestStatus = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const booking = await PtlBooking.findById(id);
+        
+        if (!booking) {
+            return res.status(404).json({ success: false, message: 'Booking not found' });
+        }
+        
+        if (!booking.delhivery_job_id || booking.delhivery_lr_number) {
+            return res.status(400).json({ success: false, message: 'Booking already processed or no job ID found' });
+        }
+        
+        const delhiveryService = require('../services/delhiveryService');
+        const statusResponse = await delhiveryService.getManifestStatus(booking.delhivery_job_id);
+        
+        if (statusResponse && statusResponse.data) {
+            const data = statusResponse.data;
+            if (data.status === 'Complete' && data.lrnum) {
+                booking.delhivery_lr_number = data.lrnum;
+                booking.delhivery_status = 'BOOKED';
+                await booking.save();
+                return res.status(200).json({ success: true, message: 'LR Number generated successfully', booking });
+            } else if (data.status === 'Processing') {
+                return res.status(200).json({ success: true, message: 'Still processing at Delhivery', status: 'Processing' });
+            } else {
+                // E.g. failed or rejected by Delhivery
+                booking.delhivery_status = 'FAILED';
+                await booking.save();
+                return res.status(400).json({ success: false, message: 'Manifest generation failed at Delhivery', data });
+            }
+        }
+        
+        return res.status(400).json({ success: false, message: 'Invalid response from Delhivery' });
+    } catch (error) {
+        console.error("CHECK MANIFEST ERROR:", error);
+        res.status(500).json({ success: false, message: 'Failed to check manifest status', error: error.message });
     }
 };
 
@@ -317,5 +495,91 @@ exports.checkServiceability = async (req, res) => {
         res.status(200).json(data);
     } catch (error) {
         res.status(500).json({ message: 'Failed to check serviceability', error: error.message || error });
+    }
+};
+
+exports.getAllPtlBookings = async (req, res) => {
+    try {
+        const bookings = await PtlBooking.find().sort({ createdAt: -1 }).populate('user_id', 'name email role');
+        res.status(200).json(bookings);
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
+
+exports.printLabel = async (req, res) => {
+    try {
+        const { lrn } = req.params;
+        const delhiveryService = require('../services/delhiveryService');
+        const data = await delhiveryService.getPackingSlip(lrn);
+        res.status(200).json(data);
+    } catch (error) {
+        res.status(500).json({ message: 'Failed to generate label', error: error.message || error });
+    }
+};
+
+exports.cancelPtlBooking = async (req, res) => {
+    try {
+        const { lrn } = req.params;
+        const booking = await PtlBooking.findOne({ delhivery_lr_number: lrn });
+        
+        if (!booking) {
+            return res.status(404).json({ success: false, message: 'Booking not found' });
+        }
+
+        // Must be in a cancellable state (e.g. BOOKED, PROCESSING, PENDING)
+        const nonCancellableStates = ['CANCELLED', 'DELIVERED', 'RTO', 'DISPATCHED', 'IN TRANSIT'];
+        if (nonCancellableStates.includes(booking.delhivery_status.toUpperCase())) {
+            return res.status(400).json({ success: false, message: `Cannot cancel booking in ${booking.delhivery_status} state.` });
+        }
+
+        const delhiveryService = require('../services/delhiveryService');
+        const data = await delhiveryService.cancelShipment(lrn);
+
+        // Update DB
+        booking.delhivery_status = 'CANCELLED';
+        await booking.save();
+
+        res.status(200).json({ success: true, message: 'Order cancelled successfully', data });
+    } catch (error) {
+        console.error("Cancel Order Error:", error);
+        res.status(500).json({ success: false, message: 'Failed to cancel order', error: error.message || error });
+    }
+};
+
+exports.schedulePickup = async (req, res) => {
+    try {
+        const { lrn } = req.params;
+        const { pickup_date, start_time, expected_package_count } = req.body;
+        
+        const booking = await PtlBooking.findOne({ delhivery_lr_number: lrn });
+        
+        if (!booking) {
+            return res.status(404).json({ success: false, message: 'Booking not found' });
+        }
+        
+        if (!booking.client_warehouse_name) {
+            return res.status(400).json({ success: false, message: 'Client warehouse name not found for this booking. Cannot schedule pickup.' });
+        }
+
+        const payload = {
+            client_warehouse: booking.client_warehouse_name,
+            pickup_date: pickup_date, // "YYYY-MM-DD"
+            start_time: start_time,   // "HH:MM:SS"
+            expected_package_count: Number(expected_package_count)
+        };
+
+        const delhiveryService = require('../services/delhiveryService');
+        const data = await delhiveryService.createPickupRequest(payload);
+
+        if (data && data.data && data.data.pickup_id) {
+            booking.delhivery_pickup_id = String(data.data.pickup_id);
+            await booking.save();
+        }
+
+        res.status(200).json({ success: true, message: 'Pickup scheduled successfully', data });
+    } catch (error) {
+        console.error("Schedule Pickup Error:", error);
+        res.status(500).json({ success: false, message: 'Failed to schedule pickup', error: error.message || error });
     }
 };

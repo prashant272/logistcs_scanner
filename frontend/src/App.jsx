@@ -7,6 +7,11 @@ axios.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response && error.response.status === 401) {
+      // Do not redirect if the error is from a login request
+      if (error.config && error.config.url && error.config.url.includes('/auth/login')) {
+          return Promise.reject(error);
+      }
+      
       if (window.location.pathname.startsWith('/admin')) {
           localStorage.removeItem('adminToken');
           window.location.href = '/admin/login';
@@ -199,6 +204,8 @@ function App() {
               {/* PTL Delivery */}
               <Route path="delhivery-settings" element={<DelhiverySettings />} />
               <Route path="ptl-bookings" element={<AdminPtlBookings />} />
+              <Route path="ptl-calculator" element={<DelhiveryCalculator isDashboard={true} />} />
+              <Route path="ptl-calculator/order" element={<DelhiveryCreateOrder isDashboard={true} />} />
             </Route>
 
             {/* Customer Dashboard Routes (No Navbar/Footer) */}
@@ -209,6 +216,8 @@ function App() {
               <Route path="direct-enquiry" element={<CustomerEnquiriesTab title="Direct Enquiry" type="direct" />} />
               <Route path="my-enquiry" element={<CustomerEnquiriesTab title="My Enquiry" type="my" />} />
               <Route path="ptl-bookings" element={<PtlBookingsTab />} />
+              <Route path="ptl-calculator" element={<DelhiveryCalculator isDashboard={true} />} />
+              <Route path="ptl-calculator/order" element={<DelhiveryCreateOrder isDashboard={true} />} />
               <Route path="complaint" element={<CustomerComplaintsTab />} />
               <Route path="profile" element={<CustomerProfileTab />} />
             </Route>
@@ -224,6 +233,8 @@ function App() {
               <Route path="direct-booking" element={<VendorBookingsTab title="Direct Bookings" type="direct" />} />
               <Route path="my-bookings" element={<VendorBookingsTab title="My Bookings" type="my" />} />
               <Route path="ptl-bookings" element={<PtlBookingsTab />} />
+              <Route path="ptl-calculator" element={<DelhiveryCalculator isDashboard={true} />} />
+              <Route path="ptl-calculator/order" element={<DelhiveryCreateOrder isDashboard={true} />} />
               <Route path="my-pricing" element={<VendorPricingTab />} />
               <Route path="finance" element={<VendorFinanceForm />} />
               <Route path="finance-list" element={<VendorFinanceDashboard />} />

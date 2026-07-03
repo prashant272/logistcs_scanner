@@ -14,10 +14,14 @@ router.post('/admin/config', delhiveryController.updateAdminConfig);
 router.get('/admin/bookings', delhiveryController.getAllPtlBookings);
 
 // --- User/Vendor Routes ---
-router.post('/estimate', delhiveryController.estimatePrice);
-router.post('/book', authMiddleware, upload.single('invoice_file'), delhiveryController.createPtlBooking);
+router.post('/estimate', authMiddleware.optional, delhiveryController.estimatePrice);
+router.post('/book', authMiddleware.optional, upload.single('invoice_file'), delhiveryController.createPtlBooking);
+router.get('/manifest/status/:id', authMiddleware, delhiveryController.checkManifestStatus);
 router.get('/my-bookings', authMiddleware, delhiveryController.getMyPtlBookings);
 router.get('/track/:lrn', authMiddleware, delhiveryController.trackPtlBooking);
+router.get('/label/:lrn', authMiddleware, delhiveryController.printLabel);
+router.delete('/cancel/:lrn', authMiddleware, delhiveryController.cancelPtlBooking);
+router.post('/pickup/:lrn', authMiddleware, delhiveryController.schedulePickup);
 router.get('/check-serviceability/:pincode', delhiveryController.checkServiceability);
 
 module.exports = router;

@@ -84,13 +84,16 @@ const delhiveryService = {
             const config = await DelhiveryConfig.findOne();
             const baseUrl = getBaseUrl(config.is_production);
 
-            // Endpoint: /client-warehouses/ (from Delhivery Docs pg 26 sample curl)
-            const response = await axios.post(`${baseUrl}/client-warehouses/`, payload, {
+            // Endpoint: /client-warehouse/create/ (from Delhivery Docs B2B Page 20)
+            const response = await axios.post(`${baseUrl}/client-warehouse/create/`, payload, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
                 }
             });
+            if (response.data && response.data.success === false) {
+                throw { response: { data: response.data } };
+            }
             return response.data;
         } catch (error) {
             console.error('Delhivery Create Warehouse Error:', error.response?.data || error.message);
@@ -122,37 +125,61 @@ const delhiveryService = {
         const token = await this.getToken();
         const config = await DelhiveryConfig.findOne();
         const baseUrl = getBaseUrl(config.is_production);
+        const FormData = require('form-data');
 
         try {
-            // Convert nested JSON to stringified fields for multipart/form-data
-            const formPayload = {};
+            const formData = new FormData();
 
             for (const key in payload) {
                 if (payload[key] !== undefined && payload[key] !== null) {
                     if (key === 'doc_file' && payload[key].buffer) {
-                        if (typeof File !== 'undefined') {
-                            formPayload[key] = new File([payload[key].buffer], payload[key].originalname, { type: payload[key].mimetype });
-                        } else {
-                            formPayload[key] = new Blob([payload[key].buffer], { type: payload[key].mimetype });
+                        let fileBuffer = payload[key].buffer;
+                        // Convert serialized buffer back to native Buffer if necessary
+                        if (fileBuffer.type === 'Buffer' && Array.isArray(fileBuffer.data)) {
+                            fileBuffer = Buffer.from(fileBuffer.data);
                         }
+                        formData.append(key, fileBuffer, {
+                            filename: payload[key].originalname || 'invoice.pdf',
+                            contentType: payload[key].mimetype || 'application/pdf'
+                        });
                     } else if (typeof payload[key] === 'object') {
                         // Delhivery expects all nested objects and list fields to be JSON strings
-                        formPayload[key] = JSON.stringify(payload[key]);
+                        formData.append(key, JSON.stringify(payload[key]));
                     } else {
-                        formPayload[key] = payload[key];
+                        // Coerce numbers/booleans to strings to prevent form-data stream type errors
+                        formData.append(key, String(payload[key]));
                     }
                 }
             }
 
-            // Use axios.postForm which natively handles multipart/form-data
-            const response = await axios.postForm(`${baseUrl}/manifest`, formPayload, {
+            const response = await axios.post(`${baseUrl}/manifest`, formData, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    ...formData.getHeaders()
+                }
+            });
+            return response.data;
+        } catch (error) {
+            console.error('Delhivery Manifest Error:', error.response?.data || error.message);
+            throw error.response?.data || error;
+        }
+    },
+
+    // 4.5 Get Manifest Status (Async Job Result)
+    async getManifestStatus(jobId) {
+        const token = await this.getToken();
+        const config = await DelhiveryConfig.findOne();
+        const baseUrl = getBaseUrl(config.is_production);
+
+        try {
+            const response = await axios.get(`${baseUrl}/manifest?job_id=${jobId}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
             });
             return response.data;
         } catch (error) {
-            console.error('Delhivery Manifest Error:', error.response?.data || error.message);
+            console.error('Delhivery Manifest Status Error:', error.response?.data || error.message);
             throw error.response?.data || error;
         }
     },
@@ -172,6 +199,88 @@ const delhiveryService = {
             return response.data;
         } catch (error) {
             console.error('Delhivery Track Error:', error.response?.data || error.message);
+            throw error.response?.data || error;
+        }
+    },
+
+    // 6. Print Label / Packing Slip
+    async getPackingSlip(lrn) {
+        const token = await this.getToken();
+        const config = await DelhiveryConfig.findOne();
+        
+        const baseUrl = getBaseUrl(config.is_production);
+
+        try {
+            // As per Delhivery B2B API Document Page 53: Get Label URLs API
+            const response = await axios.get(`${baseUrl}/label/get_urls/std/${lrn}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Accept': 'application/json'
+                },
+                responseType: 'json'
+            });
+            
+            // The response contains an array of URLs. We need to fetch the base64 data from each URL.
+            const urls = response.data?.data;
+            if (urls && Array.isArray(urls)) {
+                const base64Images = [];
+                for (const url of urls) {
+                    try {
+                        const imgRes = await axios.get(url);
+                        if (imgRes.data && imgRes.data.data) {
+                            base64Images.push(imgRes.data.data);
+                        }
+                    } catch (err) {
+                        console.error("Failed to fetch label image from URL:", url, err.message);
+                    }
+                }
+                return { success: true, images: base64Images };
+            }
+            
+            return response.data;
+        } catch (error) {
+            console.error('Delhivery Packing Slip Error:', error.response?.data || error.message);
+            throw error.response?.data || error;
+        }
+    },
+
+    // 7. Cancel Shipment
+    async cancelShipment(lrn) {
+        const token = await this.getToken();
+        const config = await DelhiveryConfig.findOne();
+        const baseUrl = getBaseUrl(config.is_production);
+
+        try {
+            const response = await axios.delete(`${baseUrl}/lrn/cancel/${lrn}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            return response.data;
+        } catch (error) {
+            console.error('Delhivery Cancel Shipment Error:', error.response?.data || error.message);
+            throw error.response?.data || error;
+        }
+    },
+
+    // 8. Create Pickup Request
+    async createPickupRequest(payload) {
+        const token = await this.getToken();
+        const config = await DelhiveryConfig.findOne();
+        const baseUrl = getBaseUrl(config.is_production);
+
+        try {
+            // Note: Delhivery B2B Pickup API usually has a trailing slash and no /api prefix depending on version, 
+            // but we'll use baseUrl/pickup_requests/ as per docs.
+            const response = await axios.post(`${baseUrl}/pickup_requests/`, payload, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            return response.data;
+        } catch (error) {
+            console.error('Delhivery Pickup Request Error:', error.response?.data || error.message);
             throw error.response?.data || error;
         }
     }

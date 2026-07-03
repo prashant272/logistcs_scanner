@@ -6,7 +6,7 @@ import Navbar from '../../components/common/Navbar';
 import { useAuth } from '../../context/AuthContext';
 import AddressModal from '../../components/common/AddressModal';
 
-const DelhiveryCreateOrder = () => {
+const DelhiveryCreateOrder = ({ isDashboard = false }) => {
     const location = useLocation();
     const navigate = useNavigate();
     const { user } = useAuth();
@@ -15,7 +15,8 @@ const DelhiveryCreateOrder = () => {
     const state = location.state || {};
     const { 
         rateResult, boxes, totalWeight, originPin, destPin, 
-        paymentMode: initialPaymentMode, shipmentAmount, insurance 
+        paymentMode: initialPaymentMode, shipmentAmount, 
+        insurance: initialInsurance, dropOff: initialDropOff, freightMode: initialFreightMode 
     } = state;
 
     // Local saved addresses list (MVP mock)
@@ -24,9 +25,14 @@ const DelhiveryCreateOrder = () => {
     ]);
     const [selectedPickup, setSelectedPickup] = useState('');
     const [selectedDrop, setSelectedDrop] = useState('');
+    const [selectedBilling, setSelectedBilling] = useState('');
     const [isPickupDropdownOpen, setIsPickupDropdownOpen] = useState(false);
     const [isDropDropdownOpen, setIsDropDropdownOpen] = useState(false);
+    const [isBillingDropdownOpen, setIsBillingDropdownOpen] = useState(false);
     const [modalConfig, setModalConfig] = useState({ isOpen: false, type: 'pickup', pincode: '' });
+    const [freightCollection, setFreightCollection] = useState(initialFreightMode === 'fod' ? 'Freight on Delivery' : 'Freight on Pickup');
+    const [insuranceState, setInsuranceState] = useState(initialInsurance || 'owner');
+    const [dropOffState, setDropOffState] = useState(initialDropOff || 'no');
 
     // Form States
     const [lrCreation, setLrCreation] = useState('Manual');
@@ -45,7 +51,7 @@ const DelhiveryCreateOrder = () => {
     const [invoiceFile, setInvoiceFile] = useState(null);
 
     // Box editing states
-    const [localBoxes, setLocalBoxes] = useState(boxes || [{ id: 1, count: 1, l: 10, b: 10, h: 10 }]);
+    const [localBoxes, setLocalBoxes] = useState(boxes || [{ id: 1, count: 1, l: 35, b: 35, h: 35 }]);
     const [localWeight, setLocalWeight] = useState(totalWeight || 1);
     const [isRecalculating, setIsRecalculating] = useState(false);
     const [currentRate, setCurrentRate] = useState(rateResult);
@@ -54,7 +60,10 @@ const DelhiveryCreateOrder = () => {
     const [submitSuccess, setSubmitSuccess] = useState(false);
     const [error, setError] = useState('');
 
-    const handleAddBox = () => setLocalBoxes([...localBoxes, { id: Date.now(), count: 1, l: 10, b: 10, h: 10 }]);
+    const [isMarkupAdded, setIsMarkupAdded] = useState(false);
+    const [markupValue, setMarkupValue] = useState('');
+
+    const handleAddBox = () => setLocalBoxes([...localBoxes, { id: Date.now(), count: 1, l: 35, b: 35, h: 35 }]);
     const updateBox = (id, field, value) => setLocalBoxes(localBoxes.map(b => b.id === id ? { ...b, [field]: value } : b));
 
     const handleRecalculate = async () => {
@@ -74,8 +83,10 @@ const DelhiveryCreateOrder = () => {
                 consignee_pin: destPin,
                 weight_g: localWeight * 1000,
                 dimensions: dimensionsPayload,
-                payment_mode: initialPaymentMode,
-                cod_amount: initialPaymentMode === 'COD' ? amount : 0
+                payment_mode: paymentMode,
+                cod_amount: paymentMode === 'COD' ? amount : 0,
+                freight_mode: freightCollection === 'Freight on Delivery' ? 'fod' : 'fop',
+                rov_insurance: insuranceState === 'delhivery'
             }, {
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -100,6 +111,9 @@ const DelhiveryCreateOrder = () => {
         if (newAddress.type === 'pickup') {
             setSelectedPickup(newAddress.facilityName);
             setIsPickupDropdownOpen(false);
+        } else if (newAddress.type === 'billing') {
+            setSelectedBilling(newAddress.facilityName);
+            setIsBillingDropdownOpen(false);
         } else {
             setSelectedDrop(newAddress.facilityName);
             setIsDropDropdownOpen(false);
@@ -119,16 +133,27 @@ const DelhiveryCreateOrder = () => {
         // --- Frontend Validation ---
         if (!selectedPickup) return setError("Please select a valid Pickup Address.");
         if (!selectedDrop) return setError("Please select a valid Drop Address.");
-        if (!gstin || gstin.trim().length < 10) return setError("Valid GSTIN or PAN is mandatory for B2B booking.");
+        if (!selectedBilling) return setError("Please select a valid Billing Address.");
+        
+        // Box Validation
+        for (let i = 0; i < localBoxes.length; i++) {
+            const b = localBoxes[i];
+            if (!b.l) return setError(`Box ${i+1}: Length is a required field`);
+            if (!b.b) return setError(`Box ${i+1}: Width is a required field`);
+            if (!b.h) return setError(`Box ${i+1}: Height is a required field`);
+        }
+
         if (!invoiceNumber) return setError("Invoice Number is mandatory.");
         if (!amount || amount <= 0) return setError("Invoice Amount is mandatory and must be greater than 0.");
         if (!invoiceFile) return setError("Please upload the mandatory Invoice Document.");
         
         const pickupObj = savedAddresses.find(a => a.facilityName === selectedPickup);
         const dropObj = savedAddresses.find(a => a.facilityName === selectedDrop);
+        const billingObj = savedAddresses.find(a => a.facilityName === selectedBilling);
         
         if (!pickupObj) return setError("Pickup address details not found. Please add a valid address.");
         if (!dropObj) return setError("Drop address details not found. Please add a valid address.");
+        if (!billingObj) return setError("Billing address details not found. Please add a valid billing address.");
 
         setIsSubmitting(true);
         setError('');
@@ -144,6 +169,13 @@ const DelhiveryCreateOrder = () => {
                 box_count: parseInt(b.count) || 1
             }));
 
+            const parsedMarkup = isMarkupAdded ? (parseFloat(markupValue) || 0) : 0;
+            const originalGst = currentRate?.data?.price_breakup?.gst || 0;
+            const markupGst = parsedMarkup * 0.18;
+            const totalGst = originalGst + markupGst;
+            const baseFreight = currentRate?.finalPrice || 0;
+            const finalTotalAmount = baseFreight + parsedMarkup + markupGst;
+
             const payload = {
                 origin_pin: originPin,
                 dest_pin: destPin,
@@ -153,10 +185,17 @@ const DelhiveryCreateOrder = () => {
                 drop_address: selectedDrop || `Drop Point - ${destPin}`,
                 pickup_details: pickupObj, // pass full object for backend to use
                 drop_details: dropObj, // pass full object for backend to use
-                payment_mode: initialPaymentMode?.toLowerCase() || 'prepaid',
-                cod_amount: initialPaymentMode === 'COD' ? amount : 0,
+                billing_details: billingObj, // pass billing object for backend to use
+                payment_mode: paymentMode?.toLowerCase() || 'prepaid',
+                freight_mode: freightCollection === 'Freight on Delivery' ? 'fod' : 'fop',
+                rov_insurance: insuranceState === 'delhivery',
+                fm_pickup: dropOffState === 'no',
+                cod_amount: paymentMode === 'COD' ? amount : 0,
                 basePrice: currentRate?.basePrice || 0,
                 finalPrice: currentRate?.finalPrice || 0,
+                vendor_markup_fee: parsedMarkup,
+                gst_amount: totalGst,
+                total_amount: finalTotalAmount,
                 gstin: gstin,
                 order_details: {
                     lr_creation: lrCreation,
@@ -187,7 +226,7 @@ const DelhiveryCreateOrder = () => {
             if (res.data.success) {
                 setSubmitSuccess(true);
                 setTimeout(() => {
-                    navigate('/dashboard'); 
+                    navigate(`/${user?.role || 'customer'}/ptl-bookings`); 
                 }, 3000);
             }
         } catch (err) {
@@ -199,25 +238,26 @@ const DelhiveryCreateOrder = () => {
 
     if (submitSuccess) {
         return (
-            <div className="min-h-screen bg-slate-50 flex flex-col">
-                <Navbar />
+            <div className={`min-h-screen bg-slate-50 flex flex-col ${!isDashboard ? 'pt-20' : ''}`}>
+                {!isDashboard && <Navbar />}
                 <div className="flex-1 flex items-center justify-center p-4">
                     <div className="bg-white p-10 rounded-2xl shadow-xl max-w-md w-full text-center">
                         <CheckCircle className="w-20 h-20 text-green-500 mx-auto mb-6" />
                         <h2 className="text-2xl font-black text-[#0B1E43] mb-4">Order Created Successfully!</h2>
-                        <p className="text-slate-600 mb-8">Your shipment has been booked and is being processed.</p>
-                        <button onClick={() => navigate('/dashboard')} className="w-full bg-[#0066FF] hover:bg-blue-700 text-white py-3 rounded-lg font-bold transition-colors">
-                            Go to Dashboard
+                        <p className="text-slate-600 mb-8">Your shipment has been booked and is being processed by Delhivery.</p>
+                        <button onClick={() => navigate(`/${user?.role || 'customer'}/ptl-bookings`)} className="w-full bg-[#0066FF] hover:bg-blue-700 text-white py-3 rounded-lg font-bold transition-colors">
+                            Go to My Bookings
                         </button>
                     </div>
                 </div>
+                {!isDashboard && <Footer />}
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-slate-50 flex flex-col" style={{ color: '#334155' }}>
-            <Navbar />
+        <div className={`min-h-screen bg-slate-50 flex flex-col ${!isDashboard ? 'pt-20' : ''}`} style={{ color: '#334155' }}>
+            {!isDashboard && <Navbar />}
             
             <style>{`
                 /* Explicitly override dark mode white text defaults */
@@ -317,9 +357,15 @@ const DelhiveryCreateOrder = () => {
                             
                             <div className="mb-4">
                                 <label className="text-xs font-semibold text-slate-500 block mb-2">Payment Mode</label>
-                                <div className="flex items-center gap-2">
-                                    <input type="radio" checked readOnly className="w-4 h-4 text-blue-600" />
-                                    <span className="text-sm font-medium capitalize">{paymentMode}</span>
+                                <div className="flex items-center gap-6">
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                        <input type="radio" checked={paymentMode === 'Prepaid'} onChange={() => setPaymentMode('Prepaid')} className="w-4 h-4 text-blue-600" />
+                                        <span className="text-sm font-medium capitalize">Prepaid</span>
+                                    </label>
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                        <input type="radio" checked={paymentMode === 'COD'} onChange={() => setPaymentMode('COD')} className="w-4 h-4 text-blue-600" />
+                                        <span className="text-sm font-medium capitalize">Collect on Delivery (COD)</span>
+                                    </label>
                                 </div>
                             </div>
 
@@ -374,11 +420,11 @@ const DelhiveryCreateOrder = () => {
                             
                             <div className="flex items-center gap-6 mb-3">
                                 <label className="flex items-center gap-2 cursor-pointer">
-                                    <input type="radio" checked={insurance === 'owner'} readOnly className="w-4 h-4 text-blue-600" />
+                                    <input type="radio" checked={insuranceState === 'owner'} onChange={() => setInsuranceState('owner')} className="w-4 h-4 text-blue-600" />
                                     <span className="text-sm font-medium">Yes, Ship with Owners Risk</span>
                                 </label>
                                 <label className="flex items-center gap-2 cursor-pointer">
-                                    <input type="radio" checked={insurance === 'delhivery'} readOnly className="w-4 h-4 text-blue-600" />
+                                    <input type="radio" checked={insuranceState === 'delhivery'} onChange={() => setInsuranceState('delhivery')} className="w-4 h-4 text-blue-600" />
                                     <span className="text-sm font-medium">Get Delhivery's Insurance (Carrier's Risk)</span>
                                 </label>
                             </div>
@@ -467,6 +513,59 @@ const DelhiveryCreateOrder = () => {
                             </div>
                         </div>
 
+                        {/* 5.5 Billing Details */}
+                        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                            <h2 className="text-sm font-bold text-slate-800 mb-4 uppercase tracking-wide flex items-center gap-2">
+                                <FileText className="w-4 h-4 text-slate-400" /> Billing Details
+                            </h2>
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="text-xs font-semibold text-slate-500 block mb-2">Freight collection</label>
+                                    <div className="flex items-center gap-6">
+                                        <label className="flex items-center gap-2 cursor-pointer">
+                                            <input type="radio" name="freight" checked={freightCollection === 'Freight on Delivery'} onChange={() => setFreightCollection('Freight on Delivery')} className="w-4 h-4 text-blue-600" />
+                                            <span className="text-sm font-medium text-slate-700">Freight on Delivery</span>
+                                        </label>
+                                        <label className="flex items-center gap-2 cursor-pointer">
+                                            <input type="radio" name="freight" checked={freightCollection === 'Freight on Pickup'} onChange={() => setFreightCollection('Freight on Pickup')} className="w-4 h-4 text-blue-600" />
+                                            <span className="text-sm font-medium text-slate-700">Freight on Pickup</span>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div className="relative">
+                                    <div 
+                                        className="w-full border border-slate-300 rounded-lg p-3 text-sm outline-none cursor-pointer flex justify-between items-center bg-white"
+                                        onClick={() => setIsBillingDropdownOpen(!isBillingDropdownOpen)}
+                                    >
+                                        <span className={selectedBilling ? 'text-slate-800 font-medium' : 'text-slate-400 font-bold flex items-center gap-2 justify-center w-full'}>
+                                            {selectedBilling ? `Billing Address: ${selectedBilling}` : <><Plus size={16} /> Add Billing Address</>}
+                                        </span>
+                                        {selectedBilling && <ChevronDown className="w-4 h-4 text-slate-400" />}
+                                    </div>
+
+                                    {isBillingDropdownOpen && (
+                                        <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg z-20 max-h-60 overflow-y-auto">
+                                            <div className="p-2 border-b border-slate-100">
+                                                <input type="text" placeholder="Search Billing Address" className="w-full bg-slate-50 border border-slate-200 rounded p-2 text-xs outline-none focus:ring-1 focus:ring-blue-500" />
+                                            </div>
+                                            {savedAddresses.filter(a => a.type === 'billing').map(addr => (
+                                                <div key={addr.id} onClick={() => { setSelectedBilling(addr.facilityName); setIsBillingDropdownOpen(false); }} className="p-3 border-b border-slate-100 cursor-pointer hover:bg-slate-50 transition">
+                                                    <p className="text-sm font-bold text-slate-800">{addr.facilityName} {addr.gstin ? `(GST: ${addr.gstin})` : ''}</p>
+                                                    <p className="text-xs text-slate-500 uppercase mt-1">{addr.addressLine}, {addr.city}, {addr.state}, IN, {addr.pincode}</p>
+                                                </div>
+                                            ))}
+                                            <button 
+                                                onClick={() => { setIsBillingDropdownOpen(false); setModalConfig({ isOpen: true, type: 'billing', pincode: '' }); }}
+                                                className="w-full p-3 text-sm text-blue-600 font-bold flex items-center justify-center gap-2 hover:bg-blue-50 transition"
+                                            >
+                                                <Plus size={16} /> Create New Address
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
                         {/* 6. Weights & Dimensions */}
                         <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
                             <h2 className="text-sm font-bold text-slate-800 mb-4 uppercase tracking-wide flex items-center gap-2">
@@ -482,10 +581,13 @@ const DelhiveryCreateOrder = () => {
                                         <div className="flex-1 min-w-[200px]">
                                             <label className="block text-xs font-bold text-slate-500 mb-1">Box Size (L x B x H) in cm</label>
                                             <div className="flex items-center gap-2">
-                                                <input type="number" value={box.l} onChange={e => updateBox(box.id, 'l', e.target.value)} placeholder="L" className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-sm text-center outline-none focus:ring-1 focus:ring-blue-500" />
-                                                <input type="number" value={box.b} onChange={e => updateBox(box.id, 'b', e.target.value)} placeholder="B" className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-sm text-center outline-none focus:ring-1 focus:ring-blue-500" />
-                                                <input type="number" value={box.h} onChange={e => updateBox(box.id, 'h', e.target.value)} placeholder="H" className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-sm text-center outline-none focus:ring-1 focus:ring-blue-500" />
+                                                <input type="number" value={box.l} onChange={e => updateBox(box.id, 'l', e.target.value)} placeholder="L" className={`w-full bg-white border ${!box.l && error.includes('Length') ? 'border-red-500' : 'border-slate-200'} rounded-lg px-2 py-1.5 text-sm text-center outline-none focus:ring-1 focus:ring-blue-500`} />
+                                                <input type="number" value={box.b} onChange={e => updateBox(box.id, 'b', e.target.value)} placeholder="B" className={`w-full bg-white border ${!box.b && error.includes('Width') ? 'border-red-500' : 'border-slate-200'} rounded-lg px-2 py-1.5 text-sm text-center outline-none focus:ring-1 focus:ring-blue-500`} />
+                                                <input type="number" value={box.h} onChange={e => updateBox(box.id, 'h', e.target.value)} placeholder="H" className={`w-full bg-white border ${!box.h && error.includes('Height') ? 'border-red-500' : 'border-slate-200'} rounded-lg px-2 py-1.5 text-sm text-center outline-none focus:ring-1 focus:ring-blue-500`} />
                                             </div>
+                                            {(!box.l || !box.b || !box.h) && error.includes('required field') && (
+                                                <p className="text-red-500 text-[10px] mt-1">Length, Width, and Height are required.</p>
+                                            )}
                                         </div>
                                     </div>
                                 ))}
@@ -516,10 +618,63 @@ const DelhiveryCreateOrder = () => {
                                 >
                                     {isRecalculating ? 'Recalculating...' : 'Recalculate Price'}
                                 </button>
+                                
+                                {/* New Detailed Pricing Summary with Markup */}
                                 {currentRate && (
-                                    <p className="text-[11px] text-green-600 text-center mt-1">
-                                        Current Total Freight: ₹{currentRate.breakup?.total || currentRate.finalPrice}
-                                    </p>
+                                    <div className="mt-6 border border-slate-200 rounded-xl p-4 bg-slate-50">
+                                        <h3 className="text-sm font-bold text-[#0B1E43] mb-3 pb-2 border-b border-slate-200">Pricing Summary</h3>
+                                        <div className="flex flex-col gap-2">
+                                            <div className="flex justify-between items-center text-xs">
+                                                <span className="text-slate-600 font-medium">Charged Weight</span>
+                                                <span className="text-slate-800 font-bold">{currentRate.data?.charged_wt || localWeight} kg</span>
+                                            </div>
+                                            <div className="flex justify-between items-center text-xs">
+                                                <span className="text-slate-600 font-medium">Base Freight Charges</span>
+                                                <span className="text-slate-800 font-bold">₹{(currentRate.finalPrice || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                            </div>
+
+                                            <div className="mt-2 mb-2 p-3 bg-white border border-slate-200 rounded-lg">
+                                                <div className="flex items-start justify-between">
+                                                    <div className="flex items-start gap-2">
+                                                        <input 
+                                                            type="checkbox" 
+                                                            id="addMarkup" 
+                                                            checked={isMarkupAdded} 
+                                                            onChange={(e) => setIsMarkupAdded(e.target.checked)} 
+                                                            className="mt-1 w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500"
+                                                        />
+                                                        <div>
+                                                            <label htmlFor="addMarkup" className="text-xs font-bold text-[#0B1E43] cursor-pointer">Add Markup</label>
+                                                            <p className="text-[10px] text-slate-500">This will be added to the freight charges</p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center">
+                                                        <span className="text-slate-500 text-sm font-bold mr-1">₹</span>
+                                                        <input 
+                                                            type="number" 
+                                                            value={markupValue} 
+                                                            onChange={(e) => setMarkupValue(e.target.value)} 
+                                                            disabled={!isMarkupAdded}
+                                                            className="w-20 border border-slate-200 rounded p-1 text-xs outline-none focus:border-blue-500 text-right disabled:bg-slate-50 disabled:text-slate-400"
+                                                            placeholder="0"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div className="flex justify-between items-center text-xs">
+                                                <span className="text-slate-600 font-medium">GST at 18%</span>
+                                                <span className="text-slate-800 font-bold">₹{(((currentRate.data?.price_breakup?.gst || 0) + (isMarkupAdded ? (parseFloat(markupValue) || 0) * 0.18 : 0))).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                            </div>
+
+                                            <div className="flex justify-between items-center pt-2 mt-1 border-t border-slate-200 text-sm">
+                                                <span className="font-black text-[#0B1E43]">Total Amount</span>
+                                                <span className="font-black text-[#0B1E43]">
+                                                    ₹{((currentRate.finalPrice || 0) + (isMarkupAdded ? (parseFloat(markupValue) || 0) : 0) + (isMarkupAdded ? (parseFloat(markupValue) || 0) * 0.18 : 0)).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
                                 )}
                             </div>
                         </div>

@@ -1,6 +1,6 @@
 const jwt = require("jsonwebtoken");
 
-module.exports = function (req, res, next) {
+const authMiddleware = function (req, res, next) {
     const token = req.header("Authorization");
 
     if (!token) {
@@ -33,3 +33,24 @@ module.exports = function (req, res, next) {
         res.status(401).json({ message: "Token is not valid" });
     }
 };
+
+const optionalAuth = function (req, res, next) {
+    const token = req.header("Authorization");
+    if (!token || token === "Bearer null") {
+        return next();
+    }
+    try {
+        const tokenString = token.startsWith("Bearer ") ? token.slice(7, token.length).trim() : token;
+        if (tokenString === "null") return next();
+        const decoded = jwt.verify(tokenString, process.env.JWT_SECRET);
+        if (decoded.id === 'admin_master_id') decoded.id = 'ad0000000000000000000000';
+        req.user = decoded;
+        req.admin = decoded.id;
+        next();
+    } catch (err) {
+        next();
+    }
+};
+
+module.exports = authMiddleware;
+module.exports.optional = optionalAuth;

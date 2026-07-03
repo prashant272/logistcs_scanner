@@ -51,10 +51,11 @@ const SearchPrice = ({ isDashboard = false }) => {
     // Redirect to dedicated PTL Calculator when PTL is selected
     useEffect(() => {
         if (activeTab === 'land' && loadType === 'PTL') {
-            navigate('/ptl-calculator');
+            const role = user?.role || 'customer';
+            navigate(isDashboard ? `/${role}/ptl-calculator` : '/ptl-calculator');
             setLoadType(''); // reset so if they come back it's not stuck
         }
-    }, [activeTab, loadType, navigate]);
+    }, [activeTab, loadType, navigate, isDashboard, user]);
 
     const [fclStandard, setFclStandard] = useState('');
     const [fclUnit, setFclUnit] = useState('');
