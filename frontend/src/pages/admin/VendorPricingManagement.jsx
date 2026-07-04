@@ -58,7 +58,7 @@ const VendorPricingManagement = () => {
   const fetchVendors = async () => {
     try {
       setLoadingVendors(true);
-      const token = localStorage.getItem('adminToken');
+      const token = sessionStorage.getItem('adminToken');
       const config = {
         headers: { Authorization: `Bearer ${token}` }
       };
@@ -80,7 +80,7 @@ const VendorPricingManagement = () => {
     try {
       setLoading(true);
       setError('');
-      const token = localStorage.getItem('adminToken');
+      const token = sessionStorage.getItem('adminToken');
       const config = {
         headers: { Authorization: `Bearer ${token}` }
       };
@@ -183,7 +183,7 @@ const VendorPricingManagement = () => {
 
   const handleToggleStatus = async (id) => {
     try {
-      const token = localStorage.getItem('adminToken');
+      const token = sessionStorage.getItem('adminToken');
       const config = {
         headers: { Authorization: `Bearer ${token}` }
       };
@@ -198,7 +198,7 @@ const VendorPricingManagement = () => {
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this pricing rate?')) return;
     try {
-      const token = localStorage.getItem('adminToken');
+      const token = sessionStorage.getItem('adminToken');
       const config = {
         headers: { Authorization: `Bearer ${token}` }
       };
@@ -259,7 +259,7 @@ const VendorPricingManagement = () => {
     };
 
     try {
-      const token = localStorage.getItem('adminToken');
+      const token = sessionStorage.getItem('adminToken');
       const config = {
         headers: { Authorization: `Bearer ${token}` }
       };

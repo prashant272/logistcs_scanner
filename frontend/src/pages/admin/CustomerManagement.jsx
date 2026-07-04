@@ -64,7 +64,7 @@ const CustomerManagement = () => {
       else setLoadingMore(true);
       setError('');
       
-      const token = localStorage.getItem('adminToken');
+      const token = sessionStorage.getItem('adminToken');
       const config = { headers: { Authorization: `Bearer ${token}` } };
       
       const { data } = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/admin/customers?page=${page}&limit=10&search=${debouncedSearchQuery}`, config);
@@ -90,7 +90,7 @@ const CustomerManagement = () => {
     try {
       if (page === 1) setLoading(true);
       setError('');
-      const token = localStorage.getItem('adminToken');
+      const token = sessionStorage.getItem('adminToken');
       const config = { headers: { Authorization: `Bearer ${token}` } };
 
       const { data } = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/admin/guests`, config);
@@ -127,7 +127,7 @@ const CustomerManagement = () => {
     setHistory([]);
 
     try {
-      const token = localStorage.getItem('adminToken');
+      const token = sessionStorage.getItem('adminToken');
       const config = {
         headers: { Authorization: `Bearer ${token}` }
       };
@@ -153,7 +153,7 @@ const CustomerManagement = () => {
     e.preventDefault();
     try {
       setAddingCustomer(true);
-      const token = localStorage.getItem('adminToken');
+      const token = sessionStorage.getItem('adminToken');
       await axios.post(`${import.meta.env.VITE_API_BASE_URL}/admin/users`, {
         ...addFormData,
         role: 'customer'

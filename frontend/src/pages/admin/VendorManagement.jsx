@@ -52,7 +52,7 @@ const VendorManagement = () => {
       if (targetPage === 1) setLoading(true);
       else setLoadingMore(true);
       setError('');
-      const token = localStorage.getItem('adminToken');
+      const token = sessionStorage.getItem('adminToken');
       const { data } = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/admin/vendors?page=${targetPage}&limit=10&search=${debouncedSearchQuery}&status=${statusFilter}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -90,7 +90,7 @@ const VendorManagement = () => {
 
   const fetchRMs = async () => {
     try {
-      const token = localStorage.getItem('adminToken');
+      const token = sessionStorage.getItem('adminToken');
       const { data } = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/rm`, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -114,7 +114,7 @@ const VendorManagement = () => {
     setActivityData(null);
     setActivityModalOpen(true);
     try {
-      const token = localStorage.getItem('adminToken');
+      const token = sessionStorage.getItem('adminToken');
       const { data } = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/admin/vendor-history/${vendorId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -131,7 +131,7 @@ const VendorManagement = () => {
   const handleUnacceptEnquiry = async (vendorId, enquiryId) => {
     if (!window.confirm("Are you sure you want to revert this acceptance? The enquiry will be set back to Pending for this vendor.")) return;
     try {
-      const token = localStorage.getItem('adminToken');
+      const token = sessionStorage.getItem('adminToken');
       await axios.put(`${import.meta.env.VITE_API_BASE_URL}/admin/vendor-history/${vendorId}/unaccept/${enquiryId}`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -146,7 +146,7 @@ const VendorManagement = () => {
   const handleAssignPlan = async (vendorId, planId) => {
     try {
       setUpdatingPlanId(vendorId);
-      const token = localStorage.getItem('adminToken');
+      const token = sessionStorage.getItem('adminToken');
       const config = { headers: { Authorization: `Bearer ${token}` } };
       const { data } = await axios.put(`${import.meta.env.VITE_API_BASE_URL}/admin/vendors/${vendorId}/plan`, { planId }, config);
       
@@ -177,7 +177,7 @@ const VendorManagement = () => {
   // Impersonate / Login as Vendor
   const handleLoginAsVendor = async (vendorId) => {
     try {
-      const token = localStorage.getItem('adminToken');
+      const token = sessionStorage.getItem('adminToken');
       const config = {
         headers: {
           Authorization: `Bearer ${token}`
@@ -198,7 +198,7 @@ const VendorManagement = () => {
   // Set Verification status (Approved / Pending / Declined)
   const handleSetStatus = async (vendorId, status) => {
     try {
-      const token = localStorage.getItem('adminToken');
+      const token = sessionStorage.getItem('adminToken');
       const config = {
         headers: {
           Authorization: `Bearer ${token}`
@@ -221,7 +221,7 @@ const VendorManagement = () => {
   const handleAssignRM = async (vendorId, rmId) => {
     try {
       setAssigningRmId(vendorId);
-      const token = localStorage.getItem('adminToken');
+      const token = sessionStorage.getItem('adminToken');
       const config = { headers: { Authorization: `Bearer ${token}` } };
       await axios.put(`${import.meta.env.VITE_API_BASE_URL}/rm/assign`, { vendorId, rmId }, config);
       
@@ -245,7 +245,7 @@ const VendorManagement = () => {
 
     try {
       setUploadingVendorId(vendorId);
-      const token = localStorage.getItem('adminToken');
+      const token = sessionStorage.getItem('adminToken');
       
       // 1. Upload the file
       const uploadRes = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/auth/upload`, formData, {
@@ -286,7 +286,7 @@ const VendorManagement = () => {
     e.preventDefault();
     try {
       setAddingVendor(true);
-      const token = localStorage.getItem('adminToken');
+      const token = sessionStorage.getItem('adminToken');
       await axios.post(`${import.meta.env.VITE_API_BASE_URL}/admin/users`, {
         ...addFormData,
         role: 'vendor'
@@ -307,7 +307,7 @@ const VendorManagement = () => {
 
   const handleUpdateLimit = async (vendorId, limit) => {
     try {
-      const token = localStorage.getItem('adminToken');
+      const token = sessionStorage.getItem('adminToken');
       const config = { headers: { Authorization: `Bearer ${token}` } };
       await axios.put(`${import.meta.env.VITE_API_BASE_URL}/admin/vendors/${vendorId}/enquiry-limit`, { limit }, config);
       alert('Limit updated successfully!');

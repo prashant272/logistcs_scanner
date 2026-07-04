@@ -34,7 +34,7 @@ export const SocketProvider = ({ children }) => {
 
     useEffect(() => {
         if (socket) {
-            const adminToken = localStorage.getItem('adminToken');
+            const adminToken = sessionStorage.getItem('adminToken');
             
             if (user) {
                 socket.emit('register', user.id || user._id);

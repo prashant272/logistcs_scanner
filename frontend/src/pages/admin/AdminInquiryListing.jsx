@@ -13,7 +13,7 @@ const AdminInquiryListing = () => {
     const fetchMessages = async () => {
         try {
             setLoading(true);
-            const token = localStorage.getItem('adminToken');
+            const token = sessionStorage.getItem('adminToken');
             const res = await api.get('/contact/admin/messages', {
                 headers: {
                     'Authorization': token ? `Bearer ${token}` : ''
@@ -35,7 +35,7 @@ const AdminInquiryListing = () => {
     const handleStatusUpdate = async (id, newStatus) => {
         try {
             setStatusUpdating(id);
-            const token = localStorage.getItem('adminToken');
+            const token = sessionStorage.getItem('adminToken');
             const res = await api.put(`/contact/admin/${id}/status`, { status: newStatus }, {
                 headers: {
                     'Authorization': token ? `Bearer ${token}` : ''

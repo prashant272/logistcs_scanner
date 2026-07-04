@@ -20,7 +20,7 @@ const DelhiverySettings = () => {
 
     const fetchConfig = async () => {
         try {
-            const token = localStorage.getItem('adminToken');
+            const token = sessionStorage.getItem('adminToken');
             const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/delhivery/admin/config`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -44,7 +44,7 @@ const DelhiverySettings = () => {
         setIsSaving(true);
         setMessage('');
         try {
-            const token = localStorage.getItem('adminToken');
+            const token = sessionStorage.getItem('adminToken');
             await axios.post(`${import.meta.env.VITE_API_BASE_URL}/delhivery/admin/config`, config, {
                 headers: { Authorization: `Bearer ${token}` }
             });

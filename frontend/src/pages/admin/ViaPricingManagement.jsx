@@ -37,7 +37,7 @@ const ViaPricingManagement = () => {
     try {
       setLoading(true);
       setError('');
-      const token = localStorage.getItem('adminToken');
+      const token = sessionStorage.getItem('adminToken');
       const config = {
         headers: { Authorization: `Bearer ${token}` }
       };
@@ -144,7 +144,7 @@ const ViaPricingManagement = () => {
 
     try {
       setSubmitting(true);
-      const token = localStorage.getItem('adminToken');
+      const token = sessionStorage.getItem('adminToken');
       const config = {
         headers: { Authorization: `Bearer ${token}` }
       };
@@ -195,7 +195,7 @@ const ViaPricingManagement = () => {
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this via pricing entry?')) return;
     try {
-      const token = localStorage.getItem('adminToken');
+      const token = sessionStorage.getItem('adminToken');
       const config = {
         headers: { Authorization: `Bearer ${token}` }
       };

@@ -18,7 +18,7 @@ const AdminUpgradationRequests = () => {
     const fetchRequests = async () => {
         try {
             setLoading(true);
-            const token = localStorage.getItem('adminToken');
+            const token = sessionStorage.getItem('adminToken');
             const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/plans/admin/upgrade-requests`, {
                 headers: { Authorization: `Bearer ${token}` }
             });

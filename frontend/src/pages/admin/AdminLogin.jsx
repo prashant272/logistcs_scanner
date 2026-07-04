@@ -20,7 +20,7 @@ const AdminLogin = () => {
         
         try {
             const { data } = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/admin/login`, { email, password });
-            localStorage.setItem('adminToken', data.token);
+            sessionStorage.setItem('adminToken', data.token);
             navigate('/admin/dashboard');
         } catch (err) {
             setError('Invalid credentials');

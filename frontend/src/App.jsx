@@ -13,7 +13,7 @@ axios.interceptors.response.use(
       }
       
       if (window.location.pathname.startsWith('/admin')) {
-          localStorage.removeItem('adminToken');
+          sessionStorage.removeItem('adminToken');
           window.location.href = '/admin/login';
       } else {
           localStorage.removeItem('userToken');
@@ -121,7 +121,7 @@ const PageLoader = () => (
 );
 
 const PrivateRoute = ({ children }) => {
-  const token = localStorage.getItem('adminToken');
+  const token = sessionStorage.getItem('adminToken');
   return token ? children : <Navigate to="/admin/login" />;
 };
 

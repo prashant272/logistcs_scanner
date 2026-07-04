@@ -40,7 +40,7 @@ const MenuManagement = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const token = localStorage.getItem('adminToken');
+    const token = sessionStorage.getItem('adminToken');
     const config = { headers: { Authorization: `Bearer ${token}` } };
 
     // Construct variants array
@@ -88,7 +88,7 @@ const MenuManagement = () => {
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this item?')) {
       try {
-        const token = localStorage.getItem('adminToken');
+        const token = sessionStorage.getItem('adminToken');
         await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/menu/${id}`, {
           headers: { Authorization: `Bearer ${token}` }
         });

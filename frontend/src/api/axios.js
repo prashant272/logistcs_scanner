@@ -13,7 +13,7 @@ api.interceptors.request.use(
     
     if (isAdminRoute) {
       // For admin routes, prioritize admin token
-      token = localStorage.getItem('adminToken') || localStorage.getItem('userToken');
+      token = sessionStorage.getItem('adminToken') || localStorage.getItem('userToken');
     } else {
       // For vendor/customer routes, strictly use user token to prevent admin token leakage
       token = localStorage.getItem('userToken');

@@ -24,7 +24,7 @@ const CouponManagement = () => {
     const fetchCoupons = async () => {
         try {
             setLoading(true);
-            const token = localStorage.getItem('adminToken');
+            const token = sessionStorage.getItem('adminToken');
             const config = {
                 headers: { Authorization: `Bearer ${token}` }
             };
@@ -73,7 +73,7 @@ const CouponManagement = () => {
         setSaving(true);
 
         try {
-            const token = localStorage.getItem('adminToken');
+            const token = sessionStorage.getItem('adminToken');
             const config = {
                 headers: { Authorization: `Bearer ${token}` }
             };
@@ -108,7 +108,7 @@ const CouponManagement = () => {
     const handleDelete = async (id) => {
         if (!window.confirm('Are you sure you want to delete this coupon?')) return;
         try {
-            const token = localStorage.getItem('adminToken');
+            const token = sessionStorage.getItem('adminToken');
             const config = {
                 headers: { Authorization: `Bearer ${token}` }
             };
@@ -124,7 +124,7 @@ const CouponManagement = () => {
 
     const handleToggleStatus = async (id) => {
         try {
-            const token = localStorage.getItem('adminToken');
+            const token = sessionStorage.getItem('adminToken');
             const config = {
                 headers: { Authorization: `Bearer ${token}` }
             };

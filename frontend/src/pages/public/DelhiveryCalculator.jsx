@@ -108,7 +108,7 @@ const DelhiveryCalculator = ({ isDashboard = false }) => {
         setRateResult(null);
 
         try {
-            const token = localStorage.getItem('userToken') || localStorage.getItem('adminToken');
+            const token = localStorage.getItem('userToken') || sessionStorage.getItem('adminToken');
             
             // Format dimensions payload
             const dimensionsPayload = boxes.map(b => ({
@@ -151,7 +151,7 @@ const DelhiveryCalculator = ({ isDashboard = false }) => {
         }
         
         try {
-            const token = localStorage.getItem('userToken') || localStorage.getItem('adminToken');
+            const token = localStorage.getItem('userToken') || sessionStorage.getItem('adminToken');
             const dimensionsString = boxes.map(b => `${b.l}x${b.b}x${b.h}`).join(',');
             
             const res = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/delhivery/book`, {

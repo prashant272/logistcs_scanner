@@ -40,7 +40,7 @@ export const AuthProvider = ({ children }) => {
             const { data } = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/auth/login`, { email, password, role });
             localStorage.setItem('userToken', data.token);
             // Clear any lingering adminToken on fresh user login
-            localStorage.removeItem('adminToken');
+            sessionStorage.removeItem('adminToken');
             setUser(data);
             return { success: true };
         } catch (error) {

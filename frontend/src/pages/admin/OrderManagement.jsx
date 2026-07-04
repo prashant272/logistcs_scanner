@@ -13,7 +13,7 @@ const OrderManagement = () => {
 
     const fetchOrders = async () => {
         try {
-            const token = localStorage.getItem('adminToken');
+            const token = sessionStorage.getItem('adminToken');
             const { data } = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/orders`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -27,7 +27,7 @@ const OrderManagement = () => {
 
     const updateStatus = async (id, status) => {
         try {
-            const token = localStorage.getItem('adminToken');
+            const token = sessionStorage.getItem('adminToken');
             await axios.put(`${import.meta.env.VITE_API_BASE_URL}/orders/${id}/status`, { status }, {
                 headers: { Authorization: `Bearer ${token}` }
             });

@@ -66,7 +66,7 @@ const DelhiveryCreateOrder = ({ isDashboard = false }) => {
         setIsRecalculating(true);
         setError('');
         try {
-            const token = localStorage.getItem('userToken') || localStorage.getItem('adminToken');
+            const token = localStorage.getItem('userToken') || sessionStorage.getItem('adminToken');
             const dimensionsPayload = localBoxes.map(b => ({
                 length_cm: parseFloat(b.l) || 10,
                 width_cm: parseFloat(b.b) || 10,
@@ -155,7 +155,7 @@ const DelhiveryCreateOrder = ({ isDashboard = false }) => {
         setError('');
 
         try {
-            const token = localStorage.getItem('userToken') || localStorage.getItem('adminToken');
+            const token = localStorage.getItem('userToken') || sessionStorage.getItem('adminToken');
             
             // Map payload as expected by backend MVP
             const dimensionsPayload = localBoxes.map(b => ({

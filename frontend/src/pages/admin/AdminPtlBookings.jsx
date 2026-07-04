@@ -27,7 +27,7 @@ const AdminPtlBookings = () => {
     const handleTrack = async (lrn) => {
         if (!lrn) return;
         try {
-            const token = localStorage.getItem('adminToken');
+            const token = sessionStorage.getItem('adminToken');
             const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/delhivery/track/${lrn}`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -41,7 +41,7 @@ const AdminPtlBookings = () => {
 
     const fetchBookings = async () => {
         try {
-            const token = localStorage.getItem('adminToken');
+            const token = sessionStorage.getItem('adminToken');
             const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/delhivery/admin/bookings`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -56,7 +56,7 @@ const AdminPtlBookings = () => {
     const handleSchedulePickupSubmit = async (e) => {
         e.preventDefault();
         try {
-            const token = localStorage.getItem('adminToken');
+            const token = sessionStorage.getItem('adminToken');
             const res = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/delhivery/pickup/${selectedBookingForPickup.delhivery_lr_number}`, {
                 pickup_date: pickupData.pickup_date,
                 start_time: pickupData.start_time,
@@ -213,7 +213,7 @@ const AdminPtlBookings = () => {
                                                 <button 
                                                     onClick={async () => {
                                                         try {
-                                                            const token = localStorage.getItem('adminToken');
+                                                            const token = sessionStorage.getItem('adminToken');
                                                             const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/delhivery/label/${booking.delhivery_lr_number}`, {
                                                                 headers: { Authorization: `Bearer ${token}` }
                                                             });
@@ -246,7 +246,7 @@ const AdminPtlBookings = () => {
                                                         onClick={async () => {
                                                             if(window.confirm('Are you sure you want to cancel this order?')) {
                                                                 try {
-                                                                    const token = localStorage.getItem('adminToken');
+                                                                    const token = sessionStorage.getItem('adminToken');
                                                                     await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/delhivery/cancel/${booking.delhivery_lr_number}`, {
                                                                         headers: { Authorization: `Bearer ${token}` }
                                                                     });
@@ -281,7 +281,7 @@ const AdminPtlBookings = () => {
                                             <button 
                                                 onClick={async () => {
                                                     try {
-                                                        const token = localStorage.getItem('adminToken');
+                                                        const token = sessionStorage.getItem('adminToken');
                                                         await axios.get(`${import.meta.env.VITE_API_BASE_URL}/delhivery/manifest/status/${booking.delhivery_job_id}`, {
                                                             headers: { Authorization: `Bearer ${token}` }
                                                         });

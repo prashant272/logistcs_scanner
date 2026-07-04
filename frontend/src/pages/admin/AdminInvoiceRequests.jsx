@@ -26,7 +26,7 @@ const AdminInvoiceRequests = () => {
     const fetchInvoices = async () => {
         try {
             setLoading(true);
-            const token = localStorage.getItem('adminToken');
+            const token = sessionStorage.getItem('adminToken');
             const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/finance/admin/invoices`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -42,7 +42,7 @@ const AdminInvoiceRequests = () => {
         e.preventDefault();
         try {
             setActionLoading(true);
-            const token = localStorage.getItem('adminToken');
+            const token = sessionStorage.getItem('adminToken');
             
             if (actionType === 'reject') {
                 await axios.put(`${import.meta.env.VITE_API_BASE_URL}/finance/admin/invoices/${selectedInvoice._id}/status`, {

@@ -35,7 +35,7 @@ const PlanManagement = () => {
   const fetchPlans = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('adminToken');
+      const token = sessionStorage.getItem('adminToken');
       const config = {
         headers: { Authorization: `Bearer ${token}` }
       };
@@ -104,7 +104,7 @@ const PlanManagement = () => {
     const descriptionHtml = editorRef.current ? editorRef.current.innerHTML : '';
 
     try {
-      const token = localStorage.getItem('adminToken');
+      const token = sessionStorage.getItem('adminToken');
       const config = {
         headers: { Authorization: `Bearer ${token}` }
       };
@@ -144,7 +144,7 @@ const PlanManagement = () => {
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this plan?')) return;
     try {
-      const token = localStorage.getItem('adminToken');
+      const token = sessionStorage.getItem('adminToken');
       const config = {
         headers: { Authorization: `Bearer ${token}` }
       };
@@ -161,7 +161,7 @@ const PlanManagement = () => {
   const handleToggleStatus = async (id, currentStatus) => {
     const nextStatus = currentStatus === 'Active' ? 'Inactive' : 'Active';
     try {
-      const token = localStorage.getItem('adminToken');
+      const token = sessionStorage.getItem('adminToken');
       const config = {
         headers: { Authorization: `Bearer ${token}` }
       };

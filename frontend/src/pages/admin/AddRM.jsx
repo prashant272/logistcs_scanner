@@ -18,7 +18,7 @@ const AddRM = () => {
     const fetchRMs = async () => {
         try {
             setLoading(true);
-            const token = localStorage.getItem('adminToken');
+            const token = sessionStorage.getItem('adminToken');
             const res = await api.get('/rm', {
                 headers: { 'Authorization': token ? `Bearer ${token}` : '' }
             });
@@ -39,7 +39,7 @@ const AddRM = () => {
         e.preventDefault();
         try {
             setError('');
-            const token = localStorage.getItem('adminToken');
+            const token = sessionStorage.getItem('adminToken');
             const payload = { name, email, mobile };
             if (password) payload.password = password;
 
@@ -77,7 +77,7 @@ const AddRM = () => {
     const handleDelete = async (id) => {
         if (!window.confirm('Are you sure you want to delete this RM?')) return;
         try {
-            const token = localStorage.getItem('adminToken');
+            const token = sessionStorage.getItem('adminToken');
             await api.delete(`/rm/${id}`, {
                 headers: { 'Authorization': token ? `Bearer ${token}` : '' }
             });

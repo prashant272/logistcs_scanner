@@ -26,7 +26,7 @@ const NotificationBell = ({ align = 'right' }) => {
         const fetchNotifications = async () => {
             try {
                 // Determine which token to use (vendor/customer vs admin)
-                const token = localStorage.getItem('userToken') || localStorage.getItem('adminToken');
+                const token = localStorage.getItem('userToken') || sessionStorage.getItem('adminToken');
                 if (token) {
                     const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/notifications`, {
                         headers: { Authorization: `Bearer ${token}` }
@@ -58,7 +58,7 @@ const NotificationBell = ({ align = 'right' }) => {
     const handleNotificationClick = async (notif) => {
         if (!notif.isRead && notif._id) {
             try {
-                const token = localStorage.getItem('userToken') || localStorage.getItem('adminToken');
+                const token = localStorage.getItem('userToken') || sessionStorage.getItem('adminToken');
                 await axios.put(`${import.meta.env.VITE_API_BASE_URL}/notifications/${notif._id}/read`, {}, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
@@ -88,7 +88,7 @@ const NotificationBell = ({ align = 'right' }) => {
 
     const markAllAsRead = async () => {
         try {
-            const token = localStorage.getItem('userToken') || localStorage.getItem('adminToken');
+            const token = localStorage.getItem('userToken') || sessionStorage.getItem('adminToken');
             await axios.put(`${import.meta.env.VITE_API_BASE_URL}/notifications/read-all`, {}, {
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -129,7 +129,7 @@ const NotificationBell = ({ align = 'right' }) => {
                                 <button 
                                     onClick={async () => {
                                         try {
-                                            const token = localStorage.getItem('userToken') || localStorage.getItem('adminToken');
+                                            const token = localStorage.getItem('userToken') || sessionStorage.getItem('adminToken');
                                             await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/notifications/clear-all`, {
                                                 headers: { Authorization: `Bearer ${token}` }
                                             });

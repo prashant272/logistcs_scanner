@@ -4,7 +4,7 @@ import useSWR from 'swr';
 import { Calendar as CalendarIcon, RotateCcw, Menu, Users, ShoppingBag, AlertCircle, FileText, IndianRupee, UserCheck } from 'lucide-react';
 
 const fetcher = async ([url, filterType, customStart, customEnd]) => {
-    const token = localStorage.getItem('adminToken');
+    const token = sessionStorage.getItem('adminToken');
     const config = { headers: { Authorization: `Bearer ${token}` } };
     
     let fetchUrl = url;

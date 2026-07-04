@@ -24,7 +24,7 @@ const AdminFinanceListing = () => {
     const fetchApplications = async () => {
         try {
             setLoading(true);
-            const token = localStorage.getItem('adminToken');
+            const token = sessionStorage.getItem('adminToken');
             const { data } = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/finance/admin`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -55,7 +55,7 @@ const AdminFinanceListing = () => {
         e.preventDefault();
         try {
             setStatusUpdating(true);
-            const token = localStorage.getItem('adminToken');
+            const token = sessionStorage.getItem('adminToken');
             const { data } = await axios.put(
                 `${import.meta.env.VITE_API_BASE_URL}/finance/admin/${selectedApp._id}/status`, 
                 updateForm, 

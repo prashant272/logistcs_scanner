@@ -9,7 +9,7 @@ const AdminDashboard = () => {
     const [searchQuery, setSearchQuery] = useState('');
 
     const handleLogout = () => {
-        localStorage.removeItem('adminToken');
+        sessionStorage.removeItem('adminToken');
         navigate('/admin/login');
     };
 

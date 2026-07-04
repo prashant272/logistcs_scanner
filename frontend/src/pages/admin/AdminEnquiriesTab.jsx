@@ -36,7 +36,7 @@ const AdminEnquiriesTab = () => {
     const fetchEnquiries = async () => {
         try {
             setLoading(true);
-            const token = localStorage.getItem('adminToken');
+            const token = sessionStorage.getItem('adminToken');
             const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/admin/enquiries?page=${page}&limit=10&search=${debouncedSearch}`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -61,7 +61,7 @@ const AdminEnquiriesTab = () => {
         if (!window.confirm('Are you sure you want to delete this enquiry? This action cannot be undone.')) return;
         
         try {
-            const token = localStorage.getItem('adminToken');
+            const token = sessionStorage.getItem('adminToken');
             await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/admin/enquiries/${id}`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -81,7 +81,7 @@ const AdminEnquiriesTab = () => {
 
     const handleSaveEdit = async (id) => {
         try {
-            const token = localStorage.getItem('adminToken');
+            const token = sessionStorage.getItem('adminToken');
             await axios.put(`${import.meta.env.VITE_API_BASE_URL}/admin/enquiries/${id}`, editFormData, {
                 headers: { Authorization: `Bearer ${token}` }
             });

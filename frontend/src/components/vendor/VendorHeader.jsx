@@ -78,7 +78,7 @@ const VendorHeader = ({ isSidebarOpen, setSidebarOpen, user, logout, searchQuery
                 </button>
 
                 {/* Revert as Admin Button (If Admin Token exists) */}
-                {localStorage.getItem('adminToken') && (
+                {sessionStorage.getItem('adminToken') && (
                     <button
                         onClick={() => {
                             localStorage.removeItem('userToken');

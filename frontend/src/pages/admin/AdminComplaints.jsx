@@ -13,7 +13,7 @@ const AdminComplaints = () => {
     const fetchAllComplaints = async () => {
         try {
             setLoading(true);
-            const token = localStorage.getItem('adminToken');
+            const token = sessionStorage.getItem('adminToken');
             const res = await api.get('/complaints/admin/all', {
                 headers: {
                     'Authorization': token ? `Bearer ${token}` : ''
@@ -37,7 +37,7 @@ const AdminComplaints = () => {
             setStatusUpdating(id);
             setError('');
             setSuccess('');
-            const token = localStorage.getItem('adminToken');
+            const token = sessionStorage.getItem('adminToken');
             
             const res = await api.put(`/complaints/admin/${id}/status`, { status: newStatus }, {
                 headers: {
