@@ -62,8 +62,11 @@ exports.getVendors = async (req, res) => {
             } else if (statusFilter === 'Pending') {
                 query.$or = [{ verificationStatus: 'Pending' }, { isVerified: false, verificationStatus: { $nin: ['Approved', 'Declined', 'Pending'] } }];
             } else if (statusFilter === 'Login') {
-                const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000);
-                query.lastActive = { $gte: fifteenMinutesAgo };
+                const startOfDay = new Date();
+                startOfDay.setHours(0, 0, 0, 0);
+                const endOfDay = new Date();
+                endOfDay.setHours(23, 59, 59, 999);
+                query.lastActive = { $gte: startOfDay, $lte: endOfDay };
             } else if (statusFilter === 'Premium Vendors') {
                 const Plan = require('../models/Plan');
                 // Find plans containing the word 'Premium'
@@ -87,12 +90,14 @@ exports.getVendors = async (req, res) => {
             }
         }
 
+        const sortQuery = statusFilter === 'Login' ? { lastActive: -1 } : { createdAt: -1 };
+
         const totalCount = await User.countDocuments(query);
         const vendors = await User.find(query)
             .select('-password')
             .populate('assignedRM')
             .populate('activePlan')
-            .sort({ createdAt: -1 })
+            .sort(sortQuery)
             .skip(skip)
             .limit(limit);
 
