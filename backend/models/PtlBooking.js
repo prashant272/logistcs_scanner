@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 const ptlBookingSchema = new mongoose.Schema({
-    user_id: { type: mongoose.Schema.Types.ObjectId, required: true, refPath: 'user_model' },
+    user_id: { type: mongoose.Schema.Types.ObjectId, required: true, ref: 'User' },
     user_model: { type: String, required: true, enum: ['User', 'Vendor'] },
     user_role: { type: String, enum: ['customer', 'vendor'] },
     
@@ -38,6 +38,7 @@ const ptlBookingSchema = new mongoose.Schema({
     delhivery_job_id: { type: String }, // Async Job ID from Delhivery B2B Manifest API
     delhivery_status: { type: String, default: 'INITIATED' },
     delhivery_tracking_history: { type: Array, default: [] },
+    failure_reason: { type: String },
     waybills: [{ type: String }],
     delhivery_pickup_id: { type: String },
     shipping_label_url: { type: String },

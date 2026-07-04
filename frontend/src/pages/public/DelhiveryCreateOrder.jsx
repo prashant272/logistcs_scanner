@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { ArrowLeft, UploadCloud, Shield, FileText, CheckCircle, Package, ChevronDown, Plus } from 'lucide-react';
+import { ArrowLeft, UploadCloud, Shield, FileText, CheckCircle, Package, ChevronDown, Plus, Trash2 } from 'lucide-react';
 import Navbar from '../../components/common/Navbar';
+import Footer from '../../components/common/Footer';
 import { useAuth } from '../../context/AuthContext';
 import AddressModal from '../../components/common/AddressModal';
 
@@ -19,10 +20,7 @@ const DelhiveryCreateOrder = ({ isDashboard = false }) => {
         insurance: initialInsurance, dropOff: initialDropOff, freightMode: initialFreightMode 
     } = state;
 
-    // Local saved addresses list (MVP mock)
-    const [savedAddresses, setSavedAddresses] = useState([
-        { id: 1, type: 'pickup', facilityName: 'vikrant sharma', addressLine: 'F-87 DEEP VIHAR NEW DELHI', city: 'Delhi', state: 'IN', pincode: '110042' }
-    ]);
+    const [savedAddresses, setSavedAddresses] = useState([]);
     const [selectedPickup, setSelectedPickup] = useState('');
     const [selectedDrop, setSelectedDrop] = useState('');
     const [selectedBilling, setSelectedBilling] = useState('');
@@ -40,13 +38,11 @@ const DelhiveryCreateOrder = ({ isDashboard = false }) => {
     const [orderDesc, setOrderDesc] = useState('');
     const [poNumber, setPoNumber] = useState('');
     const [poExpiry, setPoExpiry] = useState('');
-    const [refId, setRefId] = useState('');
+    const [referenceIds, setReferenceIds] = useState([{ id: Date.now(), value: '' }]);
     const [boxCount, setBoxCount] = useState(boxes ? boxes.reduce((acc, curr) => acc + (parseInt(curr.count) || 1), 0) : 0);
     const [paymentMode, setPaymentMode] = useState(initialPaymentMode || 'Prepaid');
-    const [ewayBill, setEwayBill] = useState('');
-    const [invoiceNumber, setInvoiceNumber] = useState('');
+    const [invoices, setInvoices] = useState([{ id: Date.now(), ewayBill: '', invoiceNumber: '', amount: shipmentAmount || '' }]);
     const [gstin, setGstin] = useState('');
-    const [amount, setAmount] = useState(shipmentAmount || '');
     const [ewayLater, setEwayLater] = useState(false);
     const [invoiceFile, setInvoiceFile] = useState(null);
 
@@ -143,8 +139,8 @@ const DelhiveryCreateOrder = ({ isDashboard = false }) => {
             if (!b.h) return setError(`Box ${i+1}: Height is a required field`);
         }
 
-        if (!invoiceNumber) return setError("Invoice Number is mandatory.");
-        if (!amount || amount <= 0) return setError("Invoice Amount is mandatory and must be greater than 0.");
+        const hasEmptyInvoice = invoices.some(inv => !inv.invoiceNumber || !inv.amount || inv.amount <= 0);
+        if (hasEmptyInvoice) return setError("Invoice Number and a valid Amount are mandatory for all invoices.");
         if (!invoiceFile) return setError("Please upload the mandatory Invoice Document.");
         
         const pickupObj = savedAddresses.find(a => a.facilityName === selectedPickup);
@@ -190,7 +186,7 @@ const DelhiveryCreateOrder = ({ isDashboard = false }) => {
                 freight_mode: freightCollection === 'Freight on Delivery' ? 'fod' : 'fop',
                 rov_insurance: insuranceState === 'delhivery',
                 fm_pickup: dropOffState === 'no',
-                cod_amount: paymentMode === 'COD' ? amount : 0,
+                cod_amount: paymentMode === 'COD' ? invoices.reduce((sum, inv) => sum + Number(inv.amount || 0), 0) : 0,
                 basePrice: currentRate?.basePrice || 0,
                 finalPrice: currentRate?.finalPrice || 0,
                 vendor_markup_fee: parsedMarkup,
@@ -203,9 +199,9 @@ const DelhiveryCreateOrder = ({ isDashboard = false }) => {
                     description: orderDesc,
                     po_number: poNumber,
                     po_expiry: poExpiry,
-                    reference_id: refId,
-                    invoice_number: invoiceNumber,
-                    invoice_amount: amount,
+                    reference_details: referenceIds,
+                    reference_id: referenceIds.map(r => r.value).filter(Boolean).join(', '),
+                    invoices: invoices,
                     eway_later: ewayLater
                 }
             };
@@ -238,7 +234,7 @@ const DelhiveryCreateOrder = ({ isDashboard = false }) => {
 
     if (submitSuccess) {
         return (
-            <div className={`min-h-screen bg-slate-50 flex flex-col ${!isDashboard ? 'pt-20' : ''}`}>
+            <div className={`min-h-screen bg-[#F4F7FE] flex flex-col ${!isDashboard ? 'pt-20' : ''}`}>
                 {!isDashboard && <Navbar />}
                 <div className="flex-1 flex items-center justify-center p-4">
                     <div className="bg-white p-10 rounded-2xl shadow-xl max-w-md w-full text-center">
@@ -256,7 +252,7 @@ const DelhiveryCreateOrder = ({ isDashboard = false }) => {
     }
 
     return (
-        <div className={`min-h-screen bg-slate-50 flex flex-col ${!isDashboard ? 'pt-20' : ''}`} style={{ color: '#334155' }}>
+        <div className={`min-h-screen bg-[#F4F7FE] flex flex-col ${!isDashboard ? 'pt-20' : ''}`} style={{ color: '#334155' }}>
             {!isDashboard && <Navbar />}
             
             <style>{`
@@ -279,120 +275,142 @@ const DelhiveryCreateOrder = ({ isDashboard = false }) => {
                     <h1 className="text-2xl font-black text-[#0B1E43]">Upload your invoice</h1>
                     <span className="ml-3 bg-blue-100 text-blue-800 text-xs font-bold px-2.5 py-0.5 rounded border border-blue-400">new</span>
                 </div>
-                <p className="text-slate-500 mb-8 ml-14">Autofill order details from your invoice in seconds.</p>
+                <p className="text-slate-500 mb-8 ml-0 md:ml-12">Autofill order details from your invoice in seconds.</p>
                 
                 {error && (
-                    <div className="bg-red-50 text-red-600 p-4 rounded-xl mb-6 font-medium ml-14 max-w-2xl">
+                    <div className="bg-red-50 text-red-600 p-4 rounded-xl mb-6 font-medium ml-0 md:ml-12 max-w-2xl">
                         {error}
                     </div>
                 )}
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 ml-14">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 ml-0 md:ml-12">
                     {/* Left Column (Main Form) */}
                     <div className="lg:col-span-2 space-y-6">
                         
                         {/* 1. LR Details */}
-                        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                            <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2 mb-4 border-b border-slate-100 pb-3">
+                        <div className="bg-white p-6 rounded-2xl shadow-[0_2px_20px_rgba(0,0,0,0.04)] border-none">
+                            <h2 className="text-[17px] font-bold text-[#1e293b] flex items-center gap-2 mb-4 border-b border-slate-100 pb-3">
                                 <FileText className="text-blue-500" size={20} /> LR Details
                             </h2>
                             <div className="space-y-4">
                                 <div>
-                                    <label className="text-sm font-semibold text-slate-600 block mb-3">LR creation</label>
+                                    <label className="text-[14px] font-semibold text-[#475569] block mb-3">LR creation</label>
                                     <div className="flex items-center gap-6">
                                         <label className="flex items-center gap-2 cursor-pointer">
-                                            <input type="radio" name="lr" checked={lrCreation === 'Manual'} onChange={() => setLrCreation('Manual')} className="w-4 h-4 text-blue-600" />
+                                            <input type="radio" name="lr" checked={lrCreation === 'Manual'} onChange={() => setLrCreation('Manual')} className="w-4 h-4 text-blue-600 border-slate-300 focus:ring-blue-500 cursor-pointer accent-blue-600" />
                                             <span className="text-sm font-medium">Manual</span>
                                         </label>
                                         <label className="flex items-center gap-2 cursor-pointer">
-                                            <input type="radio" name="lr" checked={lrCreation === 'Automatic'} onChange={() => setLrCreation('Automatic')} className="w-4 h-4 text-blue-600" />
+                                            <input type="radio" name="lr" checked={lrCreation === 'Automatic'} onChange={() => setLrCreation('Automatic')} className="w-4 h-4 text-blue-600 border-slate-300 focus:ring-blue-500 cursor-pointer accent-blue-600" />
                                             <span className="text-sm font-medium">Automatic</span>
                                         </label>
                                     </div>
                                 </div>
                                 {lrCreation === 'Manual' && (
-                                    <input type="text" placeholder="Enter LR number" value={lrNumber} onChange={e => setLrNumber(e.target.value)} className="w-full border border-slate-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
+                                    <input type="text" placeholder="Enter LR number" value={lrNumber} onChange={e => setLrNumber(e.target.value)} className="w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-xl p-3 text-[14px] focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none" />
                                 )}
                             </div>
                         </div>
 
                         {/* 2. Order Details */}
-                        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                            <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2 mb-4 border-b border-slate-100 pb-3">
+                        <div className="bg-white p-6 rounded-2xl shadow-[0_2px_20px_rgba(0,0,0,0.04)] border-none">
+                            <h2 className="text-[17px] font-bold text-[#1e293b] flex items-center gap-2 mb-4 border-b border-slate-100 pb-3">
                                 <Package className="text-blue-500" size={20} /> Order Details
                             </h2>
                             <div className="space-y-4">
                                 <div>
-                                    <label className="text-xs font-semibold text-slate-500 block mb-1">Description</label>
-                                    <input type="text" placeholder="Enter order description" value={orderDesc} onChange={e => setOrderDesc(e.target.value)} className="w-full border border-slate-300 rounded-lg p-3 text-sm outline-none focus:ring-2 focus:ring-blue-500" />
+                                    <label className="text-[13px] font-semibold text-[#475569] block mb-1.5">Description</label>
+                                    <input type="text" placeholder="Enter order description" value={orderDesc} onChange={e => setOrderDesc(e.target.value)} className="w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-xl p-3 text-[14px] focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none" />
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
-                                        <label className="text-xs font-semibold text-slate-500 block mb-1">PO Number</label>
-                                        <input type="text" placeholder="Enter Your PO number" value={poNumber} onChange={e => setPoNumber(e.target.value)} className="w-full border border-slate-300 rounded-lg p-3 text-sm outline-none focus:ring-2 focus:ring-blue-500" />
+                                        <label className="text-[13px] font-semibold text-[#475569] block mb-1.5">PO Number</label>
+                                        <input type="text" placeholder="Enter Your PO number" value={poNumber} onChange={e => setPoNumber(e.target.value)} className="w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-xl p-3 text-[14px] focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none" />
                                     </div>
                                     <div>
-                                        <label className="text-xs font-semibold text-slate-500 block mb-1">PO Expiry Date</label>
-                                        <input type="date" value={poExpiry} onChange={e => setPoExpiry(e.target.value)} className="w-full border border-slate-300 rounded-lg p-3 text-sm outline-none focus:ring-2 focus:ring-blue-500 text-slate-500" />
+                                        <label className="text-[13px] font-semibold text-[#475569] block mb-1.5">PO Expiry Date</label>
+                                        <input type="date" value={poExpiry} onChange={e => setPoExpiry(e.target.value)} className="w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-xl p-3 text-[14px] focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none text-slate-500" />
                                     </div>
                                 </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="text-xs font-semibold text-slate-500 block mb-1">Your reference ID / order ID</label>
-                                        <input type="text" placeholder="Enter your reference ID / order ID" value={refId} onChange={e => setRefId(e.target.value)} className="w-full border border-slate-300 rounded-lg p-3 text-sm outline-none focus:ring-2 focus:ring-blue-500" />
+                                <div>
+                                    <div className="hidden md:grid grid-cols-[1fr_1fr_auto] gap-4 mb-2">
+                                        <label className="text-[13px] font-semibold text-[#475569]">Your reference ID / order ID</label>
+                                        <label className="text-[13px] font-semibold text-[#475569]">No. of boxes</label>
+                                        <div className="w-[42px]"></div>
                                     </div>
-                                    <div>
-                                        <label className="text-xs font-semibold text-slate-500 block mb-1">No. of boxes</label>
-                                        <input type="number" placeholder="Enter no. of boxes" value={boxCount} onChange={e => setBoxCount(e.target.value)} className="w-full border border-slate-300 rounded-lg p-3 text-sm outline-none focus:ring-2 focus:ring-blue-500" />
+                                    <div className="flex flex-col gap-3">
+                                        {referenceIds.map((ref, idx) => (
+                                            <div key={ref.id} className="grid grid-cols-1 md:grid-cols-[1fr_1fr_auto] gap-4 items-center">
+                                                <div>
+                                                    <label className="text-[13px] font-semibold text-[#475569] block mb-1.5 md:hidden">Your reference ID / order ID</label>
+                                                    <input type="text" placeholder="Enter reference ID / order ID" value={ref.value} onChange={e => { const newRefs = [...referenceIds]; newRefs[idx].value = e.target.value; setReferenceIds(newRefs); }} className="w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-xl p-3 text-[14px] focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none" />
+                                                </div>
+                                                <div>
+                                                    <label className="text-[13px] font-semibold text-[#475569] block mb-1.5 md:hidden">No. of boxes</label>
+                                                    <input type="number" placeholder="Enter no. of boxes" value={ref.boxes || ''} onChange={e => { const newRefs = [...referenceIds]; newRefs[idx].boxes = e.target.value; setReferenceIds(newRefs); }} className="w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-xl p-3 text-[14px] focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none" />
+                                                </div>
+                                                {idx > 0 ? (
+                                                    <button type="button" onClick={() => setReferenceIds(referenceIds.filter(r => r.id !== ref.id))} className="p-3 text-red-500 hover:bg-red-50 rounded-xl transition-colors self-end md:self-auto"><Trash2 size={18} /></button>
+                                                ) : <div className="hidden md:block w-[42px] h-[42px]"></div>}
+                                            </div>
+                                        ))}
+                                        <button type="button" onClick={() => setReferenceIds([...referenceIds, { id: Date.now(), value: '', boxes: '' }])} className="text-blue-600 text-sm font-bold flex items-center gap-1 self-start hover:text-blue-700 mt-2">
+                                            <Plus size={16} /> Add another reference ID
+                                        </button>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
                         {/* 3. Invoice Details */}
-                        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                            <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2 mb-4 border-b border-slate-100 pb-3">
+                        <div className="bg-white p-6 rounded-2xl shadow-[0_2px_20px_rgba(0,0,0,0.04)] border-none">
+                            <h2 className="text-[17px] font-bold text-[#1e293b] flex items-center gap-2 mb-4 border-b border-slate-100 pb-3">
                                 <FileText className="text-blue-500" size={20} /> Invoice Details
                             </h2>
                             
                             <div className="mb-4">
-                                <label className="text-xs font-semibold text-slate-500 block mb-2">Payment Mode</label>
+                                <label className="text-[13px] font-semibold text-[#475569] block mb-2">Payment Mode</label>
                                 <div className="flex items-center gap-6">
                                     <label className="flex items-center gap-2 cursor-pointer">
-                                        <input type="radio" checked={paymentMode === 'Prepaid'} onChange={() => setPaymentMode('Prepaid')} className="w-4 h-4 text-blue-600" />
+                                        <input type="radio" checked={paymentMode === 'Prepaid'} onChange={() => setPaymentMode('Prepaid')} className="w-4 h-4 text-blue-600 border-slate-300 focus:ring-blue-500 cursor-pointer accent-blue-600" />
                                         <span className="text-sm font-medium capitalize">Prepaid</span>
                                     </label>
-                                    <label className="flex items-center gap-2 cursor-pointer">
-                                        <input type="radio" checked={paymentMode === 'COD'} onChange={() => setPaymentMode('COD')} className="w-4 h-4 text-blue-600" />
+                                    {/* <label className="flex items-center gap-2 cursor-pointer">
+                                        <input type="radio" checked={paymentMode === 'COD'} onChange={() => setPaymentMode('COD')} className="w-4 h-4 text-blue-600 border-slate-300 focus:ring-blue-500 cursor-pointer accent-blue-600" />
                                         <span className="text-sm font-medium capitalize">Collect on Delivery (COD)</span>
-                                    </label>
+                                    </label> */}
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4 mb-4">
-                                <div>
-                                    <label className="text-xs font-semibold text-slate-500 block mb-1">E-Way Bill Number</label>
-                                    <input type="text" placeholder="Enter E-Way Bill number" value={ewayBill} onChange={e => setEwayBill(e.target.value)} disabled={ewayLater} className="w-full border border-slate-300 rounded-lg p-3 text-sm outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-slate-50" />
-                                </div>
-                                <div>
-                                    <label className="text-xs font-semibold text-slate-500 block mb-1">GSTIN / PAN (Mandatory) *</label>
-                                    <input type="text" placeholder="Enter GSTIN or PAN" value={gstin} onChange={e => setGstin(e.target.value)} className="w-full border border-slate-300 rounded-lg p-3 text-sm outline-none focus:ring-2 focus:ring-blue-500 uppercase" />
-                                </div>
-                            </div>
-                            
-                            <div className="grid grid-cols-2 gap-4 mb-4">
-                                <div>
-                                    <label className="text-xs font-semibold text-slate-500 block mb-1">Invoice Number *</label>
-                                    <input type="text" placeholder="Enter Invoice number" value={invoiceNumber} onChange={e => setInvoiceNumber(e.target.value)} className="w-full border border-slate-300 rounded-lg p-3 text-sm outline-none focus:ring-2 focus:ring-blue-500" />
-                                </div>
-                                <div>
-                                    <label className="text-xs font-semibold text-slate-500 block mb-1">Amount *</label>
-                                    <div className="relative">
-                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">₹</span>
-                                        <input type="number" placeholder="Enter amount" value={amount} onChange={e => setAmount(e.target.value)} className="w-full border border-slate-300 rounded-lg p-3 pl-8 text-sm outline-none focus:ring-2 focus:ring-blue-500" />
+                            <div className="mb-6">
+                                        <label className="text-[13px] font-semibold text-[#475569] block mb-2">GSTIN / PAN (Mandatory) *</label>
+                                        <input type="text" placeholder="Enter GSTIN or PAN" value={gstin} onChange={e => setGstin(e.target.value)} className="w-full max-w-md bg-slate-50 border border-slate-200 text-slate-800 rounded-xl p-3 text-[14px] focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none uppercase" />
                                     </div>
-                                </div>
-                            </div>
+                                    
+                                    <div className="space-y-4 mb-4">
+                                        <div className="hidden md:grid grid-cols-[1fr_1fr_1fr_auto] gap-4">
+                                            <label className="text-[13px] font-semibold text-[#475569]">E-Way Bill Number</label>
+                                            <label className="text-[13px] font-semibold text-[#475569]">Invoice Number *</label>
+                                            <label className="text-[13px] font-semibold text-[#475569]">Amount *</label>
+                                            <div className="w-10"></div>
+                                        </div>
+                                        {invoices.map((inv, idx) => (
+                                            <div key={inv.id} className="grid grid-cols-1 md:grid-cols-[1fr_1fr_1fr_auto] gap-4 items-center bg-slate-50/50 p-4 md:p-0 md:bg-transparent rounded-xl border border-slate-100 md:border-none">
+                                                <input type="text" placeholder="E-Way Bill number" value={inv.ewayBill} onChange={e => { const newInvs = [...invoices]; newInvs[idx].ewayBill = e.target.value; setInvoices(newInvs); }} disabled={ewayLater} className="w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-xl p-3 text-[14px] focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none disabled:bg-slate-100" />
+                                                <input type="text" placeholder="Invoice number" value={inv.invoiceNumber} onChange={e => { const newInvs = [...invoices]; newInvs[idx].invoiceNumber = e.target.value; setInvoices(newInvs); }} className="w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-xl p-3 text-[14px] focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none" />
+                                                <div className="relative">
+                                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">₹</span>
+                                                    <input type="number" placeholder="Amount" value={inv.amount} onChange={e => { const newInvs = [...invoices]; newInvs[idx].amount = e.target.value; setInvoices(newInvs); }} className="w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-xl p-3 pl-8 text-[14px] focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none" />
+                                                </div>
+                                                {idx > 0 ? (
+                                                    <button type="button" onClick={() => setInvoices(invoices.filter(i => i.id !== inv.id))} className="p-3 text-red-500 hover:bg-red-50 rounded-xl transition-colors"><Trash2 size={18} /></button>
+                                                ) : <div className="w-[42px] h-[42px]"></div>}
+                                            </div>
+                                        ))}
+                                        <button type="button" onClick={() => setInvoices([...invoices, { id: Date.now(), ewayBill: '', invoiceNumber: '', amount: '' }])} className="text-blue-600 text-sm font-bold flex items-center gap-1 hover:text-blue-700 mt-2">
+                                            <Plus size={16} /> Add another invoice
+                                        </button>
+                                    </div>
 
                             <label className="flex items-center gap-2 cursor-pointer mb-6">
                                 <input type="checkbox" checked={ewayLater} onChange={e => setEwayLater(e.target.checked)} className="w-4 h-4 rounded text-blue-600 border-slate-300 focus:ring-blue-500" />
@@ -405,26 +423,26 @@ const DelhiveryCreateOrder = ({ isDashboard = false }) => {
                                     <span className="text-slate-500 block">Delhivery Transporter ID</span>
                                 </div>
                                 <div className="text-right">
-                                    <span className="font-bold text-slate-800 block mb-1">₹{Number(amount || 0).toFixed(2)}</span>
+                                    <span className="font-bold text-slate-800 block mb-1">₹{invoices.reduce((sum, inv) => sum + Number(inv.amount || 0), 0).toFixed(2)}</span>
                                     <span className="font-medium text-slate-600 block">06AAPCS9075E1ZR</span>
                                 </div>
                             </div>
                         </div>
 
                         {/* 4. Insure your shipment */}
-                        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                            <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2 mb-4 border-b border-slate-100 pb-3">
+                        <div className="bg-white p-6 rounded-2xl shadow-[0_2px_20px_rgba(0,0,0,0.04)] border-none">
+                            <h2 className="text-[17px] font-bold text-[#1e293b] flex items-center gap-2 mb-4 border-b border-slate-100 pb-3">
                                 <Shield className="text-blue-500" size={20} /> Insure your shipment
                             </h2>
                             <p className="text-sm text-slate-600 mb-4 font-medium">Are you sure you want to ship the item at your own risk?</p>
                             
                             <div className="flex items-center gap-6 mb-3">
                                 <label className="flex items-center gap-2 cursor-pointer">
-                                    <input type="radio" checked={insuranceState === 'owner'} onChange={() => setInsuranceState('owner')} className="w-4 h-4 text-blue-600" />
+                                    <input type="radio" checked={insuranceState === 'owner'} onChange={() => setInsuranceState('owner')} className="w-4 h-4 text-blue-600 border-slate-300 focus:ring-blue-500 cursor-pointer accent-blue-600" />
                                     <span className="text-sm font-medium">Yes, Ship with Owners Risk</span>
                                 </label>
                                 <label className="flex items-center gap-2 cursor-pointer">
-                                    <input type="radio" checked={insuranceState === 'delhivery'} onChange={() => setInsuranceState('delhivery')} className="w-4 h-4 text-blue-600" />
+                                    <input type="radio" checked={insuranceState === 'delhivery'} onChange={() => setInsuranceState('delhivery')} className="w-4 h-4 text-blue-600 border-slate-300 focus:ring-blue-500 cursor-pointer accent-blue-600" />
                                     <span className="text-sm font-medium">Get Delhivery's Insurance (Carrier's Risk)</span>
                                 </label>
                             </div>
@@ -433,11 +451,11 @@ const DelhiveryCreateOrder = ({ isDashboard = false }) => {
                     </div>
 
                     {/* Right Column (Sidebar form items) */}
-                    <div className="space-y-6">
+                    <div className="space-y-6 lg:sticky lg:top-24 h-fit">
                         
                         {/* 5. Delivery Details */}
-                        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                            <h2 className="text-sm font-bold text-slate-800 mb-4 uppercase tracking-wide flex items-center gap-2">
+                        <div className="bg-white p-6 rounded-2xl shadow-[0_2px_20px_rgba(0,0,0,0.04)] border-none">
+                            <h2 className="text-[15px] font-bold text-[#1e293b] mb-5 flex items-center gap-2">
                                 <ArrowLeft className="w-4 h-4 rotate-[135deg] text-green-500" /> Delivery Details
                             </h2>
                             <div className="space-y-4">
@@ -445,7 +463,7 @@ const DelhiveryCreateOrder = ({ isDashboard = false }) => {
                                 <div className="relative">
                                     <div className="absolute left-3 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-orange-400 z-10"></div>
                                     <div 
-                                        className="w-full border border-slate-300 rounded-lg p-3 pl-8 text-sm outline-none cursor-pointer flex justify-between items-center bg-white"
+                                        className="w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-xl p-3 pl-8 text-[14px] cursor-pointer flex justify-between items-center transition-all outline-none hover:bg-slate-100"
                                         onClick={() => setIsPickupDropdownOpen(!isPickupDropdownOpen)}
                                     >
                                         <span className={selectedPickup ? 'text-slate-800' : 'text-slate-400'}>
@@ -481,7 +499,7 @@ const DelhiveryCreateOrder = ({ isDashboard = false }) => {
                                 <div className="relative">
                                     <div className="absolute left-3 top-1/2 -translate-y-1/2 w-2 h-2 rounded-sm bg-green-500 z-10"></div>
                                     <div 
-                                        className="w-full border border-slate-300 rounded-lg p-3 pl-8 text-sm outline-none cursor-pointer flex justify-between items-center bg-white"
+                                        className="w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-xl p-3 pl-8 text-[14px] cursor-pointer flex justify-between items-center transition-all outline-none hover:bg-slate-100"
                                         onClick={() => setIsDropDropdownOpen(!isDropDropdownOpen)}
                                     >
                                         <span className={selectedDrop ? 'text-slate-800' : 'text-slate-400'}>
@@ -514,27 +532,27 @@ const DelhiveryCreateOrder = ({ isDashboard = false }) => {
                         </div>
 
                         {/* 5.5 Billing Details */}
-                        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                            <h2 className="text-sm font-bold text-slate-800 mb-4 uppercase tracking-wide flex items-center gap-2">
+                        <div className="bg-white p-6 rounded-2xl shadow-[0_2px_20px_rgba(0,0,0,0.04)] border-none">
+                            <h2 className="text-[15px] font-bold text-[#1e293b] mb-5 flex items-center gap-2">
                                 <FileText className="w-4 h-4 text-slate-400" /> Billing Details
                             </h2>
                             <div className="space-y-4">
                                 <div>
-                                    <label className="text-xs font-semibold text-slate-500 block mb-2">Freight collection</label>
+                                    <label className="text-[13px] font-semibold text-[#475569] block mb-2">Freight collection</label>
                                     <div className="flex items-center gap-6">
                                         <label className="flex items-center gap-2 cursor-pointer">
-                                            <input type="radio" name="freight" checked={freightCollection === 'Freight on Delivery'} onChange={() => setFreightCollection('Freight on Delivery')} className="w-4 h-4 text-blue-600" />
+                                            <input type="radio" name="freight" checked={freightCollection === 'Freight on Delivery'} onChange={() => setFreightCollection('Freight on Delivery')} className="w-4 h-4 text-blue-600 border-slate-300 focus:ring-blue-500 cursor-pointer accent-blue-600" />
                                             <span className="text-sm font-medium text-slate-700">Freight on Delivery</span>
                                         </label>
                                         <label className="flex items-center gap-2 cursor-pointer">
-                                            <input type="radio" name="freight" checked={freightCollection === 'Freight on Pickup'} onChange={() => setFreightCollection('Freight on Pickup')} className="w-4 h-4 text-blue-600" />
+                                            <input type="radio" name="freight" checked={freightCollection === 'Freight on Pickup'} onChange={() => setFreightCollection('Freight on Pickup')} className="w-4 h-4 text-blue-600 border-slate-300 focus:ring-blue-500 cursor-pointer accent-blue-600" />
                                             <span className="text-sm font-medium text-slate-700">Freight on Pickup</span>
                                         </label>
                                     </div>
                                 </div>
                                 <div className="relative">
                                     <div 
-                                        className="w-full border border-slate-300 rounded-lg p-3 text-sm outline-none cursor-pointer flex justify-between items-center bg-white"
+                                        className="w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-xl p-3 text-[14px] cursor-pointer flex justify-between items-center transition-all outline-none hover:bg-slate-100"
                                         onClick={() => setIsBillingDropdownOpen(!isBillingDropdownOpen)}
                                     >
                                         <span className={selectedBilling ? 'text-slate-800 font-medium' : 'text-slate-400 font-bold flex items-center gap-2 justify-center w-full'}>
@@ -567,8 +585,8 @@ const DelhiveryCreateOrder = ({ isDashboard = false }) => {
                         </div>
 
                         {/* 6. Weights & Dimensions */}
-                        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                            <h2 className="text-sm font-bold text-slate-800 mb-4 uppercase tracking-wide flex items-center gap-2">
+                        <div className="bg-white p-6 rounded-2xl shadow-[0_2px_20px_rgba(0,0,0,0.04)] border-none">
+                            <h2 className="text-[15px] font-bold text-[#1e293b] mb-5 flex items-center gap-2">
                                 <Package className="w-4 h-4 text-slate-400" /> Weights & Dimensions
                             </h2>
                             <div className="space-y-4">
@@ -641,7 +659,7 @@ const DelhiveryCreateOrder = ({ isDashboard = false }) => {
                                                             id="addMarkup" 
                                                             checked={isMarkupAdded} 
                                                             onChange={(e) => setIsMarkupAdded(e.target.checked)} 
-                                                            className="mt-1 w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500"
+                                                            className="mt-1 w-4 h-4 text-blue-600 border-slate-300 focus:ring-blue-500 cursor-pointer accent-blue-600 rounded border-slate-300 focus:ring-blue-500"
                                                         />
                                                         <div>
                                                             <label htmlFor="addMarkup" className="text-xs font-bold text-[#0B1E43] cursor-pointer">Add Markup</label>
@@ -680,7 +698,7 @@ const DelhiveryCreateOrder = ({ isDashboard = false }) => {
                         </div>
 
                         {/* 7. Upload Documents */}
-                        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                        <div className="bg-white p-6 rounded-2xl shadow-[0_2px_20px_rgba(0,0,0,0.04)] border-none">
                             <div className="flex justify-between items-center mb-6 border-b border-slate-100 pb-3">
                                 <h2 className="text-sm font-bold text-slate-800 flex items-center gap-2 uppercase tracking-wide">
                                     <UploadCloud size={16} className="text-slate-400" /> Upload Documents
@@ -717,7 +735,7 @@ const DelhiveryCreateOrder = ({ isDashboard = false }) => {
                         </div>
 
                         {/* Final Review & Action */}
-                        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                        <div className="bg-white p-6 rounded-2xl shadow-[0_2px_20px_rgba(0,0,0,0.04)] border-none">
                             <div className="flex justify-between items-center text-sm font-bold text-slate-800 mb-6 bg-slate-50 p-4 rounded-xl">
                                 <span className="text-slate-500 font-medium">Shipping Mode</span>
                                 <span className="uppercase tracking-wider flex items-center gap-2">

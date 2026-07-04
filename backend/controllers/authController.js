@@ -315,7 +315,12 @@ exports.forgotPassword = async (req, res) => {
         // Clean phone numbers to compare digits
         const cleanUserPhone = user.phone.replace(/\D/g, '');
         const cleanInputPhone = phone.replace(/\D/g, '');
-        if (cleanUserPhone !== cleanInputPhone && user.phone !== phone) {
+        
+        // Check if the last 10 digits match to ignore '91' country code discrepancies
+        const matchLast10 = cleanUserPhone.length >= 10 && cleanInputPhone.length >= 10 && 
+                            cleanUserPhone.slice(-10) === cleanInputPhone.slice(-10);
+
+        if (cleanUserPhone !== cleanInputPhone && user.phone !== phone && !matchLast10) {
             return res.status(400).json({ message: 'Phone number does not match our records' });
         }
 

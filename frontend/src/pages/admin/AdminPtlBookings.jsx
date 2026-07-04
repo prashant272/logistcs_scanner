@@ -189,10 +189,16 @@ const AdminPtlBookings = () => {
                                             booking.delhivery_status === 'DELIVERED' ? 'bg-green-100 text-green-700' :
                                             booking.delhivery_status === 'CANCELLED' ? 'bg-red-100 text-red-700' :
                                             booking.delhivery_status === 'BOOKED' ? 'bg-blue-100 text-blue-700' :
+                                            booking.delhivery_status === 'FAILED' ? 'bg-red-100 text-red-700' :
                                             'bg-amber-100 text-amber-700'
                                         }`}>
                                             {booking.delhivery_status}
                                         </span>
+                                        {booking.delhivery_status === 'FAILED' && booking.failure_reason && (
+                                            <div className="text-[10px] text-red-600 mt-2 max-w-[150px] mx-auto leading-tight">
+                                                {booking.failure_reason}
+                                            </div>
+                                        )}
                                     </td>
                                     <td className="px-6 py-4 text-center">
                                         {booking.delhivery_lr_number ? (

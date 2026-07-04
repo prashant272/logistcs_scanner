@@ -455,6 +455,11 @@ exports.checkManifestStatus = async (req, res) => {
             } else {
                 // E.g. failed or rejected by Delhivery
                 booking.delhivery_status = 'FAILED';
+                let reason = 'Manifest generation failed at Delhivery';
+                if (data.error) reason = typeof data.error === 'string' ? data.error : JSON.stringify(data.error);
+                else if (data.message) reason = data.message;
+                else if (data.remarks) reason = data.remarks;
+                booking.failure_reason = reason;
                 await booking.save();
                 return res.status(400).json({ success: false, message: 'Manifest generation failed at Delhivery', data });
             }

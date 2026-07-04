@@ -498,7 +498,7 @@ const DelhiveryCalculator = ({ isDashboard = false }) => {
 
                                         <div className="flex flex-col gap-3 mt-auto">
                                             <button
-                                                onClick={() => navigate('/ptl-calculator/order', { 
+                                                onClick={() => navigate(isDashboard ? `/${user?.role || 'customer'}/ptl-calculator/order` : '/ptl-calculator/order', { 
                                                     state: { 
                                                         rateResult, 
                                                         boxes, 
