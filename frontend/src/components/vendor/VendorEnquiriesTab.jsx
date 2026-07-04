@@ -338,8 +338,22 @@ const VendorEnquiriesTab = ({ title, type }) => {
           Loading Enquiries...
         </div>
       ) : error ? (
-        <div className="text-center py-12 text-red-500 font-bold text-xs bg-white rounded-3xl border border-slate-100">
-          {error}
+        <div className="text-center py-16 bg-white rounded-3xl border border-slate-100 shadow-sm flex flex-col items-center justify-center">
+          <div className="bg-red-50 text-red-500 p-4 rounded-full mb-4">
+            <Lock className="w-8 h-8" />
+          </div>
+          <h3 className="text-lg font-black text-slate-800 mb-2">Access Restricted</h3>
+          <p className="text-slate-500 font-medium max-w-md mx-auto mb-6">
+            {error}
+          </p>
+          {error.toLowerCase().includes('upgrade') && (
+            <button
+              onClick={() => window.location.href = '/vendor/upgrade'}
+              className="bg-[#0066FF] hover:bg-blue-700 text-white font-bold px-6 py-2.5 rounded-xl transition-all shadow-md active:scale-95 cursor-pointer uppercase text-xs tracking-wider"
+            >
+              View Plans
+            </button>
+          )}
         </div>
       ) : filteredEnquiries.length === 0 ? (
         <div className="text-center py-12 text-slate-400 font-semibold text-xs bg-white rounded-3xl border border-slate-100">

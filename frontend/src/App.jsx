@@ -230,6 +230,7 @@ function App() {
               <Route path="search-results" element={<SearchResults />} />
               <Route path="my-enquiries" element={<VendorEnquiriesTab title="My Enquiries" type="my" />} />
               <Route path="direct-enquiries" element={<VendorEnquiriesTab title="Direct Enquiries" type="direct" />} />
+              <Route path="b2b-enquiries" element={<VendorEnquiriesTab title="B2B Enquiries" type="b2b" />} />
               <Route path="direct-booking" element={<VendorBookingsTab title="Direct Bookings" type="direct" />} />
               <Route path="my-bookings" element={<VendorBookingsTab title="My Bookings" type="my" />} />
               <Route path="ptl-bookings" element={<PtlBookingsTab />} />

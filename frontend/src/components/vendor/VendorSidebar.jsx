@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { 
     Truck, Landmark, FileText, MessageSquare, 
     Calendar, DollarSign, Wallet, FileSpreadsheet, 
-    User, LogOut, Search, AlertCircle
+    User, LogOut, Search, AlertCircle, Building2
 } from 'lucide-react';
 
 const VendorSidebar = ({ isSidebarOpen, logout, user }) => {
@@ -23,10 +23,11 @@ const VendorSidebar = ({ isSidebarOpen, logout, user }) => {
         { name: 'Dashboard', path: '/vendor/dashboard', icon: <Landmark size={18} /> },
         { name: 'Live Price', path: '/vendor/search-price', icon: <Search size={18} /> },
         { name: 'My Enquiries', path: '/vendor/my-enquiries', icon: <FileText size={18} /> },
-        { name: 'Direct Enquiries', path: '/vendor/direct-enquiries', icon: <MessageSquare size={18} /> },
-        { name: 'Direct Booking', path: '/vendor/direct-booking', icon: <Truck size={18} /> },
         { name: 'My Bookings', path: '/vendor/my-bookings', icon: <Calendar size={18} /> },
         { name: 'PTL Bookings', path: '/vendor/ptl-bookings', icon: <Truck size={18} /> },
+        { name: 'Direct Enquiries', path: '/vendor/direct-enquiries', icon: <MessageSquare size={18} /> },
+        { name: 'B2B Enquiries', path: '/vendor/b2b-enquiries', icon: <Building2 size={18} /> },
+        { name: 'Direct Booking', path: '/vendor/direct-booking', icon: <Truck size={18} /> },
         { name: 'My Pricing', path: '/vendor/my-pricing', icon: <DollarSign size={18} /> },
         { name: 'Finance Form', path: '/vendor/finance', icon: <Wallet size={18} /> },
         { name: 'Finance List', path: '/vendor/finance-list', icon: <FileSpreadsheet size={18} /> },
