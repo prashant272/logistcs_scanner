@@ -57,13 +57,12 @@ const vendorStatsFetcher = async ([key, filterType, customStart, customEnd]) => 
             startDate = new Date(customStart);
             endDate = new Date(customEnd);
             endDate.setHours(23, 59, 59, 999);
+        } else if (filterType === 'This Month') {
+            startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+            endDate = new Date();
         } else if (filterType === 'Weekly') {
             startDate = new Date();
             startDate.setDate(now.getDate() - 7);
-            endDate = new Date();
-        } else if (filterType === 'Last 15 Days') {
-            startDate = new Date();
-            startDate.setDate(now.getDate() - 15);
             endDate = new Date();
         } else if (filterType === 'Monthly') {
             startDate = new Date();
@@ -121,10 +120,10 @@ const VendorDashboardMain = () => {
         let start = new Date();
         if (rangeType === 'Weekly') {
             start.setDate(now.getDate() - 7);
-        } else if (rangeType === 'Last 15 Days') {
-            start.setDate(now.getDate() - 15);
         } else if (rangeType === 'Monthly') {
             start.setMonth(now.getMonth() - 1);
+        } else if (rangeType === 'This Month') {
+            start = new Date(now.getFullYear(), now.getMonth(), 1);
         } else {
             return 'All Time Data';
         }
@@ -184,13 +183,13 @@ const VendorDashboardMain = () => {
             )}
 
             {/* Filter Strip */}
-            <div className="bg-white border border-slate-100/80 shadow-[0_8px_30px_rgba(11,30,67,0.02)] rounded-2xl p-5 flex flex-wrap items-center justify-between gap-4">
-                <div className="flex items-center gap-4 flex-wrap">
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+            <div className="bg-white border border-slate-100/80 shadow-[0_8px_30px_rgba(11,30,67,0.02)] rounded-2xl p-4 flex flex-wrap xl:flex-nowrap items-center justify-between gap-4">
+                <div className="flex items-center gap-3 flex-wrap sm:flex-nowrap shrink-0">
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5 shrink-0">
                         <Menu size={12} className="text-[#0066FF]" /> Filter Set
                     </span>
-                    <div className="flex gap-1.5 bg-slate-50 p-1 rounded-xl border border-slate-100">
-                        {['All Time', 'Monthly', 'Weekly', 'Last 15 Days', 'Custom Date'].map((t) => (
+                    <div className="flex gap-1 bg-slate-50 p-1 rounded-xl border border-slate-100 shrink-0">
+                        {['All Time', 'This Month', 'Monthly', 'Weekly', 'Custom Date'].map((t) => (
                             <button
                                 key={t}
                                 onClick={() => {
@@ -229,9 +228,9 @@ const VendorDashboardMain = () => {
                     )}
                 </div>
 
-                <div className="flex items-center gap-3 flex-wrap md:flex-nowrap">
+                <div className="flex items-center gap-3 shrink-0 flex-wrap sm:flex-nowrap">
                     {/* Date Selector Display */}
-                    <div className="bg-[#f4f7fc] border border-slate-100 px-4 py-2.5 rounded-xl text-xs font-bold text-slate-700 flex items-center gap-2">
+                    <div className="bg-[#f4f7fc] border border-slate-100 px-4 py-2.5 rounded-xl text-xs font-bold text-slate-700 flex items-center gap-2 shrink-0">
                         <Calendar size={14} className="text-slate-400" />
                         <span>{getDateRangeDisplay(filterType) || 'Select Custom Dates'}</span>
                     </div>
