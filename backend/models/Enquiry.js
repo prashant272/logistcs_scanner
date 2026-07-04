@@ -202,7 +202,7 @@ const enquirySchema = new mongoose.Schema({
         type: Date,
         default: Date.now
     }
-});
+}, { timestamps: true });
 
 enquirySchema.index({ status: 1 });
 enquirySchema.index({ client: 1, isDirect: 1, isBooking: 1 });

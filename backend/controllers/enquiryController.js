@@ -773,8 +773,10 @@ exports.getVendorStats = async (req, res) => {
             {
                 $project: {
                     isLocked: 1,
+                    isDirect: 1,
                     status: 1,
                     createdAt: 1,
+                    updatedAt: 1,
                     myResponse: {
                         $cond: {
                             if: { $eq: [isAdmin, false] },
@@ -795,20 +797,34 @@ exports.getVendorStats = async (req, res) => {
             {
                 $project: {
                     isLocked: 1,
+                    isDirect: 1,
                     status: 1,
                     createdAt: 1,
+                    updatedAt: 1,
                     myResponse: 1,
                     isMyResponseAccepted: {
                         $cond: {
                             if: { $eq: [isAdmin, false] },
-                            then: { $eq: ["$myResponse.status", "Accepted"] },
+                            then: {
+                                $cond: {
+                                    if: { $eq: ["$isDirect", true] },
+                                    then: { $eq: ["$myResponse.status", "Accepted"] },
+                                    else: { $eq: ["$status", "Accepted"] }
+                                }
+                            },
                             else: { $eq: ["$status", "Accepted"] }
                         }
                     },
                     isMyResponseDeclined: {
                         $cond: {
                             if: { $eq: [isAdmin, false] },
-                            then: { $eq: ["$myResponse.status", "Declined"] },
+                            then: {
+                                $cond: {
+                                    if: { $eq: ["$isDirect", true] },
+                                    then: { $eq: ["$myResponse.status", "Declined"] },
+                                    else: { $eq: ["$status", "Declined"] }
+                                }
+                            },
                             else: { $eq: ["$status", "Declined"] }
                         }
                     }
@@ -836,20 +852,8 @@ exports.getVendorStats = async (req, res) => {
                                 { $and: [
                                     { $not: ["$isLocked"] },
                                     "$isMyResponseAccepted",
-                                    startDate ? {
-                                        $cond: {
-                                            if: { $eq: [isAdmin, false] },
-                                            then: { $gte: ["$myResponse.createdAt", startDate] },
-                                            else: { $gte: ["$createdAt", startDate] }
-                                        }
-                                    } : true,
-                                    endDate ? {
-                                        $cond: {
-                                            if: { $eq: [isAdmin, false] },
-                                            then: { $lte: ["$myResponse.createdAt", endDate] },
-                                            else: { $lte: ["$createdAt", endDate] }
-                                        }
-                                    } : true
+                                    startDate ? { $gte: [{ $ifNull: ["$updatedAt", { $ifNull: ["$myResponse.createdAt", "$createdAt"] }] }, startDate] } : true,
+                                    endDate ? { $lte: [{ $ifNull: ["$updatedAt", { $ifNull: ["$myResponse.createdAt", "$createdAt"] }] }, endDate] } : true
                                 ] }, 
                                 1, 0
                             ] 
@@ -861,20 +865,8 @@ exports.getVendorStats = async (req, res) => {
                                 { $and: [
                                     { $not: ["$isLocked"] },
                                     "$isMyResponseDeclined",
-                                    startDate ? {
-                                        $cond: {
-                                            if: { $eq: [isAdmin, false] },
-                                            then: { $gte: ["$myResponse.createdAt", startDate] },
-                                            else: { $gte: ["$createdAt", startDate] }
-                                        }
-                                    } : true,
-                                    endDate ? {
-                                        $cond: {
-                                            if: { $eq: [isAdmin, false] },
-                                            then: { $lte: ["$myResponse.createdAt", endDate] },
-                                            else: { $lte: ["$createdAt", endDate] }
-                                        }
-                                    } : true
+                                    startDate ? { $gte: [{ $ifNull: ["$updatedAt", { $ifNull: ["$myResponse.createdAt", "$createdAt"] }] }, startDate] } : true,
+                                    endDate ? { $lte: [{ $ifNull: ["$updatedAt", { $ifNull: ["$myResponse.createdAt", "$createdAt"] }] }, endDate] } : true
                                 ] }, 
                                 1, 0
                             ] 
