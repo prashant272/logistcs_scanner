@@ -223,6 +223,7 @@ exports.createEnquiry = async (req, res) => {
 // Get enquiries for the vendor
 exports.getVendorEnquiries = async (req, res) => {
     try {
+        const User = require('../models/User');
         const isAdmin = req.user.id === 'ad0000000000000000000000';
         let currentUser = null;
         let hasActivePlan = true;
@@ -234,7 +235,6 @@ exports.getVendorEnquiries = async (req, res) => {
                 role: 'admin'
             };
         } else {
-            const User = require('../models/User');
             currentUser = await User.findById(req.user.id).populate('activePlan');
             if (!currentUser || (currentUser.verificationStatus !== 'Approved' && currentUser.role === 'vendor')) {
                 return res.json([]); // Return empty list of leads if vendor is not approved
@@ -242,9 +242,15 @@ exports.getVendorEnquiries = async (req, res) => {
             hasActivePlan = currentUser.activePlan && currentUser.planEndDate && new Date(currentUser.planEndDate) > new Date();
         }
 
-        const { type } = req.query; // 'my' or 'direct'
-        if (type !== 'my' && type !== 'direct') {
-            return res.status(400).json({ message: 'Valid enquiry type ("my" or "direct") is required' });
+        const { type } = req.query; // 'my', 'direct', or 'b2b'
+        if (type !== 'my' && type !== 'direct' && type !== 'b2b') {
+            return res.status(400).json({ message: 'Valid enquiry type ("my", "direct" or "b2b") is required' });
+        }
+
+        const isPaidPlan = hasActivePlan && currentUser.activePlan && currentUser.activePlan.price > 0;
+
+        if (type === 'b2b' && !isPaidPlan) {
+            return res.status(403).json({ message: 'Your current plan is not access b2b enquiry please upgrade your plan to see b2b enquiry' });
         }
 
         const isBookingFilter = req.query.isBooking === 'true';
@@ -266,9 +272,16 @@ exports.getVendorEnquiries = async (req, res) => {
                         isDirect: false
                     };
                 } else if (type === 'direct') {
+                    const customerIds = await User.find({ role: 'customer' }).distinct('_id');
                     query = {
                         isDirect: true,
-                        client: { $ne: req.user.id }
+                        client: { $in: customerIds }
+                    };
+                } else if (type === 'b2b') {
+                    const vendorIds = await User.find({ role: 'vendor' }).distinct('_id');
+                    query = {
+                        isDirect: true,
+                        client: { $in: vendorIds, $ne: req.user.id }
                     };
                 }
             }
@@ -276,13 +289,13 @@ exports.getVendorEnquiries = async (req, res) => {
             // Admin queries
             if (type === 'my') {
                 query = { isDirect: false, isBooking: isBookingFilter };
-            } else if (type === 'direct') {
+            } else if (type === 'direct' || type === 'b2b') {
                 query = { isDirect: true, isBooking: isBookingFilter };
             }
         }
 
         // Apply vendor filter date/service logic for direct incoming enquiries
-        if (!isAdmin && type === 'direct' && !isBookingFilter && currentUser) {
+        if (!isAdmin && (type === 'direct' || type === 'b2b') && !isBookingFilter && currentUser) {
             // Filter by creation date relative to user approval/creation
             if (currentUser.approvedAt) {
                 query.createdAt = { $gte: currentUser.approvedAt };
