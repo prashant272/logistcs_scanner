@@ -51,7 +51,7 @@ exports.getAllPtlBookings = async (req, res) => {
 
 exports.estimatePrice = async (req, res) => {
     try {
-        const { weight_g, dimensions, source_pin, consignee_pin, payment_mode, cod_amount, freight_mode, rov_insurance } = req.body;
+        const { weight_g, dimensions, source_pin, consignee_pin, payment_mode, cod_amount, shipment_value, freight_mode, rov_insurance } = req.body;
         
         // Parse dimensions from string '10x10x10,20x20x20' to array of objects or strings depending on what Delhivery expects. 
         // Commonly they expect list of objects: [{length: 10, breadth: 10, height: 10}] or just list of strings.
@@ -74,7 +74,7 @@ exports.estimatePrice = async (req, res) => {
             payment_mode: payment_mode.toLowerCase() === 'cod' ? 'cod' : 'prepaid',
             freight_mode: freight_mode || 'fod',
             rov_insurance: rov_insurance !== undefined ? rov_insurance : false,
-            inv_amount: cod_amount ? parseFloat(cod_amount) : 1000 // invoice amount is mandatory
+            inv_amount: shipment_value ? parseFloat(shipment_value) : (cod_amount ? parseFloat(cod_amount) : 1000) // invoice amount is mandatory for insurance
         };
         
         console.log("SENDING TO DELHIVERY:", JSON.stringify(payload, null, 2));
@@ -112,12 +112,23 @@ exports.estimatePrice = async (req, res) => {
 
         const finalPrice = basePrice + (basePrice * (markupPercent / 100));
 
+        // 3. Fetch Expected TAT
+        let tatData = null;
+        if (source_pin && consignee_pin) {
+            tatData = await delhiveryService.estimateTat(source_pin, consignee_pin);
+        }
+
+        const responseBreakup = delhiveryResponse.breakup || {};
+        if (tatData && tatData.tat) {
+            responseBreakup.tat = tatData.tat;
+        }
+
         res.status(200).json({
             success: true,
             basePrice,
             finalPrice,
             markupApplied: markupPercent,
-            breakup: delhiveryResponse.breakup
+            breakup: responseBreakup
         });
 
     } catch (error) {

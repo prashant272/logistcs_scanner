@@ -750,19 +750,23 @@ const SearchPrice = ({ isDashboard = false }) => {
                                                     <div className="w-40">
                                                         <select value={lclWeightRange} onChange={(e) => setLclWeightRange(e.target.value)} className="w-full bg-white border border-slate-300 rounded-xl px-3 py-3 text-xs font-bold !text-slate-900 focus:outline-none focus:border-[#0066FF] shadow-sm cursor-pointer">
                                                             <option value="">Select Weight</option>
-                                                            <option value="0-5">0-5 Tonnes</option>
-                                                            <option value="5-15">5-15 Tonnes</option>
-                                                            <option value="15-45">15-45 Tonnes</option>
-                                                            <option value="45+">45+ Tonnes</option>
+                                                            <option value="45+">45+ KG</option>
+                                                            <option value="100">100 KG</option>
+                                                            <option value="200">200 KG</option>
+                                                            <option value="300">300 KG</option>
+                                                            <option value="500">500 KG</option>
+                                                            <option value="1000+">1000+ KG</option>
                                                         </select>
                                                     </div>
                                                     <div className="w-40">
                                                         <select value={lclVolumeRange} onChange={(e) => setLclVolumeRange(e.target.value)} className="w-full bg-[#f0f7ff] border border-[#0066FF]/30 rounded-xl px-3 py-3 text-xs font-bold !text-slate-900 focus:outline-none focus:border-[#0066FF] shadow-sm cursor-pointer">
                                                             <option value="">Select Volume</option>
                                                             <option value="0-5">0-5 CBM</option>
-                                                            <option value="5-15">5-15 CBM</option>
-                                                            <option value="15-45">15-45 CBM</option>
-                                                            <option value="45+">45+ CBM</option>
+                                                            <option value="5-10">5-10 CBM</option>
+                                                            <option value="10-15">10-15 CBM</option>
+                                                            <option value="15-20">15-20 CBM</option>
+                                                            <option value="20-25">20-25 CBM</option>
+                                                            <option value="25+">25+ CBM</option>
                                                         </select>
                                                     </div>
                                                 </div>

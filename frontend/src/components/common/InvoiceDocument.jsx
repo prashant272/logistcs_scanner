@@ -89,7 +89,7 @@ const InvoiceDocument = React.forwardRef(({ rateResult, boxes, totalWeight, orig
                             </tr>
                             <tr>
                                 <td style={{ border: '1px solid #d1d5db', padding: '6px 8px', fontWeight: '600', backgroundColor: '#f9fafb' }}>Service</td>
-                                <td style={{ border: '1px solid #d1d5db', padding: '6px 8px' }}>{rateResult?.freightMode || 'Surface Express'}</td>
+                                <td style={{ border: '1px solid #d1d5db', padding: '6px 8px' }}>{rateResult?.breakup?.mode || rateResult?.freightMode || 'Surface Express'}</td>
                             </tr>
                             <tr>
                                 <td style={{ border: '1px solid #d1d5db', padding: '6px 8px', fontWeight: '600', backgroundColor: '#f9fafb' }}>Weight</td>
@@ -111,7 +111,14 @@ const InvoiceDocument = React.forwardRef(({ rateResult, boxes, totalWeight, orig
                             </tr>
                             <tr>
                                 <td style={{ border: '1px solid #d1d5db', padding: '6px 8px', fontWeight: '600', backgroundColor: '#f9fafb' }}>Transit</td>
-                                <td style={{ border: '1px solid #d1d5db', padding: '6px 8px' }}>~4 Business Days</td>
+                                <td style={{ border: '1px solid #d1d5db', padding: '6px 8px' }}>
+                                    {rateResult?.breakup?.expected_delivery_date 
+                                        ? new Date(rateResult.breakup.expected_delivery_date).toLocaleDateString('en-GB') 
+                                        : (rateResult?.breakup?.tat 
+                                            ? `~${rateResult.breakup.tat} Business Days` 
+                                            : '~4 Business Days'
+                                        )}
+                                </td>
                             </tr>
                         </tbody>
                     </table>

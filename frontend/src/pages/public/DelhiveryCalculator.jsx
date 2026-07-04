@@ -125,6 +125,7 @@ const DelhiveryCalculator = ({ isDashboard = false }) => {
                 dimensions: dimensionsPayload,
                 payment_mode: paymentMode,
                 cod_amount: paymentMode === 'COD' ? shipmentAmount : 0,
+                shipment_value: shipmentAmount,
                 freight_mode: freightMode,
                 rov_insurance: insurance === 'delhivery'
             }, {
@@ -447,10 +448,18 @@ const DelhiveryCalculator = ({ isDashboard = false }) => {
                                     <div className="bg-white rounded-[22px] p-6 md:p-8 h-full flex flex-col">
                                         <div className="flex justify-between items-start mb-6">
                                             <div>
-                                                <span className="inline-block bg-blue-50 text-blue-600 text-xs font-black px-2.5 py-1 rounded mb-3 uppercase tracking-widest border border-blue-100">Surface Express</span>
+                                                <span className="inline-block bg-blue-50 text-blue-600 text-xs font-black px-2.5 py-1 rounded mb-3 uppercase tracking-widest border border-blue-100">
+                                                    {rateResult.breakup?.mode || 'Surface Express'}
+                                                </span>
                                                 <div className="text-4xl font-black text-gray-900 tracking-tight">₹{rateResult.finalPrice?.toLocaleString('en-IN', { minimumFractionDigits: 0 })}</div>
                                                 <p className="text-sm font-bold text-green-600 mt-2 flex items-center gap-1.5">
-                                                    <Truck size={16} /> Delivery in ~4 days
+                                                    <Truck size={16} /> 
+                                                    {rateResult.breakup?.expected_delivery_date 
+                                                        ? `Delivery by ${new Date(rateResult.breakup.expected_delivery_date).toLocaleDateString('en-GB')}` 
+                                                        : (rateResult.breakup?.tat 
+                                                            ? `Delivery in ~${rateResult.breakup.tat} days` 
+                                                            : 'Delivery in ~4 days'
+                                                          )}
                                                 </p>
                                             </div>
                                             <div className="w-14 h-14 bg-blue-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-blue-600/30">

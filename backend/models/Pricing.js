@@ -33,6 +33,11 @@ const pricingSchema = new mongoose.Schema({
         trim: true,
         default: ''
     },
+    shippingLine: {
+        type: String,
+        trim: true,
+        default: ''
+    },
     weightRange: {
         type: String,
         trim: true,

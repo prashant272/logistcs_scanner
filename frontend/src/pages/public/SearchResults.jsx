@@ -294,7 +294,6 @@ const SearchResults = () => {
       excludedVendor: rate ? rate.vendor._id : null,
       ...(guestInfo || {})
     };
-
     try {
       if (rate && rate.is_delhivery) {
         const token = localStorage.getItem('token');

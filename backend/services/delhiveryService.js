@@ -76,6 +76,30 @@ const delhiveryService = {
             throw error.response?.data || error;
         }
     },
+    // 2.5 Calculate Expected TAT
+    async estimateTat(origin_pin, destination_pin) {
+        try {
+            const token = await this.getToken();
+            const config = await DelhiveryConfig.findOne();
+            const baseUrl = getBaseUrl(config.is_production);
+
+            const response = await axios.get(`${baseUrl}/tat/estimate?origin_pin=${origin_pin}&destination_pin=${destination_pin}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'X-Source': 'Client'
+                }
+            });
+
+            if (response.data && response.data.success) {
+                return response.data.data;
+            } else {
+                return null;
+            }
+        } catch (error) {
+            console.error('Delhivery TAT Estimate Error:', error.response?.data || error.message);
+            return null; // Return null instead of throwing so it doesn't break rate calculation
+        }
+    },
 
     // 3. Create Warehouse (For Aggregators / Dynamic Pickups)
     async createWarehouse(payload) {

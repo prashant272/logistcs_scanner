@@ -432,6 +432,7 @@ exports.adminAddPricing = async (req, res) => {
             type,
             category,
             airline,
+            shippingLine,
             weightRange,
             truckLoad,
             vehicleType,
@@ -453,6 +454,7 @@ exports.adminAddPricing = async (req, res) => {
             type,
             category,
             airline,
+            shippingLine,
             weightRange,
             truckLoad,
             vehicleType,
@@ -460,7 +462,7 @@ exports.adminAddPricing = async (req, res) => {
             additionalServices,
             deliverySpeed,
             validUntil,
-            price,
+            price: Number(price),
             status: 'active'
         });
 
@@ -516,6 +518,7 @@ exports.adminUpdatePricing = async (req, res) => {
             type,
             category,
             airline,
+            shippingLine,
             weightRange,
             truckLoad,
             vehicleType,
@@ -536,6 +539,7 @@ exports.adminUpdatePricing = async (req, res) => {
         pricing.type = type || pricing.type;
         pricing.category = category !== undefined ? category : pricing.category;
         pricing.airline = airline !== undefined ? airline : pricing.airline;
+        pricing.shippingLine = shippingLine !== undefined ? shippingLine : pricing.shippingLine;
         pricing.weightRange = weightRange !== undefined ? weightRange : pricing.weightRange;
         pricing.truckLoad = truckLoad !== undefined ? truckLoad : pricing.truckLoad;
         pricing.vehicleType = vehicleType !== undefined ? vehicleType : pricing.vehicleType;

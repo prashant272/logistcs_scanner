@@ -81,6 +81,7 @@ const DelhiveryCreateOrder = ({ isDashboard = false }) => {
                 dimensions: dimensionsPayload,
                 payment_mode: paymentMode,
                 cod_amount: paymentMode === 'COD' ? amount : 0,
+                shipment_value: amount,
                 freight_mode: freightCollection === 'Freight on Delivery' ? 'fod' : 'fop',
                 rov_insurance: insuranceState === 'delhivery'
             }, {
@@ -644,12 +645,19 @@ const DelhiveryCreateOrder = ({ isDashboard = false }) => {
                                         <div className="flex flex-col gap-2">
                                             <div className="flex justify-between items-center text-xs">
                                                 <span className="text-slate-600 font-medium">Charged Weight</span>
-                                                <span className="text-slate-800 font-bold">{currentRate.data?.charged_wt || localWeight} kg</span>
+                                                <span className="text-slate-800 font-bold">{currentRate.breakup?.charged_wt || localWeight} kg</span>
                                             </div>
                                             <div className="flex justify-between items-center text-xs">
                                                 <span className="text-slate-600 font-medium">Base Freight Charges</span>
-                                                <span className="text-slate-800 font-bold">₹{(currentRate.finalPrice || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                                <span className="text-slate-800 font-bold">₹{((currentRate.finalPrice || 0) - (currentRate.breakup?.price_breakup?.insurance_rov || 0) - (currentRate.breakup?.price_breakup?.gst || 0)).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                                             </div>
+
+                                            {(currentRate.breakup?.price_breakup?.insurance_rov > 0) && (
+                                                <div className="flex justify-between items-center text-xs">
+                                                    <span className="text-slate-600 font-medium">Insurance</span>
+                                                    <span className="text-slate-800 font-bold">₹{currentRate.breakup.price_breakup.insurance_rov.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                                </div>
+                                            )}
 
                                             <div className="mt-2 mb-2 p-3 bg-white border border-slate-200 rounded-lg">
                                                 <div className="flex items-start justify-between">
@@ -659,7 +667,7 @@ const DelhiveryCreateOrder = ({ isDashboard = false }) => {
                                                             id="addMarkup" 
                                                             checked={isMarkupAdded} 
                                                             onChange={(e) => setIsMarkupAdded(e.target.checked)} 
-                                                            className="mt-1 w-4 h-4 text-blue-600 border-slate-300 focus:ring-blue-500 cursor-pointer accent-blue-600 rounded border-slate-300 focus:ring-blue-500"
+                                                            className="mt-1 w-4 h-4 text-blue-600 border-slate-300 focus:ring-blue-500 cursor-pointer accent-blue-600 rounded"
                                                         />
                                                         <div>
                                                             <label htmlFor="addMarkup" className="text-xs font-bold text-[#0B1E43] cursor-pointer">Add Markup</label>
@@ -681,8 +689,8 @@ const DelhiveryCreateOrder = ({ isDashboard = false }) => {
                                             </div>
 
                                             <div className="flex justify-between items-center text-xs">
-                                                <span className="text-slate-600 font-medium">GST at 18%</span>
-                                                <span className="text-slate-800 font-bold">₹{(((currentRate.data?.price_breakup?.gst || 0) + (isMarkupAdded ? (parseFloat(markupValue) || 0) * 0.18 : 0))).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                                <span className="text-slate-600 font-medium">GST ({currentRate.breakup?.price_breakup?.gst_percent || 18}%)</span>
+                                                <span className="text-slate-800 font-bold">₹{(((currentRate.breakup?.price_breakup?.gst || 0) + (isMarkupAdded ? (parseFloat(markupValue) || 0) * 0.18 : 0))).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                                             </div>
 
                                             <div className="flex justify-between items-center pt-2 mt-1 border-t border-slate-200 text-sm">

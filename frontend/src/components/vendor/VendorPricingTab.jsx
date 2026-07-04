@@ -48,6 +48,7 @@ const VendorPricingTab = () => {
   const [type, setType] = useState('air');
   const [category, setCategory] = useState('domestic');
   const [airline, setAirline] = useState('');
+  const [shippingLine, setShippingLine] = useState('');
   const [weightRange, setWeightRange] = useState('');
   const [truckLoad, setTruckLoad] = useState('');
   const [vehicleType, setVehicleType] = useState('');
@@ -192,6 +193,7 @@ const VendorPricingTab = () => {
     setType(rate.type);
     setCategory(rate.category || 'domestic');
     setAirline(rate.airline || '');
+    setShippingLine(rate.shippingLine || '');
     setWeightRange(rate.weightRange || '');
     setCbmRange(rate.cbmRange || '');
     setTruckLoad(rate.truckLoad || '');
@@ -247,6 +249,7 @@ const VendorPricingTab = () => {
       type,
       category,
       airline,
+      shippingLine,
       weightRange,
       cbmRange,
       truckLoad,
@@ -287,6 +290,7 @@ const VendorPricingTab = () => {
     setType('air');
     setCategory('domestic');
     setAirline('');
+    setShippingLine('');
     setWeightRange('');
     setCbmRange('');
     setTruckLoad('');
@@ -739,6 +743,70 @@ const VendorPricingTab = () => {
                   <span className="text-[10px] font-black uppercase tracking-wider text-[#0066FF] block border-b border-slate-200/60 pb-1">Ocean Freight Details</span>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1">
+                      <label className="block text-[10px] font-black text-slate-500 uppercase tracking-wider">Shipping Line</label>
+                      <select
+                        value={shippingLine}
+                        onChange={(e) => setShippingLine(e.target.value)}
+                        className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 focus:outline-none focus:border-[#0066FF]"
+                      >
+                        <option value="">Select Shipping Line</option>
+                        <option value="NVOCC">NVOCC</option>
+                        <option value="Maersk">Maersk</option>
+                        <option value="CMA CGM">CMA CGM</option>
+                        <option value="COSCO Shipping Lines">COSCO Shipping Lines</option>
+                        <option value="Hapag-Lloyd">Hapag-Lloyd</option>
+                        <option value="Ocean Network Express (ONE)">Ocean Network Express (ONE)</option>
+                        <option value="Evergreen Marine">Evergreen Marine</option>
+                        <option value="HMM (Hyundai Merchant Marine)">HMM (Hyundai Merchant Marine)</option>
+                        <option value="Yang Ming Marine Transport">Yang Ming Marine Transport</option>
+                        <option value="ZIM Integrated Shipping Services">ZIM Integrated Shipping Services</option>
+                        <option value="Wan Hai Lines">Wan Hai Lines</option>
+                        <option value="Pacific International Lines (PIL)">Pacific International Lines (PIL)</option>
+                        <option value="X-Press Feeders">X-Press Feeders</option>
+                        <option value="SITC">SITC</option>
+                        <option value="Unifeeder">Unifeeder</option>
+                        <option value="KMTC (Korea Marine Transport)">KMTC (Korea Marine Transport)</option>
+                        <option value="IRISL">IRISL</option>
+                        <option value="Global Feeder Shipping (GFS)">Global Feeder Shipping (GFS)</option>
+                        <option value="Sinokor Merchant Marine">Sinokor Merchant Marine</option>
+                        <option value="TS Lines">TS Lines</option>
+                        <option value="Regional Container Lines (RCL)">Regional Container Lines (RCL)</option>
+                        <option value="Emirates Shipping Line (ESL)">Emirates Shipping Line (ESL)</option>
+                        <option value="Ningbo Ocean Shipping (NBOSCO)">Ningbo Ocean Shipping (NBOSCO)</option>
+                        <option value="Interasia Lines">Interasia Lines</option>
+                        <option value="SM Line">SM Line</option>
+                        <option value="Matson">Matson</option>
+                        <option value="Grimaldi Lines">Grimaldi Lines</option>
+                        <option value="Sinotrans Container Lines">Sinotrans Container Lines</option>
+                        <option value="Antong Holdings (QASC)">Antong Holdings (QASC)</option>
+                        <option value="Tangshan Port Hede Shipping">Tangshan Port Hede Shipping</option>
+                        <option value="APL">APL</option>
+                        <option value="ANL">ANL</option>
+                        <option value="CNC Line">CNC Line</option>
+                        <option value="OOCL">OOCL</option>
+                        <option value="ACL (Atlantic Container Line)">ACL (Atlantic Container Line)</option>
+                        <option value="Arkas Line">Arkas Line</option>
+                        <option value="China Navigation Company (Swire Shipping)">China Navigation Company (Swire Shipping)</option>
+                        <option value="SeaLead Shipping">SeaLead Shipping</option>
+                        <option value="BAL Container Line">BAL Container Line</option>
+                        <option value="CU Lines">CU Lines</option>
+                        <option value="Gold Star Line (GSL)">Gold Star Line (GSL)</option>
+                        <option value="Samudera Shipping">Samudera Shipping</option>
+                        <option value="Sea Hawk Lines">Sea Hawk Lines</option>
+                        <option value="Sea Consortium">Sea Consortium</option>
+                        <option value="Transfar Shipping">Transfar Shipping</option>
+                        <option value="NewNew Shipping">NewNew Shipping</option>
+                        <option value="Bengal Tiger Line">Bengal Tiger Line</option>
+                        <option value="Heung-A Shipping">Heung-A Shipping</option>
+                        <option value="Dong Young Shipping">Dong Young Shipping</option>
+                        <option value="CK Line">CK Line</option>
+                        <option value="Sinotrans">Sinotrans</option>
+                        <option value="Sealand (Intra-Americas)">Sealand (Intra-Americas)</option>
+                        <option value="Safmarine (Maersk Brand)">Safmarine (Maersk Brand)</option>
+                        <option value="Others">Others</option>
+                      </select>
+                    </div>
+                    <div className="space-y-1">
                       <label className="block text-[10px] font-black text-slate-500 uppercase tracking-wider">Load Type</label>
                       <select
                         value={seaLoadType}
@@ -760,10 +828,10 @@ const VendorPricingTab = () => {
                           className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 focus:outline-none focus:border-[#0066FF]"
                         >
                          <option value="20ft">20ft Standard</option>
-<option value="40ft">40ft Standard</option>
-<option value="40ft HC">40ft High Cube</option>
-<option value="20ft Reefer">20ft REFRIGERATED</option>
-<option value="40ft Reefer">40ft REFRIGERATED</option>
+                         <option value="40ft">40ft Standard</option>
+                        <option value="40ft HC">40ft High Cube</option>
+                        <option value="20ft Reefer">20ft REFRIGERATED</option>
+                        <option value="40ft Reefer">40ft REFRIGERATED</option>
                         </select>
                       </div>
                     )}
@@ -778,10 +846,12 @@ const VendorPricingTab = () => {
                             className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 focus:outline-none focus:border-[#0066FF]"
                           >
                             <option value="">Select Weight</option>
-                            <option value="0-5">0-5 Tonnes</option>
-                            <option value="5-15">5-15 Tonnes</option>
-                            <option value="15-45">15-45 Tonnes</option>
-                            <option value="45+">45+ Tonnes</option>
+                            <option value="45+">45+ KG</option>
+                            <option value="100">100 KG</option>
+                            <option value="200">200 KG</option>
+                            <option value="300">300 KG</option>
+                            <option value="500">500 KG</option>
+                            <option value="1000+">1000+ KG</option>
                           </select>
                         </div>
                         <div className="space-y-1">
@@ -793,9 +863,11 @@ const VendorPricingTab = () => {
                           >
                             <option value="">Select Volume</option>
                             <option value="0-5">0-5 CBM</option>
-                            <option value="5-15">5-15 CBM</option>
-                            <option value="15-45">15-45 CBM</option>
-                            <option value="45+">45+ CBM</option>
+                            <option value="5-10">5-10 CBM</option>
+                            <option value="10-15">10-15 CBM</option>
+                            <option value="15-20">15-20 CBM</option>
+                            <option value="20-25">20-25 CBM</option>
+                            <option value="25+">25+ CBM</option>
                           </select>
                         </div>
                       </>
