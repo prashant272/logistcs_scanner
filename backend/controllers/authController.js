@@ -102,7 +102,7 @@ exports.registerUser = async (req, res) => {
 // Verify OTP
 exports.verifyOTP = async (req, res) => {
     try {
-        const { email, otp } = req.body;
+        const { email, otp, source } = req.body;
 
         if (!email || !otp) {
             return res.status(400).json({ message: 'Please provide email and OTP' });
@@ -126,6 +126,7 @@ exports.verifyOTP = async (req, res) => {
         user.isVerified = true;
         user.otp = '';
         user.otpExpires = null;
+         user.lastLoginSource = source === 'app' ? 'app' : 'web';
         await user.save();
 
         // Send Welcome SMS if from India
