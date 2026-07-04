@@ -67,6 +67,8 @@ exports.getVendors = async (req, res) => {
                 const endOfDay = new Date();
                 endOfDay.setHours(23, 59, 59, 999);
                 query.lastActive = { $gte: startOfDay, $lte: endOfDay };
+                // Must have logged in (lastActive should be strictly greater than createdAt by at least 1 second)
+                query.$expr = { $gt: [{ $subtract: ["$lastActive", "$createdAt"] }, 5000] };
             } else if (statusFilter === 'Premium Vendors') {
                 const Plan = require('../models/Plan');
                 // Find plans containing the word 'Premium'
