@@ -531,7 +531,7 @@ const DelhiveryCalculator = ({ isDashboard = false }) => {
                                                 disabled={isDownloading}
                                                 className="w-full bg-blue-50 text-blue-700 border-2 border-blue-200 hover:bg-blue-100 hover:border-blue-300 py-3 rounded-xl font-bold text-md transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
                                             >
-                                                {isDownloading ? <><Loader2 className="animate-spin" size={18} /> Generating...</> : <><Download size={18} /> Download Invoice</>}
+                                                {isDownloading ? <><Loader2 className="animate-spin" size={18} /> Generating...</> : <><Download size={18} /> Download Quotation</>}
                                             </button>
                                         </div>
                                         

@@ -277,6 +277,7 @@ function App() {
                     <Route path="/upgrade" element={<CustomerPrivateRoute><PricingPlans /></CustomerPrivateRoute>} />
                     <Route path="/order-success" element={<OrderSuccess />} />
                     <Route path="/vendor-auth" element={<VendorAuth />} />
+                    <Route path="*" element={<Navigate to="/" replace />} />
                   </Routes>
                 </main>
                 <Footer />

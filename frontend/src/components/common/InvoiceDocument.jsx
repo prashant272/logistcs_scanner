@@ -70,6 +70,12 @@ const InvoiceDocument = React.forwardRef(({ rateResult, boxes, totalWeight, orig
                                     <td style={{ border: '1px solid #d1d5db', padding: '6px 8px' }}>{vendorLsId}</td>
                                 </tr>
                             )}
+                            {isVendor && user?.phone && (
+                                <tr>
+                                    <td style={{ border: '1px solid #d1d5db', padding: '6px 8px', fontWeight: '600', backgroundColor: '#f9fafb' }}>Vendor Phone</td>
+                                    <td style={{ border: '1px solid #d1d5db', padding: '6px 8px' }}>{user.phone}</td>
+                                </tr>
+                            )}
                         </tbody>
                     </table>
                 </div>

@@ -90,7 +90,8 @@ const Footer = () => {
                             <div className="flex gap-3 items-center">
                                 {/* App Store Badge */}
                                 <a 
-                                    href="#" 
+                                    href="https://apps.apple.com/us/app/logisticsscanner-freight-cha/id6749311566" 
+                                    target="_blank" rel="noopener noreferrer"
                                     className="bg-black text-white px-3.5 py-2 rounded-xl flex items-center gap-2.5 border border-slate-800 hover:bg-slate-900 transition-all shadow-sm w-36 justify-center"
                                 >
                                     <svg className="w-6 h-6 text-white" viewBox="0 0 170 170">
@@ -104,7 +105,8 @@ const Footer = () => {
 
                                 {/* Google Play Badge */}
                                 <a 
-                                    href="#" 
+                                    href="https://play.google.com/store/apps/details?id=com.logosticdekhoapp.app&hl=en_IN" 
+                                    target="_blank" rel="noopener noreferrer"
                                     className="bg-black text-white px-3.5 py-2 rounded-xl flex items-center gap-2.5 border border-slate-800 hover:bg-slate-900 transition-all shadow-sm w-36 justify-center"
                                 >
                                     <svg className="w-6 h-6" viewBox="0 0 24 24">
