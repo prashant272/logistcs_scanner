@@ -3,7 +3,7 @@ import axios from 'axios';
 import useInfiniteScroll from '../../hooks/useInfiniteScroll';
 import { 
   ShieldCheck, Truck, Mail, Phone, MapPin, Building, Calendar, 
-  Search, ExternalLink, LogIn, CheckCircle2, AlertCircle, Upload, RefreshCw, Plus, X, Loader2, Activity
+  Search, ExternalLink, LogIn, CheckCircle2, AlertCircle, Upload, RefreshCw, Plus, X, Loader2, Activity, Edit
 } from 'lucide-react';
 
 const VendorManagement = () => {
@@ -32,6 +32,14 @@ const VendorManagement = () => {
   const [addingVendor, setAddingVendor] = useState(false);
   const [addFormData, setAddFormData] = useState({
     name: '', email: '', password: '', phone: '', company: ''
+  });
+
+  // Edit Vendor Modal State
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingVendor, setEditingVendor] = useState(false);
+  const [editVendorId, setEditVendorId] = useState(null);
+  const [editFormData, setEditFormData] = useState({
+    company: '', email: '', phone: '', country: ''
   });
 
   useEffect(() => {
@@ -298,10 +306,42 @@ const VendorManagement = () => {
       setAddFormData({ name: '', email: '', password: '', phone: '', company: '' });
       handleRefresh();
     } catch (err) {
-      console.error('Failed to create vendor', err);
-      alert(err.response?.data?.message || 'Failed to create vendor');
+      console.error('Error adding user:', err);
+      alert(err.response?.data?.message || 'Failed to add user');
     } finally {
       setAddingVendor(false);
+    }
+  };
+
+  const handleEditClick = (vendor) => {
+    setEditVendorId(vendor._id);
+    setEditFormData({
+      company: vendor.company || '',
+      email: vendor.email || '',
+      phone: vendor.phone || '',
+      country: vendor.country || 'India'
+    });
+    setShowEditModal(true);
+  };
+
+  const handleEditVendor = async (e) => {
+    e.preventDefault();
+    setEditingVendor(true);
+    try {
+      const token = sessionStorage.getItem('adminToken');
+      await axios.put(
+        `${import.meta.env.VITE_API_BASE_URL}/admin/vendors/${editVendorId}`,
+        editFormData,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setShowEditModal(false);
+      fetchVendors(page, true);
+      alert('Vendor details updated successfully');
+    } catch (err) {
+      console.error('Error updating vendor:', err);
+      alert(err.response?.data?.message || 'Failed to update vendor');
+    } finally {
+      setEditingVendor(false);
     }
   };
 
@@ -401,6 +441,7 @@ const VendorManagement = () => {
                 <tr>
                   <th className="p-4 text-center">Dashboard</th>
                   <th className="p-4 text-center">Activity</th>
+                  <th className="p-4 text-center">Edit</th>
                   <th className="p-4">First Name</th>
                   <th className="p-4">Last Name</th>
                   <th className="p-4">Email</th>
@@ -449,6 +490,15 @@ const VendorManagement = () => {
                           title="View Vendor Activity"
                         >
                           <Activity size={14} />
+                        </button>
+                      </td>
+                      <td className="p-4 text-center">
+                        <button
+                          onClick={() => handleEditClick(vendor)}
+                          className="bg-green-100 hover:bg-green-200 text-green-700 text-[10px] font-black p-1.5 rounded-lg flex items-center gap-1.5 mx-auto cursor-pointer transition-colors"
+                          title="Edit Vendor Details"
+                        >
+                          <Edit size={14} />
                         </button>
                       </td>
                       <td className="p-4 text-slate-800">{firstName}</td>
@@ -773,6 +823,91 @@ const VendorManagement = () => {
                 <div className="text-center text-red-500 font-bold py-8">Failed to load data.</div>
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Vendor Modal */}
+      {showEditModal && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl border border-slate-200">
+            <div className="bg-[#f8fafc] p-6 border-b border-slate-100 flex justify-between items-center">
+              <div>
+                <h3 className="text-xl font-black text-[#0B1E43]">Edit Vendor Details</h3>
+                <p className="text-xs text-slate-500 font-bold mt-1">Update vendor's profile information</p>
+              </div>
+              <button 
+                onClick={() => setShowEditModal(false)}
+                className="p-2 hover:bg-slate-200 rounded-full transition-colors text-slate-400"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            
+            <form onSubmit={handleEditVendor} className="p-6 space-y-4">
+              <div>
+                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">Company Name</label>
+                <input
+                  type="text"
+                  required
+                  value={editFormData.company}
+                  onChange={(e) => setEditFormData({...editFormData, company: e.target.value})}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-700 focus:outline-none focus:border-[#0066FF] focus:ring-1 focus:ring-[#0066FF] transition-all"
+                  placeholder="Company Name"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">Email Address</label>
+                <input
+                  type="email"
+                  required
+                  value={editFormData.email}
+                  onChange={(e) => setEditFormData({...editFormData, email: e.target.value})}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-700 focus:outline-none focus:border-[#0066FF] focus:ring-1 focus:ring-[#0066FF] transition-all"
+                  placeholder="vendor@company.com"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">Phone Number</label>
+                <input
+                  type="text"
+                  value={editFormData.phone}
+                  onChange={(e) => setEditFormData({...editFormData, phone: e.target.value})}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-700 focus:outline-none focus:border-[#0066FF] focus:ring-1 focus:ring-[#0066FF] transition-all"
+                  placeholder="+91..."
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">Country</label>
+                <input
+                  type="text"
+                  value={editFormData.country}
+                  onChange={(e) => setEditFormData({...editFormData, country: e.target.value})}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-700 focus:outline-none focus:border-[#0066FF] focus:ring-1 focus:ring-[#0066FF] transition-all"
+                  placeholder="India"
+                />
+              </div>
+
+              <div className="pt-4 flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowEditModal(false)}
+                  className="flex-1 py-3 rounded-xl text-sm font-black uppercase tracking-wider bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={editingVendor}
+                  className="flex-1 py-3 rounded-xl text-sm font-black uppercase tracking-wider bg-[#0066FF] text-white hover:bg-[#0052cc] transition-colors shadow-[0_10px_20px_rgba(0,102,255,0.2)] hover:shadow-[0_10px_20px_rgba(0,102,255,0.3)] disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {editingVendor ? <><Loader2 size={16} className="animate-spin" /> Saving...</> : 'Save Changes'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

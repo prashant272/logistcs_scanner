@@ -22,7 +22,8 @@ const {
     deleteEnquiry,
     adminAddUser,
     updateVendorEnquiryLimit,
-    updateVendorPlan
+    updateVendorPlan,
+    updateVendorDetails
 } = require("../controllers/adminController");
 const auth = require("../middleware/authMiddleware");
 
@@ -40,7 +41,7 @@ router.get("/impersonate/:vendorId", auth, impersonateVendor);
 router.put("/vendors/:id/verify", auth, toggleVendorVerification);
 router.put("/vendors/:id/enquiry-limit", auth, updateVendorEnquiryLimit);
 router.put("/vendors/:id/plan", auth, updateVendorPlan);
-
+router.put("/vendors/:id", auth, updateVendorDetails);
 // Admin pricing management routes
 router.get("/pricing/:vendorId", auth, adminGetVendorPricing);
 router.post("/pricing", auth, adminAddPricing);

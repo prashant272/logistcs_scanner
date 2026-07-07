@@ -838,3 +838,30 @@ exports.updateVendorPlan = async (req, res) => {
         res.status(500).json({ message: 'Server error', error: error.message });
     }
 };
+
+// @desc    Update vendor details
+// @route   PUT /api/admin/vendors/:id
+// @access  Private (Admin)
+exports.updateVendorDetails = async (req, res) => {
+    try {
+        const vendorId = req.params.id;
+        const { company, email, phone, country } = req.body;
+
+        const vendor = await User.findById(vendorId);
+        if (!vendor || vendor.role !== 'vendor') {
+            return res.status(404).json({ message: 'Vendor not found' });
+        }
+
+        if (company) vendor.company = company;
+        if (email) vendor.email = email;
+        if (phone) vendor.phone = phone;
+        if (country) vendor.country = country;
+
+        await vendor.save();
+
+        const updatedVendor = await User.findById(vendorId).populate('activePlan').select('-password');
+        res.json({ message: 'Vendor details updated successfully', vendor: updatedVendor });
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
