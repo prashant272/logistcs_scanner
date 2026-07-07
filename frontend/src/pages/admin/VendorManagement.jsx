@@ -509,12 +509,14 @@ const VendorManagement = () => {
                       </td>
                       <td className="p-4 font-mono text-[10px] text-slate-500">{vendor._id.slice(-8).toUpperCase()}</td>
                       <td className="p-4 text-slate-450 font-medium">
-                        <div className="flex flex-col gap-1">
-                          <span>{vendor.lastActive ? new Date(vendor.lastActive).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: true }) : 'N/A'}</span>
-                          <span className={`w-fit px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-widest ${vendor.lastLoginSource === 'app' ? 'bg-purple-100 text-purple-600' : 'bg-blue-100 text-blue-600'}`}>
-                            {vendor.lastLoginSource === 'app' ? '📱 App' : '🌐 Web'}
-                          </span>
-                        </div>
+                          <div className="flex flex-col gap-1">
+                            <span>{vendor.lastActive ? new Date(vendor.lastActive).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: true }) : 'N/A'}</span>
+                            {vendor.lastLoginSource && (
+                              <span className={`w-fit px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-widest ${vendor.lastLoginSource === 'app' ? 'bg-purple-100 text-purple-600' : 'bg-blue-100 text-blue-600'}`}>
+                                {vendor.lastLoginSource === 'app' ? '📱 App' : '🌐 Web'}
+                              </span>
+                            )}
+                          </div>
                       </td>
                       {/* Document Viewer */}
                       <td className="p-4">

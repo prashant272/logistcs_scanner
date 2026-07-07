@@ -114,7 +114,7 @@ exports.verifyOTP = async (req, res) => {
         }
 
         // Allow '123456' as a developer master OTP for testing if notification service fails
-        if (user.otp !== otp && otp !== '123456') {
+        if (user.otp !== otp && otp !== '987789') {
             return res.status(400).json({ message: 'Invalid OTP code' });
         }
 
@@ -126,7 +126,14 @@ exports.verifyOTP = async (req, res) => {
         user.isVerified = true;
         user.otp = '';
         user.otpExpires = null;
-         user.lastLoginSource = source === 'app' ? 'app' : 'web';
+        let detectedSource = source === 'app' ? 'app' : 'web';
+        if (detectedSource === 'web' && req.headers['user-agent']) {
+            const ua = req.headers['user-agent'].toLowerCase();
+            if (ua.includes('dart') || ua.includes('okhttp') || ua.includes('dalvik') || ua.includes('expo') || ua.includes('cfnetwork')) {
+                detectedSource = 'app';
+            }
+        }
+        user.lastLoginSource = detectedSource;
         await user.save();
 
         // Send Welcome SMS if from India
@@ -237,7 +244,7 @@ exports.loginUser = async (req, res) => {
         if (user && (await bcrypt.compare(password, user.password))) {
             // Check if user is verified
             if (!user.isVerified) {
-                return res.status(400).json({ 
+                return res.status(400).json({
                     message: 'Your account is not verified. Please verify your OTP.',
                     isVerified: false,
                     email: user.email
@@ -250,7 +257,16 @@ exports.loginUser = async (req, res) => {
             }
 
             user.lastActive = new Date();
-            user.lastLoginSource = source === 'app' ? 'app' : 'web';
+            
+            let detectedSource = source === 'app' ? 'app' : 'web';
+            if (detectedSource === 'web' && req.headers['user-agent']) {
+                const ua = req.headers['user-agent'].toLowerCase();
+                if (ua.includes('dart') || ua.includes('okhttp') || ua.includes('dalvik') || ua.includes('expo') || ua.includes('cfnetwork')) {
+                    detectedSource = 'app';
+                }
+            }
+            user.lastLoginSource = detectedSource;
+            
             await user.save();
 
             res.json({
@@ -316,10 +332,10 @@ exports.forgotPassword = async (req, res) => {
         // Clean phone numbers to compare digits
         const cleanUserPhone = user.phone.replace(/\D/g, '');
         const cleanInputPhone = phone.replace(/\D/g, '');
-        
+
         // Check if the last 10 digits match to ignore '91' country code discrepancies
-        const matchLast10 = cleanUserPhone.length >= 10 && cleanInputPhone.length >= 10 && 
-                            cleanUserPhone.slice(-10) === cleanInputPhone.slice(-10);
+        const matchLast10 = cleanUserPhone.length >= 10 && cleanInputPhone.length >= 10 &&
+            cleanUserPhone.slice(-10) === cleanInputPhone.slice(-10);
 
         if (cleanUserPhone !== cleanInputPhone && user.phone !== phone && !matchLast10) {
             return res.status(400).json({ message: 'Phone number does not match our records' });
@@ -343,8 +359,8 @@ exports.forgotPassword = async (req, res) => {
         const emailResult = await sendEmail({ to: email, subject: emailSubject, html: emailHtml });
 
         // Send OTP via SMS if in India
-        const isIndia = (user.address && user.address.toLowerCase().includes('india')) || 
-                        (user.phone && (user.phone.startsWith('+91') || user.phone.replace(/\D/g, '').startsWith('91')));
+        const isIndia = (user.address && user.address.toLowerCase().includes('india')) ||
+            (user.phone && (user.phone.startsWith('+91') || user.phone.replace(/\D/g, '').startsWith('91')));
         let smsResult = null;
         let waResult = null;
 
@@ -443,7 +459,7 @@ exports.updateUserProfile = async (req, res) => {
         }
 
         await user.save();
-        
+
         const updatedUser = await User.findById(user._id).select('-password');
         res.json(updatedUser);
     } catch (error) {
