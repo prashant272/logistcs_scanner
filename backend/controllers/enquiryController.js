@@ -528,22 +528,18 @@ exports.updateEnquiryStatus = async (req, res) => {
             startOfMonth.setHours(0, 0, 0, 0);
 
             let alreadyRespondedThis = false;
-            if (enquiry.isDirect) {
-                if (enquiry.vendor && enquiry.vendor.toString() === req.user.id && ['Accepted', 'Quoted'].includes(enquiry.status)) {
-                    alreadyRespondedThis = true;
-                }
-                const existing = enquiry.responses.find(r => r.vendor && r.vendor.toString() === req.user.id);
-                if (existing) alreadyRespondedThis = true;
-            } else {
-                const existing = enquiry.responses.find(r => r.vendor && r.vendor.toString() === req.user.id);
-                if (existing) alreadyRespondedThis = true;
+            if (enquiry.vendor && enquiry.vendor.toString() === req.user.id && ['Accepted', 'Quoted'].includes(enquiry.status)) {
+                alreadyRespondedThis = true;
             }
+            const existing = enquiry.responses.find(r => r.vendor && r.vendor.toString() === req.user.id);
+            if (existing) alreadyRespondedThis = true;
 
             if (!alreadyRespondedThis) {
+                const vendorObjectId = new mongoose.Types.ObjectId(req.user.id);
                 const acceptedCount = await Enquiry.countDocuments({
                     $or: [
-                        { vendor: req.user.id, status: { $in: ['Accepted', 'Quoted'] }, updatedAt: { $gte: startOfMonth } },
-                        { 'responses': { $elemMatch: { vendor: req.user.id } }, updatedAt: { $gte: startOfMonth } }
+                        { vendor: vendorObjectId, status: { $in: ['Accepted', 'Quoted'] }, updatedAt: { $gte: startOfMonth } },
+                        { 'responses': { $elemMatch: { vendor: vendorObjectId, status: { $in: ['Accepted', 'Quoted'] }, createdAt: { $gte: startOfMonth } } } }
                     ]
                 });
 
