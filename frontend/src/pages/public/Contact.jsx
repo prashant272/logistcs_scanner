@@ -1,8 +1,15 @@
 import React, { useState } from 'react';
 import { MapPin, Phone, Mail, Clock, MessageCircle, ChevronDown, ChevronUp, Package, Globe, Truck, ArrowRight, CheckCircle, AlertCircle } from 'lucide-react';
 import api from '../../api/axios';
+import useSEO from '../../hooks/useSEO';
 
 const Contact = () => {
+    useSEO({
+        title: 'Contact Logistics Scanner | Customer Support & Inquiries',
+        description: 'Get in touch with Logistics Scanner. Our customer support team is here to help with your freight rate comparisons and logistics vendor queries.',
+        keywords: 'logistics scanner, freight rate comparison, shipping rates online, logistics platform India, freight forwarding services'
+    });
+
     const [userType, setUserType] = useState('Client');
     const [topic, setTopic] = useState('');
     const [name, setName] = useState('');

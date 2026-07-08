@@ -2,6 +2,13 @@
 <html lang="en">
 
 <head>
+  <!-- Domain Redirect -->
+  <script>
+    if (window.location.hostname === 'logisticsscanner.com') {
+      window.location.replace('https://www.logisticsscanner.com' + window.location.pathname + window.location.search + window.location.hash);
+    }
+  </script>
+
   <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-R464RPT64E"></script>
   <script>
@@ -24,12 +31,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <!-- Primary Meta Tags -->
-  <title>Logistics Scanner | Best Courier & Cargo Logistics Partner</title>
-  <meta name="title" content="Logistics Scanner | Best Courier & Cargo Logistics Partner" />
+  <title>Logistics Scanner – Compare Freight Rates & Find Trusted Logistics Vendors</title>
+  <meta name="title" content="Logistics Scanner – Compare Freight Rates & Find Trusted Logistics Vendors" />
   <meta name="description"
-    content="Logistics Scanner - #1 Courier & Cargo Service. Official logistics partner. Free home pickup and global tracking." />
+    content="Compare real-time freight rates from verified logistics vendors. Logistics Scanner helps businesses find reliable shipping partners for air, sea, and land transport." />
   <meta name="keywords"
-    content="Logistics Scanner, Courier Service, Best Courier Service, Cargo Logistics, Free Home Pickup, International Shipping, Domestic Courier" />
+    content="logistics scanner, freight rate comparison, shipping rates online, logistics platform India, freight forwarding services, compare logistics vendors, shipping cost calculator, air freight rates, sea freight rates, transport services India, logistics marketplace, cargo shipping platform, international shipping rates, best freight forwarders India, logistics vendor registration, compare freight rates online, freight forwarding services, air freight forwarding, ocean freight shipping, shipping logistics services, freight forwarding companies, international freight forwarder, logistics companies near me, freight brokers near me, logistics vendor platform, online freight marketplace, logistics marketplace India" />
   <meta name="author" content="Logistics Scanner" />
 
   <!-- Open Graph / Facebook -->
@@ -48,26 +55,48 @@
     content="Reliable Courier & Cargo Service. Express delivery and international shipping with free home pickup." />
   <meta property="twitter:image" content="https://www.logisticscanner.com/og-image.jpg" />
 
-  <!-- Canonical URL -->
-  <link rel="canonical" href="https://www.logisticscanner.com/" />
+  <!-- Canonical URL & Robots -->
+  <link rel="canonical" id="canonical-tag" href="https://www.logisticsscanner.com/" />
+  <meta name="robots" content="index, follow" />
+  <script>
+    // Automatically update canonical tag based on the current path for SPA
+    const canonicalLink = document.getElementById('canonical-tag');
+    if (canonicalLink) {
+      const path = window.location.pathname;
+      canonicalLink.setAttribute('href', 'https://www.logisticsscanner.com' + (path === '/' ? '' : path));
+    }
+    
+    // Support for history navigation (when React Router changes path)
+    const observeUrlChange = () => {
+      let oldHref = document.location.href;
+      const body = document.querySelector('body');
+      const observer = new MutationObserver(() => {
+        if (oldHref !== document.location.href) {
+          oldHref = document.location.href;
+          const newPath = window.location.pathname;
+          canonicalLink.setAttribute('href', 'https://www.logisticsscanner.com' + (newPath === '/' ? '' : newPath));
+        }
+      });
+      observer.observe(body, { childList: true, subtree: true });
+    };
+    window.onload = observeUrlChange;
+  </script>
 
   <link href="/src/index.css" rel="stylesheet">
 </head>
 
 <body>
   <noscript>
-    <h1>Logistics Scanner - Best Courier & Logistics Services</h1>
-    <p>Welcome to Logistics Scanner, your trusted destination for high-speed courier, cargo, and international shipping
-      services. We deliver value at your doorstep.</p>
-    <p>Explore our services including domestic express, industrial cargo, and global logistics. Book your pickup online today.</p>
+    <h1>Logistics Scanner - Compare Freight Rates & Find Trusted Logistics Vendors</h1>
+    <p>Welcome to Logistics Scanner, the leading platform to compare real-time freight rates from verified logistics vendors.</p>
+    <p>We help businesses find reliable shipping partners for air freight, sea freight, and land transport. Join our logistics marketplace today.</p>
   </noscript>
   <div id="root">
     <!-- These paragraphs provide initial content for SEO crawlers and a loading state -->
     <div style="display: none;">
-      <h1>Logistics Scanner - Best Courier & Cargo Services</h1>
-      <p>Looking for the most reliable courier near you? Logistics Scanner offers logistics solutions, free home
-        pickup, and global tracking. Our services specialize in express delivery, industrial cargo, and international shipping.</p>
-      <p>Book now to experience the trusted standard of logistics with Logistics Scanner.</p>
+      <h1>Logistics Scanner - Compare Freight Rates & Find Trusted Logistics Vendors</h1>
+      <p>Looking for reliable shipping partners? Logistics Scanner offers real-time freight rate comparisons from verified logistics vendors for air, sea, and land transport.</p>
+      <p>Find the best freight forwarders in India, compare shipping rates online, and streamline your cargo logistics on our marketplace.</p>
     </div>
     <div id="loader"
       style="height: 100vh; display: flex; align-items: center; justify-content: center; background: #0a0a0a; color: #0066FF; font-family: sans-serif;">

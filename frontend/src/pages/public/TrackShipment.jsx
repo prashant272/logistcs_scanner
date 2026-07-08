@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Search, Package, CheckCircle, Truck, Globe, Clock, Phone, AlertCircle, ExternalLink, ChevronRight } from 'lucide-react';
+import useSEO from '../../hooks/useSEO';
 
 const carriers = [
     {
@@ -82,6 +83,12 @@ const faqs = [
 ];
 
 const TrackShipment = () => {
+    useSEO({
+        title: 'Track Shipment | Real-Time Cargo Tracking by Logistics Scanner',
+        description: 'Track your cargo shipments in real-time. Logistics Scanner provides seamless tracking for your air, sea, and land transport.',
+        keywords: 'logistics scanner, freight rate comparison, shipping rates online, logistics platform India, freight forwarding services'
+    });
+
     const [awb, setAwb] = useState('');
     const [selectedCarrier, setSelectedCarrier] = useState(null);
     const [openFaq, setOpenFaq] = useState(null);

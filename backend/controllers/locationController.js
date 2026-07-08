@@ -14,7 +14,7 @@ exports.addLocation = async (req, res) => {
             state
         } = req.body;
 
-        if (!type || !code || !name || !country || !countryCode || !city || !state) {
+        if (!type || (!code && type !== 'Land Port') || !name || !country || !countryCode || !city || !state) {
             return res.status(400).json({ message: 'All required fields must be filled' });
         }
 

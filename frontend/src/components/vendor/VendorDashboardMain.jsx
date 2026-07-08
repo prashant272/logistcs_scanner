@@ -8,7 +8,7 @@ import FinanceSection from './FinanceSection';
 import ComplaintsSection from './ComplaintsSection';
 import UserProfileSection from './UserProfileSection';
 import RelationshipManagerCard from './RelationshipManagerCard';
-import { Calendar, RotateCcw, Menu, AlertCircle } from 'lucide-react';
+import { Calendar, RotateCcw, Menu, AlertCircle, Phone, Mail } from 'lucide-react';
 
 const vendorStatsFetcher = async ([key, filterType, customStart, customEnd]) => {
     const token = localStorage.getItem('userToken');
@@ -47,7 +47,7 @@ const vendorStatsFetcher = async ([key, filterType, customStart, customEnd]) => 
         }
     } catch (e) { }
 
-    if (status === 'Approved') {
+    if (status === 'Approved' || status === 'Pre Approved') {
         let url = `${import.meta.env.VITE_API_BASE_URL}/enquiries/vendor/stats?`;
 
         let startDate, endDate;
@@ -139,7 +139,7 @@ const VendorDashboardMain = () => {
     return (
         <div className="space-y-6">
             {/* Pending Vendor Message Overlay */}
-            {vendorStatus !== 'Approved' && user?.role !== 'admin' && (
+            {vendorStatus !== 'Approved' && vendorStatus !== 'Pre Approved' && user?.role !== 'admin' && (
                 <div className="bg-white rounded-3xl p-10 border border-amber-100 shadow-[0_8px_30px_rgba(11,30,67,0.02)] text-center flex flex-col items-center justify-center min-h-[400px]">
                     <AlertCircle size={48} className="text-amber-500 mb-4" />
                     <h2 className="text-2xl font-black text-[#0B1E43] tracking-tight mb-2">Profile Action Required</h2>
@@ -148,6 +148,19 @@ const VendorDashboardMain = () => {
                             ? 'Your profile registration has been declined. Please update your document or contact support.'
                             : 'Please go to the Profile tab and upload supporting documents like GST, Business PAN Card, or any other business supported documents.'}
                     </p>
+
+                    <div className="mt-8 pt-6 border-t border-slate-100/50 w-full max-w-sm flex flex-col items-center gap-3">
+                        <span className="uppercase tracking-widest text-[11px] font-black text-slate-400">For Support</span>
+                        <div className="flex flex-col sm:flex-row items-center gap-4 text-sm font-bold text-slate-600">
+                            <a href="tel:9266850036" className="flex items-center gap-2 hover:text-blue-600 transition-colors">
+                                <Phone size={16} /> 9266850036
+                            </a>
+                            <span className="hidden sm:inline text-slate-300">|</span>
+                            <a href="mailto:info@logisticsscanner.com" className="flex items-center gap-2 hover:text-blue-600 transition-colors">
+                                <Mail size={16} /> info@logisticsscanner.com
+                            </a>
+                        </div>
+                    </div>
                 </div>
             )}
 
@@ -251,8 +264,8 @@ const VendorDashboardMain = () => {
                     </button>
                 </div>
             </div>
-
-            {vendorStatus === 'Approved' || user?.role === 'admin' ? (
+            {/* Stats Overview */}
+            {vendorStatus === 'Approved' || vendorStatus === 'Pre Approved' || user?.role === 'admin' ? (
                 <>
                     {/* Main Layout Grid */}
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">

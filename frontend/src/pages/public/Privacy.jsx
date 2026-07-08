@@ -1,7 +1,14 @@
 import React from 'react';
 import { Eye, Calendar, ShieldCheck, Mail, Phone, MapPin, Building, Info } from 'lucide-react';
+import useSEO from '../../hooks/useSEO';
 
 const Privacy = () => {
+    useSEO({
+        title: 'Privacy Policy | Logistics Scanner Data Protection',
+        description: 'Read the Logistics Scanner Privacy Policy to understand how we collect, use, and protect your personal and business information.',
+        keywords: 'logistics scanner, freight rate comparison, shipping rates online, logistics platform India, freight forwarding services'
+    });
+
     return (
         <div className="bg-slate-50 min-h-screen pt-28 pb-20 font-sans text-slate-900">
             <div className="container mx-auto px-6 max-w-4xl">

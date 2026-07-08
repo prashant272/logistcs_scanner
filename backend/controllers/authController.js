@@ -304,10 +304,21 @@ exports.getUserProfile = async (req, res) => {
                 verificationStatus: 'Approved'
             });
         }
-        const user = await User.findById(req.user.id).select('-password').populate('activePlan').populate('assignedRM').populate('parentCompany', 'company gst pan');
+        let user = await User.findById(req.user.id).select('-password').populate('activePlan').populate('assignedRM').populate('parentCompany', 'company gst pan');
         if (user && !req.user.impersonated) {
             user.lastActive = new Date();
-            await user.save().catch(err => console.error("Error saving lastActive:", err));
+            
+            // Check for Pre Approved 4-day expiry
+            if (user.verificationStatus === 'Pre Approved' && user.preApprovedAt) {
+                const diffTime = Math.abs(new Date() - new Date(user.preApprovedAt));
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                if (diffDays > 4) {
+                    user.verificationStatus = 'Pending';
+                    user.preApprovedAt = null;
+                }
+            }
+
+            await user.save().catch(err => console.error("Error saving user:", err));
         }
         res.json(user);
     } catch (error) {
@@ -452,20 +463,29 @@ exports.updateUserProfile = async (req, res) => {
 
         if (req.body.firstName || req.body.lastName) {
             const first = req.body.firstName || user.firstName;
-            const last = req.body.lastName || user.lastName;
-            user.name = `${first} ${last}`.trim();
-        } else if (req.body.name) {
-            user.name = req.body.name;
+            res.json({
+                _id: user.id,
+                name: user.name,
+                email: user.email,
+                phone: user.phone,
+                address: user.address,
+                role: user.role,
+                company: user.company,
+                assignedRM: user.assignedRM,
+                verificationStatus: user.verificationStatus,
+                isVerified: user.isVerified,
+                walletBalance: user.walletBalance || 0,
+                token: generateToken(user.id)
+            });
+        } else {
+            res.status(401).json({ message: 'Invalid credentials' });
         }
-
-        await user.save();
-
-        const updatedUser = await User.findById(user._id).select('-password');
-        res.json(updatedUser);
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
     }
 };
+
+
 
 // Delete User Account
 exports.deleteUserAccount = async (req, res) => {
@@ -474,12 +494,46 @@ exports.deleteUserAccount = async (req, res) => {
             return res.status(403).json({ message: 'Admin profile cannot be deleted' });
         }
         const user = await User.findById(req.user.id);
-        if (!user) {
-            return res.status(404).json({ message: 'User not found' });
-        }
-
+        if (!user) return res.status(404).json({ message: 'User not found' });
+        
         await User.findByIdAndDelete(req.user.id);
         res.json({ message: 'Account deleted successfully' });
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
+
+// Submit Pre Approved Document
+exports.submitPreApprovedDoc = async (req, res) => {
+    try {
+        const { documentUrl } = req.body;
+        if (!documentUrl) {
+            return res.status(400).json({ message: 'Document URL is required' });
+        }
+
+        const user = await User.findById(req.user.id);
+        if (!user) return res.status(404).json({ message: 'User not found' });
+
+        if (user.verificationStatus !== 'Pre Approved') {
+            return res.status(400).json({ message: 'User is not in Pre Approved status' });
+        }
+
+        user.uploadedDocument = documentUrl;
+        user.preApprovedAt = null;
+
+        await user.save();
+
+        // Send notification to admin
+        const Notification = require('../models/Notification');
+        await Notification.create({
+            userId: 'ad0000000000000000000000',
+            message: `Pre-Approved: ${user.company || user.name} has uploaded a new document.`,
+            type: 'info'
+        }).catch(err => console.error("Error creating notification:", err));
+
+        // Return updated user without password
+        const updatedUser = await User.findById(req.user.id).select('-password').populate('activePlan').populate('assignedRM').populate('parentCompany', 'company gst pan');
+        res.json({ message: 'Document uploaded successfully', user: updatedUser });
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
     }

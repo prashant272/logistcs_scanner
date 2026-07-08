@@ -56,11 +56,13 @@ exports.getVendors = async (req, res) => {
 
         if (statusFilter !== 'All Status') {
             if (statusFilter === 'Approved') {
-                query.$or = [{ verificationStatus: 'Approved' }, { isVerified: true, verificationStatus: { $nin: ['Approved', 'Declined', 'Pending'] } }];
+                query.$or = [{ verificationStatus: 'Approved' }, { isVerified: true, verificationStatus: { $nin: ['Approved', 'Declined', 'Pending', 'Pre Approved'] } }];
             } else if (statusFilter === 'Declined') {
                 query.verificationStatus = 'Declined';
             } else if (statusFilter === 'Pending') {
-                query.$or = [{ verificationStatus: 'Pending' }, { isVerified: false, verificationStatus: { $nin: ['Approved', 'Declined', 'Pending'] } }];
+                query.$or = [{ verificationStatus: 'Pending' }, { isVerified: false, verificationStatus: { $nin: ['Approved', 'Declined', 'Pending', 'Pre Approved'] } }];
+            } else if (statusFilter === 'Pre Approved') {
+                query.verificationStatus = 'Pre Approved';
             } else if (statusFilter === 'Login') {
                 const startOfDay = new Date();
                 startOfDay.setHours(0, 0, 0, 0);
@@ -373,7 +375,7 @@ exports.impersonateVendor = async (req, res) => {
 exports.toggleVendorVerification = async (req, res) => {
     try {
         const { status } = req.body;
-        if (status && !['Pending', 'Approved', 'Declined'].includes(status)) {
+        if (status && !['Pending', 'Pre Approved', 'Approved', 'Declined'].includes(status)) {
             return res.status(400).json({ message: 'Invalid status value' });
         }
         const vendor = await User.findById(req.params.id);
@@ -383,6 +385,10 @@ exports.toggleVendorVerification = async (req, res) => {
         if (status) {
             vendor.verificationStatus = status;
             vendor.isVerified = (status === 'Approved');
+            if (status === 'Pre Approved') {
+                vendor.preApprovedAt = new Date();
+                vendor.uploadedDocument = ''; // Clear old document so popup shows
+            }
         } else {
             // fallback toggle logic
             vendor.isVerified = !vendor.isVerified;

@@ -142,8 +142,12 @@ const userSchema = new mongoose.Schema({
     },
     verificationStatus: {
         type: String,
-        enum: ['Pending', 'Approved', 'Declined'],
+        enum: ['Pending', 'Pre Approved', 'Approved', 'Declined'],
         default: 'Pending'
+    },
+    preApprovedAt: {
+        type: Date,
+        default: null
     },
     approvedAt: {
         type: Date,

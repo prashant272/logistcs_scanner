@@ -3,8 +3,15 @@ import { useAuth } from '../../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import { ShieldCheck, ArrowRight, Eye, EyeOff } from 'lucide-react';
 import CountrySelect from '../../components/common/CountrySelect';
+import useSEO from '../../hooks/useSEO';
 
 const Register = () => {
+    useSEO({
+        title: 'Register on Logistics Scanner | Join Our Logistics Marketplace',
+        description: 'Create an account on Logistics Scanner to find reliable shipping partners, compare transport rates, and optimize your global logistics network.',
+        keywords: 'logistics scanner, freight rate comparison, shipping rates online, logistics platform India, freight forwarding services'
+    });
+
     const [formData, setFormData] = useState({
         firstName: '',
         lastName: '',

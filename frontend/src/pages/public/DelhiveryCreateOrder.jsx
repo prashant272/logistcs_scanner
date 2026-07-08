@@ -6,8 +6,15 @@ import Navbar from '../../components/common/Navbar';
 import Footer from '../../components/common/Footer';
 import { useAuth } from '../../context/AuthContext';
 import AddressModal from '../../components/common/AddressModal';
+import useSEO from '../../hooks/useSEO';
 
 const DelhiveryCreateOrder = ({ isDashboard = false }) => {
+    useSEO({
+        title: 'Create Shipping Order | Book Your Cargo Transport',
+        description: 'Easily create a new shipping order on Logistics Scanner. Book reliable air, sea, or land transport with our verified vendor network.',
+        keywords: 'logistics scanner, freight rate comparison, shipping rates online, logistics platform India, freight forwarding services'
+    });
+
     const location = useLocation();
     const navigate = useNavigate();
     const { user } = useAuth();

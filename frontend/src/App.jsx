@@ -49,7 +49,7 @@ import SearchPrice from './components/public/SearchPrice';
 import SearchResults from './pages/public/SearchResults';
 
 // Lazy loaded public pages
-const Menu = lazy(() => import('./pages/public/Menu'));
+
 const VendorNetwork = lazy(() => import('./pages/public/VendorNetwork'));
 const VendorPublicProfile = lazy(() => import('./pages/public/VendorPublicProfile'));
 const TrackShipment = lazy(() => import('./pages/public/TrackShipment'));
@@ -57,12 +57,11 @@ const Terms = lazy(() => import('./pages/public/Terms'));
 const Privacy = lazy(() => import('./pages/public/Privacy'));
 const Refund = lazy(() => import('./pages/public/Refund'));
 const Support = lazy(() => import('./pages/public/Support'));
-const PlanRates = lazy(() => import('./pages/public/PlanRates'));
+
 
 // Lazy loaded customer pages
-const Checkout = lazy(() => import('./pages/customer/Checkout'));
-const OrderSuccess = lazy(() => import('./pages/customer/OrderSuccess'));
-const MyOrders = lazy(() => import('./pages/customer/MyOrders'));
+
+
 const CustomerDashboard = lazy(() => import('./pages/customer/CustomerDashboard'));
 const CustomerEnquiriesTab = lazy(() => import('./components/customer/CustomerEnquiriesTab'));
 const CustomerComplaintsTab = lazy(() => import('./components/customer/CustomerComplaintsTab'));
@@ -256,7 +255,7 @@ function App() {
                 <main className="flex-grow">
                   <Routes>
                     <Route path="/" element={<Home />} />
-                    <Route path="/menu" element={<Menu />} />
+
                     <Route path="/about" element={<About />} />
                     <Route path="/contact" element={<Contact />} />
                     <Route path="/login" element={<Login />} />
@@ -271,11 +270,9 @@ function App() {
                     <Route path="/privacy" element={<Privacy />} />
                     <Route path="/refund" element={<Refund />} />
                     <Route path="/support" element={<Support />} />
-                    <Route path="/plan-rates" element={<PlanRates />} />
-                    <Route path="/my-orders" element={<CustomerPrivateRoute><MyOrders /></CustomerPrivateRoute>} />
-                    <Route path="/checkout" element={<CustomerPrivateRoute><Checkout /></CustomerPrivateRoute>} />
+
+
                     <Route path="/upgrade" element={<CustomerPrivateRoute><PricingPlans /></CustomerPrivateRoute>} />
-                    <Route path="/order-success" element={<OrderSuccess />} />
                     <Route path="/vendor-auth" element={<VendorAuth />} />
                     <Route path="*" element={<Navigate to="/" replace />} />
                   </Routes>

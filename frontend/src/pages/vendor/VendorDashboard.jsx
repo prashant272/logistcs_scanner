@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import VendorSidebar from '../../components/vendor/VendorSidebar';
 import VendorHeader from '../../components/vendor/VendorHeader';
 import VendorNotificationPopup from '../../components/vendor/VendorNotificationPopup';
+import PreApprovedPopup from '../../components/vendor/PreApprovedPopup';
 
 const VendorDashboard = () => {
     const { user, logout } = useAuth();
@@ -54,6 +55,7 @@ const VendorDashboard = () => {
                 </main>
 
                 <VendorNotificationPopup />
+                <PreApprovedPopup />
             </div>
         </div>
     );

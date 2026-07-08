@@ -7,8 +7,15 @@ import { MapPin, Info, ArrowRight, Loader2, Box, Truck, Search, CheckCircle, X, 
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import InvoiceDocument from '../../components/common/InvoiceDocument';
+import useSEO from '../../hooks/useSEO';
 
 const DelhiveryCalculator = ({ isDashboard = false }) => {
+    useSEO({
+        title: 'Shipping Rate Calculator | Estimate Your Freight Costs',
+        description: 'Calculate your shipping costs instantly with our freight rate calculator. Get accurate estimates for your cargo transportation with Logistics Scanner.',
+        keywords: 'logistics scanner, freight rate comparison, shipping rates online, logistics platform India, freight forwarding services'
+    });
+
     const { user } = useAuth();
     const navigate = useNavigate();
     

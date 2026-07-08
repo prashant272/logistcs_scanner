@@ -9,7 +9,7 @@ const locationSchema = new mongoose.Schema({
     },
     code: {
         type: String,
-        required: true,
+        required: function() { return this.type !== 'Land Port'; },
         trim: true,
         uppercase: true
     },

@@ -1,7 +1,14 @@
 import React from 'react';
 import { ShieldCheck, Calendar, Building, Globe, MapPin, Mail, Phone } from 'lucide-react';
+import useSEO from '../../hooks/useSEO';
 
 const Terms = () => {
+    useSEO({
+        title: 'Terms of Service | Logistics Scanner User Agreement',
+        description: 'Review the Terms of Service for Logistics Scanner. Understand the rules, guidelines, and agreements for using our freight comparison platform.',
+        keywords: 'logistics scanner, freight rate comparison, shipping rates online, logistics platform India, freight forwarding services'
+    });
+
     return (
         <div className="bg-slate-50 min-h-screen pt-28 pb-20 font-sans text-slate-900">
             <div className="container mx-auto px-6 max-w-4xl">

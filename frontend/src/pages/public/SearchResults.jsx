@@ -12,8 +12,15 @@ import { useEnquiries } from '../../services/EnquiryService';
 import { useLocations } from '../../services/LocationService';
 
 import { COUNTRIES } from '../../utils/countries';
+import useSEO from '../../hooks/useSEO';
 
 const maskEmail = (email) => {
+    useSEO({
+        title: 'Search Logistics Vendors | Compare Freight Providers',
+        description: 'Search and compare verified logistics vendors. Find the perfect shipping partner for your cargo with Logistics Scanner.',
+        keywords: 'logistics scanner, freight rate comparison, shipping rates online, logistics platform India, freight forwarding services'
+    });
+
   if (!email) return 'N/A';
   const parts = email.split('@');
   if (parts.length !== 2) return email;

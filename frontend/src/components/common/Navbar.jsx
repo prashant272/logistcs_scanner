@@ -54,7 +54,7 @@ const Navbar = () => {
                     <Link to="/about" className={linkClass}>
                         About
                     </Link>
-                    <Link to="/my-orders" className={linkClass}>
+                    <Link to="/login" className={linkClass}>
                         Customer
                     </Link>
                     <Link to="/vendor-network" className={linkClass}>
@@ -127,7 +127,7 @@ const Navbar = () => {
                         About
                     </Link>
                     <Link
-                        to="/my-orders"
+                        to="/login"
                         onClick={() => setIsMobileMenuOpen(false)}
                         className="text-black hover:text-[#0091d5] text-base uppercase tracking-widest font-black"
                     >

@@ -2,8 +2,15 @@ import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { Mail, Lock, ShieldCheck, ArrowRight, Activity, Phone } from 'lucide-react';
+import useSEO from '../../hooks/useSEO';
 
 const Login = () => {
+    useSEO({
+        title: 'Login to Logistics Scanner | Manage Your Freight Operations',
+        description: 'Login to your Logistics Scanner account to manage your cargo shipping, track shipments, and compare freight rates from top logistics vendors.',
+        keywords: 'logistics scanner, freight rate comparison, shipping rates online, logistics platform India, freight forwarding services'
+    });
+
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const { login, verifyOtp, resendOtp, forgotPassword, resetPassword } = useAuth();

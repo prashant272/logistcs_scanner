@@ -221,6 +221,14 @@ const VendorManagement = () => {
 
   // Set Verification status (Approved / Pending / Declined)
   const handleSetStatus = async (vendorId, status) => {
+    // Optimistic Update
+    const previousVendors = [...vendors];
+    setVendors(prev => prev.map(v => v._id === vendorId ? { 
+      ...v, 
+      isVerified: status === 'Approved', 
+      verificationStatus: status 
+    } : v));
+
     try {
       const token = sessionStorage.getItem('adminToken');
       const config = {
@@ -228,16 +236,11 @@ const VendorManagement = () => {
           Authorization: `Bearer ${token}`
         }
       };
-      const { data } = await axios.put(`${import.meta.env.VITE_API_BASE_URL}/admin/vendors/${vendorId}/verify`, { status }, config);
-      
-      // Update local state
-      setVendors(prev => prev.map(v => v._id === vendorId ? { 
-        ...v, 
-        isVerified: data.isVerified, 
-        verificationStatus: data.verificationStatus 
-      } : v));
+      await axios.put(`${import.meta.env.VITE_API_BASE_URL}/admin/vendors/${vendorId}/verify`, { status }, config);
     } catch (err) {
       console.error('Update status failed:', err);
+      // Revert Optimistic Update on failure
+      setVendors(previousVendors);
       alert('Failed to update status');
     }
   };
@@ -471,6 +474,7 @@ const VendorManagement = () => {
           >
             <option value="All Status">All Status</option>
             <option value="Approved">Approved</option>
+            <option value="Pre Approved">Pre Approved</option>
             <option value="Declined">Declined</option>
             <option value="Pending">Pending</option>
             <option value="Login">Login</option>
@@ -661,6 +665,12 @@ const VendorManagement = () => {
                         ) : (
                           <span className="text-slate-400 italic font-medium">No Document</span>
                         )}
+                        <button
+                          onClick={() => openVerifyModal(vendor)}
+                          className="mt-2 px-2.5 py-1 w-full rounded-lg text-[9px] font-black uppercase tracking-wider cursor-pointer border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 transition-all"
+                        >
+                          Verify Doc
+                        </button>
                       </td>
                       {/* Verification Status controls (3 buttons) */}
                       <td className="p-4 text-center">
@@ -686,10 +696,14 @@ const VendorManagement = () => {
                             Pending
                           </button>
                           <button
-                            onClick={() => openVerifyModal(vendor)}
-                            className="px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider cursor-pointer border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 transition-all"
+                            onClick={() => handleSetStatus(vendor._id, 'Pre Approved')}
+                            className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider cursor-pointer border transition-all ${
+                              (vendor.verificationStatus === 'Pre Approved')
+                                ? 'bg-purple-500 text-white border-purple-500 shadow-sm shadow-purple-500/10' 
+                                : 'bg-purple-50 text-purple-600 border-purple-100 hover:bg-purple-100/50'
+                            }`}
                           >
-                            Verify Doc
+                            Pre Approve
                           </button>
                           <button
                             onClick={() => handleSetStatus(vendor._id, 'Declined')}

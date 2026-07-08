@@ -1,8 +1,15 @@
 import React from 'react';
 import { Check } from 'lucide-react';
 import GetInTouch from '../../components/common/GetInTouch';
+import useSEO from '../../hooks/useSEO';
 
 const About = () => {
+    useSEO({
+        title: 'About Logistics Scanner | Reliable Freight Forwarding Platform',
+        description: 'Learn more about Logistics Scanner, your trusted logistics platform connecting businesses with verified freight forwarders for seamless global cargo shipping.',
+        keywords: 'logistics scanner, freight rate comparison, shipping rates online, logistics platform India, freight forwarding services'
+    });
+
     return (
         <div className="bg-white min-h-screen pt-20 pb-4 text-slate-900 font-sans selection:bg-blue-100 selection:text-blue-900">
             {/* Who We Are Section */}

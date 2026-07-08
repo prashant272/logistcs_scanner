@@ -1,7 +1,14 @@
 import React, { useState } from 'react';
 import { HelpCircle, User, Building, Mail, MessageSquare, ArrowRight, CheckCircle } from 'lucide-react';
+import useSEO from '../../hooks/useSEO';
 
 const Support = () => {
+    useSEO({
+        title: 'Help & Support | Logistics Scanner Help Center',
+        description: 'Need help? Visit the Logistics Scanner Support Center for FAQs, guides, and assistance with your freight shipping and vendor management.',
+        keywords: 'logistics scanner, freight rate comparison, shipping rates online, logistics platform India, freight forwarding services'
+    });
+
     const [userType, setUserType] = useState('');
     const [helpType, setHelpType] = useState('');
     const [formData, setFormData] = useState({

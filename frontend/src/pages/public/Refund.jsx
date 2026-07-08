@@ -1,7 +1,14 @@
 import React from 'react';
 import { RefreshCcw, Calendar, AlertCircle, Mail, Phone, MapPin, Building, CreditCard } from 'lucide-react';
+import useSEO from '../../hooks/useSEO';
 
 const Refund = () => {
+    useSEO({
+        title: 'Refund Policy | Logistics Scanner Cancellation Terms',
+        description: 'Check our Refund Policy to know the terms and conditions for cancellations, refunds, and disputes related to your logistics bookings.',
+        keywords: 'logistics scanner, freight rate comparison, shipping rates online, logistics platform India, freight forwarding services'
+    });
+
     return (
         <div className="bg-slate-50 min-h-screen pt-28 pb-20 font-sans text-slate-900">
             <div className="container mx-auto px-6 max-w-4xl">

@@ -3,8 +3,15 @@ import { Search, MapPin, Building2, AlertCircle, X, Lock, Eye, CheckCircle2, Shi
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
+import useSEO from '../../hooks/useSEO';
 
 const VendorNetwork = () => {
+    useSEO({
+        title: 'Our Vendor Network | Trusted Logistics Partners',
+        description: 'Explore the extensive network of verified logistics vendors on Logistics Scanner. Find top-rated freight forwarders for your shipping needs.',
+        keywords: 'logistics scanner, freight rate comparison, shipping rates online, logistics platform India, freight forwarding services'
+    });
+
     const { user } = useAuth();
     const navigate = useNavigate();
     const [lsid, setLsid] = useState('');

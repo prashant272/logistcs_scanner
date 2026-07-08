@@ -6,8 +6,15 @@ import {
     MessageSquare, Send, X, Lock, CheckCircle2, Star, Share2, Info, AlertTriangle, AlertCircle, Crown
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import useSEO from '../../hooks/useSEO';
 
 const VendorPublicProfile = () => {
+    useSEO({
+        title: 'Vendor Profile | Verified Freight Forwarders',
+        description: 'View the public profile of our verified logistics vendors. Read reviews, check services, and request quotes directly on Logistics Scanner.',
+        keywords: 'logistics scanner, freight rate comparison, shipping rates online, logistics platform India, freight forwarding services'
+    });
+
     const { id } = useParams();
     const { user } = useAuth();
     const navigate = useNavigate();

@@ -9,7 +9,7 @@ import {
 const VendorSidebar = ({ isSidebarOpen, logout, user }) => {
     const location = useLocation();
 
-    const isPending = user && user.role !== 'admin' && user.verificationStatus !== 'Approved';
+    const isPending = user && user.role !== 'admin' && user.verificationStatus !== 'Approved' && user.verificationStatus !== 'Pre Approved';
 
     const handleNavClick = (e, item) => {
         if (isPending && item.name !== 'View Profile' && item.name !== 'Dashboard') {

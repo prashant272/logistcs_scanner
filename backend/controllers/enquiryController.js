@@ -236,7 +236,7 @@ exports.getVendorEnquiries = async (req, res) => {
             };
         } else {
             currentUser = await User.findById(req.user.id).populate('activePlan');
-            if (!currentUser || (currentUser.verificationStatus !== 'Approved' && currentUser.role === 'vendor')) {
+            if (!currentUser || (currentUser.verificationStatus !== 'Approved' && currentUser.verificationStatus !== 'Pre Approved' && currentUser.role === 'vendor')) {
                 return res.json([]); // Return empty list of leads if vendor is not approved
             }
             hasActivePlan = currentUser.activePlan && currentUser.planEndDate && new Date(currentUser.planEndDate) > new Date();
@@ -703,7 +703,7 @@ exports.getVendorStats = async (req, res) => {
         } else {
             const User = require('../models/User');
             currentUser = await User.findById(req.user.id);
-            if (!currentUser || (currentUser.verificationStatus !== 'Approved' && currentUser.role === 'vendor')) {
+            if (!currentUser || (currentUser.verificationStatus !== 'Approved' && currentUser.verificationStatus !== 'Pre Approved' && currentUser.role === 'vendor')) {
                 return res.json({
                     myEnquiries: { total: 0, accepted: 0, locked: 0, rejected: 0, declined: 0 },
                     directEnquiries: { total: 0, accepted: 0, locked: 0, rejected: 0, declined: 0 },

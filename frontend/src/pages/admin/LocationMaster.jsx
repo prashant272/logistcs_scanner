@@ -78,7 +78,7 @@ const LocationMaster = () => {
         setError('');
         setSuccess('');
 
-        if (!type || !code || !name || !city || !state) {
+        if (!type || (!code && type !== 'Land Port') || !name || !city || !state) {
             setError('Please fill in all required fields');
             return;
         }
@@ -128,7 +128,7 @@ const LocationMaster = () => {
         setError('');
         setSuccess('');
 
-        if (!editType || !editCode || !editName || !editCity || !editState) {
+        if (!editType || (!editCode && editType !== 'Land Port') || !editName || !editCity || !editState) {
             alert('Please fill in all required fields');
             return;
         }
@@ -288,7 +288,7 @@ const LocationMaster = () => {
                             value={code}
                             onChange={(e) => setCode(e.target.value)}
                             className="w-full bg-white border border-slate-355 rounded-md px-4 py-2.5 text-base font-black !text-black placeholder:text-slate-400 focus:outline-none focus:border-[#0066FF] uppercase"
-                            required
+                            required={type !== 'Land Port'}
                         />
                     </div>
 
@@ -533,7 +533,7 @@ const LocationMaster = () => {
                                         value={editCode}
                                         onChange={(e) => setEditCode(e.target.value)}
                                         className="w-full bg-white border border-slate-355 rounded-md px-4 py-2.5 text-base font-black !text-black placeholder:text-slate-400 focus:outline-none focus:border-[#0066FF] uppercase"
-                                        required
+                                        required={editType !== 'Land Port'}
                                     />
                                 </div>
                                 <div className="space-y-1">
