@@ -282,7 +282,7 @@ const VendorNetwork = () => {
                                                 <button
                                                     onClick={() => {
                                                         const slug = (vendor.organizationName || vendor.name || 'vendor').trim().replace(/[\s\W-]+/g, '-').toLowerCase();
-                                                        navigate(`/vendor-network/profile/${slug}`);
+                                                        navigate(`/vendor-network/profile/${slug}`, { state: { fromSearch: true } });
                                                     }}
                                                     className="inline-flex items-center gap-1 bg-[#0066FF] hover:bg-[#0B1E43] text-white text-xs font-black uppercase tracking-wider px-4 py-2 rounded-lg shadow-sm transition-all"
                                                 >

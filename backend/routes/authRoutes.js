@@ -218,14 +218,30 @@ router.get('/public-vendors-search/:id/details', async (req, res) => {
         }
 
         if (!targetVendor) {
+            // First try a loose regex search
             const searchName = vendorId.replace(/-/g, '.*');
-            targetVendor = await User.findOne({ 
+            const potentialVendors = await User.find({ 
                 role: 'vendor', 
                 $or: [
-                    { company: { $regex: new RegExp(`^${searchName}$`, 'i') } },
-                    { name: { $regex: new RegExp(`^${searchName}$`, 'i') } }
+                    { company: { $regex: new RegExp(`^\\s*${searchName}.*`, 'i') } },
+                    { name: { $regex: new RegExp(`^\\s*${searchName}.*`, 'i') } }
                 ]
             }).select('-password').populate('activePlan').populate('parentCompany', 'company gst pan');
+
+            // Then exact match the slug in JS to avoid collisions/whitespace issues
+            for (let v of potentialVendors) {
+                const generatedSlug = (v.company || v.name || 'vendor').trim().replace(/[\s\W-]+/g, '-').toLowerCase();
+                // Sometimes trailing dashes exist in frontend slug, handle it
+                if (generatedSlug === vendorId || generatedSlug.replace(/-+$/, '') === vendorId.replace(/-+$/, '')) {
+                    targetVendor = v;
+                    break;
+                }
+            }
+            
+            // Fallback if none perfectly matched the slug (e.g. extremely weird chars)
+            if (!targetVendor && potentialVendors.length > 0) {
+                targetVendor = potentialVendors[0];
+            }
         }
 
         if (!targetVendor) {
@@ -270,7 +286,8 @@ router.get('/public-vendors-search/:id/details', async (req, res) => {
             }
         }
 
-        if (isApprovedUser) {
+        // Direct traffic (e.g. QR code scan) bypasses the lock
+        if (isApprovedUser || req.query.directVisit === 'true') {
             return res.json(vendorData);
         }
 

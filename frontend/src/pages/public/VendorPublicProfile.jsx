@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { 
     MapPin, Building2, ShieldCheck, Mail, Phone, Globe, Calendar, User, 
@@ -11,6 +11,7 @@ const VendorPublicProfile = () => {
     const { id } = useParams();
     const { user } = useAuth();
     const navigate = useNavigate();
+    const location = useLocation();
 
     // Data States
     const [vendor, setVendor] = useState(null);
@@ -56,10 +57,12 @@ const VendorPublicProfile = () => {
                     headers.Authorization = `Bearer ${token}`;
                 }
 
+                const isDirectVisit = !location.state?.fromSearch;
+
                 const { data } = await axios.get(
                     `${import.meta.env.VITE_API_BASE_URL}/auth/public-vendors-search/${id}/details`,
                     {
-                        params: { fingerprint },
+                        params: { fingerprint, directVisit: isDirectVisit },
                         headers
                     }
                 );
@@ -212,10 +215,12 @@ const VendorPublicProfile = () => {
                                                 <ShieldCheck size={12} />
                                                 Verified Vendor
                                             </div>
-                                            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase bg-[#0066FF] text-white shadow-sm shadow-[#0066FF]/30 hover:shadow-[#0066FF]/50 transition-shadow">
-                                                <Crown size={12} />
-                                                PRO
-                                            </div>
+                                            {vendor.activePlan?.name?.toLowerCase().includes('premium') && (
+                                                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase bg-[#0066FF] text-white shadow-sm shadow-[#0066FF]/30 hover:shadow-[#0066FF]/50 transition-shadow">
+                                                    <Crown size={12} />
+                                                    PRO
+                                                </div>
+                                            )}
                                         </>
                                     ) : (
                                         <div className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[10px] font-black uppercase bg-red-50 text-red-600 border border-red-200 shadow-sm">
