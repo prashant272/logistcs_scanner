@@ -52,14 +52,19 @@ const VendorEnquiriesTab = ({ title, type }) => {
   const [selectedFilter, setSelectedFilter] = useState('all'); // 'all', '7days', '15days', 'thismonth', or 'YYYY-MM'
 
   // Status filter from URL or default to 'all'
-  const [statusFilter, setStatusFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState(() => {
+    return new URLSearchParams(location.search).get('filter') || 'all';
+  });
+  
+  // Mode filter
+  const [modeFilter, setModeFilter] = useState('all');
 
   useEffect(() => {
     const filter = new URLSearchParams(location.search).get('filter');
-    if (filter) {
+    if (filter && filter !== statusFilter) {
       setStatusFilter(filter);
     }
-  }, [location]);
+  }, [location.search]);
 
   // State for Quote modal/prompt
   const [activeQuoteId, setActiveQuoteId] = useState(null);
@@ -89,7 +94,7 @@ const VendorEnquiriesTab = ({ title, type }) => {
   useEffect(() => {
     setPage(1);
     setHasMore(true);
-  }, [type, selectedFilter, statusFilter]);
+  }, [type, selectedFilter, statusFilter, modeFilter]);
 
   useEffect(() => {
     let isMounted = true;
@@ -97,7 +102,7 @@ const VendorEnquiriesTab = ({ title, type }) => {
       if (page === 1 && loading) return; // Prevent double fetch on mount if already loading
       setLoadingMore(page > 1);
       try {
-        const res = await fetchVendorEnquiries(type, page, 10, searchQuery, selectedFilter, statusFilter);
+        const res = await fetchVendorEnquiries(type, page, 10, searchQuery, selectedFilter, statusFilter, modeFilter);
         if (isMounted) {
           if (res && res.totalPages) {
             setHasMore(page < res.totalPages);
@@ -112,7 +117,7 @@ const VendorEnquiriesTab = ({ title, type }) => {
     fetch();
 
     return () => { isMounted = false; };
-  }, [type, page, searchQuery, selectedFilter, statusFilter]);
+  }, [type, page, searchQuery, selectedFilter, statusFilter, modeFilter]);
 
   const handleLoadMore = useCallback(() => {
     setPage(prev => prev + 1);
@@ -299,24 +304,53 @@ const VendorEnquiriesTab = ({ title, type }) => {
             ))}
           </div>
 
-          {/* Status Filter Buttons */}
-          <div className="flex flex-wrap gap-2 pt-1 border-t border-slate-100 mt-3 pt-3">
-            {[
-              { id: 'all', label: 'All Status' },
-              { id: 'accepted', label: 'Accepted' },
-              { id: 'not_accepted', label: 'Not Accepted' }
-            ].map((f) => (
-              <button
-                key={f.id}
-                onClick={() => setStatusFilter(f.id)}
-                className={`px-4 py-1.5 rounded-lg text-[10px] uppercase tracking-wider font-bold transition-all duration-200 cursor-pointer border ${statusFilter === f.id
-                  ? 'bg-slate-800 border-slate-800 text-white shadow-md'
-                  : 'bg-white border-slate-200 text-slate-500 hover:text-slate-800 hover:bg-slate-50'
-                  }`}
-              >
-                {f.label}
-              </button>
-            ))}
+          {/* Status and Mode Filter Buttons */}
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-3 pt-1 border-t border-slate-100 mt-3 pt-3">
+            {/* Status Filters */}
+            <div className="flex flex-wrap gap-2">
+              {[
+                { id: 'all', label: 'All Status' },
+                { id: 'accepted', label: 'Accepted' },
+                { id: 'not_accepted', label: 'Not Accepted' }
+              ].map((f) => (
+                <button
+                  key={f.id}
+                  onClick={() => setStatusFilter(f.id)}
+                  className={`px-4 py-1.5 rounded-lg text-[10px] uppercase tracking-wider font-bold transition-all duration-200 cursor-pointer border ${statusFilter === f.id
+                    ? 'bg-slate-800 border-slate-800 text-white shadow-md'
+                    : 'bg-white border-slate-200 text-slate-500 hover:text-slate-800 hover:bg-slate-50'
+                    }`}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Vertical Divider (hidden on very small screens) */}
+            <div className="hidden sm:block w-px h-6 bg-slate-200"></div>
+
+            {/* Mode Filters */}
+            <div className="flex flex-wrap gap-2">
+              {[
+                { id: 'all', label: 'All Modes' },
+                { id: 'sea', label: 'Sea' },
+                { id: 'air', label: 'Air' },
+                { id: 'land', label: 'Land' },
+                { id: 'warehouse', label: 'Warehouse' },
+                { id: 'cha', label: 'CHA' }
+              ].map((f) => (
+                <button
+                  key={f.id}
+                  onClick={() => setModeFilter(f.id)}
+                  className={`px-4 py-1.5 rounded-lg text-[10px] uppercase tracking-wider font-bold transition-all duration-200 cursor-pointer border ${modeFilter === f.id
+                    ? 'bg-sky-600 border-sky-600 text-white shadow-md'
+                    : 'bg-white border-slate-200 text-slate-500 hover:text-slate-800 hover:bg-slate-50'
+                    }`}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </div>
@@ -378,10 +412,11 @@ const VendorEnquiriesTab = ({ title, type }) => {
               );
             }
 
-            const isAccepted = type === 'direct' ? (enq.myResponse && enq.myResponse.status === 'Accepted') : (enq.status === 'Accepted');
-            const quoteData = type === 'direct' ? (enq.myResponse?.quoteDetails) : enq.quoteDetails;
-            const quotePrice = type === 'direct' ? (enq.myResponse?.price) : enq.price;
-            const hasQuote = type === 'direct' ? !!(quotePrice || quoteData?.allInCharges) : (enq.price !== undefined && enq.price !== null);
+            const isDirectOrB2B = type === 'direct' || type === 'b2b';
+            const isAccepted = isDirectOrB2B ? (enq.myResponse && enq.myResponse.status === 'Accepted') : (enq.status === 'Accepted');
+            const quoteData = isDirectOrB2B ? (enq.myResponse?.quoteDetails) : enq.quoteDetails;
+            const quotePrice = isDirectOrB2B ? (enq.myResponse?.price) : enq.price;
+            const hasQuote = isDirectOrB2B ? !!(quotePrice || quoteData?.allInCharges) : (enq.price !== undefined && enq.price !== null);
 
             return (
               <div

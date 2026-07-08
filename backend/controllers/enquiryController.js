@@ -323,6 +323,20 @@ exports.getVendorEnquiries = async (req, res) => {
             ];
         }
 
+        // Apply Mode Filter
+        if (req.query.mode && req.query.mode !== 'all') {
+            const requestedMode = req.query.mode.toLowerCase().trim();
+            if (query.type && query.type.$in) {
+                if (query.type.$in.includes(requestedMode)) {
+                    query.type = requestedMode;
+                } else {
+                    query.type = 'invalid_mode_no_results';
+                }
+            } else {
+                query.type = requestedMode;
+            }
+        }
+
         // Apply Date Filter
         if (req.query.filter && req.query.filter !== 'all') {
             const filter = req.query.filter;
@@ -416,13 +430,13 @@ exports.getVendorEnquiries = async (req, res) => {
 
         let results = enquiries.map(enq => {
             const enqObj = enq;
-            // Inject myResponse if any
-            if (type === 'direct' && enq.responses && enq.responses.length > 0 && !isAdmin) {
+            if ((type === 'direct' || type === 'b2b') && enq.responses && enq.responses.length > 0 && !isAdmin) {
                 const myResponse = enq.responses.find(r => {
                     if (!r.vendor) return false;
                     const vId = r.vendor._id ? r.vendor._id.toString() : r.vendor.toString();
-                    return vId === req.user.id;
+                    return vId.toString() === req.user.id.toString();
                 });
+                console.log(`[DEBUG] enquiryId=${enq._id} myResponse found:`, !!myResponse);
                 if (myResponse) {
                     enqObj.myResponse = myResponse;
                 }
