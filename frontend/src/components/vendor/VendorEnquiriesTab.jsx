@@ -89,7 +89,7 @@ const VendorEnquiriesTab = ({ title, type }) => {
   useEffect(() => {
     setPage(1);
     setHasMore(true);
-  }, [type, selectedFilter]);
+  }, [type, selectedFilter, statusFilter]);
 
   useEffect(() => {
     let isMounted = true;
@@ -97,7 +97,7 @@ const VendorEnquiriesTab = ({ title, type }) => {
       if (page === 1 && loading) return; // Prevent double fetch on mount if already loading
       setLoadingMore(page > 1);
       try {
-        const res = await fetchVendorEnquiries(type, page, 10, searchQuery, selectedFilter);
+        const res = await fetchVendorEnquiries(type, page, 10, searchQuery, selectedFilter, statusFilter);
         if (isMounted) {
           if (res && res.totalPages) {
             setHasMore(page < res.totalPages);
@@ -112,7 +112,7 @@ const VendorEnquiriesTab = ({ title, type }) => {
     fetch();
 
     return () => { isMounted = false; };
-  }, [type, page, searchQuery, selectedFilter]);
+  }, [type, page, searchQuery, selectedFilter, statusFilter]);
 
   const handleLoadMore = useCallback(() => {
     setPage(prev => prev + 1);
@@ -227,19 +227,8 @@ const VendorEnquiriesTab = ({ title, type }) => {
     }
   };
 
-  // Filtering Logic (Backend handles date and search, we just do status if needed)
-  const filteredEnquiries = enquiries.filter((enq) => {
-    // Status Filtering
-    if (statusFilter !== 'all') {
-      const isAccepted = type === 'direct'
-        ? enq.myResponse?.status === 'Accepted'
-        : enq.status === 'Accepted';
-
-      if (statusFilter === 'accepted' && !isAccepted) return false;
-      if (statusFilter === 'not_accepted' && isAccepted) return false;
-    }
-    return true;
-  });
+  // Filtering Logic (Backend handles date, search, and status)
+  const filteredEnquiries = enquiries;
 
   return (
     <div className="space-y-6">

@@ -18,7 +18,7 @@ export const EnquiryProvider = ({ children }) => {
   const [submissionStatus, setSubmissionStatus] = useState(''); // '', 'submitting', 'success', 'error'
   const [limitReached, setLimitReached] = useState(false);
 
-  const fetchVendorEnquiries = async (type, page = 1, limit = 10, search = '', filter = 'all') => {
+  const fetchVendorEnquiries = async (type, page = 1, limit = 10, search = '', filter = 'all', statusFilter = 'all') => {
     try {
       if (page === 1) setLoading(true);
       setError(null);
@@ -30,6 +30,7 @@ export const EnquiryProvider = ({ children }) => {
       });
       if (search) queryParams.append('search', search);
       if (filter && filter !== 'all') queryParams.append('filter', filter);
+      if (statusFilter && statusFilter !== 'all') queryParams.append('status', statusFilter);
       
       const res = await api.get(`/enquiries/vendor?${queryParams.toString()}`);
       setLimitReached(res.headers['x-limit-reached'] === 'true');

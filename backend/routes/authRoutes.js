@@ -210,9 +210,25 @@ router.get('/public-vendors-search/:id/details', async (req, res) => {
         const vendorId = req.params.id;
         const { fingerprint } = req.query;
 
-        // Find the requested vendor
-        const targetVendor = await User.findById(vendorId).select('-password').populate('activePlan');
-        if (!targetVendor || targetVendor.role !== 'vendor') {
+        const mongoose = require('mongoose');
+        let targetVendor;
+
+        if (mongoose.Types.ObjectId.isValid(vendorId)) {
+            targetVendor = await User.findById(vendorId).select('-password').populate('activePlan');
+        }
+
+        if (!targetVendor) {
+            const searchName = vendorId.replace(/-/g, '.*');
+            targetVendor = await User.findOne({ 
+                role: 'vendor', 
+                $or: [
+                    { company: { $regex: new RegExp(`^${searchName}$`, 'i') } },
+                    { name: { $regex: new RegExp(`^${searchName}$`, 'i') } }
+                ]
+            }).select('-password').populate('activePlan');
+        }
+
+        if (!targetVendor) {
             return res.status(404).json({ message: 'Vendor not found' });
         }
 

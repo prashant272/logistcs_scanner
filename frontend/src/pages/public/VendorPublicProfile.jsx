@@ -3,7 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { 
     MapPin, Building2, ShieldCheck, Mail, Phone, Globe, Calendar, User, 
-    MessageSquare, Send, X, Lock, CheckCircle2, Star, Share2, Info, AlertTriangle, AlertCircle
+    MessageSquare, Send, X, Lock, CheckCircle2, Star, Share2, Info, AlertTriangle, AlertCircle, Crown
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
@@ -85,7 +85,7 @@ const VendorPublicProfile = () => {
         setContactSuccess('');
         try {
             await axios.post(`${import.meta.env.VITE_API_BASE_URL}/auth/vendor-contact`, {
-                vendorId: id,
+                vendorId: vendor._id,
                 name: contactName,
                 email: contactEmail,
                 message: contactMessage
@@ -207,10 +207,16 @@ const VendorPublicProfile = () => {
                                     
                                     {/* Verification Badge */}
                                     {isVerified ? (
-                                        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase bg-emerald-50 text-emerald-600 border border-emerald-200 shadow-sm animate-pulse">
-                                            <ShieldCheck size={12} />
-                                            Verified Vendor
-                                        </div>
+                                        <>
+                                            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase bg-emerald-50 text-emerald-600 border border-emerald-200 shadow-sm animate-pulse">
+                                                <ShieldCheck size={12} />
+                                                Verified Vendor
+                                            </div>
+                                            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase bg-[#0066FF] text-white shadow-sm shadow-[#0066FF]/30 hover:shadow-[#0066FF]/50 transition-shadow">
+                                                <Crown size={12} />
+                                                PRO
+                                            </div>
+                                        </>
                                     ) : (
                                         <div className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[10px] font-black uppercase bg-red-50 text-red-600 border border-red-200 shadow-sm">
                                             <X size={12} />

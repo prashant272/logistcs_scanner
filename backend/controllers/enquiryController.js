@@ -367,6 +367,25 @@ exports.getVendorEnquiries = async (req, res) => {
                 }
             }
         }
+
+        // Apply Status Filter
+        if (req.query.status && req.query.status !== 'all') {
+            const statusFilter = req.query.status;
+            if (type === 'my' || isAdmin) {
+                if (statusFilter === 'accepted') {
+                    query.status = 'Accepted';
+                } else if (statusFilter === 'not_accepted') {
+                    query.status = { $ne: 'Accepted' };
+                }
+            } else if (type === 'direct' || type === 'b2b') {
+                if (statusFilter === 'accepted') {
+                    query.responses = { $elemMatch: { vendor: req.user.id, status: 'Accepted' } };
+                } else if (statusFilter === 'not_accepted') {
+                    query.responses = { $not: { $elemMatch: { vendor: req.user.id, status: 'Accepted' } } };
+                }
+            }
+        }
+
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 10;
         const skip = (page - 1) * limit;
