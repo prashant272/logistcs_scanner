@@ -102,6 +102,19 @@ const userSchema = new mongoose.Schema({
         type: String,
         default: ''
     },
+    pan: {
+        type: String,
+        default: ''
+    },
+    isBranch: {
+        type: Boolean,
+        default: false
+    },
+    parentCompany: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        default: null
+    },
     serviceLocations: {
         type: [String],
         default: []

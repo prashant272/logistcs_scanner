@@ -135,5 +135,6 @@ const pricingSchema = new mongoose.Schema({
 
 // Compound index for efficient search
 pricingSchema.index({ fromLocation: 1, toLocation: 1, type: 1, status: 1 });
+pricingSchema.index({ vendor: 1, status: 1 });
 
 module.exports = mongoose.model('Pricing', pricingSchema);

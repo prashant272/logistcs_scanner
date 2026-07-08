@@ -234,9 +234,41 @@ const VendorPublicProfile = () => {
                                     </span>
                                 </div>
 
-                                <div className="mt-4 flex items-center gap-2 text-xs font-black text-emerald-600 uppercase tracking-wider">
-                                    <CheckCircle2 size={14} />
-                                    Status: {vendor.verificationStatus || 'Approved'}
+                                <div className="mt-4 flex flex-col gap-2">
+                                    <div className="flex items-center gap-2 text-xs font-black text-emerald-600 uppercase tracking-wider">
+                                        <CheckCircle2 size={14} />
+                                        Status: {vendor.verificationStatus || 'Approved'}
+                                    </div>
+                                    
+                                    {/* Document Details */}
+                                    {(vendor.gst || vendor.pan) && (
+                                        <div className="flex flex-wrap items-center gap-3 mt-1">
+                                            {vendor.gst && (
+                                                <span className="text-[10px] font-black uppercase tracking-wider bg-slate-100 text-slate-600 px-2 py-1 rounded-md border border-slate-200">
+                                                    GST: {vendor.gst}
+                                                </span>
+                                            )}
+                                            {vendor.pan && (
+                                                <span className="text-[10px] font-black uppercase tracking-wider bg-slate-100 text-slate-600 px-2 py-1 rounded-md border border-slate-200">
+                                                    PAN: {vendor.pan}
+                                                </span>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {/* Branch Indicator */}
+                                    {vendor.isBranch && vendor.parentCompany && (
+                                        <div className="flex flex-col gap-1 mt-2 bg-blue-50/50 p-2.5 rounded-xl border border-blue-100 w-fit">
+                                            <div className="flex items-center gap-1.5 text-blue-700 font-bold text-xs">
+                                                <Building2 size={14} />
+                                                <span>Branch of <span className="font-black uppercase tracking-wider text-blue-800">{vendor.parentCompany.company || 'Parent Company'}</span></span>
+                                            </div>
+                                            <div className="flex items-center gap-2 text-[9px] font-black uppercase tracking-wider text-blue-600">
+                                                {vendor.parentCompany.gst && <span>Parent GST: {vendor.parentCompany.gst}</span>}
+                                                {vendor.parentCompany.pan && <span>Parent PAN: {vendor.parentCompany.pan}</span>}
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>

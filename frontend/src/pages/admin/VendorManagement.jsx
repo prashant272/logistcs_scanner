@@ -42,6 +42,22 @@ const VendorManagement = () => {
     company: '', email: '', phone: '', country: ''
   });
 
+  // Verify Documents Modal State
+  const [showVerifyModal, setShowVerifyModal] = useState(false);
+  const [verifyingVendor, setVerifyingVendor] = useState(false);
+  const [verifyVendorId, setVerifyVendorId] = useState(null);
+  const [verifyFormData, setVerifyFormData] = useState({
+    gst: '', pan: ''
+  });
+
+  // Duplicate Branch Confirm Modal State
+  const [showDuplicateModal, setShowDuplicateModal] = useState(false);
+  const [duplicateVendorInfo, setDuplicateVendorInfo] = useState(null);
+  const [showBranchForm, setShowBranchForm] = useState(false);
+  const [branchFormData, setBranchFormData] = useState({
+    gst: '', pan: '', address: ''
+  });
+
   useEffect(() => {
     fetchRMs();
     fetchPlans();
@@ -306,11 +322,74 @@ const VendorManagement = () => {
       setAddFormData({ name: '', email: '', password: '', phone: '', company: '' });
       handleRefresh();
     } catch (err) {
-      console.error('Error adding user:', err);
-      alert(err.response?.data?.message || 'Failed to add user');
+      console.error('Add vendor failed:', err);
+      alert(err.response?.data?.message || 'Failed to add vendor');
     } finally {
       setAddingVendor(false);
     }
+  };
+
+  const handleVerifyDocumentsSubmit = async (e, isBranchOf = null) => {
+    if (e) e.preventDefault();
+    try {
+      setVerifyingVendor(true);
+      const token = sessionStorage.getItem('adminToken');
+      
+      let payload = { ...verifyFormData };
+      
+      if (isBranchOf) {
+        payload = {
+            pan: branchFormData.pan, // The branch PAN (editable, defaults to duplicate's PAN)
+            gst: branchFormData.gst, // The NEW unique branch GST
+            branchAddress: branchFormData.address, // The NEW branch address (optional)
+            isBranchOf: isBranchOf
+        };
+      }
+
+      const { data } = await axios.post(
+        `${import.meta.env.VITE_API_BASE_URL}/admin/vendors/${verifyVendorId}/verify-documents`,
+        payload,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      // Update local state
+      setVendors(prev => prev.map(v => v._id === verifyVendorId ? data.vendor : v));
+      
+      alert('Documents verified successfully!');
+      setShowVerifyModal(false);
+      setShowDuplicateModal(false);
+      setShowBranchForm(false);
+      setVerifyFormData({ gst: '', pan: '' });
+      setBranchFormData({ gst: '', address: '' });
+      setVerifyVendorId(null);
+      setDuplicateVendorInfo(null);
+    } catch (err) {
+      console.error('Verify documents failed:', err);
+      if (err.response?.status === 409 && err.response?.data?.duplicateVendor) {
+        // Trigger duplicate confirmation modal
+        setDuplicateVendorInfo(err.response.data.duplicateVendor);
+        setShowDuplicateModal(true);
+        setShowBranchForm(false);
+        setBranchFormData({ 
+            gst: '', 
+            pan: err.response.data.duplicateVendor?.pan || '', 
+            address: '' 
+        });
+      } else {
+        alert(err.response?.data?.message || 'Failed to verify documents');
+      }
+    } finally {
+      setVerifyingVendor(false);
+    }
+  };
+
+  const openVerifyModal = (vendor) => {
+    setVerifyVendorId(vendor._id);
+    setVerifyFormData({
+      gst: vendor.gst || '',
+      pan: vendor.pan || ''
+    });
+    setShowVerifyModal(true);
   };
 
   const handleEditClick = (vendor) => {
@@ -605,6 +684,12 @@ const VendorManagement = () => {
                             }`}
                           >
                             Pending
+                          </button>
+                          <button
+                            onClick={() => openVerifyModal(vendor)}
+                            className="px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider cursor-pointer border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 transition-all"
+                          >
+                            Verify Doc
                           </button>
                           <button
                             onClick={() => handleSetStatus(vendor._id, 'Declined')}
@@ -908,6 +993,129 @@ const VendorManagement = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Verify Documents Modal */}
+      {showVerifyModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
+            <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+              <h2 className="text-lg font-black text-slate-800">Verify Vendor Documents</h2>
+              <button onClick={() => setShowVerifyModal(false)} className="text-slate-400 hover:text-rose-500 transition-colors">
+                <X size={20} />
+              </button>
+            </div>
+            <form onSubmit={handleVerifyDocumentsSubmit} className="p-5 space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-600 mb-1">GST Number</label>
+                <input required type="text" value={verifyFormData.gst} onChange={e => setVerifyFormData({...verifyFormData, gst: e.target.value.toUpperCase()})} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-500" placeholder="Enter GST" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-600 mb-1">PAN Number</label>
+                <input required type="text" value={verifyFormData.pan} onChange={e => setVerifyFormData({...verifyFormData, pan: e.target.value.toUpperCase()})} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-500" placeholder="Enter PAN" />
+              </div>
+              
+              <div className="pt-2 flex justify-end gap-3">
+                <button type="button" onClick={() => setShowVerifyModal(false)} className="px-4 py-2 text-sm font-bold text-slate-600 bg-slate-100 rounded-xl hover:bg-slate-200 transition-colors">Cancel</button>
+                <button type="submit" disabled={verifyingVendor} className="px-4 py-2 text-sm font-bold text-white bg-blue-600 rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center gap-2">
+                  {verifyingVendor ? <Loader2 size={16} className="animate-spin" /> : <ShieldCheck size={16} />} 
+                  {verifyingVendor ? 'Verifying...' : 'Verify & Approve'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Duplicate Branch Confirmation Modal */}
+      {showDuplicateModal && duplicateVendorInfo && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden border border-amber-200 my-8">
+            <div className="p-4 border-b border-amber-100 flex items-center gap-3 bg-amber-50 sticky top-0">
+              <AlertCircle className="text-amber-500" size={24} />
+              <h2 className="text-lg font-black text-amber-800">Duplicate Record Found</h2>
+            </div>
+            
+            <div className="p-5 space-y-4">
+              {!showBranchForm ? (
+                  <>
+                      <p className="text-sm font-medium text-slate-700">
+                        The PAN you entered is already linked to another vendor account:
+                      </p>
+                      <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 text-sm">
+                        <p><strong>Company:</strong> {duplicateVendorInfo.company || 'N/A'}</p>
+                        <p><strong>Email:</strong> {duplicateVendorInfo.email || 'N/A'}</p>
+                        <p><strong>Phone:</strong> {duplicateVendorInfo.phone || 'N/A'}</p>
+                        <p><strong>GST:</strong> {duplicateVendorInfo.gst || 'N/A'}</p>
+                        <p><strong>PAN:</strong> {duplicateVendorInfo.pan || 'N/A'}</p>
+                      </div>
+                      <p className="text-sm font-bold text-slate-800">
+                        Is this vendor another branch of the above company?
+                      </p>
+                      <div className="pt-2 flex flex-col gap-3">
+                        <button 
+                          onClick={() => setShowBranchForm(true)}
+                          className="w-full px-4 py-2.5 text-sm font-bold text-white bg-amber-500 rounded-xl hover:bg-amber-600 transition-colors flex items-center justify-center gap-2 shadow-sm shadow-amber-500/20"
+                        >
+                          <Building size={16} /> 
+                          Yes, this is another branch
+                        </button>
+                        <button 
+                          type="button" 
+                          onClick={() => {
+                              setShowDuplicateModal(false);
+                              setShowBranchForm(false);
+                          }} 
+                          className="w-full px-4 py-2.5 text-sm font-bold text-slate-600 bg-slate-100 rounded-xl hover:bg-slate-200 transition-colors text-center"
+                        >
+                          No, cancel verification
+                        </button>
+                      </div>
+                  </>
+              ) : (
+                  <form onSubmit={(e) => handleVerifyDocumentsSubmit(e, duplicateVendorInfo._id)} className="space-y-4">
+                      <div className="bg-blue-50/50 p-3 rounded-lg border border-blue-100 mb-4">
+                          <p className="text-xs font-bold text-blue-800 mb-1">Creating Branch for: {duplicateVendorInfo.company}</p>
+                          <p className="text-[10px] font-medium text-blue-600">Please provide the branch's unique GST. PAN can be the same or edited. Address is optional.</p>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-slate-600 mb-1">Branch GST Number *</label>
+                        <input required type="text" value={branchFormData.gst} onChange={e => setBranchFormData({...branchFormData, gst: e.target.value.toUpperCase()})} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-500" placeholder="Enter branch's unique GST" />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-slate-600 mb-1">Branch PAN Number *</label>
+                        <input required type="text" value={branchFormData.pan} onChange={e => setBranchFormData({...branchFormData, pan: e.target.value.toUpperCase()})} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-500" placeholder="Enter branch's PAN" />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-slate-600 mb-1">Branch Address (Optional)</label>
+                        <textarea value={branchFormData.address} onChange={e => setBranchFormData({...branchFormData, address: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-500 h-20 resize-none" placeholder="Enter full branch address" />
+                      </div>
+
+                      <div className="pt-4 flex flex-col gap-3">
+                        <button 
+                          type="submit"
+                          disabled={verifyingVendor}
+                          className="w-full px-4 py-2.5 text-sm font-bold text-white bg-blue-600 rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                        >
+                          {verifyingVendor ? <Loader2 size={16} className="animate-spin" /> : <ShieldCheck size={16} />} 
+                          Verify & Link Branch
+                        </button>
+                        <button 
+                          type="button" 
+                          onClick={() => setShowBranchForm(false)} 
+                          className="w-full px-4 py-2.5 text-sm font-bold text-slate-600 bg-slate-100 rounded-xl hover:bg-slate-200 transition-colors text-center"
+                        >
+                          Back
+                        </button>
+                      </div>
+                  </form>
+              )}
+            </div>
           </div>
         </div>
       )}

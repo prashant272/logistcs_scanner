@@ -211,5 +211,6 @@ enquirySchema.index({ isDirect: 1, isBooking: 1 });
 enquirySchema.index({ targetedVendors: 1 });
 enquirySchema.index({ guestEmail: 1 });
 enquirySchema.index({ createdAt: -1 });
+enquirySchema.index({ 'responses.vendor': 1 }); // Required for fast acceptedCount checks
 
 module.exports = mongoose.model('Enquiry', enquirySchema);

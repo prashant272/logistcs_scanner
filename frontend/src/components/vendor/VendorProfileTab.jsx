@@ -34,6 +34,7 @@ const VendorProfileTab = ({ user: propUser }) => {
     services: user?.services || [], // ['Air', 'Sea', 'Land', 'Warehouse', 'CHA']
     deductionPercentage: user?.deductionPercentage || 0.00,
     gst: user?.gst || '',
+    pan: user?.pan || '',
     serviceLocations: user?.serviceLocations || []
   });
 
@@ -354,15 +355,44 @@ const VendorProfileTab = ({ user: propUser }) => {
               />
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-[#0B1E43] uppercase tracking-wide">GST Number</label>
+              <label className="text-xs font-bold text-[#0B1E43] uppercase tracking-wide flex justify-between">
+                <span>GST Number</span>
+                <span className="text-[9px] text-slate-400 font-medium">Admin Verified</span>
+              </label>
               <input 
                 type="text" 
                 value={formData.gst}
-                onChange={(e) => setFormData({ ...formData, gst: e.target.value })}
-                className="w-full bg-[#f8fafc] border border-slate-200 rounded-xl px-4 py-3 text-xs text-slate-800 focus:outline-none focus:bg-white focus:border-[#0066FF] focus:ring-4 focus:ring-[#0066FF]/5 transition-all font-semibold"
-                placeholder="e.g. 22AAAAA0000A1Z5"
+                disabled
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-xs text-slate-500 font-semibold cursor-not-allowed"
+                placeholder="Not Provided"
               />
             </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-[#0B1E43] uppercase tracking-wide flex justify-between">
+                <span>PAN Number</span>
+                <span className="text-[9px] text-slate-400 font-medium">Admin Verified</span>
+              </label>
+              <input 
+                type="text" 
+                value={formData.pan}
+                disabled
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-xs text-slate-500 font-semibold cursor-not-allowed"
+                placeholder="Not Provided"
+              />
+            </div>
+            
+            {user?.isBranch && user?.parentCompany && (
+                <div className="md:col-span-2 bg-blue-50/50 p-4 rounded-xl border border-blue-100 flex flex-col gap-1.5">
+                    <div className="flex items-center gap-1.5 text-blue-700 font-bold text-sm">
+                        <Landmark size={16} />
+                        <span>Branch of <span className="font-black uppercase tracking-wider text-blue-800">{user.parentCompany.company || 'Parent Company'}</span></span>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-4 text-xs font-bold text-blue-600 mt-1">
+                        {user.parentCompany.gst && <span className="bg-white px-2.5 py-1 rounded-md shadow-sm">Parent GST: {user.parentCompany.gst}</span>}
+                        {user.parentCompany.pan && <span className="bg-white px-2.5 py-1 rounded-md shadow-sm">Parent PAN: {user.parentCompany.pan}</span>}
+                    </div>
+                </div>
+            )}
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-[#0B1E43] uppercase tracking-wide">Website URL</label>
               <input 

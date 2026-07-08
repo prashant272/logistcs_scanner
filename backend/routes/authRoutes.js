@@ -214,7 +214,7 @@ router.get('/public-vendors-search/:id/details', async (req, res) => {
         let targetVendor;
 
         if (mongoose.Types.ObjectId.isValid(vendorId)) {
-            targetVendor = await User.findById(vendorId).select('-password').populate('activePlan');
+            targetVendor = await User.findById(vendorId).select('-password').populate('activePlan').populate('parentCompany', 'company gst pan');
         }
 
         if (!targetVendor) {
@@ -225,7 +225,7 @@ router.get('/public-vendors-search/:id/details', async (req, res) => {
                     { company: { $regex: new RegExp(`^${searchName}$`, 'i') } },
                     { name: { $regex: new RegExp(`^${searchName}$`, 'i') } }
                 ]
-            }).select('-password').populate('activePlan');
+            }).select('-password').populate('activePlan').populate('parentCompany', 'company gst pan');
         }
 
         if (!targetVendor) {

@@ -865,3 +865,83 @@ exports.updateVendorDetails = async (req, res) => {
         res.status(500).json({ message: 'Server error', error: error.message });
     }
 };
+
+exports.verifyVendorDocuments = async (req, res) => {
+    try {
+        const vendorId = req.params.id;
+        const { gst, pan, isBranchOf, branchAddress } = req.body;
+
+        const vendor = await User.findById(vendorId);
+        if (!vendor || vendor.role !== 'vendor') {
+            return res.status(404).json({ message: 'Vendor not found' });
+        }
+
+        if (!gst && !pan) {
+            return res.status(400).json({ message: 'Please provide at least GST or PAN to verify documents.' });
+        }
+
+        // Strict Check: GST must ALWAYS be unique, even for a branch.
+        if (gst) {
+            const duplicateGst = await User.findOne({ _id: { $ne: vendorId }, role: 'vendor', gst });
+            if (duplicateGst) {
+                // If it's a branch creation attempt but they reused the exact same GST, reject it
+                if (isBranchOf) {
+                    return res.status(400).json({ message: `This exact GST is already in use by ${duplicateGst.company}. A branch must have a unique GST.` });
+                } else {
+                    return res.status(409).json({
+                        message: `Duplicate GST detected`,
+                        duplicateVendor: {
+                            _id: duplicateGst._id,
+                            company: duplicateGst.company,
+                            email: duplicateGst.email,
+                            phone: duplicateGst.phone,
+                            gst: duplicateGst.gst,
+                            pan: duplicateGst.pan
+                        }
+                    });
+                }
+            }
+        }
+
+        // PAN check: PAN can be duplicate ONLY if isBranchOf is provided
+        if (pan && !isBranchOf) {
+            const duplicatePan = await User.findOne({ _id: { $ne: vendorId }, role: 'vendor', pan });
+            if (duplicatePan) {
+                return res.status(409).json({
+                    message: `Duplicate PAN detected`,
+                    duplicateVendor: {
+                        _id: duplicatePan._id,
+                        company: duplicatePan.company,
+                        email: duplicatePan.email,
+                        phone: duplicatePan.phone,
+                        gst: duplicatePan.gst,
+                        pan: duplicatePan.pan
+                    }
+                });
+            }
+        }
+
+        if (gst) vendor.gst = gst;
+        if (pan) vendor.pan = pan;
+        if (branchAddress) vendor.address = branchAddress;
+        
+        if (isBranchOf) {
+            vendor.isBranch = true;
+            vendor.parentCompany = isBranchOf;
+        }
+
+        vendor.isVerified = true;
+        vendor.verificationStatus = 'Approved';
+        
+        if (!vendor.approvedAt) {
+            vendor.approvedAt = new Date();
+        }
+
+        await vendor.save();
+        
+        const updatedVendor = await User.findById(vendorId).populate('activePlan').populate('parentCompany', 'company gst pan').select('-password');
+        res.json({ message: 'Vendor verified successfully', vendor: updatedVendor });
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};

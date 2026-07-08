@@ -459,40 +459,10 @@ exports.getVendorEnquiries = async (req, res) => {
             }
         }
 
-        // For direct listings, enrich with the vendor's own price for the same route and cargo type
+        // Direct listings do not need vendor's own price enrichment
         if (type === 'direct') {
-            const Pricing = require('../models/Pricing');
-
-            let vendorRates = [];
-            if (!isAdmin && results.length > 0) {
-                // Only fetch the pricing rates matching the 10 enquiries on screen, not ALL 5000+ rates
-                const rateQueries = results.map(enq => ({
-                    fromLocation: { $regex: new RegExp(`^${enq.fromLocation.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&')}$`, 'i') },
-                    toLocation: { $regex: new RegExp(`^${enq.toLocation.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&')}$`, 'i') },
-                    type: enq.type.toLowerCase()
-                }));
-
-                vendorRates = await Pricing.find({
-                    vendor: req.user.id,
-                    status: 'active',
-                    $or: rateQueries
-                }).lean();
-            }
-
-            const enrichedEnquiries = results.map(enqObj => {
-                if (enqObj.isLocked) return enqObj; // Skip enriched for locked
-                // Find matching rate for same route and type
-                const match = vendorRates.find(rate => {
-                    const fromMatch = rate.fromLocation.toLowerCase() === enqObj.fromLocation.toLowerCase();
-                    const toMatch = rate.toLocation.toLowerCase() === enqObj.toLocation.toLowerCase();
-                    const typeMatch = rate.type.toLowerCase() === enqObj.type.toLowerCase();
-                    return fromMatch && toMatch && typeMatch;
-                });
-                enqObj.vendorOwnPrice = match ? match.price : null;
-                return enqObj;
-            });
             return res.json({
-                data: enrichedEnquiries,
+                data: results,
                 currentPage: page,
                 totalPages: Math.ceil(totalCount / limit),
                 totalCount
@@ -849,57 +819,65 @@ exports.getVendorStats = async (req, res) => {
                 $group: {
                     _id: null,
                     locked: { $sum: { $cond: ["$isLocked", 1, 0] } },
-                    total: { 
-                        $sum: { 
+                    total: {
+                        $sum: {
                             $cond: [
-                                { $and: [
-                                    { $not: ["$isLocked"] },
-                                    startDate ? { $gte: ["$createdAt", startDate] } : true,
-                                    endDate ? { $lte: ["$createdAt", endDate] } : true
-                                ] }, 
+                                {
+                                    $and: [
+                                        { $not: ["$isLocked"] },
+                                        startDate ? { $gte: ["$createdAt", startDate] } : true,
+                                        endDate ? { $lte: ["$createdAt", endDate] } : true
+                                    ]
+                                },
                                 1, 0
-                            ] 
-                        } 
+                            ]
+                        }
                     },
-                    accepted: { 
-                        $sum: { 
+                    accepted: {
+                        $sum: {
                             $cond: [
-                                { $and: [
-                                    { $not: ["$isLocked"] },
-                                    "$isMyResponseAccepted",
-                                    startDate ? { $gte: [{ $ifNull: ["$updatedAt", { $ifNull: ["$myResponse.createdAt", "$createdAt"] }] }, startDate] } : true,
-                                    endDate ? { $lte: [{ $ifNull: ["$updatedAt", { $ifNull: ["$myResponse.createdAt", "$createdAt"] }] }, endDate] } : true
-                                ] }, 
+                                {
+                                    $and: [
+                                        { $not: ["$isLocked"] },
+                                        "$isMyResponseAccepted",
+                                        startDate ? { $gte: [{ $ifNull: ["$updatedAt", { $ifNull: ["$myResponse.createdAt", "$createdAt"] }] }, startDate] } : true,
+                                        endDate ? { $lte: [{ $ifNull: ["$updatedAt", { $ifNull: ["$myResponse.createdAt", "$createdAt"] }] }, endDate] } : true
+                                    ]
+                                },
                                 1, 0
-                            ] 
-                        } 
+                            ]
+                        }
                     },
-                    declined: { 
-                        $sum: { 
+                    declined: {
+                        $sum: {
                             $cond: [
-                                { $and: [
-                                    { $not: ["$isLocked"] },
-                                    "$isMyResponseDeclined",
-                                    startDate ? { $gte: [{ $ifNull: ["$updatedAt", { $ifNull: ["$myResponse.createdAt", "$createdAt"] }] }, startDate] } : true,
-                                    endDate ? { $lte: [{ $ifNull: ["$updatedAt", { $ifNull: ["$myResponse.createdAt", "$createdAt"] }] }, endDate] } : true
-                                ] }, 
+                                {
+                                    $and: [
+                                        { $not: ["$isLocked"] },
+                                        "$isMyResponseDeclined",
+                                        startDate ? { $gte: [{ $ifNull: ["$updatedAt", { $ifNull: ["$myResponse.createdAt", "$createdAt"] }] }, startDate] } : true,
+                                        endDate ? { $lte: [{ $ifNull: ["$updatedAt", { $ifNull: ["$myResponse.createdAt", "$createdAt"] }] }, endDate] } : true
+                                    ]
+                                },
                                 1, 0
-                            ] 
-                        } 
+                            ]
+                        }
                     },
-                    rejected: { 
-                        $sum: { 
+                    rejected: {
+                        $sum: {
                             $cond: [
-                                { $and: [
-                                    { $not: ["$isLocked"] },
-                                    { $not: ["$isMyResponseAccepted"] },
-                                    { $not: ["$isMyResponseDeclined"] },
-                                    startDate ? { $gte: ["$createdAt", startDate] } : true,
-                                    endDate ? { $lte: ["$createdAt", endDate] } : true
-                                ] }, 
+                                {
+                                    $and: [
+                                        { $not: ["$isLocked"] },
+                                        { $not: ["$isMyResponseAccepted"] },
+                                        { $not: ["$isMyResponseDeclined"] },
+                                        startDate ? { $gte: ["$createdAt", startDate] } : true,
+                                        endDate ? { $lte: ["$createdAt", endDate] } : true
+                                    ]
+                                },
                                 1, 0
-                            ] 
-                        } 
+                            ]
+                        }
                     }
                 }
             },

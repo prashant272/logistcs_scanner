@@ -402,7 +402,7 @@ const PricingPlans = () => {
                     <div className="bg-slate-50/70 p-3 rounded-2xl border border-slate-100/50">
                         <span className="text-[8px] font-black text-slate-400 uppercase tracking-wider block">Enquiry Limit</span>
                         <span className="font-extrabold text-slate-800 text-xs mt-0.5 block">
-                            {user?.activePlan?.inquiryLimit ? `${user.activePlan.inquiryLimit + (user?.topupEnquiryLimit || 0)} Enquiries` : '5 Enquiries (Direct+My)'}
+                            {user?.activePlan?.inquiryLimit ? `${user.activePlan.inquiryLimit + (user?.topupEnquiryLimit || 0)} Enquiries Per month` : '5 Enquiries /monthly'}
                         </span>
                     </div>
                     <div className="bg-slate-50/70 p-3 rounded-2xl border border-slate-100/50">

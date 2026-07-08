@@ -304,7 +304,7 @@ exports.getUserProfile = async (req, res) => {
                 verificationStatus: 'Approved'
             });
         }
-        const user = await User.findById(req.user.id).select('-password').populate('activePlan').populate('assignedRM');
+        const user = await User.findById(req.user.id).select('-password').populate('activePlan').populate('assignedRM').populate('parentCompany', 'company gst pan');
         if (user && !req.user.impersonated) {
             user.lastActive = new Date();
             await user.save().catch(err => console.error("Error saving lastActive:", err));
