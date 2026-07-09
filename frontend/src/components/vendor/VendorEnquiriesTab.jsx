@@ -416,7 +416,27 @@ const VendorEnquiriesTab = ({ title, type }) => {
             const isAccepted = isDirectOrB2B ? (enq.myResponse && enq.myResponse.status === 'Accepted') : (enq.status === 'Accepted');
             const quoteData = isDirectOrB2B ? (enq.myResponse?.quoteDetails) : enq.quoteDetails;
             const quotePrice = isDirectOrB2B ? (enq.myResponse?.price) : enq.price;
-            const hasQuote = isDirectOrB2B ? !!(quotePrice || quoteData?.allInCharges) : (enq.price !== undefined && enq.price !== null);
+            const hasQuote = isDirectOrB2B ? !!(quotePrice || quoteData?.allInCharges || quoteData?.freightCharges || quoteData?.otherCharges) : (enq.price !== undefined && enq.price !== null);
+
+            let primaryCurrency = '₹';
+            let primaryPrice = 0;
+            if (isAccepted && hasQuote) {
+              if (quoteData?.allInCharges) {
+                primaryCurrency = quoteData.allInCurrency || '₹';
+                primaryPrice = quoteData.allInCharges;
+              } else if (quoteData?.freightCharges) {
+                primaryCurrency = quoteData.freightCurrency || '₹';
+                primaryPrice = quoteData.freightCharges;
+              } else if (quoteData?.otherCharges) {
+                primaryCurrency = quoteData.otherCurrency || '₹';
+                primaryPrice = quoteData.otherCharges;
+              } else if (quotePrice) {
+                primaryPrice = quotePrice;
+                primaryCurrency = quoteData?.allInCurrency || quoteData?.freightCurrency || '₹';
+              }
+            } else {
+              primaryPrice = enq.vendorOwnPrice || enq.price;
+            }
 
             return (
               <div
@@ -724,7 +744,7 @@ const VendorEnquiriesTab = ({ title, type }) => {
                       <div className="bg-white border border-slate-200/90 rounded-xl py-1.5 px-4 shadow-[0_4px_12px_rgba(0,0,0,0.01)] text-center min-w-[85px]">
                         <div className="text-[9px] text-slate-600 font-black tracking-wider uppercase">My Price</div>
                         <div className="text-[10px] font-black text-slate-850 mt-0.5">
-                          $ {isAccepted && hasQuote ? Number(quotePrice || quoteData?.allInCharges).toLocaleString() : (enq.vendorOwnPrice || enq.price).toLocaleString()}
+                          {primaryCurrency} {Number(primaryPrice).toLocaleString()}
                         </div>
                       </div>
                     )}
@@ -739,7 +759,7 @@ const VendorEnquiriesTab = ({ title, type }) => {
                             <span className="text-[8px] uppercase">Hidden</span>
                           </div>
                         ) : (
-                          enq.targetPrice ? `$ ${enq.targetPrice.toLocaleString()}` : 'N/A'
+                          enq.targetPrice ? `${enq.targetCurrency || '₹'} ${enq.targetPrice.toLocaleString()}` : 'N/A'
                         )}
                       </div>
                     </div>
@@ -754,7 +774,7 @@ const VendorEnquiriesTab = ({ title, type }) => {
                       <div className="flex items-center gap-1.5 text-[10px] font-black text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-100/70 shadow-sm">
                         <Coins size={12} />
                         <span>
-                          Quoted Total: {quoteData.allInCurrency || '₹'} {quotePrice?.toLocaleString() || quoteData.allInCharges}
+                          Quoted Total: {primaryCurrency} {Number(primaryPrice).toLocaleString()}
                         </span>
                       </div>
                     ) : <div />}

@@ -24,6 +24,17 @@ axios.interceptors.response.use(
   }
 );
 
+// Global Date Input Click Handler (Open Picker)
+document.addEventListener('click', (e) => {
+  if (e.target && e.target.tagName === 'INPUT' && e.target.type === 'date') {
+    try {
+      e.target.showPicker();
+    } catch (err) {
+      // Ignored
+    }
+  }
+});
+
 // Core layout/context components (static import for fast first paint)
 import Navbar from './components/common/Navbar';
 import Footer from './components/common/Footer';

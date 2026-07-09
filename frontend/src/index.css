@@ -145,3 +145,12 @@ h4,
 .suggestions-scrollbar::-webkit-scrollbar-thumb:hover {
   background: rgba(148, 163, 184, 0.5);
 }
+
+/* Global style for date inputs to ensure calendar icon is visible and entire input is clickable */
+input[type="date"] {
+  color-scheme: light;
+  cursor: pointer;
+}
+input[type="date"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+}

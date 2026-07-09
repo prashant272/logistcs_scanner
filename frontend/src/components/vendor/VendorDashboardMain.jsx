@@ -196,12 +196,12 @@ const VendorDashboardMain = () => {
             )}
 
             {/* Filter Strip */}
-            <div className="bg-white border border-slate-100/80 shadow-[0_8px_30px_rgba(11,30,67,0.02)] rounded-2xl p-4 flex flex-wrap xl:flex-nowrap items-center justify-between gap-4">
-                <div className="flex items-center gap-3 flex-wrap sm:flex-nowrap shrink-0">
+            <div className="bg-white border border-slate-100/80 shadow-[0_8px_30px_rgba(11,30,67,0.02)] rounded-2xl p-4 flex flex-wrap items-center justify-between gap-4">
+                <div className="flex items-center gap-3 flex-wrap flex-1">
                     <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5 shrink-0">
                         <Menu size={12} className="text-[#0066FF]" /> Filter Set
                     </span>
-                    <div className="flex gap-1 bg-slate-50 p-1 rounded-xl border border-slate-100 shrink-0">
+                    <div className="flex gap-1 flex-wrap bg-slate-50 p-1 rounded-xl border border-slate-100 shrink-0">
                         {['All Time', 'This Month', 'Monthly', 'Weekly', 'Custom Date'].map((t) => (
                             <button
                                 key={t}
@@ -228,20 +228,20 @@ const VendorDashboardMain = () => {
                                 type="date"
                                 value={customStart}
                                 onChange={(e) => setCustomStart(e.target.value)}
-                                className="text-xs font-bold text-slate-700 bg-white p-2 rounded-lg border border-slate-200 outline-none focus:border-blue-500"
+                                className="text-xs font-bold text-slate-700 bg-white p-2 rounded-lg border border-slate-200 outline-none focus:border-blue-500 cursor-pointer w-full"
                             />
                             <span className="text-slate-400 font-bold">to</span>
                             <input
                                 type="date"
                                 value={customEnd}
                                 onChange={(e) => setCustomEnd(e.target.value)}
-                                className="text-xs font-bold text-slate-700 bg-white p-2 rounded-lg border border-slate-200 outline-none focus:border-blue-500"
+                                className="text-xs font-bold text-slate-700 bg-white p-2 rounded-lg border border-slate-200 outline-none focus:border-blue-500 cursor-pointer w-full"
                             />
                         </div>
                     )}
                 </div>
 
-                <div className="flex items-center gap-3 shrink-0 flex-wrap sm:flex-nowrap">
+                <div className="flex items-center gap-3 shrink-0 flex-wrap">
                     {/* Date Selector Display */}
                     <div className="bg-[#f4f7fc] border border-slate-100 px-4 py-2.5 rounded-xl text-xs font-bold text-slate-700 flex items-center gap-2 shrink-0">
                         <Calendar size={14} className="text-slate-400" />
