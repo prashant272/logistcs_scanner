@@ -342,14 +342,24 @@ const sendVendorStatusUpdateEmail = async (vendorEmail, vendorName, isApproved) 
 
 const sendEnquiryToVendorAlert = async (vendorEmail, enquiryDetails) => {
     const subject = 'New Enquiry Received - Logistics Scanner';
+    
+    // Format location strings
+    const pickupStr = enquiryDetails.pickupCountry && enquiryDetails.pickupCountry !== 'Any' ? `${enquiryDetails.pickupCity}, ${enquiryDetails.pickupCountry}` : enquiryDetails.pickupCity;
+    const destStr = enquiryDetails.destinationCountry && enquiryDetails.destinationCountry !== 'Any' ? `${enquiryDetails.destinationCity}, ${enquiryDetails.destinationCountry}` : enquiryDetails.destinationCity;
+    const volumeStr = enquiryDetails.volume && enquiryDetails.volume !== 'N/A' ? `${enquiryDetails.volume} cbm` : '';
+    const weightStr = enquiryDetails.weight && enquiryDetails.weight !== 'N/A' ? `${enquiryDetails.weight} kg` : '';
+    const weightVolStr = [weightStr, volumeStr].filter(Boolean).join(' / ') || 'N/A';
+    
+    const formattedCargoType = enquiryDetails.cargoType ? `${enquiryDetails.cargoType.toUpperCase()} Freight` : 'N/A';
+
     const html = `
         <h2 style="color: #0B1E43; margin-top: 0; border-bottom: 2px solid #00b2fe; padding-bottom: 10px; display: inline-block;">You Have Received a New Enquiry!</h2>
         <p style="color: #475569;">A customer has sent you a direct enquiry.</p>
         <table style="width: 100%; border-collapse: separate; border-spacing: 0; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; margin: 20px 0;">
-            <tr><td style="padding: 12px 15px; background-color: #f8fafc; border-bottom: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0; width: 40%;"><strong style="color: #0B1E43;">Cargo Type</strong></td><td style="padding: 12px 15px; border-bottom: 1px solid #e2e8f0;">${enquiryDetails.cargoType}</td></tr>
-            <tr><td style="padding: 12px 15px; background-color: #f8fafc; border-bottom: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0;"><strong style="color: #0B1E43;">Pickup</strong></td><td style="padding: 12px 15px; border-bottom: 1px solid #e2e8f0;">${enquiryDetails.pickupCity}, ${enquiryDetails.pickupCountry}</td></tr>
-            <tr><td style="padding: 12px 15px; background-color: #f8fafc; border-bottom: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0;"><strong style="color: #0B1E43;">Destination</strong></td><td style="padding: 12px 15px; border-bottom: 1px solid #e2e8f0;">${enquiryDetails.destinationCity}, ${enquiryDetails.destinationCountry}</td></tr>
-            <tr><td style="padding: 12px 15px; background-color: #f8fafc; border-right: 1px solid #e2e8f0;"><strong style="color: #0B1E43;">Weight/Volume</strong></td><td style="padding: 12px 15px;">${enquiryDetails.weight} kg / ${enquiryDetails.volume} cbm</td></tr>
+            <tr><td style="padding: 12px 15px; background-color: #f8fafc; border-bottom: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0; width: 40%;"><strong style="color: #0B1E43;">Cargo Type</strong></td><td style="padding: 12px 15px; border-bottom: 1px solid #e2e8f0;">${formattedCargoType}</td></tr>
+            <tr><td style="padding: 12px 15px; background-color: #f8fafc; border-bottom: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0;"><strong style="color: #0B1E43;">Pickup</strong></td><td style="padding: 12px 15px; border-bottom: 1px solid #e2e8f0;">${pickupStr}</td></tr>
+            <tr><td style="padding: 12px 15px; background-color: #f8fafc; border-bottom: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0;"><strong style="color: #0B1E43;">Destination</strong></td><td style="padding: 12px 15px; border-bottom: 1px solid #e2e8f0;">${destStr}</td></tr>
+            <tr><td style="padding: 12px 15px; background-color: #f8fafc; border-right: 1px solid #e2e8f0;"><strong style="color: #0B1E43;">Weight/Volume</strong></td><td style="padding: 12px 15px;">${weightVolStr}</td></tr>
         </table>
         <p style="color: #475569; font-weight: 600; text-align: center; margin-top: 30px;">Please log in to your vendor dashboard to review and provide a quotation.</p>
     `;

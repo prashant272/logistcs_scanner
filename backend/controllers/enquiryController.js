@@ -195,9 +195,7 @@ exports.createEnquiry = async (req, res) => {
                     sendEnquiryToVendorAlert(vendorUser.email, {
                         cargoType: sanitizedType,
                         pickupCity: fromLocation,
-                        pickupCountry: 'India', // Optional
                         destinationCity: toLocation,
-                        destinationCountry: 'Any', // Optional
                         weight: weightRange || 'N/A',
                         volume: 'N/A'
                     }).catch(err => console.error('Error sending vendor email:', err));
@@ -212,6 +210,28 @@ exports.createEnquiry = async (req, res) => {
                 isBooking ? '/vendor/direct-booking' : '/vendor/direct-enquiries',
                 sanitizedType
             ).catch(err => console.error('Error broadcasting vendor bell notification:', err));
+
+            // Also broadcast emails to eligible vendors
+            const User = require('../models/User');
+            const query = { role: 'vendor', verificationStatus: 'Approved' };
+            
+            User.find(query).populate('activePlan').then(vendors => {
+                vendors.forEach(vendorUser => {
+                    // Check if vendor has an active paid plan
+                    const hasActivePlan = vendorUser.activePlan && vendorUser.planEndDate && new Date(vendorUser.planEndDate) > new Date();
+                    const isPaidPlan = hasActivePlan && vendorUser.activePlan.price > 0;
+
+                    if (vendorUser.email && isPaidPlan) {
+                        sendEnquiryToVendorAlert(vendorUser.email, {
+                            cargoType: sanitizedType,
+                            pickupCity: fromLocation,
+                            destinationCity: toLocation,
+                            weight: weightRange || 'N/A',
+                            volume: 'N/A'
+                        }).catch(err => console.error('Error sending broadcast email to paid vendor:', err));
+                    }
+                });
+            }).catch(err => console.error('Error looking up vendors for broadcast email:', err));
         }
 
         res.status(201).json(enquiry);
@@ -404,7 +424,7 @@ exports.getVendorEnquiries = async (req, res) => {
         const limit = parseInt(req.query.limit) || 10;
         const skip = (page - 1) * limit;
 
-        console.log(`[getVendorEnquiries] user=${req.user.id} type=${type} page=${page} limit=${limit} skip=${skip}`);
+
 
         const totalCount = await Enquiry.countDocuments(query);
         const enquiries = await Enquiry.find(query)
@@ -436,7 +456,7 @@ exports.getVendorEnquiries = async (req, res) => {
                     const vId = r.vendor._id ? r.vendor._id.toString() : r.vendor.toString();
                     return vId.toString() === req.user.id.toString();
                 });
-                console.log(`[DEBUG] enquiryId=${enq._id} myResponse found:`, !!myResponse);
+
                 if (myResponse) {
                     enqObj.myResponse = myResponse;
                 }
@@ -464,7 +484,7 @@ exports.getVendorEnquiries = async (req, res) => {
                     { 'responses': { $elemMatch: { vendor: req.user.id, status: 'Accepted' } }, createdAt: { $gte: startOfMonth } }
                 ]
             });
-            console.log(`[getVendorEnquiries limit check] user=${req.user.id}, acceptedCount=${acceptedCount}, inquiryLimit=${inquiryLimit}`);
+
 
             if (acceptedCount >= inquiryLimit) {
                 isLimitReached = true;

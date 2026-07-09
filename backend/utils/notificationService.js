@@ -31,7 +31,7 @@ const sendNotification = async (userId, message, type = 'info', link = null) => 
         if (socketId && io) {
             io.to(socketId).emit('newNotification', savedNotif);
         }
-        
+
         return savedNotif;
     } catch (error) {
         console.error('Error sending notification:', error);
@@ -45,7 +45,7 @@ const sendAdminNotification = async (message, type = 'info', link = null) => {
     try {
         // Find all admin users
         const admins = await User.find({ role: 'admin' });
-        
+
         const notifications = admins.map(admin => ({
             userId: admin._id,
             message,
@@ -71,7 +71,7 @@ const sendAdminNotification = async (message, type = 'info', link = null) => {
             // We can send the raw object to the room
             io.to('adminRoom').emit('newNotification', { message, type, link, isRead: false, createdAt: new Date() });
         }
-        
+
         return savedNotifications;
     } catch (error) {
         console.error('Error sending admin notification:', error);
@@ -84,13 +84,10 @@ const sendAdminNotification = async (message, type = 'info', link = null) => {
 const broadcastVendorNotification = async (message, type = 'info', link = null, filterType = null) => {
     try {
         const query = { role: 'vendor', verificationStatus: 'Approved' };
-        if (filterType) {
-            query.services = { $in: [filterType, filterType.charAt(0).toUpperCase() + filterType.slice(1)] };
-        }
-        
+
         const vendors = await User.find(query).select('_id');
         if (!vendors.length) return;
-        
+
         const notifications = vendors.map(vendor => ({
             userId: vendor._id,
             message,

@@ -461,25 +461,26 @@ exports.updateUserProfile = async (req, res) => {
             }
         });
 
+        // Always save the user instead of throwing 401
         if (req.body.firstName || req.body.lastName) {
-            const first = req.body.firstName || user.firstName;
-            res.json({
-                _id: user.id,
-                name: user.name,
-                email: user.email,
-                phone: user.phone,
-                address: user.address,
-                role: user.role,
-                company: user.company,
-                assignedRM: user.assignedRM,
-                verificationStatus: user.verificationStatus,
-                isVerified: user.isVerified,
-                walletBalance: user.walletBalance || 0,
-                token: generateToken(user.id)
-            });
-        } else {
-            res.status(401).json({ message: 'Invalid credentials' });
+            user.name = `${req.body.firstName || user.firstName || ''} ${req.body.lastName || user.lastName || ''}`.trim();
         }
+        await user.save();
+
+        res.json({
+            _id: user.id,
+            name: user.name,
+            email: user.email,
+            phone: user.phone,
+            address: user.address,
+            role: user.role,
+            company: user.company,
+            assignedRM: user.assignedRM,
+            verificationStatus: user.verificationStatus,
+            isVerified: user.isVerified,
+            walletBalance: user.walletBalance || 0,
+            token: generateToken(user.id)
+        });
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
     }
