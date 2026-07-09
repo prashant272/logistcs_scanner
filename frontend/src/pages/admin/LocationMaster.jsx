@@ -37,7 +37,9 @@ const LocationMaster = () => {
     const [code, setCode] = useState('');
     const [icao, setIcao] = useState('');
     const [name, setName] = useState('');
-    const [countryIndex, setCountryIndex] = useState(0); 
+    const [countryIndex, setCountryIndex] = useState(0); // number or 'other'
+    const [customCountryName, setCustomCountryName] = useState('');
+    const [customCountryCode, setCustomCountryCode] = useState('');
     const [city, setCity] = useState('');
     const [state, setState] = useState('');
 
@@ -49,6 +51,8 @@ const LocationMaster = () => {
     const [editIcao, setEditIcao] = useState('');
     const [editName, setEditName] = useState('');
     const [editCountryIndex, setEditCountryIndex] = useState(0);
+    const [editCustomCountryName, setEditCustomCountryName] = useState('');
+    const [editCustomCountryCode, setEditCustomCountryCode] = useState('');
     const [editCity, setEditCity] = useState('');
     const [editState, setEditState] = useState('');
 
@@ -83,7 +87,15 @@ const LocationMaster = () => {
             return;
         }
 
-        const selectedCountry = COUNTRIES[countryIndex];
+        const isCustom = countryIndex === 'other';
+        if (isCustom && (!customCountryName || !customCountryCode)) {
+            setError('Please enter custom country name and code');
+            return;
+        }
+
+        const selectedCountry = isCustom 
+            ? { name: customCountryName, code: customCountryCode } 
+            : COUNTRIES[countryIndex];
 
         const payload = {
             type,
@@ -118,7 +130,15 @@ const LocationMaster = () => {
 
         // Find country index
         const idx = COUNTRIES.findIndex(c => c.name.toLowerCase() === loc.country.toLowerCase());
-        setEditCountryIndex(idx >= 0 ? idx : 0);
+        if (idx >= 0) {
+            setEditCountryIndex(idx);
+            setEditCustomCountryName('');
+            setEditCustomCountryCode('');
+        } else {
+            setEditCountryIndex('other');
+            setEditCustomCountryName(loc.country);
+            setEditCustomCountryCode(loc.countryCode || '');
+        }
 
         setIsEditModalOpen(true);
     };
@@ -133,7 +153,15 @@ const LocationMaster = () => {
             return;
         }
 
-        const selectedCountry = COUNTRIES[editCountryIndex];
+        const isCustom = editCountryIndex === 'other';
+        if (isCustom && (!editCustomCountryName || !editCustomCountryCode)) {
+            alert('Please enter custom country name and code');
+            return;
+        }
+
+        const selectedCountry = isCustom 
+            ? { name: editCustomCountryName, code: editCustomCountryCode } 
+            : COUNTRIES[editCountryIndex];
 
         const payload = {
             type: editType,
@@ -173,6 +201,8 @@ const LocationMaster = () => {
         setIcao('');
         setName('');
         setCountryIndex(0);
+        setCustomCountryName('');
+        setCustomCountryCode('');
         setCity('');
         setState('');
     };
@@ -319,14 +349,42 @@ const LocationMaster = () => {
                         <label className="block text-xs font-black !text-black uppercase tracking-wider">Select Country</label>
                         <select
                             value={countryIndex}
-                            onChange={(e) => setCountryIndex(Number(e.target.value))}
+                            onChange={(e) => setCountryIndex(e.target.value === 'other' ? 'other' : Number(e.target.value))}
                             className="w-full bg-white border border-slate-355 rounded-md px-3 py-2.5 text-base font-black !text-black focus:outline-none focus:border-[#0066FF]"
                         >
                             {COUNTRIES.map((c, idx) => (
                                 <option key={c.code} value={idx} className="!text-black text-base">{c.name} ({c.code})</option>
                             ))}
+                            <option value="other" className="!text-black text-base">Other (Custom)</option>
                         </select>
                     </div>
+
+                    {countryIndex === 'other' && (
+                        <>
+                            <div className="space-y-1">
+                                <label className="block text-xs font-black !text-black uppercase tracking-wider">Country Name</label>
+                                <input
+                                    type="text"
+                                    placeholder="e.g. Nepal"
+                                    value={customCountryName}
+                                    onChange={(e) => setCustomCountryName(e.target.value)}
+                                    className="w-full bg-white border border-slate-355 rounded-md px-4 py-2.5 text-base font-black !text-black placeholder:text-slate-400 focus:outline-none focus:border-[#0066FF]"
+                                    required={countryIndex === 'other'}
+                                />
+                            </div>
+                            <div className="space-y-1">
+                                <label className="block text-xs font-black !text-black uppercase tracking-wider">Country Code</label>
+                                <input
+                                    type="text"
+                                    placeholder="e.g. NP"
+                                    value={customCountryCode}
+                                    onChange={(e) => setCustomCountryCode(e.target.value)}
+                                    className="w-full bg-white border border-slate-355 rounded-md px-4 py-2.5 text-base font-black !text-black placeholder:text-slate-400 focus:outline-none focus:border-[#0066FF]"
+                                    required={countryIndex === 'other'}
+                                />
+                            </div>
+                        </>
+                    )}
 
                     <div className="space-y-1">
                         <label className="block text-xs font-black !text-black uppercase tracking-wider">City</label>
@@ -564,14 +622,42 @@ const LocationMaster = () => {
                                 <label className="block text-xs font-black !text-black uppercase tracking-wider">Select Country</label>
                                 <select
                                     value={editCountryIndex}
-                                    onChange={(e) => setEditCountryIndex(Number(e.target.value))}
+                                    onChange={(e) => setEditCountryIndex(e.target.value === 'other' ? 'other' : Number(e.target.value))}
                                     className="w-full bg-white border border-slate-355 rounded-md px-3 py-2.5 text-base font-black !text-black focus:outline-none focus:border-[#0066FF]"
                                 >
                                     {COUNTRIES.map((c, idx) => (
                                         <option key={c.code} value={idx} className="!text-black text-base">{c.name} ({c.code})</option>
                                     ))}
+                                    <option value="other" className="!text-black text-base">Other (Custom)</option>
                                 </select>
                             </div>
+
+                            {editCountryIndex === 'other' && (
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-1">
+                                        <label className="block text-xs font-black !text-black uppercase tracking-wider">Country Name</label>
+                                        <input
+                                            type="text"
+                                            placeholder="e.g. Nepal"
+                                            value={editCustomCountryName}
+                                            onChange={(e) => setEditCustomCountryName(e.target.value)}
+                                            className="w-full bg-white border border-slate-355 rounded-md px-4 py-2.5 text-base font-black !text-black placeholder:text-slate-400 focus:outline-none focus:border-[#0066FF]"
+                                            required={editCountryIndex === 'other'}
+                                        />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="block text-xs font-black !text-black uppercase tracking-wider">Country Code</label>
+                                        <input
+                                            type="text"
+                                            placeholder="e.g. NP"
+                                            value={editCustomCountryCode}
+                                            onChange={(e) => setEditCustomCountryCode(e.target.value)}
+                                            className="w-full bg-white border border-slate-355 rounded-md px-4 py-2.5 text-base font-black !text-black placeholder:text-slate-400 focus:outline-none focus:border-[#0066FF]"
+                                            required={editCountryIndex === 'other'}
+                                        />
+                                    </div>
+                                </div>
+                            )}
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-1">
