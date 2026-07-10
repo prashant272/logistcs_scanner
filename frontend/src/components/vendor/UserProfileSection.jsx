@@ -69,9 +69,9 @@ const UserProfileSection = ({ user }) => {
         </div>
         <div className="flex items-center justify-between gap-2 pt-4 border-t border-slate-100">
           <div>
-            <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">CREDIT SCORE</p>
+            <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">LS SCORE</p>
             <span className="text-xs font-black tracking-wide text-green-600">
-              {user?.creditScore ?? 100} / 100
+              {Math.min(user?.creditScore ?? 100, 100)} / 100
             </span>
           </div>
           <div className="bg-green-50 text-green-600 text-[9px] font-black px-3.5 py-2 rounded-xl uppercase tracking-widest">

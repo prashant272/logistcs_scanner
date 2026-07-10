@@ -542,8 +542,8 @@ exports.approveRepayment = async (req, res) => {
         const user = await User.findById(invoice.vendor._id);
         
         user.walletBalance = (user.walletBalance || 0) + totalPaid;
-        // Increase credit score slightly for successful payment (max 100 or some cap, let's say no cap)
-        user.creditScore = (user.creditScore || 100) + 5; 
+        // Increase credit score by 5 (capped at 100) on successful repayment
+        user.creditScore = Math.min(100, (user.creditScore || 100) + 5); 
         
         await user.save();
 

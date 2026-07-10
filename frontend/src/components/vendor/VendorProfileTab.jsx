@@ -124,7 +124,9 @@ const VendorProfileTab = ({ user: propUser }) => {
     if (formData.serviceIn === 'Both') {
       const val = parseFloat(formData.deductionPercentage);
       if (isNaN(val) || val <= 0) {
-        setError("Deduction percentage is required and must be greater than 0 when Service Mode is set to Both.");
+        const msg = "Deduction percentage is required and must be greater than 0 when Service Mode is set to Both.";
+        setError(msg);
+        alert(msg);
         return;
       }
     }
@@ -134,12 +136,15 @@ const VendorProfileTab = ({ user: propUser }) => {
       const res = await updateProfile(formData);
       if (res.success) {
         setSaved(true);
+        alert("Changes saved successfully! Your profile has been updated.");
         setTimeout(() => setSaved(false), 4000);
       } else {
         setError(res.message);
+        alert(res.message || "Failed to update profile.");
       }
     } catch (err) {
       setError("An unexpected error occurred while saving profile.");
+      alert("An unexpected error occurred while saving profile.");
     } finally {
       setSaving(false);
     }
@@ -171,19 +176,7 @@ const VendorProfileTab = ({ user: propUser }) => {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-8">
-        {saved && (
-          <div className="bg-green-50 border border-green-200/80 text-green-800 px-5 py-4 rounded-2xl text-sm font-bold flex items-center gap-3 shadow-sm animate-fadeIn">
-            <ShieldCheck size={18} className="text-green-600 shrink-0" />
-            <span>Changes saved successfully! Your profile has been updated.</span>
-          </div>
-        )}
-
-        {error && (
-          <div className="bg-red-50 border border-red-200/80 text-red-800 px-5 py-4 rounded-2xl text-sm font-bold flex items-center gap-3 shadow-sm">
-            <Info size={18} className="text-red-600 shrink-0" />
-            <span>{error}</span>
-          </div>
-        )}
+        {/* Messages moved to bottom */}
 
         {/* SECTION 1: PHOTO & DOCUMENTS */}
         <div className="bg-white rounded-3xl p-6 md:p-8 border border-slate-100 shadow-[0_8px_30px_rgba(11,30,67,0.02)] space-y-6">
@@ -691,8 +684,24 @@ const VendorProfileTab = ({ user: propUser }) => {
           </div>
         </div>
 
-        {/* Submit */}
-        <div className="flex justify-end">
+        {/* Submit Section */}
+        <div className="flex flex-col md:flex-row justify-end items-center gap-4">
+          
+          <div className="flex-1 w-full flex justify-end">
+             {saved && (
+              <div className="bg-green-50 border border-green-200/80 text-green-800 px-5 py-4 rounded-2xl text-sm font-bold flex items-center gap-3 shadow-sm animate-fadeIn w-full md:w-auto">
+                <ShieldCheck size={18} className="text-green-600 shrink-0" />
+                <span>Changes saved successfully! Your profile has been updated.</span>
+              </div>
+            )}
+            {error && (
+              <div className="bg-red-50 border border-red-200/80 text-red-800 px-5 py-4 rounded-2xl text-sm font-bold flex items-center gap-3 shadow-sm w-full md:w-auto">
+                <Info size={18} className="text-red-600 shrink-0" />
+                <span>{error}</span>
+              </div>
+            )}
+          </div>
+
           <button 
             type="submit" 
             disabled={saving || uploading.profilePhoto || uploading.uploadedDocument}
