@@ -35,6 +35,14 @@ const userSchema = new mongoose.Schema({
         type: String,
         default: ''
     },
+    takesCreditDays: {
+        type: Number,
+        default: 0
+    },
+    givesCreditDays: {
+        type: Number,
+        default: 0
+    },
     firstName: {
         type: String,
         default: ''

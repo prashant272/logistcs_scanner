@@ -35,7 +35,9 @@ const VendorProfileTab = ({ user: propUser }) => {
     deductionPercentage: user?.deductionPercentage || 0.00,
     gst: user?.gst || '',
     pan: user?.pan || '',
-    serviceLocations: user?.serviceLocations || []
+    serviceLocations: user?.serviceLocations || [],
+    takesCreditDays: user?.takesCreditDays || 0,
+    givesCreditDays: user?.givesCreditDays || 0
   });
 
   const [newLocation, setNewLocation] = useState('');
@@ -377,6 +379,33 @@ const VendorProfileTab = ({ user: propUser }) => {
                 value={formData.pan}
                 disabled
                 className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-xs text-slate-500 font-semibold cursor-not-allowed"
+                placeholder="Not Provided"
+              />
+            </div>
+            
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-[#0B1E43] uppercase tracking-wide flex justify-between">
+                <span>Credit Needed (Days)</span>
+                <span className="text-[9px] text-slate-400 font-medium">Admin Verified</span>
+              </label>
+              <input 
+                type="text" 
+                value={formData.takesCreditDays ? `${formData.takesCreditDays} Days` : '0 Days'}
+                disabled
+                className="w-full bg-slate-50 border border-amber-200 rounded-xl px-4 py-3 text-xs text-amber-600 font-bold cursor-not-allowed"
+                placeholder="Not Provided"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-[#0B1E43] uppercase tracking-wide flex justify-between">
+                <span>Credit Provided (Days)</span>
+                <span className="text-[9px] text-slate-400 font-medium">Admin Verified</span>
+              </label>
+              <input 
+                type="text" 
+                value={formData.givesCreditDays ? `${formData.givesCreditDays} Days` : '0 Days'}
+                disabled
+                className="w-full bg-slate-50 border border-amber-200 rounded-xl px-4 py-3 text-xs text-amber-600 font-bold cursor-not-allowed"
                 placeholder="Not Provided"
               />
             </div>

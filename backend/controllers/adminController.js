@@ -768,6 +768,29 @@ exports.adminAddUser = async (req, res) => {
     }
 };
 
+// Update vendor credit days
+exports.updateVendorCreditDays = async (req, res) => {
+    try {
+        const vendorId = req.params.id;
+        const { takesCreditDays, givesCreditDays } = req.body;
+
+        const vendor = await User.findById(vendorId);
+        if (!vendor || vendor.role !== 'vendor') {
+            return res.status(404).json({ message: 'Vendor not found' });
+        }
+
+        vendor.takesCreditDays = Number(takesCreditDays) || 0;
+        vendor.givesCreditDays = Number(givesCreditDays) || 0;
+        
+        await vendor.save();
+
+        res.json({ message: 'Vendor credit days updated successfully', vendor });
+    } catch (error) {
+        console.error('Update credit error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
 // Update vendor enquiry limit manually (by admin)
 exports.updateVendorEnquiryLimit = async (req, res) => {
     try {

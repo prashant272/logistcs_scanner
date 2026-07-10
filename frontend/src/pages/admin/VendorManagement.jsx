@@ -42,6 +42,14 @@ const VendorManagement = () => {
     company: '', email: '', phone: '', country: ''
   });
 
+  // Credit Vendor Modal State
+  const [showCreditModal, setShowCreditModal] = useState(false);
+  const [creditingVendor, setCreditingVendor] = useState(false);
+  const [creditVendorId, setCreditVendorId] = useState(null);
+  const [creditFormData, setCreditFormData] = useState({
+    takesCreditDays: 0, givesCreditDays: 0
+  });
+
   // Verify Documents Modal State
   const [showVerifyModal, setShowVerifyModal] = useState(false);
   const [verifyingVendor, setVerifyingVendor] = useState(false);
@@ -130,6 +138,34 @@ const VendorManagement = () => {
       setPlans(data || []);
     } catch (err) {
       console.error('Error toggling verification:', err);
+    }
+  };
+
+  const handleUpdateCredit = async (e) => {
+    e.preventDefault();
+    if (!creditVendorId) return;
+
+    try {
+      setCreditingVendor(true);
+      const token = sessionStorage.getItem('adminToken');
+      await axios.put(
+        `${import.meta.env.VITE_API_BASE_URL}/admin/vendors/${creditVendorId}/credit`,
+        creditFormData,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      setVendors(prev => prev.map(v => 
+        v._id === creditVendorId 
+          ? { ...v, takesCreditDays: creditFormData.takesCreditDays, givesCreditDays: creditFormData.givesCreditDays }
+          : v
+      ));
+      
+      setShowCreditModal(false);
+    } catch (err) {
+      console.error('Error updating credit:', err);
+      alert(err.response?.data?.message || 'Failed to update credit');
+    } finally {
+      setCreditingVendor(false);
     }
   };
 
@@ -525,6 +561,7 @@ const VendorManagement = () => {
                   <th className="p-4 text-center">Dashboard</th>
                   <th className="p-4 text-center">Activity</th>
                   <th className="p-4 text-center">Edit</th>
+                  <th className="p-4 text-center">Credit</th>
                   <th className="p-4">First Name</th>
                   <th className="p-4">Last Name</th>
                   <th className="p-4">Email</th>
@@ -582,6 +619,24 @@ const VendorManagement = () => {
                           title="Edit Vendor Details"
                         >
                           <Edit size={14} />
+                        </button>
+                      </td>
+                      <td className="p-4 text-center">
+                        <button
+                          onClick={() => {
+                            setCreditVendorId(vendor._id);
+                            setCreditFormData({
+                              takesCreditDays: vendor.takesCreditDays || 0,
+                              givesCreditDays: vendor.givesCreditDays || 0
+                            });
+                            setShowCreditModal(true);
+                          }}
+                          className="bg-amber-100 hover:bg-amber-200 text-amber-700 text-[10px] font-black p-1.5 rounded-lg flex items-center gap-1.5 mx-auto cursor-pointer transition-colors"
+                          title="Manage Vendor Credit"
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
                         </button>
                       </td>
                       <td className="p-4 text-slate-800">{firstName}</td>
@@ -795,6 +850,69 @@ const VendorManagement = () => {
                 <button type="submit" disabled={addingVendor} className="px-4 py-2 text-sm font-bold text-white bg-blue-600 rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center gap-2">
                   {addingVendor ? <Loader2 size={16} className="animate-spin" /> : <ShieldCheck size={16} />} 
                   {addingVendor ? 'Creating...' : 'Create Vendor'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Credit Vendor Modal */}
+      {showCreditModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
+            <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+              <h2 className="text-lg font-black text-[#0B1E43]">Manage Credit Limits</h2>
+              <button 
+                onClick={() => setShowCreditModal(false)}
+                className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-200/50 rounded-xl transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <form onSubmit={handleUpdateCredit} className="p-5 space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">Takes Credit (Days)</label>
+                <p className="text-[10px] text-slate-400 mb-2 font-medium">How many days of credit does this vendor need?</p>
+                <input
+                  type="number"
+                  required
+                  min="0"
+                  value={creditFormData.takesCreditDays}
+                  onChange={(e) => setCreditFormData(prev => ({ ...prev, takesCreditDays: e.target.value }))}
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-[#0B1E43] focus:outline-none focus:border-[#0066FF] focus:ring-1 focus:ring-[#0066FF]/20"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">Gives Credit (Days)</label>
+                <p className="text-[10px] text-slate-400 mb-2 font-medium">How many days of credit does this vendor provide?</p>
+                <input
+                  type="number"
+                  required
+                  min="0"
+                  value={creditFormData.givesCreditDays}
+                  onChange={(e) => setCreditFormData(prev => ({ ...prev, givesCreditDays: e.target.value }))}
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-[#0B1E43] focus:outline-none focus:border-[#0066FF] focus:ring-1 focus:ring-[#0066FF]/20"
+                />
+              </div>
+
+              <div className="pt-4 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowCreditModal(false)}
+                  className="px-5 py-2.5 text-sm font-bold text-slate-600 hover:text-slate-800 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={creditingVendor}
+                  className="px-6 py-2.5 bg-[#0066FF] hover:bg-[#0052cc] text-white text-sm font-bold rounded-xl shadow-lg shadow-[#0066FF]/20 transition-all flex items-center gap-2 disabled:opacity-70"
+                >
+                  {creditingVendor ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                  Save Limits
                 </button>
               </div>
             </form>

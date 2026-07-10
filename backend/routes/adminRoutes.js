@@ -24,6 +24,7 @@ const {
     updateVendorEnquiryLimit,
     updateVendorPlan,
     updateVendorDetails,
+    updateVendorCreditDays,
     verifyVendorDocuments
 } = require("../controllers/adminController");
 const auth = require("../middleware/authMiddleware");
@@ -41,6 +42,7 @@ router.get("/guest-history", auth, getGuestHistory);
 router.get("/impersonate/:vendorId", auth, impersonateVendor);
 router.put("/vendors/:id/verify", auth, toggleVendorVerification);
 router.post("/vendors/:id/verify-documents", auth, verifyVendorDocuments);
+router.put("/vendors/:id/credit", auth, updateVendorCreditDays);
 router.put("/vendors/:id/enquiry-limit", auth, updateVendorEnquiryLimit);
 router.put("/vendors/:id/plan", auth, updateVendorPlan);
 router.put("/vendors/:id", auth, updateVendorDetails);

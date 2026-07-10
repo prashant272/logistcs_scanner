@@ -238,6 +238,7 @@ exports.verifyRazorpayPayment = async (req, res) => {
 
 const InvoiceRequest = require('../models/InvoiceRequest');
 const WalletTransaction = require('../models/WalletTransaction');
+const User = require('../models/User');
 
 // @desc    Submit Invoice Request
 // @route   POST /api/finance/invoice
@@ -248,7 +249,7 @@ exports.submitInvoice = async (req, res) => {
         
         const invoice = await InvoiceRequest.create({
             vendor: req.user.id,
-            lsId,
+            lsId: lsId.trim(),
             vendorName,
             bankDetails,
             amount,
@@ -257,6 +258,46 @@ exports.submitInvoice = async (req, res) => {
 
         // Notify Admin
         await sendAdminNotification(`New invoice uploaded by ${vendorName} for ₹${amount}.`, 'info', '/admin/finance/invoice-requests');
+
+        // Look up target vendor to send email
+        try {
+            const cleanLsid = lsId.trim().replace(/[^0-9]/g, '');
+            const getLSID = (id) => {
+                let hash = 0;
+                const str = id.toString();
+                for (let i = 0; i < str.length; i++) {
+                    hash = (hash * 31 + str.charCodeAt(i)) % 900000;
+                }
+                return 1000000000 + Math.abs(hash);
+            };
+
+            const vendors = await User.find({ role: 'vendor' }).select('name company email');
+            const targetVendor = vendors.find(v => {
+                const computed = getLSID(v._id).toString();
+                return computed === cleanLsid || `ls-${computed}` === lsId.toLowerCase().trim() || v._id.toString() === lsId.trim();
+            });
+
+            if (targetVendor && targetVendor.email) {
+                const emailHtml = `
+                    <h3>New Credit Invoice Received</h3>
+                    <p>Dear ${targetVendor.company || targetVendor.name},</p>
+                    <p>A new credit invoice of <b>₹${amount}</b> has been uploaded against your LS ID by <b>${req.user.company || req.user.name || vendorName}</b>.</p>
+                    <p>You can view the details in your Logistics Scanner Vendor Dashboard under the <b>Credit Invoices</b> tab.</p>
+                    <br/>
+                    <p>Thanks,<br/>Logistics Scanner Team</p>
+                `;
+                if (typeof sendEmail === 'function') {
+                    // some notificationService exports might expect an object if it's the newer one
+                    try {
+                        await sendEmail(targetVendor.email, 'New Credit Invoice Received', emailHtml);
+                    } catch (e) {
+                        await sendEmail({ to: targetVendor.email, subject: 'New Credit Invoice Received', html: emailHtml });
+                    }
+                }
+            }
+        } catch (mailErr) {
+            console.error('Failed to send target vendor email:', mailErr);
+        }
 
         res.status(201).json({ message: 'Invoice submitted successfully', invoice });
     } catch (error) {
@@ -274,6 +315,36 @@ exports.getMyInvoices = async (req, res) => {
         res.status(200).json(invoices);
     } catch (error) {
         console.error('Get My Invoices Error:', error);
+        res.status(500).json({ message: 'Server Error' });
+    }
+};
+
+// @desc    Get Invoices Received By Vendor (Target Vendor)
+// @route   GET /api/finance/invoice/received
+// @access  Vendor
+exports.getReceivedInvoices = async (req, res) => {
+    try {
+        const id = req.user.id;
+        let hash = 0;
+        const str = id.toString();
+        for (let i = 0; i < str.length; i++) {
+            hash = (hash * 31 + str.charCodeAt(i)) % 900000;
+        }
+        const myLsid = (1000000000 + Math.abs(hash)).toString();
+
+        // Search by numeric lsId or prefixed ls-
+        const invoices = await InvoiceRequest.find({
+            $or: [
+                { lsId: myLsid },
+                { lsId: `ls-${myLsid}` },
+                { lsId: `LS-${myLsid}` },
+                { lsId: new RegExp(myLsid, 'i') } // Fallback to match even if it has spaces
+            ]
+        }).populate('vendor', 'name company email phone').sort({ createdAt: -1 });
+
+        res.status(200).json(invoices);
+    } catch (error) {
+        console.error('Get Received Invoices Error:', error);
         res.status(500).json({ message: 'Server Error' });
     }
 };

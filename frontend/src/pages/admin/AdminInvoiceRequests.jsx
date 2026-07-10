@@ -149,10 +149,17 @@ const AdminInvoiceRequests = () => {
                                 invoices.map((inv) => (
                                     <tr key={inv._id} className="hover:bg-slate-50/50 transition-colors">
                                         <td className="p-4 pl-6">
-                                            <div className="flex flex-col">
-                                                <span className="text-sm font-black text-[#0B1E43]">{inv.vendorName || inv.vendor?.name}</span>
-                                                <span className="text-[10px] text-slate-500 font-semibold mt-0.5">LS ID: {inv.lsId}</span>
-                                                <span className="text-[10px] text-slate-400 font-semibold">{inv.vendor?.email}</span>
+                                            <div className="flex flex-col gap-2">
+                                                <div className="flex flex-col">
+                                                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Uploaded By</span>
+                                                    <span className="text-sm font-black text-[#0B1E43]">{inv.vendor?.company || inv.vendor?.name || 'Unknown'}</span>
+                                                    <span className="text-[10px] text-slate-500 font-semibold">{inv.vendor?.email}</span>
+                                                </div>
+                                                <div className="flex flex-col">
+                                                    <span className="text-[9px] font-black text-[#0066FF] uppercase tracking-widest">Target Vendor</span>
+                                                    <span className="text-sm font-bold text-[#0B1E43]">{inv.vendorName || 'N/A'}</span>
+                                                    <span className="text-[10px] text-slate-500 font-semibold">LS ID: {inv.lsId}</span>
+                                                </div>
                                             </div>
                                         </td>
                                         <td className="p-4">
@@ -251,9 +258,20 @@ const AdminInvoiceRequests = () => {
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div className="space-y-4">
                                         <div>
-                                            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">Vendor Info</h4>
-                                            <p className="text-sm font-bold text-[#0B1E43]">{selectedInvoice.vendorName || selectedInvoice.vendor?.name}</p>
-                                            <p className="text-xs font-semibold text-slate-500">LS ID: {selectedInvoice.lsId}</p>
+                                            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-2">Vendor Info</h4>
+                                            <div className="flex flex-col gap-3">
+                                                <div className="bg-slate-50 rounded-lg p-3 border border-slate-100">
+                                                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Uploaded By</span>
+                                                    <p className="text-sm font-bold text-[#0B1E43]">{selectedInvoice.vendor?.company || selectedInvoice.vendor?.name || 'Unknown'}</p>
+                                                    <p className="text-xs font-semibold text-slate-500">{selectedInvoice.vendor?.email}</p>
+                                                    <p className="text-[10px] font-semibold text-slate-400">Phone: {selectedInvoice.vendor?.phone || 'N/A'}</p>
+                                                </div>
+                                                <div className="bg-[#0066FF]/5 rounded-lg p-3 border border-[#0066FF]/10">
+                                                    <span className="text-[9px] font-black text-[#0066FF] uppercase tracking-widest block mb-1">Target Vendor</span>
+                                                    <p className="text-sm font-bold text-[#0B1E43]">{selectedInvoice.vendorName || 'N/A'}</p>
+                                                    <p className="text-xs font-semibold text-[#0066FF]/70">LS ID: {selectedInvoice.lsId}</p>
+                                                </div>
+                                            </div>
                                         </div>
                                         <div>
                                             <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">Bank Details</h4>

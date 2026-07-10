@@ -93,6 +93,7 @@ const VendorComplaintsTab = lazy(() => import('./components/vendor/VendorComplai
 const VendorFinanceForm = lazy(() => import('./pages/vendor/VendorFinanceForm'));
 const VendorFinanceDashboard = lazy(() => import('./pages/vendor/VendorFinanceDashboard'));
 const UploadInvoiceTab = lazy(() => import('./components/vendor/UploadInvoiceTab'));
+const VendorCreditInvoicesTab = lazy(() => import('./components/vendor/VendorCreditInvoicesTab'));
 const WalletLedgerTab = lazy(() => import('./components/vendor/WalletLedgerTab'));
 const VendorContactListTab = lazy(() => import('./components/vendor/VendorContactListTab'));
 
@@ -250,7 +251,8 @@ function App() {
               <Route path="finance" element={<VendorFinanceForm />} />
               <Route path="finance-list" element={<VendorFinanceDashboard />} />
               <Route path="upload-invoice" element={<UploadInvoiceTab />} />
-              <Route path="wallet" element={<WalletLedgerTab />} />
+              <Route path="credit-invoices" element={<VendorCreditInvoicesTab />} />
+              <Route path="wallet-ledger" element={<WalletLedgerTab />} />
               <Route path="bulk-import" element={<VendorBulkImportTab />} />
               <Route path="view-profile" element={<VendorProfileTab />} />
               <Route path="upgrade" element={<PricingPlans />} />

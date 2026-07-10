@@ -17,7 +17,8 @@ const {
     applyPenalty,
     getWalletLedger,
     submitRepayment,
-    approveRepayment
+    approveRepayment,
+    getReceivedInvoices
 } = require('../controllers/financeController');
 
 // Vendor routes
@@ -30,6 +31,7 @@ router.post('/:id/verify-payment', protect, verifyRazorpayPayment);
 // Invoice routes (Vendor)
 router.post('/invoice', protect, submitInvoice);
 router.get('/invoice/my', protect, getMyInvoices);
+router.get('/invoice/received', protect, getReceivedInvoices);
 router.post('/invoice/:id/repay', protect, submitRepayment);
 router.get('/wallet/ledger', protect, getWalletLedger);
 
