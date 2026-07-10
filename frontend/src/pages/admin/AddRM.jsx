@@ -14,6 +14,20 @@ const AddRM = () => {
     const [email, setEmail] = useState('');
     const [mobile, setMobile] = useState('');
     const [password, setPassword] = useState('');
+    const [permissions, setPermissions] = useState([]);
+
+    const availablePermissions = [
+        'Manage Customer', 'Manage Vendor', 'All Enquiries', 'Vendor Pricing', 'Add Pricing', 'Add Via Pricing', 
+        'Add Plan', 'Add Coupon', 'Inquiry listing', 'Activity RM', 'Bulk Import', 'Location Master', 
+        'Finance Enquiry List', 'Invoice Request', 'Upgrade Requests', 'All Complaints', 'CMS Settings', 
+        'PTL Bookings', 'Delhivery Settings'
+    ];
+
+    const handlePermissionChange = (perm) => {
+        setPermissions(prev => 
+            prev.includes(perm) ? prev.filter(p => p !== perm) : [...prev, perm]
+        );
+    };
 
     const fetchRMs = async () => {
         try {
@@ -40,7 +54,7 @@ const AddRM = () => {
         try {
             setError('');
             const token = sessionStorage.getItem('adminToken');
-            const payload = { name, email, mobile };
+            const payload = { name, email, mobile, permissions };
             if (password) payload.password = password;
 
             if (isEditing) {
@@ -71,6 +85,7 @@ const AddRM = () => {
         setName(rm.name);
         setEmail(rm.email);
         setMobile(rm.mobile);
+        setPermissions(rm.permissions || []);
         setPassword(''); // don't show existing password
     };
 
@@ -95,6 +110,7 @@ const AddRM = () => {
         setEmail('');
         setMobile('');
         setPassword('');
+        setPermissions([]);
         setError('');
     };
 
@@ -160,6 +176,23 @@ const AddRM = () => {
                                 placeholder="******"
                                 className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
                             />
+                        </div>
+                    </div>
+
+                    <div className="md:col-span-2 space-y-3">
+                        <label className="text-sm font-semibold text-slate-700">Assign Permissions (Sidebar Tabs)</label>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 bg-slate-50 p-4 border border-slate-200 rounded-xl">
+                            {availablePermissions.map(perm => (
+                                <label key={perm} className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
+                                    <input 
+                                        type="checkbox" 
+                                        checked={permissions.includes(perm)}
+                                        onChange={() => handlePermissionChange(perm)}
+                                        className="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500"
+                                    />
+                                    {perm}
+                                </label>
+                            ))}
                         </div>
                     </div>
 

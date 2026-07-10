@@ -9,8 +9,17 @@ const AdminDashboard = () => {
     const [searchQuery, setSearchQuery] = useState('');
 
     const handleLogout = () => {
+        const role = sessionStorage.getItem('adminRole');
         sessionStorage.removeItem('adminToken');
-        navigate('/admin/login');
+        sessionStorage.removeItem('adminRole');
+        sessionStorage.removeItem('adminName');
+        sessionStorage.removeItem('adminPermissions');
+        
+        if (role === 'RM') {
+            navigate('/rm-login');
+        } else {
+            navigate('/admin/login');
+        }
     };
 
     return (

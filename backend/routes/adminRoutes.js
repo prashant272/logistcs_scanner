@@ -1,9 +1,9 @@
 const express = require("express");
 const router = express.Router();
-const { 
-    loginAdmin, 
-    getVendors, 
-    getCustomers, 
+const {
+    loginAdmin,
+    getVendors,
+    getCustomers,
     getGuests,
     getCustomerHistory,
     getGuestHistory,

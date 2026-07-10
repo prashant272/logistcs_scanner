@@ -59,7 +59,7 @@ const AdminSidebar = ({ isSidebarOpen, logout }) => {
                 { name: 'Add Coupon', path: '/admin/reports/add-coupon', icon: <Percent size={16} /> },
                 { name: 'Inquiry listing', path: '/admin/reports/inquiry-listing', icon: <FileText size={16} /> },
                 { name: 'Add RM', path: '/admin/reports/add-rm', icon: <UserPlus size={16} /> },
-                { name: 'Assign RM', path: '/admin/reports/assign-rm', icon: <Users size={16} /> },
+                { name: 'Activity RM', path: '/admin/reports/activity-rm', icon: <FileText size={16} /> },
                 { name: 'Bulk Import', path: '/admin/reports/bulk-import', icon: <FileSpreadsheet size={16} /> }
             ]
         },
@@ -104,6 +104,19 @@ const AdminSidebar = ({ isSidebarOpen, logout }) => {
         }
     ];
 
+    const adminRole = sessionStorage.getItem('adminRole');
+    const adminPermissions = JSON.parse(sessionStorage.getItem('adminPermissions') || '[]');
+    let filteredMenuStructure = menuStructure;
+
+    if (adminRole === 'RM') {
+        filteredMenuStructure = menuStructure.map(group => {
+            const filteredItems = group.items.filter(item => 
+                item.name === 'Dashboard' || adminPermissions.includes(item.name)
+            );
+            return { ...group, items: filteredItems };
+        }).filter(group => group.items.length > 0);
+    }
+
     return (
         <aside className={`bg-gradient-to-b from-[#0B1E43] via-[#081633] to-[#050f24] text-white transition-all duration-300 flex flex-col shrink-0 h-screen fixed left-0 top-0 overflow-y-auto z-40 border-r border-white/5 ${isSidebarOpen ? 'translate-x-0 w-64' : '-translate-x-full md:translate-x-0 md:w-20'}`}>
             {/* Logo Section */}
@@ -114,14 +127,16 @@ const AdminSidebar = ({ isSidebarOpen, logout }) => {
                     </div>
                     <div className={`flex flex-col ${!isSidebarOpen && 'md:hidden'}`}>
                         <span className="font-extrabold tracking-wider text-sm text-white">LOGISTICS</span>
-                        <span className="text-[10px] tracking-[0.25em] text-[#00b2fe] font-black">ADMIN</span>
+                        <span className="text-[10px] tracking-[0.25em] text-[#00b2fe] font-black">
+                            {adminRole === 'RM' ? 'RM PANEL' : 'ADMIN'}
+                        </span>
                     </div>
                 </div>
             </Link>
 
             {/* Sidebar Navigation */}
             <nav className="flex-1 py-4 px-3 space-y-3 overflow-y-auto custom-scrollbar">
-                {menuStructure.map((group) => {
+                {filteredMenuStructure.map((group) => {
                     const isExpanded = expandedCategories[group.category];
 
                     if (group.isCollapsible) {

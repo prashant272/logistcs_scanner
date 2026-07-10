@@ -3,6 +3,10 @@ import { Menu, Search, LogOut } from 'lucide-react';
 import NotificationBell from '../common/NotificationBell';
 
 const AdminHeader = ({ isSidebarOpen, setSidebarOpen, logout, searchQuery, setSearchQuery }) => {
+    const adminName = sessionStorage.getItem('adminName') || 'Administrator';
+    const adminRole = sessionStorage.getItem('adminRole') || 'ADMIN';
+    const initial = adminName.charAt(0).toUpperCase();
+
     return (
         <header className="relative bg-white border-b border-slate-100 h-20 flex items-center justify-between px-6 md:px-8 z-50 shrink-0">
             {/* Left: Sidebar Toggle and Dashboard Title */}
@@ -39,14 +43,14 @@ const AdminHeader = ({ isSidebarOpen, setSidebarOpen, logout, searchQuery, setSe
                 {/* User Avatar */}
                 <div className="flex items-center gap-3 pl-2 border-l border-slate-100">
                     <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#0066FF]/10 to-[#00b2fe]/10 flex items-center justify-center !text-[#0066FF] font-black border border-[#0066FF]/10 shadow-sm">
-                        A
+                        {initial}
                     </div>
                     <div className="hidden sm:flex flex-col">
                         <span className="text-xs font-black !text-slate-800 leading-tight">
-                            Administrator
+                            {adminName}
                         </span>
                         <span className="text-[9px] !text-[#0066FF] font-extrabold tracking-wider uppercase mt-0.5">
-                            LOGISTICS SCANNER
+                            {adminRole === 'RM' ? 'RELATIONSHIP MANAGER' : 'LOGISTICS SCANNER'}
                         </span>
                     </div>
                 </div>

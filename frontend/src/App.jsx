@@ -8,13 +8,21 @@ axios.interceptors.response.use(
   (error) => {
     if (error.response && error.response.status === 401) {
       // Do not redirect if the error is from a login request
-      if (error.config && error.config.url && error.config.url.includes('/auth/login')) {
+      if (error.config && error.config.url && error.config.url.includes('/login')) {
           return Promise.reject(error);
       }
       
       if (window.location.pathname.startsWith('/admin')) {
+          const role = sessionStorage.getItem('adminRole');
           sessionStorage.removeItem('adminToken');
-          window.location.href = '/admin/login';
+          if (role === 'RM') {
+              window.location.href = '/rm-login';
+          } else {
+              window.location.href = '/admin/login';
+          }
+      } else if (window.location.pathname.startsWith('/rm-login')) {
+          sessionStorage.removeItem('adminToken');
+          window.location.href = '/rm-login';
       } else {
           localStorage.removeItem('userToken');
           window.location.href = '/login';
@@ -99,7 +107,9 @@ const VendorContactListTab = lazy(() => import('./components/vendor/VendorContac
 
 // Lazy loaded admin pages
 const AdminLogin = lazy(() => import('./pages/admin/AdminLogin'));
+const RMLogin = lazy(() => import('./pages/admin/RMLogin'));
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
+const RMActivity = lazy(() => import('./pages/admin/RMActivity'));
 const AdminDashboardMain = lazy(() => import('./components/admin/AdminDashboardMain'));
 const MenuManagement = lazy(() => import('./pages/admin/MenuManagement'));
 const CustomerManagement = lazy(() => import('./pages/admin/CustomerManagement'));
@@ -181,6 +191,7 @@ function App() {
           <Routes>
             {/* Admin Routes (No Navbar/Footer) */}
             <Route path="/admin/login" element={<AdminLogin />} />
+            <Route path="/rm-login" element={<RMLogin />} />
             <Route path="/admin" element={<PrivateRoute><AdminDashboard /></PrivateRoute>}>
               <Route path="dashboard" element={<AdminDashboardMain />} />
               <Route path="menu" element={<MenuManagement />} />
@@ -197,7 +208,7 @@ function App() {
               <Route path="reports/add-coupon" element={<CouponManagement />} />
               <Route path="reports/inquiry-listing" element={<AdminInquiryListing />} />
               <Route path="reports/add-rm" element={<AddRM />} />
-              <Route path="reports/assign-rm" element={<div className="p-6 bg-white rounded-2xl shadow-sm text-slate-800"><h2 className="text-xl font-bold mb-4">Assign Relationship Manager</h2><p className="text-slate-500">Assign relationship managers to customers.</p></div>} />
+              <Route path="reports/activity-rm" element={<RMActivity />} />
               <Route path="reports/bulk-import" element={<div className="p-6 bg-white rounded-2xl shadow-sm text-slate-800"><h2 className="text-xl font-bold mb-4">Bulk Import</h2><p className="text-slate-500">Bulk data import tool.</p></div>} />
               
               {/* Location Master */}

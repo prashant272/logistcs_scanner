@@ -1,6 +1,7 @@
 const Admin = require('../models/Admin');
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
+const logActivity = require('../utils/activityLogger');
 
 // Generate JWT
 const generateToken = (id) => {
@@ -45,6 +46,10 @@ exports.getVendors = async (req, res) => {
         const statusFilter = req.query.status || 'All Status';
 
         const query = { role: 'vendor' };
+        if (req.user && req.user.role === 'RM') {
+            query.assignedRM = req.user.id;
+        }
+        
         if (search) {
             query.$or = [
                 { name: { $regex: search, $options: 'i' } },
@@ -784,6 +789,8 @@ exports.updateVendorCreditDays = async (req, res) => {
         
         await vendor.save();
 
+        await logActivity('UPDATE_CREDIT_LIMIT', req, vendorId, { takesCreditDays, givesCreditDays });
+
         res.json({ message: 'Vendor credit days updated successfully', vendor });
     } catch (error) {
         console.error('Update credit error:', error);
@@ -818,6 +825,8 @@ exports.updateVendorEnquiryLimit = async (req, res) => {
         }
         
         await vendor.save();
+
+        await logActivity('UPDATE_ENQUIRY_LIMIT', req, vendorId, { limit });
 
         res.json({ message: 'Vendor enquiry limit updated successfully', vendor });
     } catch (error) {

@@ -25,6 +25,9 @@ const rmSchema = new mongoose.Schema({
         type: String,
         default: 'RM'
     },
+    permissions: [{
+        type: String
+    }],
     createdAt: {
         type: Date,
         default: Date.now
