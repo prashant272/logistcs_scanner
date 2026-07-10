@@ -261,11 +261,32 @@ router.get('/public-vendors-search/:id/details', async (req, res) => {
 
         const isVerified = targetVendor.activePlan && targetVendor.activePlan.price > 0;
 
+        // Calculate Complaints Stats
+        const Complaint = require('../models/Complaint');
+        
+        // Against Me
+        const complaintsAgainst = await Complaint.find({ vendor: targetVendor._id });
+        const againstStats = {
+            total: complaintsAgainst.length,
+            resolved: complaintsAgainst.filter(c => c.status === 'Resolved').length,
+            pending: complaintsAgainst.filter(c => c.status === 'Pending').length
+        };
+
+        // Raised By Me
+        const complaintsRaised = await Complaint.find({ client: targetVendor._id });
+        const raisedStats = {
+            total: complaintsRaised.length,
+            resolved: complaintsRaised.filter(c => c.status === 'Resolved').length,
+            pending: complaintsRaised.filter(c => c.status === 'Pending').length
+        };
+
         const vendorData = {
             ...targetVendor.toObject(),
             lsid: getLSID(targetVendor._id),
             organizationName: targetVendor.company || targetVendor.name || 'N/A',
-            isVerified
+            isVerified,
+            complaintsAgainst: againstStats,
+            complaintsRaised: raisedStats
         };
 
         // 1. Check if user is logged in and approved

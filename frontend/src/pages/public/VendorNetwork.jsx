@@ -244,9 +244,6 @@ const VendorNetwork = () => {
                     <div className="bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 overflow-hidden animate-fade-in">
                         <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
                             <h3 className="font-extrabold !text-[#0B1E43] text-lg uppercase tracking-wider">Search Results</h3>
-                            <span className="bg-[#0066FF]/10 text-[#0066FF] text-xs px-3 py-1.5 rounded-full font-black uppercase">
-                                {searchResults.length} Vendors Found
-                            </span>
                         </div>
                         <div className="overflow-x-auto">
                             <table className="w-full border-collapse text-left">
@@ -256,7 +253,7 @@ const VendorNetwork = () => {
                                         <th className="py-4 px-6">Organization Name</th>
                                         <th className="py-4 px-6">City</th>
                                         <th className="py-4 px-6">Country</th>
-                                        <th className="py-4 px-6">Status</th>
+
                                         <th className="py-4 px-6 text-right">Action</th>
                                     </tr>
                                 </thead>
@@ -267,7 +264,21 @@ const VendorNetwork = () => {
                                                 LS-{vendor.lsid}
                                             </td>
                                             <td className="py-4 px-6 text-[#0B1E43] font-bold">
-                                                {vendor.organizationName}
+                                                <div className="flex items-center gap-2">
+                                                    <span>{vendor.organizationName}</span>
+                                                    {vendor.activePlan && vendor.activePlan.price > 0 && (
+                                                        <>
+                                                            <span className="bg-emerald-500 text-white text-[9px] px-2 py-0.5 rounded-full font-black uppercase shadow-sm whitespace-nowrap">
+                                                                Verified
+                                                            </span>
+                                                            {vendor.activePlan.name.toLowerCase().includes('premium') && (
+                                                                <span className="bg-[#0066FF] text-white text-[9px] px-2 py-0.5 rounded-full font-black uppercase shadow-sm whitespace-nowrap">
+                                                                    Pro
+                                                                </span>
+                                                            )}
+                                                        </>
+                                                    )}
+                                                </div>
                                             </td>
                                             <td className="py-4 px-6 text-slate-600">
                                                 {vendor.city || 'N/A'}
@@ -275,16 +286,7 @@ const VendorNetwork = () => {
                                             <td className="py-4 px-6 text-slate-600">
                                                 {vendor.country || 'N/A'}
                                             </td>
-                                            <td className="py-4 px-6">
-                                                <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase ${
-                                                    vendor.verificationStatus === 'Approved' 
-                                                        ? 'bg-emerald-50 text-emerald-600 border border-emerald-100'
-                                                        : 'bg-amber-50 text-amber-600 border border-amber-100'
-                                                }`}>
-                                                    <CheckCircle2 size={12} />
-                                                    {vendor.verificationStatus || 'Pending'}
-                                                </span>
-                                            </td>
+
                                             <td className="py-4 px-6 text-right">
                                                 <button
                                                     onClick={() => {
