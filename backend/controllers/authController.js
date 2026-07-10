@@ -461,6 +461,17 @@ exports.updateUserProfile = async (req, res) => {
             }
         });
 
+        // Normalize country and city if provided
+        if (req.body.country || req.body.city) {
+            const { normalizeLocationInput } = require('../utils/locationNormalizer');
+            const normalized = await normalizeLocationInput(
+                req.body.country !== undefined ? req.body.country : user.country, 
+                req.body.city !== undefined ? req.body.city : user.city
+            );
+            if (req.body.country !== undefined) user.country = normalized.country;
+            if (req.body.city !== undefined) user.city = normalized.city;
+        }
+
         // Always save the user instead of throwing 401
         if (req.body.firstName || req.body.lastName) {
             user.name = `${req.body.firstName || user.firstName || ''} ${req.body.lastName || user.lastName || ''}`.trim();

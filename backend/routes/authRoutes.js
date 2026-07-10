@@ -132,129 +132,18 @@ router.post('/upload-public', (req, res, next) => {
 const GuestView = require('../models/GuestView');
 const jwt = require('jsonwebtoken');
 
-const levenshtein = (a, b) => {
-    if (a.length === 0) return b.length;
-    if (b.length === 0) return a.length;
-    const matrix = [];
-    for (let i = 0; i <= b.length; i++) { matrix[i] = [i]; }
-    for (let j = 0; j <= a.length; j++) { matrix[0][j] = j; }
-    for (let i = 1; i <= b.length; i++) {
-        for (let j = 1; j <= a.length; j++) {
-            if (b.charAt(i - 1) === a.charAt(j - 1)) {
-                matrix[i][j] = matrix[i - 1][j - 1];
-            } else {
-                matrix[i][j] = Math.min(matrix[i - 1][j - 1] + 1, Math.min(matrix[i][j - 1] + 1, matrix[i - 1][j] + 1));
-            }
-        }
-    }
-    return matrix[b.length][a.length];
-};
-
-const getSimilarity = (s1, s2) => {
-    let longer = s1.toLowerCase();
-    let shorter = s2.toLowerCase();
-    if (s1.length < s2.length) { longer = s2.toLowerCase(); shorter = s1.toLowerCase(); }
-    let longerLength = longer.length;
-    if (longerLength === 0) return 1.0;
-    return (longerLength - levenshtein(longer, shorter)) / parseFloat(longerLength);
-};
-
-const toTitleCase = (s) => {
-    if (!s) return '';
-    return s.split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
-};
-
-const getStandardizedMaps = (vendors) => {
-    const countryFreq = {};
-    const cityFreq = {};
-    
-    vendors.forEach(v => {
-        if (v.country) {
-            const c = v.country.trim().toLowerCase();
-            countryFreq[c] = (countryFreq[c] || 0) + 1;
-        }
-        if (v.city) {
-            const ct = v.city.trim().toLowerCase();
-            cityFreq[ct] = (cityFreq[ct] || 0) + 1;
-        }
-    });
-
-    const sortByFreq = (freqMap) => Object.keys(freqMap).sort((a, b) => freqMap[b] - freqMap[a]);
-    const sortedCountries = sortByFreq(countryFreq);
-    const sortedCities = sortByFreq(cityFreq);
-
-    const countryStandardMap = {};
-    const cityStandardMap = {};
-
-    const standardCountries = [];
-    for (let c of sortedCountries) {
-        let found = false;
-        for (let std of standardCountries) {
-            if (getSimilarity(c, std) >= 0.8) {
-                countryStandardMap[c] = toTitleCase(std);
-                found = true;
-                break;
-            }
-        }
-        if (!found) {
-            standardCountries.push(c);
-            countryStandardMap[c] = toTitleCase(c);
-        }
-    }
-
-    const standardCities = [];
-    for (let ct of sortedCities) {
-        let found = false;
-        // Explicit alias check before fuzzy logic
-        if (ct === 'bengaluru' || ct === 'banglore') {
-            cityStandardMap[ct] = 'Bangalore';
-            continue;
-        }
-        for (let std of standardCities) {
-            if (getSimilarity(ct, std) >= 0.8) {
-                cityStandardMap[ct] = toTitleCase(std);
-                found = true;
-                break;
-            }
-        }
-        if (!found) {
-            standardCities.push(ct);
-            cityStandardMap[ct] = toTitleCase(ct);
-        }
-    }
-
-    // Hardcode overrides if they were skipped by similarity logic
-    countryStandardMap['indiaa'] = 'India';
-
-    return { countryStandardMap, cityStandardMap };
-};
-
-// Cache for standardized locations to prevent performance issues
-let locationCache = {
-    formattedLocations: null,
-    maps: null,
-    lastFetched: 0
-};
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
-
 // Public route to get all distinct countries and cities of existing vendors
 router.get('/public-vendors-locations', async (req, res) => {
     try {
-        if (Date.now() - locationCache.lastFetched < CACHE_TTL && locationCache.formattedLocations) {
-            return res.json(locationCache.formattedLocations);
-        }
-
         const vendors = await User.find({ role: 'vendor' }, 'country city').lean();
-        const { countryStandardMap, cityStandardMap } = getStandardizedMaps(vendors);
         
         const locations = {};
         vendors.forEach(v => {
             if (v.country) {
-                const c = countryStandardMap[v.country.trim().toLowerCase()] || toTitleCase(v.country.trim());
+                const c = v.country;
                 if (!locations[c]) locations[c] = new Set();
                 if (v.city) {
-                    const ct = cityStandardMap[v.city.trim().toLowerCase()] || toTitleCase(v.city.trim());
-                    locations[c].add(ct);
+                    locations[c].add(v.city);
                 }
             }
         });
@@ -264,13 +153,6 @@ router.get('/public-vendors-locations', async (req, res) => {
             formattedLocations[country] = Array.from(locations[country]).sort();
         });
         
-        // Update cache
-        locationCache = {
-            formattedLocations,
-            maps: { countryStandardMap, cityStandardMap },
-            lastFetched: Date.now()
-        };
-
         res.json(formattedLocations);
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
@@ -283,20 +165,17 @@ router.get('/public-vendors-search', async (req, res) => {
         const { lsid, country, city } = req.query;
         let query = { role: 'vendor' };
         
-        // Find all vendors first
-        const allVendors = await User.find(query)
+        if (country) {
+            query.country = new RegExp('^' + country + '$', 'i');
+        }
+        if (city) {
+            query.city = new RegExp('^' + city + '$', 'i');
+        }
+
+        const vendors = await User.find(query)
             .select('_id company name city country verificationStatus activePlan')
             .populate('activePlan')
             .lean();
-
-        // Use cached maps if available and fresh, otherwise compute
-        let currentMaps = locationCache.maps;
-        if (!currentMaps || Date.now() - locationCache.lastFetched > CACHE_TTL) {
-            currentMaps = getStandardizedMaps(allVendors);
-            // We can silently update the cache here too
-            locationCache.maps = currentMaps;
-        }
-        const { countryStandardMap, cityStandardMap } = currentMaps;
 
         // Helper to generate deterministic LSID
         const getLSID = (id) => {
@@ -308,28 +187,12 @@ router.get('/public-vendors-search', async (req, res) => {
             return 1000000000 + Math.abs(hash);
         };
 
-        let results = allVendors.map(v => ({
+        let results = vendors.map(v => ({
             ...v,
             lsid: getLSID(v._id),
             organizationName: v.company || v.name || 'N/A',
             isVerified: v.activePlan && v.activePlan.price > 0
         }));
-
-        // Apply fuzzy location filters in memory
-        if (country) {
-            results = results.filter(v => {
-                if (!v.country) return false;
-                const stdC = countryStandardMap[v.country.trim().toLowerCase()] || toTitleCase(v.country.trim());
-                return stdC.toLowerCase() === country.toLowerCase();
-            });
-        }
-        if (city) {
-            results = results.filter(v => {
-                if (!v.city) return false;
-                const stdCt = cityStandardMap[v.city.trim().toLowerCase()] || toTitleCase(v.city.trim());
-                return stdCt.toLowerCase() === city.toLowerCase();
-            });
-        }
 
         if (lsid) {
             const cleanLsid = lsid.replace(/[^0-9]/g, '');
