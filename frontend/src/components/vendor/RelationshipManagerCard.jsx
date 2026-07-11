@@ -31,7 +31,7 @@ const RelationshipManagerCard = ({ title, name, role, phone, email, isFinance })
         <a href={`tel:${phone}`} className="border border-slate-200 hover:bg-slate-50 text-slate-700 text-center py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer">
           <Phone size={12} /> Call
         </a>
-        <a href={`https://wa.me/${phone.replace(/[^0-9]/g, '')}`} target="_blank" rel="noopener noreferrer" className="border border-green-200 bg-green-50 hover:bg-green-100/50 text-green-700 text-center py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer">
+        <a href={`https://wa.me/${(phone || '').replace(/[^0-9]/g, '')}`} target="_blank" rel="noopener noreferrer" className="border border-green-200 bg-green-50 hover:bg-green-100/50 text-green-700 text-center py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer">
           <MessageSquare size={12} /> WhatsApp
         </a>
       </div>
