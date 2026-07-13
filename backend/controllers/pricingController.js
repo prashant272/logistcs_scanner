@@ -226,7 +226,7 @@ exports.searchPricing = async (req, res) => {
                 const decoded = jwt.verify(token, process.env.JWT_SECRET);
                 const currentUser = await User.findById(decoded.id);
                 if (currentUser) {
-                    if (currentUser.role === 'vendor' && currentUser.verificationStatus !== 'Approved') {
+                    if (currentUser.role === 'vendor' && currentUser.verificationStatus !== 'Approved' && currentUser.verificationStatus !== 'Pre-Approved') {
                         return res.status(403).json({ message: 'Your account is not approved yet. Please wait for admin approval to search rates.' });
                     }
                     userRole = currentUser.role;
@@ -389,9 +389,13 @@ exports.searchPricing = async (req, res) => {
                 return true;
             });
 
+            console.log('[searchPricing] Matches before filter:', matches.length);
+            console.log('[searchPricing] ProcessedResults after filter:', processedResults.length);
             if (processedResults.length > 0) {
+                console.log('[searchPricing] Returning matched: true, count:', processedResults.length);
                 res.json({ matched: true, results: processedResults });
             } else {
+                console.log('[searchPricing] Returning matched: false');
                 res.json({ matched: false });
             }
         } else {

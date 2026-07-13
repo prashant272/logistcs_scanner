@@ -676,7 +676,8 @@ exports.getEnquiries = async (req, res) => {
             .skip(skip)
             .limit(limit)
             .populate('client', 'name email company phone')
-            .populate('vendor', 'name email company phone');
+            .populate('vendor', 'name email company phone')
+            .populate('responses.vendor', 'name email company phone');
             
         const total = await Enquiry.countDocuments(query);
 
@@ -725,7 +726,7 @@ exports.adminAddUser = async (req, res) => {
         const User = require('../models/User');
         const bcrypt = require('bcryptjs');
         const { sendAdminCreatedUserEmail } = require('../services/notificationService');
-        const { name, email, phone, role, company, address } = req.body;
+        const { name, email, phone, role, company, address, country, state, city } = req.body;
         let { password } = req.body;
 
         if (!name || !email || !phone || !role) {
@@ -755,6 +756,9 @@ exports.adminAddUser = async (req, res) => {
             role,
             company: company || '',
             address: address || '',
+            country: country || '',
+            state: state || '',
+            city: city || '',
             isVerified: role === 'vendor' ? false : true,
             verificationStatus: role === 'vendor' ? 'Pending' : undefined
         });

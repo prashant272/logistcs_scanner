@@ -110,6 +110,15 @@ exports.createEnquiry = async (req, res) => {
             validatedClientId = guestUser._id;
         }
 
+        // Auto-correct isBooking if the client is a vendor (helps when they created it as a guest)
+        let finalIsBooking = isBooking || false;
+        if (validatedClientId) {
+            const clientUser = await User.findById(validatedClientId);
+            if (clientUser && clientUser.role === 'vendor') {
+                finalIsBooking = true;
+            }
+        }
+
         // Sanitize type and category to avoid validation errors
         const sanitizedType = (type && ['air', 'sea', 'land', 'warehouse', 'cha'].includes(type.toLowerCase())) ? type.toLowerCase() : 'air';
         const sanitizedCategory = (category && ['domestic', 'international'].includes(category.toLowerCase())) ? category.toLowerCase() : 'domestic';
@@ -144,7 +153,7 @@ exports.createEnquiry = async (req, res) => {
             price,
             targetPrice: targetPrice || null,
             isDirect: isDirect || false,
-            isBooking: isBooking || false,
+            isBooking: finalIsBooking,
             excludedVendor: validatedExcludedVendorId,
             clientCreditRequired: clientCreditRequired || false,
             guestName: guestName || '',
@@ -214,7 +223,7 @@ exports.createEnquiry = async (req, res) => {
             // Also broadcast emails to eligible vendors
             const User = require('../models/User');
             const query = { role: 'vendor', verificationStatus: 'Approved' };
-            
+
             User.find(query).populate('activePlan').then(vendors => {
                 vendors.forEach(vendorUser => {
                     // Check if vendor has an active paid plan
@@ -280,10 +289,13 @@ exports.getVendorEnquiries = async (req, res) => {
             if (isBookingFilter) {
                 // Bookings initiated by the current vendor (acting as client)
                 query = {
-                    client: req.user.id,
-                    isBooking: true,
-                    isDirect: type === 'direct'
+                    client: req.user.id
                 };
+                if (type === 'direct' || type === 'b2b') {
+                    query.isDirect = true;
+                } else if (type === 'my') {
+                    query.isDirect = false;
+                }
             } else {
                 // Enquiries received by the current vendor (acting as provider)
                 if (type === 'my') {

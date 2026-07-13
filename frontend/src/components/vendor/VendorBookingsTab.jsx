@@ -221,7 +221,7 @@ const VendorBookingsTab = ({ title = 'Bookings', type = 'my' }) => {
                     </div>
 
                     {/* Cargo Specs Grid */}
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 bg-slate-50/50 border border-slate-100 rounded-xl p-3 text-[10px] text-slate-500 font-bold">
+                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 bg-slate-50/50 border border-slate-100 rounded-xl p-3 text-[10px] text-slate-500 font-bold">
                       <div className="space-y-0.5">
                         <span className="text-slate-400 block uppercase font-black text-[8px] tracking-wider">Commodity</span>
                         <span className="text-slate-800 truncate block font-black">{bkg.commodity || 'General Cargo'}</span>
@@ -250,6 +250,11 @@ const VendorBookingsTab = ({ title = 'Bookings', type = 'my' }) => {
                           </span>
                         </div>
                       )}
+
+                      <div className="space-y-0.5">
+                        <span className="text-slate-400 block uppercase font-black text-[8px] tracking-wider">Booking Date</span>
+                        <span className="text-slate-800 block font-black flex items-center gap-1"><Calendar size={11} className="text-slate-400" /> {formatDate(bkg.createdAt)}</span>
+                      </div>
 
                       <div className="space-y-0.5">
                         <span className="text-slate-400 block uppercase font-black text-[8px] tracking-wider">Transit Time</span>

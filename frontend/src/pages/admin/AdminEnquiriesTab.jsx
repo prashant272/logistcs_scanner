@@ -189,6 +189,16 @@ const AdminEnquiriesTab = () => {
                                                 <div>
                                                     {getStatusBadge(enq.status)}
                                                     {enq.price && <p className="text-xs font-black text-slate-700 mt-1.5">₹ {enq.price}</p>}
+                                                    {enq.responses && enq.responses.filter(r => r.status === 'Accepted').length > 0 && (
+                                                        <div className="mt-2 text-[10px] bg-slate-50 p-1.5 rounded-lg border border-slate-100">
+                                                            <p className="font-bold text-slate-500 mb-1">Accepted by:</p>
+                                                            {enq.responses.filter(r => r.status === 'Accepted').map((r, idx) => (
+                                                                <p key={idx} className="font-black text-emerald-600 truncate max-w-[150px]" title={r.vendor?.name || 'Unknown Vendor'}>
+                                                                    {r.vendor?.name || 'Unknown Vendor'}
+                                                                </p>
+                                                            ))}
+                                                        </div>
+                                                    )}
                                                 </div>
                                             )}
                                         </td>

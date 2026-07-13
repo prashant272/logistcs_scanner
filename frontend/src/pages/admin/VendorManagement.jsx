@@ -31,7 +31,7 @@ const VendorManagement = () => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [addingVendor, setAddingVendor] = useState(false);
   const [addFormData, setAddFormData] = useState({
-    name: '', email: '', password: '', phone: '', company: ''
+    name: '', email: '', password: '', phone: '', company: '', country: '', state: '', city: ''
   });
 
   // Edit Vendor Modal State
@@ -358,7 +358,7 @@ const VendorManagement = () => {
       });
       alert('Vendor created successfully!');
       setShowAddModal(false);
-      setAddFormData({ name: '', email: '', password: '', phone: '', company: '' });
+      setAddFormData({ name: '', email: '', password: '', phone: '', company: '', country: '', state: '', city: '' });
       handleRefresh();
     } catch (err) {
       console.error('Add vendor failed:', err);
@@ -844,6 +844,20 @@ const VendorManagement = () => {
               <div>
                 <label className="block text-xs font-bold text-slate-600 mb-1">Company Name</label>
                 <input type="text" value={addFormData.company} onChange={e => setAddFormData({...addFormData, company: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-500" placeholder="Enter company name (optional)" />
+              </div>
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-600 mb-1">Country</label>
+                  <input type="text" value={addFormData.country} onChange={e => setAddFormData({...addFormData, country: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-500" placeholder="Enter country" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-600 mb-1">State</label>
+                  <input type="text" value={addFormData.state} onChange={e => setAddFormData({...addFormData, state: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-500" placeholder="Enter state" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-600 mb-1">City</label>
+                  <input type="text" value={addFormData.city} onChange={e => setAddFormData({...addFormData, city: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-500" placeholder="Enter city" />
+                </div>
               </div>
               <div className="pt-2 flex justify-end gap-3">
                 <button type="button" onClick={() => setShowAddModal(false)} className="px-4 py-2 text-sm font-bold text-slate-600 bg-slate-100 rounded-xl hover:bg-slate-200 transition-colors">Cancel</button>
