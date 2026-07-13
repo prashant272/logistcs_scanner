@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
-import { 
-  ArrowLeft, Sparkles, Ship, Plane, Truck, Warehouse, Package, 
-  Coins, CheckCircle2, ChevronRight, Phone, Mail, Building, 
+import {
+  ArrowLeft, Sparkles, Ship, Plane, Truck, Warehouse, Package,
+  Coins, CheckCircle2, ChevronRight, Phone, Mail, Building,
   FileText, X, AlertCircle, Loader2, Calendar, Clock, ToggleLeft, ToggleRight, MapPin,
   Paperclip, Upload
 } from 'lucide-react';
@@ -43,9 +43,9 @@ const SearchResults = () => {
   const { createEnquiry } = useEnquiries();
 
   useSEO({
-      title: 'Search Logistics Vendors | Compare Freight Providers',
-      description: 'Search and compare verified logistics vendors. Find the perfect shipping partner for your cargo with Logistics Scanner.',
-      keywords: 'logistics scanner, freight rate comparison, shipping rates online, logistics platform India, freight forwarding services'
+    title: 'Search Logistics Vendors | Compare Freight Providers',
+    description: 'Search and compare verified logistics vendors. Find the perfect shipping partner for your cargo with Logistics Scanner.',
+    keywords: 'logistics scanner, freight rate comparison, shipping rates online, logistics platform India, freight forwarding services'
   });
 
   const formatLocationWithCountryCode = (locStr, countryCode) => {
@@ -65,8 +65,8 @@ const SearchResults = () => {
   // If no search state is passed, go back to dashboard or home page
   useEffect(() => {
     if (!state) {
-      const targetPath = user 
-        ? (user.role === 'customer' ? '/customer' : '/vendor') 
+      const targetPath = user
+        ? (user.role === 'customer' ? '/customer' : '/vendor')
         : '/';
       navigate(targetPath, { replace: true });
     }
@@ -275,8 +275,8 @@ const SearchResults = () => {
       truckLoad: searchPayload.type === 'land' ? queryDetails.loadType : undefined,
       vehicleType: queryDetails.vehicleType,
       seaLoadType: searchPayload.type === 'sea' ? (searchPayload.seaLoadType || queryDetails.loadType) : undefined,
-        fclStandard: searchPayload.fclStandard || queryDetails.fclStandard,
-        fclUnit: searchPayload.fclUnit || queryDetails.fclUnit,
+      fclStandard: searchPayload.fclStandard || queryDetails.fclStandard,
+      fclUnit: searchPayload.fclUnit || queryDetails.fclUnit,
       cbmRange: queryDetails.lclVolumeRange,
       handlingType: queryDetails.handlingType || 'General Cargo',
       additionalServices: queryDetails.additionalServices || '',
@@ -321,7 +321,7 @@ const SearchResults = () => {
         // Trigger targeted enquiry
         await createEnquiry(primaryPayload);
       }
-      
+
       setSuccess(true);
       setIsGuestModalOpen(false);
     } catch (err) {
@@ -419,11 +419,11 @@ const SearchResults = () => {
   return (
     <div className="min-h-screen bg-[#f4f7fc] text-slate-800 font-sans py-10 px-4 md:px-8">
       <div className="max-w-6xl mx-auto space-y-8">
-        
+
         {/* Back navigation bar */}
         <div className="flex items-center gap-3">
-          <button 
-            onClick={() => navigate(-1)} 
+          <button
+            onClick={() => navigate(-1)}
             className="flex items-center justify-center w-9 h-9 rounded-full bg-white hover:bg-slate-50 border border-slate-200 transition-all text-slate-600 cursor-pointer shadow-sm"
           >
             <ArrowLeft size={16} />
@@ -443,9 +443,9 @@ const SearchResults = () => {
                 <span className="text-slate-300">•</span>
                 <span className="text-slate-500">
                   {searchPayload.type === 'cha' ? (queryDetails.chaCargoType || 'Customs Clearance') :
-                   searchPayload.type === 'air' ? (queryDetails.airCategory || 'General Cargo') :
-                   searchPayload.type === 'warehouse' ? (queryDetails.storageType || 'General Cargo') :
-                   'General Cargo'}
+                    searchPayload.type === 'air' ? (queryDetails.airCategory || 'General Cargo') :
+                      searchPayload.type === 'warehouse' ? (queryDetails.storageType || 'General Cargo') :
+                        'General Cargo'}
                 </span>
               </div>
               <h2 className="text-base font-extrabold text-[#0B1E43] tracking-tight mt-0.5 flex flex-wrap items-center gap-2">
@@ -459,7 +459,7 @@ const SearchResults = () => {
               </h2>
             </div>
           </div>
-          
+
           <div className="flex flex-wrap gap-2.5">
             {queryDetails.weight && (
               <span className="bg-slate-50 border border-slate-150 px-3.5 py-1.5 rounded-xl text-xs font-bold text-slate-600">
@@ -503,14 +503,14 @@ const SearchResults = () => {
                 {pendingAction?.type === 'book' ? 'Booking Request Raised Successfully!' : 'Enquiry Raised Successfully!'}
               </h3>
               <p className="text-xs text-slate-500 font-semibold leading-relaxed">
-                {pendingAction?.type === 'book' 
+                {pendingAction?.type === 'book'
                   ? 'Your booking request has been submitted successfully. The cargo operator will coordinate transit details shortly.'
                   : 'Your cargo details have been successfully matched. The selected vendor has been notified directly, and our network of logistics operators is bidding on your request.'}
               </p>
             </div>
             <div className="flex justify-center gap-3 pt-2">
-              <Link 
-                to={user ? (user.role === 'customer' ? '/customer' : '/vendor') : '/'} 
+              <Link
+                to={user ? (user.role === 'customer' ? '/customer' : '/vendor') : '/'}
                 className="bg-[#0066FF] hover:bg-[#0052cc] text-white text-xs font-bold px-6 py-3 rounded-xl shadow-md shadow-[#0066FF]/10 text-center"
               >
                 {user ? 'Go to Dashboard' : 'Go to Home'}
@@ -538,249 +538,249 @@ const SearchResults = () => {
 
             <div className="grid grid-cols-1 gap-6">
               {searchResults.map((rate) => {
-                  const validityDate = formatDate(rate.validUntil);
-                  const displayCurrency = rate.currency === 'USD' ? '$' : rate.currency === 'EUR' ? '€' : rate.currency === 'GBP' ? '£' : rate.currency === 'AED' ? 'د.إ' : '₹';
-                  
-                  return (
-                    <div 
-                      key={rate._id} 
-                      className="bg-white border border-slate-100 hover:border-blue-500/20 hover:shadow-[0_20px_40px_rgba(11,30,67,0.06)] rounded-2xl p-6 transition-all duration-300 relative shadow-[0_8px_30px_rgba(11,30,67,0.015)] hover:-translate-y-0.5"
-                    >
-                      {/* Top Row: Route & Specs */}
-                      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-100 pb-5">
-                        {/* Left: Route info */}
-                        <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100/50 flex items-center justify-center shrink-0 shadow-sm">
-                            {getFreightIcon(rate.type)}
-                          </div>
-                                          <div className="flex items-center gap-3">
-                            <div className="flex items-center gap-2.5 bg-slate-100 hover:bg-slate-200/80 px-4 py-2.5 rounded-xl border border-slate-300 shadow-sm transition-all duration-200">
-                              <MapPin size={13} className="text-[#0066FF]" />
-                              <span className="text-xs font-extrabold text-[#0B1E43]">{formatLocationWithCountryCode(rate.fromLocation, rate.fromLocationCountryCode)}</span>
-                            </div>
-                            <div className="flex flex-col items-center shrink-0">
-                              <span className="text-[#0066FF] font-black text-lg leading-none tracking-widest">→</span>
-                            </div>
-                            <div className="flex items-center gap-2.5 bg-slate-100 hover:bg-slate-200/80 px-4 py-2.5 rounded-xl border border-slate-300 shadow-sm transition-all duration-200">
-                              <MapPin size={13} className="text-[#0066FF]" />
-                              <span className="text-xs font-extrabold text-[#0B1E43]">{formatLocationWithCountryCode(rate.toLocation, rate.toLocationCountryCode)}</span>
-                            </div>
-                          </div>
-                        </div>
+                const validityDate = formatDate(rate.validUntil);
+                const displayCurrency = rate.currency === 'USD' ? '$' : rate.currency === 'EUR' ? '€' : rate.currency === 'GBP' ? '£' : rate.currency === 'AED' ? 'د.إ' : '₹';
 
-                        <div className="flex flex-wrap gap-2.5 items-center">
-                          {rate.type === 'air' ? (
-                            <>
-                              <div className="bg-blue-50 border border-blue-200 rounded-xl px-3 py-2 text-center min-w-[90px] shadow-sm">
-                                <div className="text-[9px] text-blue-705 font-black uppercase tracking-wider">Weight Class</div>
-                                <div className="text-xs font-black text-slate-900 mt-0.5">{rate.weightRange || 'N/A'}</div>
-                              </div>
-                              <div className="bg-indigo-50 border border-indigo-200 rounded-xl px-3 py-2 text-center min-w-[90px] shadow-sm">
-                                <div className="text-[9px] text-indigo-700 font-black uppercase tracking-wider">Category</div>
-                                <div className="text-xs font-black text-slate-900 mt-0.5 capitalize">{rate.category || 'N/A'}</div>
-                              </div>
-                            </>
-                          ) : rate.type === 'surface' || rate.type === 'land' ? (
-                            <>
-                              <div className="bg-blue-50 border border-blue-200 rounded-xl px-3 py-2 text-center min-w-[90px] shadow-sm">
-                                <div className="text-[9px] text-blue-705 font-black uppercase tracking-wider">Vehicle Type</div>
-                                <div className="text-xs font-black text-slate-900 mt-0.5">{rate.vehicleType || 'Truck'}</div>
-                              </div>
-                              <div className="bg-indigo-50 border border-indigo-200 rounded-xl px-3 py-2 text-center min-w-[90px] shadow-sm">
-                                <div className="text-[9px] text-indigo-700 font-black uppercase tracking-wider">Load Type</div>
-                                <div className="text-xs font-black text-slate-900 mt-0.5">{rate.truckLoad || 'FTL'}</div>
-                              </div>
-                            </>
-                          ) : rate.type === 'warehouse' ? (
-                            <>
-                              <div className="bg-blue-50 border border-blue-200 rounded-xl px-3 py-2 text-center min-w-[90px] shadow-sm">
-                                <div className="text-[9px] text-blue-705 font-black uppercase tracking-wider">Storage Type</div>
-                                <div className="text-xs font-black text-slate-900 mt-0.5">{rate.warehouseStorageType || 'N/A'}</div>
-                              </div>
-                              <div className="bg-indigo-50 border border-indigo-200 rounded-xl px-3 py-2 text-center min-w-[90px] shadow-sm">
-                                <div className="text-[9px] text-indigo-700 font-black uppercase tracking-wider">Rate Type</div>
-                                <div className="text-xs font-black text-slate-900 mt-0.5">{rate.warehouseRateType || 'N/A'}</div>
-                              </div>
-                            </>
-                          ) : rate.type === 'cha' ? (
-                            <>
-                              <div className="bg-blue-50 border border-blue-200 rounded-xl px-3 py-2 text-center min-w-[90px] shadow-sm">
-                                <div className="text-[9px] text-blue-705 font-black uppercase tracking-wider">Service Type</div>
-                                <div className="text-xs font-black text-slate-900 mt-0.5">{rate.chaServiceType || 'N/A'}</div>
-                              </div>
-                              <div className="bg-indigo-50 border border-indigo-200 rounded-xl px-3 py-2 text-center min-w-[90px] shadow-sm">
-                                <div className="text-[9px] text-indigo-700 font-black uppercase tracking-wider">Cargo Type</div>
-                                <div className="text-xs font-black text-slate-900 mt-0.5">{rate.chaCargoType || 'N/A'}</div>
-                              </div>
-                            </>
-                          ) : (
-                            <>
-                              <div className="bg-blue-50 border border-blue-200 rounded-xl px-3 py-2 text-center min-w-[90px] shadow-sm">
-                                <div className="text-[9px] text-blue-705 font-black uppercase tracking-wider">Container / Size</div>
-                                <div className="text-xs font-black text-slate-900 mt-0.5">{rate.vehicleType || rate.fclStandard || '40 FT'}</div>
-                              </div>
-                              <div className="bg-indigo-50 border border-indigo-200 rounded-xl px-3 py-2 text-center min-w-[90px] shadow-sm">
-                                <div className="text-[9px] text-indigo-700 font-black uppercase tracking-wider">Load Type</div>
-                                <div className="text-xs font-black text-slate-900 mt-0.5">{rate.truckLoad || rate.seaLoadType || 'FCL'}</div>
-                              </div>
-                            </>
-                          )}
+                return (
+                  <div
+                    key={rate._id}
+                    className="bg-white border border-slate-100 hover:border-blue-500/20 hover:shadow-[0_20px_40px_rgba(11,30,67,0.06)] rounded-2xl p-6 transition-all duration-300 relative shadow-[0_8px_30px_rgba(11,30,67,0.015)] hover:-translate-y-0.5"
+                  >
+                    {/* Top Row: Route & Specs */}
+                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-100 pb-5">
+                      {/* Left: Route info */}
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100/50 flex items-center justify-center shrink-0 shadow-sm">
+                          {getFreightIcon(rate.type)}
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-2.5 bg-slate-100 hover:bg-slate-200/80 px-4 py-2.5 rounded-xl border border-slate-300 shadow-sm transition-all duration-200">
+                            <MapPin size={13} className="text-[#0066FF]" />
+                            <span className="text-xs font-extrabold text-[#0B1E43]">{formatLocationWithCountryCode(rate.fromLocation, rate.fromLocationCountryCode)}</span>
+                          </div>
+                          <div className="flex flex-col items-center shrink-0">
+                            <span className="text-[#0066FF] font-black text-lg leading-none tracking-widest">→</span>
+                          </div>
+                          <div className="flex items-center gap-2.5 bg-slate-100 hover:bg-slate-200/80 px-4 py-2.5 rounded-xl border border-slate-300 shadow-sm transition-all duration-200">
+                            <MapPin size={13} className="text-[#0066FF]" />
+                            <span className="text-xs font-extrabold text-[#0B1E43]">{formatLocationWithCountryCode(rate.toLocation, rate.toLocationCountryCode)}</span>
+                          </div>
                         </div>
                       </div>
 
-                      {/* Middle Section: Company & Details & Price */}
-                      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 pt-2 items-center">
-                        {/* Left & Middle: Company details & notes (9 cols) */}
-                        <div className="lg:col-span-9 space-y-4">
-                          <div className="flex items-center gap-2.5 relative group cursor-pointer w-max">
-                            <h4 className="text-sm font-black text-[#0B1E43] tracking-wide uppercase">
-                              {rate.vendor?.company || rate.vendor?.name}
-                            </h4>
-                            {rate.vendor?.activePlan && typeof rate.vendor.activePlan === 'object' && rate.vendor.activePlan.price > 0 && rate.vendor?.planEndDate && new Date(rate.vendor.planEndDate) > new Date() && (
-                              <span className="bg-emerald-100 text-emerald-800 text-[8px] font-black px-2.5 py-1 rounded-md border border-emerald-300 uppercase tracking-wider flex items-center gap-1 shadow-sm">
-                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse"></span>
-                                Verified Vendor
-                              </span>
-                            )}
-                            
-                            {/* Hover Tooltip for Company Details */}
-                            <div className="absolute left-0 bottom-full mb-2 w-[350px] md:w-[600px] lg:w-[700px] bg-white rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.15)] border border-slate-200 p-4 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-[9999] pointer-events-none">
-                              <h5 className="font-black text-slate-900 text-sm mb-2 pb-2 border-b border-slate-200">Company Details</h5>
-                              <div className="space-y-2 text-xs text-slate-800 font-bold mt-2">
-                                <div className="flex items-start gap-2">
-                                  <span className="text-slate-500 w-4">👤</span>
-                                  <span className="break-all">{rate.vendor?.name || 'N/A'}</span>
-                                </div>
-                                <div className="flex items-start gap-2">
-                                  <span className="text-slate-500 w-4">✉️</span>
-                                  <span className="break-all">{maskEmail(rate.vendor?.email)}</span>
-                                </div>
-                                <div className="flex items-start gap-2">
-                                  <span className="text-slate-500 w-4">📞</span>
-                                  <span>{maskPhone(rate.vendor?.phone)}</span>
-                                </div>
-                                {rate.vendor?.companyProfile && (
-                                  <div className="flex items-start gap-2 mt-2 pt-2 border-t border-slate-100">
-                                    <span className="text-slate-500 w-4">📝</span>
-                                    <span className="text-slate-700 font-bold whitespace-pre-wrap">
-                                      {rate.vendor?.companyProfile}
-                                    </span>
-                                  </div>
-                                )}
-                                {rate.vendor?.address && (
-                                  <div className="flex items-start gap-2 pt-1">
-                                    <span className="text-slate-500 w-4">📍</span>
-                                    <span>{rate.vendor?.address}</span>
-                                  </div>
-                                )}
-                              </div>
+                      <div className="flex flex-wrap gap-2.5 items-center">
+                        {rate.type === 'air' ? (
+                          <>
+                            <div className="bg-blue-50 border border-blue-200 rounded-xl px-3 py-2 text-center min-w-[90px] shadow-sm">
+                              <div className="text-[9px] text-blue-705 font-black uppercase tracking-wider">Weight Class</div>
+                              <div className="text-xs font-black text-slate-900 mt-0.5">{rate.weightRange || 'N/A'}</div>
                             </div>
-                          </div>
-
-                          {/* Technical details tags */}
-                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                            <div className="bg-[#f4f7fc] border border-slate-200 rounded-xl p-3 flex flex-col justify-center">
-                              <span className="text-[9px] text-slate-550 font-black uppercase tracking-wider">Transit Speed</span>
-                              <span className="text-xs font-extrabold text-[#0066FF] mt-0.5">{rate.deliverySpeed} Days</span>
+                            <div className="bg-indigo-50 border border-indigo-200 rounded-xl px-3 py-2 text-center min-w-[90px] shadow-sm">
+                              <div className="text-[9px] text-indigo-700 font-black uppercase tracking-wider">Category</div>
+                              <div className="text-xs font-black text-slate-900 mt-0.5 capitalize">{rate.category || 'N/A'}</div>
                             </div>
-                            
-                            {rate.type === 'sea' && (
-                              <div className="bg-[#f4f7fc] border border-slate-200 rounded-xl p-3 flex flex-col justify-center">
-                                <span className="text-[9px] text-slate-550 font-black uppercase tracking-wider">Shipping Line</span>
-                                <span className="text-xs font-extrabold text-slate-905 mt-0.5 truncate">{rate.airline || 'NVOCC'}</span>
+                          </>
+                        ) : rate.type === 'surface' || rate.type === 'land' ? (
+                          <>
+                            <div className="bg-blue-50 border border-blue-200 rounded-xl px-3 py-2 text-center min-w-[90px] shadow-sm">
+                              <div className="text-[9px] text-blue-705 font-black uppercase tracking-wider">Vehicle Type</div>
+                              <div className="text-xs font-black text-slate-900 mt-0.5">{rate.vehicleType || 'Truck'}</div>
+                            </div>
+                            <div className="bg-indigo-50 border border-indigo-200 rounded-xl px-3 py-2 text-center min-w-[90px] shadow-sm">
+                              <div className="text-[9px] text-indigo-700 font-black uppercase tracking-wider">Load Type</div>
+                              <div className="text-xs font-black text-slate-900 mt-0.5">{rate.truckLoad || 'FTL'}</div>
+                            </div>
+                          </>
+                        ) : rate.type === 'warehouse' ? (
+                          <>
+                            <div className="bg-blue-50 border border-blue-200 rounded-xl px-3 py-2 text-center min-w-[90px] shadow-sm">
+                              <div className="text-[9px] text-blue-705 font-black uppercase tracking-wider">Storage Type</div>
+                              <div className="text-xs font-black text-slate-900 mt-0.5">{rate.warehouseStorageType || 'N/A'}</div>
+                            </div>
+                            <div className="bg-indigo-50 border border-indigo-200 rounded-xl px-3 py-2 text-center min-w-[90px] shadow-sm">
+                              <div className="text-[9px] text-indigo-700 font-black uppercase tracking-wider">Rate Type</div>
+                              <div className="text-xs font-black text-slate-900 mt-0.5">{rate.warehouseRateType || 'N/A'}</div>
+                            </div>
+                          </>
+                        ) : rate.type === 'cha' ? (
+                          <>
+                            <div className="bg-blue-50 border border-blue-200 rounded-xl px-3 py-2 text-center min-w-[90px] shadow-sm">
+                              <div className="text-[9px] text-blue-705 font-black uppercase tracking-wider">Service Type</div>
+                              <div className="text-xs font-black text-slate-900 mt-0.5">{rate.chaServiceType || 'N/A'}</div>
+                            </div>
+                            <div className="bg-indigo-50 border border-indigo-200 rounded-xl px-3 py-2 text-center min-w-[90px] shadow-sm">
+                              <div className="text-[9px] text-indigo-700 font-black uppercase tracking-wider">Cargo Type</div>
+                              <div className="text-xs font-black text-slate-900 mt-0.5">{rate.chaCargoType || 'N/A'}</div>
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <div className="bg-blue-50 border border-blue-200 rounded-xl px-3 py-2 text-center min-w-[90px] shadow-sm">
+                              <div className="text-[9px] text-blue-705 font-black uppercase tracking-wider">Container / Size</div>
+                              <div className="text-xs font-black text-slate-900 mt-0.5">{rate.vehicleType || rate.fclStandard || '40 FT'}</div>
+                            </div>
+                            <div className="bg-indigo-50 border border-indigo-200 rounded-xl px-3 py-2 text-center min-w-[90px] shadow-sm">
+                              <div className="text-[9px] text-indigo-700 font-black uppercase tracking-wider">Load Type</div>
+                              <div className="text-xs font-black text-slate-900 mt-0.5">{rate.truckLoad || rate.seaLoadType || 'FCL'}</div>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Middle Section: Company & Details & Price */}
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 pt-2 items-center">
+                      {/* Left & Middle: Company details & notes (9 cols) */}
+                      <div className="lg:col-span-9 space-y-4">
+                        <div className="flex items-center gap-2.5 relative group cursor-pointer w-max">
+                          <h4 className="text-sm font-black text-[#0B1E43] tracking-wide uppercase">
+                            {rate.vendor?.company || rate.vendor?.name}
+                          </h4>
+                          {rate.vendor?.activePlan && typeof rate.vendor.activePlan === 'object' && rate.vendor.activePlan.price > 0 && rate.vendor?.planEndDate && new Date(rate.vendor.planEndDate) > new Date() && (
+                            <span className="bg-emerald-100 text-emerald-800 text-[8px] font-black px-2.5 py-1 rounded-md border border-emerald-300 uppercase tracking-wider flex items-center gap-1 shadow-sm">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse"></span>
+                              Verified Vendor
+                            </span>
+                          )}
+
+                          {/* Hover Tooltip for Company Details */}
+                          <div className="absolute left-0 bottom-full mb-2 w-[350px] md:w-[600px] lg:w-[700px] bg-white rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.15)] border border-slate-200 p-4 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-[9999] pointer-events-none">
+                            <h5 className="font-black text-slate-900 text-sm mb-2 pb-2 border-b border-slate-200">Company Details</h5>
+                            <div className="space-y-2 text-xs text-slate-800 font-bold mt-2">
+                              <div className="flex items-start gap-2">
+                                <span className="text-slate-500 w-4">👤</span>
+                                <span className="break-all">{rate.vendor?.name || 'N/A'}</span>
                               </div>
-                            )}
-
-                            {rate.type === 'air' && (
-                              <div className="bg-[#f4f7fc] border border-slate-200 rounded-xl p-3 flex flex-col justify-center">
-                                <span className="text-[9px] text-slate-550 font-black uppercase tracking-wider">Airline</span>
-                                <span className="text-xs font-extrabold text-slate-905 mt-0.5 truncate">{rate.airline || 'Any'}</span>
+                              <div className="flex items-start gap-2">
+                                <span className="text-slate-500 w-4">✉️</span>
+                                <span className="break-all">{maskEmail(rate.vendor?.email)}</span>
                               </div>
-                            )}
-
-                            {rate.weightRange && (
-                              <div className="bg-[#f4f7fc] border border-slate-200 rounded-xl p-3 flex flex-col justify-center">
-                                <span className="text-[9px] text-slate-550 font-black uppercase tracking-wider">Weight Range</span>
-                                <span className="text-xs font-extrabold text-slate-905 mt-0.5">{rate.weightRange}</span>
+                              <div className="flex items-start gap-2">
+                                <span className="text-slate-500 w-4">📞</span>
+                                <span>{maskPhone(rate.vendor?.phone)}</span>
                               </div>
-                            )}
-
-                            {rate.validUntil && (
-                               <div className="bg-[#f4f7fc] border border-slate-200 rounded-xl p-3 flex flex-col justify-center">
-                                 <span className="text-[9px] text-slate-555 font-black uppercase tracking-wider">Validity Date</span>
-                                 <span className="text-xs font-extrabold text-slate-905 mt-0.5">{validityDate}</span>
-                               </div>
-                             )}
-                          </div>
-
-                          {/* Beautiful Note Panel */}
-                          <div className="bg-blue-50 border border-blue-150 rounded-xl p-3 text-[10px] text-slate-700 font-bold leading-relaxed flex items-start gap-2 shadow-[inset_0_2px_4px_rgba(0,0,0,0.005)]">
-                            <span className="bg-blue-600 text-white text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider shrink-0 mt-0.5">Note</span>
-                            <span>Local and other charges (if applicable) will be at actual basis as per the shipping lines norms. {rate.message && <span className="font-bold text-slate-800">| {rate.message}</span>}</span>
+                              {rate.vendor?.companyProfile && (
+                                <div className="flex items-start gap-2 mt-2 pt-2 border-t border-slate-100">
+                                  <span className="text-slate-500 w-4">📝</span>
+                                  <span className="text-slate-700 font-bold whitespace-pre-wrap">
+                                    {rate.vendor?.companyProfile}
+                                  </span>
+                                </div>
+                              )}
+                              {rate.vendor?.address && (
+                                <div className="flex items-start gap-2 pt-1">
+                                  <span className="text-slate-500 w-4">📍</span>
+                                  <span>{rate.vendor?.address}</span>
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </div>
 
-                        {/* Right side: Price Box & Connect Button (3 cols) */}
-                        <div className="lg:col-span-3 flex flex-row lg:flex-col items-center justify-between lg:justify-center gap-4 lg:pl-6 lg:border-l lg:border-slate-150 w-full lg:w-auto h-full min-h-[120px]">
-                          {/* Price Box */}
-                          <div className="text-left lg:text-center w-full">
-                            <div className="text-[10px] text-slate-550 font-black uppercase tracking-wider">
-                              {rate.type === 'air' ? 'Air Freight Cost' : 
-                               rate.type === 'surface' || rate.type === 'land' ? 'Surface Freight Cost' : 
-                               rate.type === 'warehouse' ? 'Warehouse Cost' : 
-                               rate.type === 'cha' ? 'CHA Service Cost' : 
-                               'Ocean Freight Cost'}
+                        {/* Technical details tags */}
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                          <div className="bg-[#f4f7fc] border border-slate-200 rounded-xl p-3 flex flex-col justify-center">
+                            <span className="text-[9px] text-slate-550 font-black uppercase tracking-wider">Transit Speed</span>
+                            <span className="text-xs font-extrabold text-[#0066FF] mt-0.5">{rate.deliverySpeed} Days</span>
+                          </div>
+
+                          {rate.type === 'sea' && (
+                            <div className="bg-[#f4f7fc] border border-slate-200 rounded-xl p-3 flex flex-col justify-center">
+                              <span className="text-[9px] text-slate-550 font-black uppercase tracking-wider">Shipping Line</span>
+                              <span className="text-xs font-extrabold text-slate-905 mt-0.5 truncate">{rate.airline || 'NVOCC'}</span>
                             </div>
-                            <div className="text-2xl font-black text-slate-800 mt-0.5 flex flex-wrap items-baseline justify-start lg:justify-center gap-1">
-                              <span className="text-lg font-black text-[#0066FF]">{displayCurrency}</span>
-                              <span>{rate.price.toLocaleString()}</span>
-                              {searchPayload.fclStandard ? (
+                          )}
+
+                          {rate.type === 'air' && (
+                            <div className="bg-[#f4f7fc] border border-slate-200 rounded-xl p-3 flex flex-col justify-center">
+                              <span className="text-[9px] text-slate-550 font-black uppercase tracking-wider">Airline</span>
+                              <span className="text-xs font-extrabold text-slate-905 mt-0.5 truncate">{rate.airline || 'Any'}</span>
+                            </div>
+                          )}
+
+                          {rate.weightRange && (
+                            <div className="bg-[#f4f7fc] border border-slate-200 rounded-xl p-3 flex flex-col justify-center">
+                              <span className="text-[9px] text-slate-550 font-black uppercase tracking-wider">Weight Range</span>
+                              <span className="text-xs font-extrabold text-slate-905 mt-0.5">{rate.weightRange}</span>
+                            </div>
+                          )}
+
+                          {rate.validUntil && (
+                            <div className="bg-[#f4f7fc] border border-slate-200 rounded-xl p-3 flex flex-col justify-center">
+                              <span className="text-[9px] text-slate-555 font-black uppercase tracking-wider">Validity Date</span>
+                              <span className="text-xs font-extrabold text-slate-905 mt-0.5">{validityDate}</span>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Beautiful Note Panel */}
+                        <div className="bg-blue-50 border border-blue-150 rounded-xl p-3 text-[10px] text-slate-700 font-bold leading-relaxed flex items-start gap-2 shadow-[inset_0_2px_4px_rgba(0,0,0,0.005)]">
+                          <span className="bg-blue-600 text-white text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider shrink-0 mt-0.5">Note</span>
+                          <span>Local and other charges (if applicable) will be at actual basis as per the shipping lines norms. {rate.message && <span className="font-bold text-slate-800">| {rate.message}</span>}</span>
+                        </div>
+                      </div>
+
+                      {/* Right side: Price Box & Connect Button (3 cols) */}
+                      <div className="lg:col-span-3 flex flex-row lg:flex-col items-center justify-between lg:justify-center gap-4 lg:pl-6 lg:border-l lg:border-slate-150 w-full lg:w-auto h-full min-h-[120px]">
+                        {/* Price Box */}
+                        <div className="text-left lg:text-center w-full">
+                          <div className="text-[10px] text-slate-550 font-black uppercase tracking-wider">
+                            {rate.type === 'air' ? 'Air Freight Cost' :
+                              rate.type === 'surface' || rate.type === 'land' ? 'Surface Freight Cost' :
+                                rate.type === 'warehouse' ? 'Warehouse Cost' :
+                                  rate.type === 'cha' ? 'CHA Service Cost' :
+                                    'Ocean Freight Cost'}
+                          </div>
+                          <div className="text-2xl font-black text-slate-800 mt-0.5 flex flex-wrap items-baseline justify-start lg:justify-center gap-1">
+                            <span className="text-lg font-black text-[#0066FF]">{displayCurrency}</span>
+                            <span>{rate.price.toLocaleString()}</span>
+                            {searchPayload.fclStandard ? (
+                              rate.ihcPrice && (
+                                <span className="text-xs font-bold text-slate-500 block lg:inline-block mt-0.5">
+                                  + Approx. IHC ({rate.ihcContainerSize || '20ft'}): ₹{rate.ihcPrice.toLocaleString('en-IN')}
+                                </span>
+                              )
+                            ) : (
+                              rate.ihcRates && rate.ihcRates.length > 0 ? (
+                                rate.ihcRates.map((ihc, idx) => (
+                                  <span key={idx} className="text-[11px] font-bold text-slate-550 block mt-0.5">
+                                    + Approx. IHC ({ihc.containerSize}): ₹{ihc.ihcPrice.toLocaleString('en-IN')}
+                                  </span>
+                                ))
+                              ) : (
                                 rate.ihcPrice && (
                                   <span className="text-xs font-bold text-slate-500 block lg:inline-block mt-0.5">
                                     + Approx. IHC ({rate.ihcContainerSize || '20ft'}): ₹{rate.ihcPrice.toLocaleString('en-IN')}
                                   </span>
                                 )
-                              ) : (
-                                rate.ihcRates && rate.ihcRates.length > 0 ? (
-                                  rate.ihcRates.map((ihc, idx) => (
-                                    <span key={idx} className="text-[11px] font-bold text-slate-550 block mt-0.5">
-                                      + Approx. IHC ({ihc.containerSize}): ₹{ihc.ihcPrice.toLocaleString('en-IN')}
-                                    </span>
-                                  ))
-                                ) : (
-                                  rate.ihcPrice && (
-                                    <span className="text-xs font-bold text-slate-500 block lg:inline-block mt-0.5">
-                                      + Approx. IHC ({rate.ihcContainerSize || '20ft'}): ₹{rate.ihcPrice.toLocaleString('en-IN')}
-                                    </span>
-                                  )
-                                )
-                              )}
-                            </div>
-                            <div className="text-[8.5px] text-slate-500 font-black mt-0.5">Excl. local port duties</div>
+                              )
+                            )}
                           </div>
-
-                          {/* Connect Button */}
-                          <button
-                            onClick={() => handleAction('book', rate)}
-                            disabled={loading}
-                            className="w-full bg-[#00a859] hover:bg-[#008f4c] text-white text-xs font-black py-3.5 rounded-xl transition-all duration-200 cursor-pointer shadow-md shadow-emerald-500/10 hover:shadow-emerald-500/25 hover:scale-[1.02] active:scale-[0.98] uppercase tracking-wider disabled:opacity-55 disabled:cursor-not-allowed text-center"
-                          >
-                            Connect
-                          </button>
+                          <div className="text-[8.5px] text-slate-500 font-black mt-0.5">Excl. local port duties</div>
                         </div>
+
+                        {/* Connect Button */}
+                        <button
+                          onClick={() => handleAction('book', rate)}
+                          disabled={loading}
+                          className="w-full bg-[#00a859] hover:bg-[#008f4c] text-white text-xs font-black py-3.5 rounded-xl transition-all duration-200 cursor-pointer shadow-md shadow-emerald-500/10 hover:shadow-emerald-500/25 hover:scale-[1.02] active:scale-[0.98] uppercase tracking-wider disabled:opacity-55 disabled:cursor-not-allowed text-center"
+                        >
+                          Connect
+                        </button>
                       </div>
                     </div>
-                  );
-                })}
-              </div>
+                  </div>
+                );
+              })}
+            </div>
 
             {/* Contact Support Info */}
             <div className="text-center pt-8 border-t border-slate-100 max-w-md mx-auto space-y-1">
               <p className="text-xs font-bold text-slate-400">
                 For urgent shipments or any query, please contact:
               </p>
-              <a 
-                href="mailto:info@logisticsscanner.com" 
+              <a
+                href="mailto:info@logisticsscanner.com"
                 className="inline-block text-xs font-black text-[#0066FF] hover:underline"
               >
                 info@logisticsscanner.com
@@ -837,7 +837,7 @@ const SearchResults = () => {
       {isGuestModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
           <div className="bg-white rounded-3xl w-full max-w-md shadow-[0_24px_60px_rgba(11,30,67,0.15)] border border-slate-150 overflow-hidden flex flex-col animate-scaleUp">
-            
+
             {/* Header */}
             <div className="flex justify-between items-center p-6 border-b border-slate-100 bg-slate-50/50">
               <div>
@@ -922,7 +922,7 @@ const SearchResults = () => {
                 handleGuestSubmit(e);
               }
             }} className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
-              
+
               {pendingAction?.rate && (
                 <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 space-y-2">
                   <div className="flex justify-between">
@@ -1040,98 +1040,98 @@ const SearchResults = () => {
               {!user && (
                 <>
                   <div className="pt-2 border-t border-slate-100">
-                     <span className="text-[10px] font-black text-[#0066FF] uppercase tracking-wider">Contact Information</span>
+                    <span className="text-[10px] font-black text-[#0066FF] uppercase tracking-wider">Contact Information</span>
                   </div>
                   {/* Organization Name */}
-              <div className="space-y-1">
-                <label className="block text-[10px] font-black text-slate-800 uppercase tracking-wider flex items-center gap-1">
-                  <Building size={11} className="text-slate-400" /> Organization / Client Name
-                </label>
-                <input
-                  type="text"
-                  placeholder="Enter organization or client name"
-                  value={guestCompany}
-                  onChange={(e) => setGuestCompany(e.target.value)}
-                  className="w-full bg-[#f4f7fc] border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-800 focus:outline-none focus:bg-white focus:border-[#0066FF] transition-all"
-                  required
-                />
-              </div>
-
-              {/* GST Number */}
-              <div className="space-y-1">
-                <label className="block text-[10px] font-black text-slate-800 uppercase tracking-wider flex items-center gap-1">
-                  <FileText size={11} className="text-slate-400" /> GST Number (Optional)
-                </label>
-                <input
-                  type="text"
-                  placeholder="Enter GST Number"
-                  value={guestGst}
-                  onChange={(e) => setGuestGst(e.target.value)}
-                  className="w-full bg-[#f4f7fc] border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-800 focus:outline-none focus:bg-white focus:border-[#0066FF] transition-all"
-                />
-              </div>
-
-              {/* Mobile Phone */}
-              <div className="space-y-1">
-                <label className="block text-[10px] font-black text-slate-800 uppercase tracking-wider flex items-center gap-1">
-                  <Phone size={11} className="text-slate-400" /> Mobile Number
-                </label>
-                <div className="flex flex-col gap-2">
-                  <div className="flex gap-2">
-                    <select
-                      value={guestPhoneCode === 'Others' || !COUNTRIES.some(c => c.code === guestPhoneCode) ? 'Others' : guestPhoneCode}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        if (val === 'Others') {
-                          setGuestPhoneCode('');
-                        } else {
-                          setGuestPhoneCode(val);
-                        }
-                      }}
-                      className="bg-[#f4f7fc] border border-slate-200 rounded-xl px-2 py-2.5 text-xs font-bold text-slate-800 focus:outline-none focus:bg-white focus:border-[#0066FF] cursor-pointer max-w-[150px]"
-                    >
-                      {COUNTRIES.map((item, idx) => (
-                        <option key={idx} value={item.code || 'Others'}>
-                          {item.name} {item.code ? `(${item.code})` : ''}
-                        </option>
-                      ))}
-                    </select>
-                    <input
-                      type="tel"
-                      placeholder="Mobile phone number"
-                      value={guestPhone}
-                      onChange={(e) => setGuestPhone(e.target.value)}
-                      className="flex-1 bg-[#f4f7fc] border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-800 focus:outline-none focus:bg-white focus:border-[#0066FF] transition-all"
-                      required
-                    />
-                  </div>
-                  {(guestPhoneCode === 'Others' || !COUNTRIES.some(c => c.code === guestPhoneCode && c.name !== 'Others')) && (
+                  <div className="space-y-1">
+                    <label className="block text-[10px] font-black text-slate-800 uppercase tracking-wider flex items-center gap-1">
+                      <Building size={11} className="text-slate-400" /> Organization / Client Name
+                    </label>
                     <input
                       type="text"
-                      placeholder="Enter custom country code (e.g. +506)"
-                      value={guestPhoneCode}
-                      onChange={(e) => setGuestPhoneCode(e.target.value)}
+                      placeholder="Enter organization or client name"
+                      value={guestCompany}
+                      onChange={(e) => setGuestCompany(e.target.value)}
                       className="w-full bg-[#f4f7fc] border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-800 focus:outline-none focus:bg-white focus:border-[#0066FF] transition-all"
                       required
                     />
-                  )}
-                </div>
-              </div>
+                  </div>
 
-              {/* Email Address */}
-              <div className="space-y-1">
-                <label className="block text-[10px] font-black text-slate-800 uppercase tracking-wider flex items-center gap-1">
-                  <Mail size={11} className="text-slate-400" /> Work Email
-                </label>
-                <input
-                  type="email"
-                  placeholder="client@company.com"
-                  value={guestEmail}
-                  onChange={(e) => setGuestEmail(e.target.value)}
-                  className="w-full bg-[#f4f7fc] border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-800 focus:outline-none focus:bg-white focus:border-[#0066FF] transition-all"
-                  required
-                />
-              </div>
+                  {/* GST Number */}
+                  <div className="space-y-1">
+                    <label className="block text-[10px] font-black text-slate-800 uppercase tracking-wider flex items-center gap-1">
+                      <FileText size={11} className="text-slate-400" /> GST Number (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Enter GST Number"
+                      value={guestGst}
+                      onChange={(e) => setGuestGst(e.target.value)}
+                      className="w-full bg-[#f4f7fc] border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-800 focus:outline-none focus:bg-white focus:border-[#0066FF] transition-all"
+                    />
+                  </div>
+
+                  {/* Mobile Phone */}
+                  <div className="space-y-1">
+                    <label className="block text-[10px] font-black text-slate-800 uppercase tracking-wider flex items-center gap-1">
+                      <Phone size={11} className="text-slate-400" /> Mobile Number
+                    </label>
+                    <div className="flex flex-col gap-2">
+                      <div className="flex gap-2">
+                        <select
+                          value={guestPhoneCode === 'Others' || !COUNTRIES.some(c => c.code === guestPhoneCode) ? 'Others' : guestPhoneCode}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            if (val === 'Others') {
+                              setGuestPhoneCode('');
+                            } else {
+                              setGuestPhoneCode(val);
+                            }
+                          }}
+                          className="bg-[#f4f7fc] border border-slate-200 rounded-xl px-2 py-2.5 text-xs font-bold text-slate-800 focus:outline-none focus:bg-white focus:border-[#0066FF] cursor-pointer max-w-[150px]"
+                        >
+                          {COUNTRIES.map((item, idx) => (
+                            <option key={idx} value={item.code || 'Others'}>
+                              {item.name} {item.code ? `(${item.code})` : ''}
+                            </option>
+                          ))}
+                        </select>
+                        <input
+                          type="tel"
+                          placeholder="Mobile phone number"
+                          value={guestPhone}
+                          onChange={(e) => setGuestPhone(e.target.value)}
+                          className="flex-1 bg-[#f4f7fc] border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-800 focus:outline-none focus:bg-white focus:border-[#0066FF] transition-all"
+                          required
+                        />
+                      </div>
+                      {(guestPhoneCode === 'Others' || !COUNTRIES.some(c => c.code === guestPhoneCode && c.name !== 'Others')) && (
+                        <input
+                          type="text"
+                          placeholder="Enter custom country code (e.g. +506)"
+                          value={guestPhoneCode}
+                          onChange={(e) => setGuestPhoneCode(e.target.value)}
+                          className="w-full bg-[#f4f7fc] border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-800 focus:outline-none focus:bg-white focus:border-[#0066FF] transition-all"
+                          required
+                        />
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Email Address */}
+                  <div className="space-y-1">
+                    <label className="block text-[10px] font-black text-slate-800 uppercase tracking-wider flex items-center gap-1">
+                      <Mail size={11} className="text-slate-400" /> Work Email
+                    </label>
+                    <input
+                      type="email"
+                      placeholder="client@company.com"
+                      value={guestEmail}
+                      onChange={(e) => setGuestEmail(e.target.value)}
+                      className="w-full bg-[#f4f7fc] border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-800 focus:outline-none focus:bg-white focus:border-[#0066FF] transition-all"
+                      required
+                    />
+                  </div>
 
                 </>
               )}

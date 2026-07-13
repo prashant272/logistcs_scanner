@@ -55,7 +55,7 @@ const VendorEnquiriesTab = ({ title, type }) => {
   const [statusFilter, setStatusFilter] = useState(() => {
     return new URLSearchParams(location.search).get('filter') || 'all';
   });
-  
+
   // Mode filter
   const [modeFilter, setModeFilter] = useState('all');
 
@@ -492,7 +492,7 @@ const VendorEnquiriesTab = ({ title, type }) => {
                     <div className="bg-[#0066FF]/10 border border-[#0066FF]/20 rounded-lg px-3 py-1.5 text-center min-w-[60px] shadow-sm">
                       <div className="text-[9px] text-[#0066FF] font-black uppercase tracking-wider">{enq.type === 'cha' ? 'Type' : 'Mode'}</div>
                       <div className="text-[10px] font-black text-[#0052cc] mt-0.5" title={enq.type === 'cha' ? (enq.chaCargoType || 'CHA') : ''}>
-                        {enq.type === 'cha' 
+                        {enq.type === 'cha'
                           ? (enq.chaCargoType ? (enq.chaCargoType.toLowerCase().includes('import') ? 'IMPORT' : enq.chaCargoType.toLowerCase().includes('export') ? 'EXPORT' : 'CUSTOMS') : 'CHA')
                           : (enq.type ? enq.type.toUpperCase() : 'N/A')}
                       </div>
