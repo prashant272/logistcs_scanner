@@ -336,14 +336,14 @@ router.get('/public-vendors-search/:id/details', async (req, res) => {
             guestRecord = new GuestView({
                 ipAddress: ip,
                 fingerprint: fingerprint,
-                viewedVendors: [vendorId]
+                viewedVendors: [targetVendor._id]
             });
             await guestRecord.save();
             return res.json(vendorData);
         }
 
         // Check if they are trying to view a vendor they've already viewed
-        const hasViewedThis = guestRecord.viewedVendors.some(id => id.toString() === vendorId);
+        const hasViewedThis = guestRecord.viewedVendors.some(id => id.toString() === targetVendor._id.toString());
         if (hasViewedThis) {
             return res.json(vendorData);
         }
@@ -357,7 +357,7 @@ router.get('/public-vendors-search/:id/details', async (req, res) => {
         }
 
         // If for some reason they have viewed 0, let them view
-        guestRecord.viewedVendors.push(vendorId);
+        guestRecord.viewedVendors.push(targetVendor._id);
         await guestRecord.save();
         return res.json(vendorData);
 
