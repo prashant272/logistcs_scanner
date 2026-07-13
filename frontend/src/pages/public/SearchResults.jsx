@@ -797,7 +797,7 @@ const SearchResults = () => {
               </p>
               <button
                 type="button"
-                onClick={handleAutoBroadcast}
+                onClick={() => handleAction('enquiry', null)}
                 className="bg-[#0066FF] hover:bg-[#0052cc] text-white font-extrabold text-xs px-6 py-2.5 rounded-xl transition-all shadow-md mt-4 cursor-pointer"
               >
                 Send Enquiry
@@ -870,6 +870,53 @@ const SearchResults = () => {
                 };
                 if (pendingAction && pendingAction.rate) {
                   executeEnquiryFlow(pendingAction.type, pendingAction.rate, dummyGuestInfo);
+                } else {
+                  setLoading(true);
+                  const isBooking = !!(user && user.role === 'vendor');
+                  const broadcastPayload = {
+                    fromLocation: searchPayload.fromLocation,
+                    toLocation: searchPayload.toLocation,
+                    type: searchPayload.type,
+                    category: queryDetails.airCategory,
+                    airline: queryDetails.airAirline,
+                    weightRange: queryDetails.weight,
+                    truckLoad: searchPayload.type === 'land' ? queryDetails.loadType : undefined,
+                    vehicleType: queryDetails.vehicleType,
+                    seaLoadType: searchPayload.type === 'sea' ? (searchPayload.seaLoadType || queryDetails.loadType) : undefined,
+                    fclStandard: searchPayload.fclStandard || queryDetails.fclStandard,
+                    fclUnit: searchPayload.fclUnit || queryDetails.fclUnit,
+                    cbmRange: queryDetails.lclVolumeRange,
+                    handlingType: queryDetails.handlingType || 'General Cargo',
+                    additionalServices: queryDetails.additionalServices || '',
+                    warehouseRateType: searchPayload.warehouseRateType || '',
+                    warehouseStorageType: searchPayload.warehouseStorageType || '',
+                    chaServiceType: searchPayload.chaServiceType || '',
+                    chaCargoType: searchPayload.chaCargoType || '',
+                    length: queryDetails.length || '',
+                    width: queryDetails.width || '',
+                    height: queryDetails.height || '',
+                    unit: queryDetails.unit || '',
+                    quantity: queryDetails.quantity || '',
+                    deliverySpeed: '3-5',
+                    price: null,
+                    targetPrice: targetPrice ? Number(targetPrice) : null,
+                    vendor: null,
+                    isDirect: true,
+                    isBooking: isBooking,
+                    message: messageInput,
+                    clientCreditRequired,
+                    ...dummyGuestInfo
+                  };
+                  createEnquiry(broadcastPayload)
+                    .then(() => {
+                      setSuccess(true);
+                      setIsGuestModalOpen(false);
+                    })
+                    .catch(err => {
+                      console.error(err);
+                      setError("Failed to broadcast enquiry.");
+                    })
+                    .finally(() => setLoading(false));
                 }
               } else {
                 handleGuestSubmit(e);
