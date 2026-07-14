@@ -105,6 +105,7 @@ const AdminFinanceListing = () => {
                                 <th className="p-4 text-center">Status</th>
                                 <th className="p-4 text-center">Action</th>
                             </tr>
+                           
                         </thead>
                         <tbody className="divide-y divide-slate-100 text-xs font-bold">
                             {loading ? (
