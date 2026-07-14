@@ -782,6 +782,7 @@ const SearchPrice = ({ isDashboard = false }) => {
 <option value="40ft HC">40ft High Cube</option>
 <option value="20ft Reefer">20ft REFRIGERATED</option>
 <option value="40ft Reefer">40ft REFRIGERATED</option>
+<option value="40ft Flat Rack">40' Flat Rack</option>
                                                     </select>
                                                 </div>
                                                 <div className="w-40">
