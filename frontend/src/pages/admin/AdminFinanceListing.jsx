@@ -97,9 +97,11 @@ const AdminFinanceListing = () => {
                             <tr>
                                 <th className="p-4 pl-6">#</th>
                                 <th className="p-4">Name</th>
+                                <th className="p-4">Organization</th>
+                                <th className="p-4">Contact</th>
                                 <th className="p-4">Carrier Id</th>
                                 <th className="p-4">Amount</th>
-                                <th className="p-4">Processing Fees</th>
+                                <th className="p-4">Fees</th>
                                 <th className="p-4 text-center">Status</th>
                                 <th className="p-4 text-center">Action</th>
                             </tr>
@@ -115,6 +117,15 @@ const AdminFinanceListing = () => {
                                         <td className="p-4 pl-6 text-slate-400">{index + 1}</td>
                                         <td className="p-4 text-slate-800">
                                             {app.director1?.name || app.vendor?.name || 'N/A'}
+                                        </td>
+                                        <td className="p-4 text-slate-700 font-semibold">
+                                            {app.vendor?.company || 'N/A'}
+                                        </td>
+                                        <td className="p-4 text-slate-600">
+                                            <div className="flex flex-col text-[10px]">
+                                                <span>📞 {app.director1?.mobile || app.vendor?.phone || 'N/A'}</span>
+                                                <span>✉️ {app.director1?.email || app.vendor?.email || 'N/A'}</span>
+                                            </div>
                                         </td>
                                         <td className="p-4 font-mono text-slate-500">{app.carrierId}</td>
                                         <td className="p-4 text-slate-700">{app.approvedAmount ? `₹${app.approvedAmount}` : '-'}</td>

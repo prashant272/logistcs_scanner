@@ -208,6 +208,17 @@ exports.createEnquiry = async (req, res) => {
                         weight: weightRange || 'N/A',
                         volume: 'N/A'
                     }).catch(err => console.error('Error sending vendor email:', err));
+
+                    if (vendorUser.phone) {
+                        const { sendNewEnquiryVendorWhatsApp } = require('../services/whatsappService');
+                        const vendorName = vendorUser.company || vendorUser.name || 'Vendor';
+                        sendNewEnquiryVendorWhatsApp(vendorUser.phone, {
+                            cargoType: sanitizedType,
+                            pickupCity: fromLocation,
+                            destinationCity: toLocation
+                        }, vendorName, vendorUser.country || '')
+                        .catch(err => console.error('Error sending vendor new enquiry WhatsApp:', err));
+                    }
                 }
             }).catch(err => console.error('Error looking up vendor user for email:', err));
         } else if (isDirect) {
@@ -225,19 +236,32 @@ exports.createEnquiry = async (req, res) => {
             const query = { role: 'vendor', verificationStatus: 'Approved' };
 
             User.find(query).populate('activePlan').then(vendors => {
+                const { sendNewEnquiryVendorWhatsApp } = require('../services/whatsappService');
                 vendors.forEach(vendorUser => {
                     // Check if vendor has an active paid plan
                     const hasActivePlan = vendorUser.activePlan && vendorUser.planEndDate && new Date(vendorUser.planEndDate) > new Date();
                     const isPaidPlan = hasActivePlan && vendorUser.activePlan.price > 0;
 
-                    if (vendorUser.email && isPaidPlan) {
-                        sendEnquiryToVendorAlert(vendorUser.email, {
-                            cargoType: sanitizedType,
-                            pickupCity: fromLocation,
-                            destinationCity: toLocation,
-                            weight: weightRange || 'N/A',
-                            volume: 'N/A'
-                        }).catch(err => console.error('Error sending broadcast email to paid vendor:', err));
+                    if (isPaidPlan) {
+                        if (vendorUser.email) {
+                            sendEnquiryToVendorAlert(vendorUser.email, {
+                                cargoType: sanitizedType,
+                                pickupCity: fromLocation,
+                                destinationCity: toLocation,
+                                weight: weightRange || 'N/A',
+                                volume: 'N/A'
+                            }).catch(err => console.error('Error sending broadcast email to paid vendor:', err));
+                        }
+                        
+                        if (vendorUser.phone) {
+                            const vendorName = vendorUser.company || vendorUser.name || 'Vendor';
+                            sendNewEnquiryVendorWhatsApp(vendorUser.phone, {
+                                cargoType: sanitizedType,
+                                pickupCity: fromLocation,
+                                destinationCity: toLocation
+                            }, vendorName, vendorUser.country || '')
+                            .catch(err => console.error('Error sending broadcast WhatsApp to paid vendor:', err));
+                        }
                     }
                 });
             }).catch(err => console.error('Error looking up vendors for broadcast email:', err));
@@ -542,6 +566,15 @@ exports.updateEnquiryStatus = async (req, res) => {
             return res.status(404).json({ message: 'Enquiry not found' });
         }
 
+        let wasAlreadyAcceptedByThisVendor = false;
+        if (enquiry.status === 'Accepted' && enquiry.vendor && enquiry.vendor.toString() === req.user.id) {
+            wasAlreadyAcceptedByThisVendor = true;
+        }
+        const existingResponseForCheck = enquiry.responses.find(r => r.vendor && r.vendor.toString() === req.user.id);
+        if (existingResponseForCheck && existingResponseForCheck.status === 'Accepted') {
+            wasAlreadyAcceptedByThisVendor = true;
+        }
+
         // --- Monthly Limit Check for Vendors ---
         if (['Accepted', 'Quoted'].includes(status) && (!enquiry.client || enquiry.client.toString() !== req.user.id)) {
             const User = require('../models/User');
@@ -648,21 +681,48 @@ exports.updateEnquiryStatus = async (req, res) => {
         await enquiry.save();
 
         // Notification for Acceptance
-        if (status === 'Accepted') {
+        if (status === 'Accepted' && !wasAlreadyAcceptedByThisVendor) {
             const User = require('../models/User');
             const vendorUser = await User.findById(req.user.id);
             let customerEmail = enquiry.guestEmail;
+            let customerPhone = enquiry.guestPhone;
+            let customerCountry = '';
+            let customerName = enquiry.guestName || 'Customer';
 
             if (enquiry.client) {
                 const clientUser = await User.findById(enquiry.client);
-                if (clientUser) customerEmail = clientUser.email;
+                if (clientUser) {
+                    customerEmail = clientUser.email;
+                    customerPhone = clientUser.phone;
+                    customerCountry = clientUser.country || '';
+                    
+                    let fullName = '';
+                    if (clientUser.firstName || clientUser.lastName) {
+                        fullName = `${clientUser.firstName || ''} ${clientUser.lastName || ''}`.trim();
+                    }
+                    customerName = clientUser.company || fullName || clientUser.name || 'Customer';
+                }
             }
+
+            const vendorName = vendorUser ? (vendorUser.company || vendorUser.name || 'a Vendor') : 'a Vendor';
 
             if (customerEmail && vendorUser) {
                 const { sendEnquiryAcceptedCustomerAlert } = require('../services/notificationService');
                 await sendEnquiryAcceptedCustomerAlert(customerEmail, vendorUser.name || vendorUser.company || 'Vendor', {
                     cargoType: enquiry.type,
                 });
+            }
+
+            if (customerPhone) {
+                const { sendEnquiryAcceptedWhatsApp } = require('../services/whatsappService');
+                const enquiryDetails = {
+                    cargoType: enquiry.type,
+                    pickupCity: enquiry.fromLocation,
+                    destinationCity: enquiry.toLocation
+                };
+                // Send WhatsApp asynchronously
+                sendEnquiryAcceptedWhatsApp(customerPhone, enquiryDetails, vendorName, customerCountry, customerName)
+                    .catch(err => console.error('Error sending WhatsApp on accept:', err));
             }
         }
 
