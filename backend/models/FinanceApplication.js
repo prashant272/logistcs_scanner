@@ -82,7 +82,7 @@ const financeApplicationSchema = new mongoose.Schema({
     // Admin Fields
     adminStatus: {
         type: String,
-        enum: ['Pending', 'Approved', 'Declined', 'Rejected'],
+        enum: ['Pending', 'In Review', 'Approved', 'Declined', 'Rejected'],
         default: 'Pending'
     },
     approvedAmount: {
