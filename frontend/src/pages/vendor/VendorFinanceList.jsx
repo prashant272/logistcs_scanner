@@ -174,7 +174,8 @@ const VendorFinanceList = () => {
                                                 )
                                             ) : (
                                                 <span className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider ${
-                                                    app.adminStatus === 'Pending' ? 'bg-blue-100 text-blue-700' : 'bg-red-100 text-red-700'
+                                                    app.adminStatus === 'Pending' ? 'bg-blue-100 text-blue-700' :
+                                                    app.adminStatus === 'In Review' ? 'bg-orange-100 text-orange-700' : 'bg-red-100 text-red-700'
                                                 }`}>
                                                     {app.adminStatus}
                                                 </span>

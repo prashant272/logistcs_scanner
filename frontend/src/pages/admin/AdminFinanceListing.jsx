@@ -134,7 +134,8 @@ const AdminFinanceListing = () => {
                                         <td className="p-4 text-center">
                                             <span className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider ${
                                                 app.adminStatus === 'Approved' ? 'bg-green-100 text-green-700' :
-                                                app.adminStatus === 'Pending' ? 'bg-blue-100 text-blue-700' : 'bg-red-100 text-red-700'
+                                                app.adminStatus === 'Pending' ? 'bg-blue-100 text-blue-700' :
+                                                app.adminStatus === 'In Review' ? 'bg-orange-100 text-orange-700' : 'bg-red-100 text-red-700'
                                             }`}>
                                                 {app.adminStatus}
                                             </span>
@@ -214,6 +215,7 @@ const AdminFinanceListing = () => {
                                             className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-800 outline-none focus:border-blue-500"
                                         >
                                             <option value="Pending">Pending</option>
+                                            <option value="In Review">In Review</option>
                                             <option value="Approved">Approved</option>
                                             <option value="Declined">Declined</option>
                                             <option value="Rejected">Rejected</option>

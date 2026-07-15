@@ -9,8 +9,8 @@ const VendorProfileTab = ({ user: propUser }) => {
   const user = propUser || authUser;
 
   const [formData, setFormData] = useState({
-    firstName: user?.firstName || '',
-    lastName: user?.lastName || '',
+    firstName: user?.firstName || (user?.name ? user.name.split(' ')[0] : ''),
+    lastName: user?.lastName || (user?.name ? user.name.split(' ').slice(1).join(' ') : ''),
     email: user?.email || '',
     phone: user?.phone || '',
     company: user?.company || '',
@@ -280,7 +280,7 @@ const VendorProfileTab = ({ user: propUser }) => {
                 value={formData.firstName}
                 onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
                 className="w-full bg-[#f8fafc] border border-slate-200 rounded-xl px-4 py-3 text-xs text-slate-800 focus:outline-none focus:bg-white focus:border-[#0066FF] focus:ring-4 focus:ring-[#0066FF]/5 transition-all font-semibold"
-                placeholder="e.g. Mohammad"
+                placeholder="frist name "
               />
             </div>
             <div className="space-y-1.5">
@@ -290,7 +290,7 @@ const VendorProfileTab = ({ user: propUser }) => {
                 value={formData.lastName}
                 onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
                 className="w-full bg-[#f8fafc] border border-slate-200 rounded-xl px-4 py-3 text-xs text-slate-800 focus:outline-none focus:bg-white focus:border-[#0066FF] focus:ring-4 focus:ring-[#0066FF]/5 transition-all font-semibold"
-                placeholder="e.g. Waseeq"
+                placeholder="last name "
               />
             </div>
             <div className="space-y-1.5">

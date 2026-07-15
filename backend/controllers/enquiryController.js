@@ -331,7 +331,10 @@ exports.getVendorEnquiries = async (req, res) => {
                     const customerIds = await User.find({ role: 'customer' }).distinct('_id');
                     query = {
                         isDirect: true,
-                        client: { $in: customerIds }
+                        $or: [
+                            { client: { $in: customerIds } },
+                            { type: 'land', client: { $ne: req.user.id } } // Includes 'land' enquiries created by vendors
+                        ]
                     };
                 } else if (type === 'b2b') {
                     const vendorIds = await User.find({ role: 'vendor' }).distinct('_id');
