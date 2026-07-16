@@ -102,6 +102,9 @@ const SearchPrice = ({ isDashboard = false }) => {
     const [selectedViaPort, setSelectedViaPort] = useState('');
     const [loadingViaPorts, setLoadingViaPorts] = useState(false);
 
+    // Popup State for Road Freight (PTL / FTL)
+    const [showLandPopup, setShowLandPopup] = useState(false);
+
     // Fetch via ports when destination changes (if Sea tab)
     useEffect(() => {
         if (activeTab === 'sea' && destination && destination.length > 2) {
@@ -563,7 +566,13 @@ const SearchPrice = ({ isDashboard = false }) => {
                             <button
                                 key={tab.id}
                                 type="button"
-                                onClick={() => setActiveTab(tab.id)}
+                                onClick={() => {
+                                    if (tab.id === 'land') {
+                                        setShowLandPopup(true);
+                                    } else {
+                                        setActiveTab(tab.id);
+                                    }
+                                }}
                                 className={`flex items-center justify-center gap-2.5 px-6 py-5 text-xs font-black transition-all border-b-[3px] cursor-pointer whitespace-nowrap flex-1 hover:text-[#0066FF] ${
                                     idx !== arr.length - 1 ? 'border-r border-slate-100' : ''
                                 } ${
@@ -939,11 +948,10 @@ const SearchPrice = ({ isDashboard = false }) => {
                                     </div>
                                 )}
 
-                                {/* ==================== ROAD (LAND) FREIGHT ==================== */}
                                 {activeTab === 'land' && (
                                     <div className="space-y-4">
                                         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-end border-b border-slate-100 pb-4 mb-4">
-                                            <div className="lg:col-span-4 space-y-1.5">
+                                            <div className="lg:col-span-6 space-y-1.5">
                                                 <label className="block text-[11px] font-black text-slate-900 uppercase tracking-wider">Country</label>
                                                 <select
                                                     value={landCountry}
@@ -960,21 +968,7 @@ const SearchPrice = ({ isDashboard = false }) => {
                                                 </select>
                                             </div>
 
-                                            <div className="lg:col-span-4 space-y-1.5">
-                                                <label className="block text-[11px] font-black text-slate-900 uppercase tracking-wider">Load Type</label>
-                                                <select
-                                                    value={loadType}
-                                                    onChange={(e) => setLoadType(e.target.value)}
-                                                    className="w-full bg-white border border-slate-300 rounded-xl px-3 py-3.5 text-xs font-bold !text-slate-900 focus:outline-none focus:border-[#0066FF] shadow-sm cursor-pointer"
-                                                    required
-                                                >
-                                                    <option value="">Select Load Type</option>
-                                                    <option value="PTL">Part Truck Load (PTL)</option>
-                                                    <option value="FTL">Full Truck Load (FTL)</option>
-                                                </select>
-                                            </div>
-
-                                            <div className="lg:col-span-4 space-y-1.5">
+                                            <div className="lg:col-span-6 space-y-1.5">
                                                 <label className="block text-[11px] font-black text-slate-900 uppercase tracking-wider">Vehicle Type</label>
                                                 <select
                                                     value={vehicleType}
@@ -1457,6 +1451,47 @@ const SearchPrice = ({ isDashboard = false }) => {
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+            {showLandPopup && (
+                <div className="fixed inset-0 bg-[#0B1E43]/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-fadeIn">
+                    <div className="bg-white rounded-3xl w-full max-w-md p-8 shadow-2xl relative animate-scaleUp">
+                        <button onClick={() => setShowLandPopup(false)} className="absolute top-4 right-4 p-2 bg-slate-100 hover:bg-slate-200 text-slate-500 rounded-full transition-colors cursor-pointer">
+                            <X size={18} />
+                        </button>
+                        <h3 className="text-xl font-black text-[#0B1E43] mb-2 text-center tracking-tight">Select Load Type</h3>
+                        <p className="text-xs text-slate-500 text-center mb-6 font-semibold">Please select your road freight load type to continue.</p>
+                        <div className="space-y-4">
+                            <button
+                                onClick={() => {
+                                    setShowLandPopup(false);
+                                    const role = user?.role || 'customer';
+                                    navigate(isDashboard ? `/${role}/ptl-calculator` : '/ptl-calculator');
+                                }}
+                                className="w-full flex items-center justify-between p-4 rounded-2xl border-2 border-slate-100 hover:border-[#0066FF] hover:bg-blue-50/50 group transition-all cursor-pointer"
+                            >
+                                <div className="text-left">
+                                    <span className="block text-sm font-black text-[#0B1E43] group-hover:text-[#0066FF]">Part Truck Load (PTL)</span>
+                                    <span className="block text-[11px] font-semibold text-slate-500 mt-0.5">Ship smaller loads via Delhivery</span>
+                                </div>
+                                <ArrowRight size={18} className="text-slate-400 group-hover:text-[#0066FF]" />
+                            </button>
+                            <button
+                                onClick={() => {
+                                    setShowLandPopup(false);
+                                    setActiveTab('land');
+                                    setLoadType('FTL');
+                                }}
+                                className="w-full flex items-center justify-between p-4 rounded-2xl border-2 border-slate-100 hover:border-[#0066FF] hover:bg-blue-50/50 group transition-all cursor-pointer"
+                            >
+                                <div className="text-left">
+                                    <span className="block text-sm font-black text-[#0B1E43] group-hover:text-[#0066FF]">Full Truck Load (FTL)</span>
+                                    <span className="block text-[11px] font-semibold text-slate-500 mt-0.5">Book an entire dedicated truck</span>
+                                </div>
+                                <ArrowRight size={18} className="text-slate-400 group-hover:text-[#0066FF]" />
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

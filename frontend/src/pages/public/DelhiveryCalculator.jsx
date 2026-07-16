@@ -3,11 +3,21 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../../components/common/Navbar';
 import { useAuth } from '../../context/AuthContext';
-import { MapPin, Info, ArrowRight, Loader2, Box, Truck, Search, CheckCircle, X, Download } from 'lucide-react';
+import { MapPin, Info, ArrowRight, Loader2, Box, Truck, Search, CheckCircle, X, Download, Building, FileText, Phone, Mail } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import InvoiceDocument from '../../components/common/InvoiceDocument';
 import useSEO from '../../hooks/useSEO';
+import { useEnquiries } from '../../services/EnquiryService';
+
+const COUNTRY_CODES = [
+    { code: '+91', country: 'IN' },
+    { code: '+1', country: 'US' },
+    { code: '+44', country: 'UK' },
+    { code: '+971', country: 'AE' },
+    { code: '+65', country: 'SG' },
+    { code: '+86', country: 'CN' }
+];
 
 const DelhiveryCalculator = ({ isDashboard = false }) => {
     useSEO({
@@ -18,6 +28,34 @@ const DelhiveryCalculator = ({ isDashboard = false }) => {
 
     const { user } = useAuth();
     const navigate = useNavigate();
+    const { createEnquiry, submissionStatus: enquiryStatus, setSubmissionStatus: setEnquiryStatus } = useEnquiries();
+    
+    // Broadcast Modal States
+    const [isBroadcastModalOpen, setIsBroadcastModalOpen] = useState(false);
+    const [guestName, setGuestName] = useState('');
+    const [guestCompany, setGuestCompany] = useState('');
+    const [guestGst, setGuestGst] = useState('');
+    const [guestCommodity, setGuestCommodity] = useState('');
+    const [guestMessage, setGuestMessage] = useState('');
+    const [guestTargetPrice, setGuestTargetPrice] = useState('');
+    const [guestAttachment, setGuestAttachment] = useState(null);
+    const [guestPhoneCode, setGuestPhoneCode] = useState('+91');
+    const [guestPhone, setGuestPhone] = useState('');
+    const [guestEmail, setGuestEmail] = useState('');
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
+
+    // Auto-fill if user is logged in
+    useEffect(() => {
+        if (user) {
+            setGuestName(user.name || '');
+            setGuestCompany(user.company || user.name || '');
+            setGuestEmail(user.email || '');
+            if (user.phone) {
+                // simple parse if phone has code
+                setGuestPhone(user.phone.replace('+91', '').trim());
+            }
+        }
+    }, [user]);
     
     // Form States
     const [originPin, setOriginPin] = useState('');
@@ -184,6 +222,59 @@ const DelhiveryCalculator = ({ isDashboard = false }) => {
         } catch (error) {
             console.error("Booking error", error);
             alert("Failed to create order. Please try again.");
+        }
+    };
+
+    const handleBroadcastSubmit = async (e) => {
+        if (e && e.preventDefault) e.preventDefault();
+
+        setEnquiryStatus('submitting');
+        
+        const originCity = originData?.data?.pincode_serviceability_data?.[0]?.city || '';
+        const destCity = destData?.data?.pincode_serviceability_data?.[0]?.city || '';
+        const formattedFromLoc = originCity ? `${originPin} (${originCity})` : originPin;
+        const formattedToLoc = destCity ? `${destPin} (${destCity})` : destPin;
+
+        const payload = {
+            fromLocation: formattedFromLoc,
+            toLocation: formattedToLoc,
+            type: 'land',
+            truckLoad: 'PTL',
+            weightRange: totalWeight.toString(),
+            isDirect: true, // Broadcast to all vendors
+            
+            // Guest / Form Fields
+            guestName,
+            guestCompany,
+            guestGst,
+            guestPhone: guestPhone ? `${guestPhoneCode} ${guestPhone}` : '',
+            guestEmail,
+            commodity: guestCommodity,
+            message: guestMessage,
+            targetPrice: guestTargetPrice,
+            // attachment would be handled if backend supports multipart, assuming base64 or ignored for now if string
+        };
+
+        try {
+            await createEnquiry(payload);
+            setIsBroadcastModalOpen(false);
+            setShowSuccessModal(true);
+            
+            // Reset Form
+            setGuestName(user?.name || '');
+            setGuestCompany(user?.company || user?.name || '');
+            setGuestCommodity('');
+            setGuestMessage('');
+            setGuestTargetPrice('');
+            setGuestAttachment(null);
+            setGuestPhone(user?.phone ? user.phone.replace('+91', '').trim() : '');
+            setGuestEmail(user?.email || '');
+            setGuestGst('');
+        } catch (err) {
+            console.error('Error broadcasting enquiry:', err);
+            alert('Failed to send enquiry. Please try again.');
+        } finally {
+            setEnquiryStatus('');
         }
     };
 
@@ -540,6 +631,14 @@ const DelhiveryCalculator = ({ isDashboard = false }) => {
                                             >
                                                 {isDownloading ? <><Loader2 className="animate-spin" size={18} /> Generating...</> : <><Download size={18} /> Download Quotation</>}
                                             </button>
+
+                                            <button
+                                                onClick={() => setIsBroadcastModalOpen(true)}
+                                                disabled={enquiryStatus === 'submitting'}
+                                                className="w-full bg-slate-50 text-slate-700 hover:bg-slate-100 hover:text-[#0066FF] border border-slate-200 hover:border-slate-300 py-3 rounded-xl font-bold text-[13px] transition-all flex items-center justify-center gap-2 mt-3 shadow-sm disabled:opacity-70 disabled:cursor-not-allowed"
+                                            >
+                                                {enquiryStatus === 'submitting' ? <><Loader2 className="animate-spin" size={16} /> Broadcasting...</> : <><Search size={16} /> Broadcast Inquiry to Vendors</>}
+                                            </button>
                                         </div>
                                         
                                         <p className="text-[11px] text-gray-400 text-center mt-4 font-medium">
@@ -577,6 +676,199 @@ const DelhiveryCalculator = ({ isDashboard = false }) => {
                     shipmentAmount={shipmentAmount}
                     user={user}
                 />
+            )}
+
+            {/* Broadcast Inquiry Modal */}
+            {isBroadcastModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-fadeIn overflow-y-auto">
+                    <div className="bg-white rounded-3xl w-full max-w-lg shadow-[0_24px_60px_rgba(11,30,67,0.15)] border border-slate-100 overflow-hidden flex flex-col my-8 animate-scaleUp">
+                        
+                        {/* Header */}
+                        <div className="flex justify-between items-center p-6 border-b border-slate-100 bg-slate-50/50 sticky top-0 z-10">
+                            <div>
+                                <h3 className="text-base font-black text-[#0B1E43] tracking-tight">Request Freight Quote</h3>
+                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">Please provide your details to proceed</p>
+                            </div>
+                            <button
+                                onClick={() => setIsBroadcastModalOpen(false)}
+                                className="text-slate-400 hover:text-slate-600 cursor-pointer bg-white rounded-full p-1.5 shadow-sm border border-slate-100"
+                            >
+                                <X size={18} />
+                            </button>
+                        </div>
+
+                        {/* Body / Form */}
+                        <form onSubmit={handleBroadcastSubmit} className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+                            
+                            {/* Message / Additional Details */}
+                            <div className="space-y-1">
+                                <label className="block text-[10px] font-black text-slate-900 uppercase tracking-wider flex items-center gap-1">
+                                    <FileText size={11} className="text-slate-400" /> Message / Additional Details
+                                </label>
+                                <textarea
+                                    placeholder="Provide any specific requirements or details..."
+                                    value={guestMessage}
+                                    onChange={(e) => setGuestMessage(e.target.value)}
+                                    className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-900 focus:outline-none focus:border-[#0066FF] transition-all min-h-[80px]"
+                                ></textarea>
+                            </div>
+
+                            {/* Attach Document / Image */}
+                            <div className="space-y-1">
+                                <label className="block text-[10px] font-black text-slate-900 uppercase tracking-wider flex items-center gap-1">
+                                    <FileText size={11} className="text-slate-400" /> Attach Document / Image (Optional)
+                                </label>
+                                <input
+                                    type="file"
+                                    onChange={(e) => setGuestAttachment(e.target.files[0])}
+                                    className="w-full bg-slate-50 border border-dashed border-slate-300 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-600 focus:outline-none focus:border-[#0066FF] transition-all cursor-pointer file:mr-4 file:py-1 file:px-3 file:rounded-full file:border-0 file:text-[10px] file:font-black file:bg-[#0066FF] file:text-white hover:file:bg-[#0052cc]"
+                                />
+                            </div>
+
+                            {/* Commodity Description & Target Price Row */}
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-1">
+                                    <label className="block text-[10px] font-black text-slate-900 uppercase tracking-wider flex items-center gap-1">
+                                        <Box size={11} className="text-slate-400" /> Commodity Description
+                                    </label>
+                                    <input
+                                        type="text"
+                                        placeholder="e.g. Machinery, Electronics"
+                                        value={guestCommodity}
+                                        onChange={(e) => setGuestCommodity(e.target.value)}
+                                        className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-900 focus:outline-none focus:border-[#0066FF] transition-all"
+                                        required
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="block text-[10px] font-black text-slate-900 uppercase tracking-wider flex items-center gap-1">
+                                        <Info size={11} className="text-slate-400" /> My Target Price
+                                    </label>
+                                    <input
+                                        type="text"
+                                        placeholder="Enter your target price"
+                                        value={guestTargetPrice}
+                                        onChange={(e) => setGuestTargetPrice(e.target.value)}
+                                        className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-900 focus:outline-none focus:border-[#0066FF] transition-all"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="pt-4 border-t border-slate-100">
+                                <h4 className="text-xs font-black text-slate-800 mb-4">Contact Information</h4>
+                                
+                                {/* Organization Name & GST Row */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                    <div className="space-y-1">
+                                        <label className="block text-[10px] font-black text-slate-900 uppercase tracking-wider flex items-center gap-1">
+                                            <Building size={11} className="text-slate-400" /> Organization / Client Name
+                                        </label>
+                                        <input
+                                            type="text"
+                                            placeholder="Enter organization or client name"
+                                            value={guestCompany}
+                                            onChange={(e) => {
+                                                setGuestCompany(e.target.value);
+                                                setGuestName(e.target.value);
+                                            }}
+                                            className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-900 focus:outline-none focus:border-[#0066FF] transition-all"
+                                            required
+                                        />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="block text-[10px] font-black text-slate-900 uppercase tracking-wider flex items-center gap-1">
+                                            <FileText size={11} className="text-slate-400" /> GST Number (Optional)
+                                        </label>
+                                        <input
+                                            type="text"
+                                            placeholder="Enter GST Number"
+                                            value={guestGst}
+                                            onChange={(e) => setGuestGst(e.target.value)}
+                                            className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-900 focus:outline-none focus:border-[#0066FF] transition-all"
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Mobile Code & Number */}
+                                <div className="space-y-1 mb-4">
+                                    <label className="block text-[10px] font-black text-slate-900 uppercase tracking-wider flex items-center gap-1">
+                                        <Phone size={11} className="text-slate-400" /> Mobile Number
+                                    </label>
+                                    <div className="flex gap-2">
+                                        <select
+                                            value={guestPhoneCode}
+                                            onChange={(e) => setGuestPhoneCode(e.target.value)}
+                                            className="bg-white border border-slate-200 rounded-xl px-2 py-2.5 text-xs font-bold text-slate-900 focus:outline-none focus:border-[#0066FF] cursor-pointer min-w-[100px]"
+                                        >
+                                            {COUNTRY_CODES.map((item) => (
+                                                <option key={item.code} value={item.code}>
+                                                    {item.country} ({item.code})
+                                                </option>
+                                            ))}
+                                        </select>
+                                        <input
+                                            type="tel"
+                                            placeholder="Mobile phone number"
+                                            value={guestPhone}
+                                            onChange={(e) => setGuestPhone(e.target.value)}
+                                            className="flex-1 bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-900 focus:outline-none focus:border-[#0066FF] transition-all"
+                                            required
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Email */}
+                                <div className="space-y-1">
+                                    <label className="block text-[10px] font-black text-slate-900 uppercase tracking-wider flex items-center gap-1">
+                                        <Mail size={11} className="text-slate-400" /> Work Email
+                                    </label>
+                                    <input
+                                        type="email"
+                                        placeholder="client@company.com"
+                                        value={guestEmail}
+                                        onChange={(e) => setGuestEmail(e.target.value)}
+                                        className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-900 focus:outline-none focus:border-[#0066FF] transition-all"
+                                        required
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Info text */}
+                            <p className="text-[10px] text-slate-400 font-semibold leading-relaxed pt-2 text-center">
+                                By submitting this request, you agree to let logistics scanner partners contact you with pricing quotes.
+                            </p>
+
+                            <button
+                                type="submit"
+                                disabled={enquiryStatus === 'submitting'}
+                                className="w-full bg-[#0066FF] hover:bg-[#0052cc] disabled:bg-slate-300 text-white font-black text-sm py-4 rounded-xl transition-all shadow-md shadow-[#0066FF]/20 flex items-center justify-center gap-2 mt-4 cursor-pointer"
+                            >
+                                {enquiryStatus === 'submitting' ? <><Loader2 className="animate-spin" size={16} /> Submitting...</> : 'Submit Details & Raise Enquiry'}
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Success Modal */}
+            {showSuccessModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-fadeIn">
+                    <div className="bg-white rounded-3xl w-full max-w-sm shadow-2xl p-8 text-center animate-scaleUp">
+                        <div className="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <CheckCircle size={40} className="text-green-500" />
+                        </div>
+                        <h3 className="text-2xl font-black text-slate-900 mb-2">Request Submitted!</h3>
+                        <p className="text-sm text-slate-500 font-semibold mb-8">
+                            Your freight quote request has been successfully broadcasted to our verified vendors. They will contact you shortly with their best pricing.
+                        </p>
+                        <button
+                            onClick={() => setShowSuccessModal(false)}
+                            className="w-full bg-[#0B1E43] hover:bg-[#152a55] text-white font-black text-sm py-4 rounded-xl transition-all shadow-lg shadow-[#0B1E43]/20 cursor-pointer"
+                        >
+                            Done
+                        </button>
+                    </div>
+                </div>
             )}
         </div>
     );
