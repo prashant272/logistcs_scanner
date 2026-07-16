@@ -7,9 +7,17 @@ const DownloadApp = () => {
         const isIOS = /iPhone|iPad|iPod/i.test(ua);
 
         if (isAndroid) {
-            window.location.replace("https://play.google.com/store/apps/details?id=com.logosticdekhoapp.app&hl=en_IN");
+            // Android Intent natively checks if app is installed. If yes, opens it. If no, opens Play Store.
+            window.location.replace(
+                "intent://#Intent;package=com.logosticdekhoapp.app;scheme=https;end;"
+            );
         } else if (isIOS) {
-            window.location.replace("https://apps.apple.com/us/app/logisticsscanner-freight-cha/id6749311566");
+            // Try to open the app via a custom scheme (assuming logisticsscanner://)
+            // If it fails after 1.5 seconds, redirect to App Store
+            window.location.replace("logisticsscanner://");
+            setTimeout(() => {
+                window.location.replace("https://apps.apple.com/us/app/logisticsscanner-freight-cha/id6749311566");
+            }, 1500);
         } else {
             window.location.replace("/");
         }
