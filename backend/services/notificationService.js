@@ -425,6 +425,60 @@ const sendAdminCreatedUserEmail = async (email, name, password, role) => {
     return await sendEmail({ to: email, subject, html });
 };
 
+/**
+ * Send New Enquiry SMS to Vendor via Juvlon API
+ */
+const sendNewEnquiryVendorSMS = async (mobile, vendorName, enquiryDetails) => {
+    try {
+        let cleanMobile = mobile.replace(/\D/g, '');
+        if (cleanMobile.length === 12 && cleanMobile.startsWith('91')) {
+            cleanMobile = cleanMobile.substring(2);
+        }
+
+        const cargoType = enquiryDetails.cargoType ? enquiryDetails.cargoType.toUpperCase() + ' Freight' : 'NA';
+        
+        // DLT Alphanumeric allows letters, numbers, and spaces. NO special characters like / ( ) , - 
+        const dateObj = new Date();
+        const dateStr = `${dateObj.getDate()} ${dateObj.toLocaleString('default', { month: 'short' })} ${dateObj.getFullYear()}`; // e.g. "16 Jul 2026"
+
+        const trunc = (str, len = 29) => {
+            if (!str) return 'NA';
+            // KEEP ONLY Alphanumeric and Spaces. Remove all commas, brackets, slashes, etc.
+            const cleanStr = String(str).replace(/[^A-Za-z0-9\s]/g, '').replace(/\s+/g, ' ').trim(); 
+            return cleanStr.length > len ? cleanStr.substring(0, len) : cleanStr;
+        };
+
+        const vName = trunc(vendorName || 'Vendor');
+        const vShipment = trunc(cargoType);
+        const vDate = trunc(dateStr);
+        const vPickup = trunc(enquiryDetails.pickupCity);
+        const vDest = trunc(enquiryDetails.destinationCity);
+
+        const body = `Hello ${vName}, You have received a new logistics enquiry. Shipment: ${vShipment} Date: ${vDate} Loading Port: ${vPickup} Discharge Port: ${vDest} Please login to your Logistics Scanner vendor dashboard to view and respond. Regards, BNB WORLDWIDE PRIVATE LIMITED`;
+
+        const payload = {
+            apiKey: process.env.JUVLON_API_KEY || "D077FB8FD1262E56A02AE5138E5EB88C",
+            mobile: cleanMobile,
+            body: body,
+            entityID: "1701175403064900652", // OLD Entity ID
+            templateID: "1777178411241785177",
+            headerID: "BNBWL"
+        };
+
+        const response = await axios.post('https://api2.juvlon.com/v5/sendSMS', payload, {
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        console.log('Juvlon New Enquiry SMS sent response:', response.data);
+        return { success: true, data: response.data };
+    } catch (error) {
+        console.error('Error sending New Enquiry SMS via Juvlon:', error.message);
+        return { success: false, error: error.message };
+    }
+};
+
 module.exports = {
     sendEmail,
     sendSMS,
@@ -437,5 +491,6 @@ module.exports = {
     sendEnquiryCustomerConfirmation,
     sendEnquiryAcceptedCustomerAlert,
     sendGuestAccountCreatedEmail,
-    sendAdminCreatedUserEmail
+    sendAdminCreatedUserEmail,
+    sendNewEnquiryVendorSMS
 };
