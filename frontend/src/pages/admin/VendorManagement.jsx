@@ -3,8 +3,9 @@ import axios from 'axios';
 import useInfiniteScroll from '../../hooks/useInfiniteScroll';
 import { 
   ShieldCheck, Truck, Mail, Phone, MapPin, Building, Calendar, 
-  Search, ExternalLink, LogIn, CheckCircle2, AlertCircle, Upload, RefreshCw, Plus, X, Loader2, Activity, Edit
+  Search, ExternalLink, LogIn, CheckCircle2, AlertCircle, Upload, RefreshCw, Plus, X, Loader2, Activity, Edit, Download
 } from 'lucide-react';
+import * as XLSX from 'xlsx';
 
 const VendorManagement = () => {
   const [vendors, setVendors] = useState([]);
@@ -26,6 +27,7 @@ const VendorManagement = () => {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [downloadingExcel, setDownloadingExcel] = useState(false);
 
   // Add Vendor Modal State
   const [showAddModal, setShowAddModal] = useState(false);
@@ -478,6 +480,51 @@ const VendorManagement = () => {
     }
   };
 
+  const handleDownloadExcel = async () => {
+    try {
+      setDownloadingExcel(true);
+      const token = sessionStorage.getItem('adminToken');
+      // Fetch all vendors matching current filters by setting a high limit
+      const { data } = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/admin/vendors?page=1&limit=100000&search=${debouncedSearchQuery}&status=${statusFilter}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      const allVendors = data.data || [];
+      if (allVendors.length === 0) {
+        alert("No data available to download.");
+        return;
+      }
+
+      // Format data for Excel
+      const excelData = allVendors.map(v => ({
+        "First Name": v.firstName || v.name?.split(' ')[0] || 'N/A',
+        "Last Name": v.lastName || v.name?.split(' ').slice(1).join(' ') || 'N/A',
+        "Email": v.email || 'N/A',
+        "Organization": v.company || 'N/A',
+        "Country": v.country || 'N/A',
+        "Mobile": v.phone || 'N/A',
+        "Status": v.verificationStatus || 'Pending',
+        "Created At": new Date(v.createdAt).toLocaleDateString(),
+        "Plan": v.activePlan?.name || 'Basic',
+        "Enquiry Limit": (v.activePlan?.inquiryLimit || 5) + (v.topupEnquiryLimit || 0),
+        "Last Login": v.lastActive ? new Date(v.lastActive).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }) : 'N/A',
+        "Login Source": v.lastLoginSource === 'app' ? 'App' : (v.lastLoginSource === 'web' ? 'Web' : 'N/A'),
+        "Assigned RM": v.assignedRM?.name || rms.find(rm => rm._id === (typeof v.assignedRM === 'object' ? v.assignedRM?._id : v.assignedRM))?.name || 'Not Assigned'
+      }));
+
+      const worksheet = XLSX.utils.json_to_sheet(excelData);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Vendors");
+      XLSX.writeFile(workbook, `Vendors_${new Date().toISOString().split('T')[0]}.xlsx`);
+
+    } catch (error) {
+      console.error("Error downloading excel", error);
+      alert("Failed to download excel.");
+    } finally {
+      setDownloadingExcel(false);
+    }
+  };
+
   const filteredVendors = vendors;
 
   return (
@@ -524,6 +571,15 @@ const VendorManagement = () => {
             title="Refresh Vendors"
           >
             <RefreshCw size={18} className={loading ? "animate-spin text-[#0066FF]" : ""} />
+          </button>
+          
+          <button 
+            onClick={handleDownloadExcel}
+            disabled={downloadingExcel}
+            className="px-4 py-2.5 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white rounded-xl transition-all shadow-sm font-bold flex items-center gap-2 text-xs"
+          >
+            {downloadingExcel ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
+            Download Excel
           </button>
           
           <button 
