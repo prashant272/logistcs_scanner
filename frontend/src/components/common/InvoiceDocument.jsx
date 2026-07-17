@@ -98,14 +98,14 @@ const InvoiceDocument = React.forwardRef(({ rateResult, boxes, totalWeight, orig
                                 <td style={{ border: '1px solid #d1d5db', padding: '6px 8px' }}>{rateResult?.breakup?.mode || rateResult?.freightMode || 'Surface Express'}</td>
                             </tr>
                             <tr>
-                                <td style={{ border: '1px solid #d1d5db', padding: '6px 8px', fontWeight: '600', backgroundColor: '#f9fafb' }}>Weight</td>
+                                <td style={{ border: '1px solid #d1d5db', padding: '6px 8px', fontWeight: '600', backgroundColor: '#f9fafb' }}>Weight (Maximum)</td>
                                 <td style={{ border: '1px solid #d1d5db', padding: '6px 8px' }}>
                                     {totalWeight} Kg
                                     {rateResult?.chargedWeight > totalWeight && <span style={{ color: '#ea580c', fontSize: '11px', marginLeft: '8px' }}>Maximum*</span>}
                                 </td>
                             </tr>
                             <tr>
-                                <td style={{ border: '1px solid #d1d5db', padding: '6px 8px', fontWeight: '600', backgroundColor: '#f9fafb' }}>Dimensions</td>
+                                <td style={{ border: '1px solid #d1d5db', padding: '6px 8px', fontWeight: '600', backgroundColor: '#f9fafb' }}>Dimensions (Maximum)</td>
                                 <td style={{ border: '1px solid #d1d5db', padding: '6px 8px' }}>
                                     {dimensionsText}
                                     {rateResult?.chargedWeight > totalWeight && <span style={{ color: '#ea580c', fontSize: '11px', marginLeft: '8px' }}>Maximum*</span>}
@@ -118,12 +118,16 @@ const InvoiceDocument = React.forwardRef(({ rateResult, boxes, totalWeight, orig
                             <tr>
                                 <td style={{ border: '1px solid #d1d5db', padding: '6px 8px', fontWeight: '600', backgroundColor: '#f9fafb' }}>Transit</td>
                                 <td style={{ border: '1px solid #d1d5db', padding: '6px 8px' }}>
-                                    {rateResult?.breakup?.expected_delivery_date 
-                                        ? new Date(rateResult.breakup.expected_delivery_date).toLocaleDateString('en-GB') 
-                                        : (rateResult?.breakup?.tat 
-                                            ? `~${rateResult.breakup.tat} Business Days` 
-                                            : '~4 Business Days'
-                                        )}
+                                    {(() => {
+                                        let baseDays = 4;
+                                        if (rateResult?.breakup?.tat) {
+                                            baseDays = Number(rateResult.breakup.tat);
+                                        } else if (rateResult?.breakup?.expected_delivery_date) {
+                                            const diff = new Date(rateResult.breakup.expected_delivery_date) - new Date();
+                                            baseDays = Math.max(1, Math.ceil(diff / (1000 * 60 * 60 * 24)));
+                                        }
+                                        return `${baseDays} - ${baseDays + 3} Business Days`;
+                                    })()}
                                 </td>
                             </tr>
                         </tbody>
@@ -158,6 +162,14 @@ const InvoiceDocument = React.forwardRef(({ rateResult, boxes, totalWeight, orig
                             </tr>
                         </tbody>
                     </table>
+                </div>
+
+                {/* Important Notes */}
+                <div style={{ marginBottom: '24px', fontSize: '12px', color: '#4b5563', backgroundColor: '#f3f4f6', padding: '12px', borderRadius: '6px', border: '1px solid #e5e7eb' }}>
+                    <p style={{ margin: 0, fontWeight: '600', color: '#111827', marginBottom: '4px' }}>Important Note:</p>
+                    <p style={{ margin: 0, lineHeight: '1.4' }}>
+                        The quoted rates are based on the dimensions, weight, and invoice value provided by the customer. Any variation in these details at the time of shipment may lead to a revision of the applicable charges.
+                    </p>
                 </div>
 
                 {/* Footer / Vendor Information */}

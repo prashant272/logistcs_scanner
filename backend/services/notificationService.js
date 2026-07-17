@@ -179,10 +179,11 @@ const sendSMS = async ({ mobile, otp, templateID = "1707175750668490308" }) => {
  */
 const sendWhatsAppOTP = async ({ mobile, otp }) => {
     try {
-        // Clean mobile number (remove + and spaces)
+        // Clean mobile number (remove non-digits)
         let cleanMobile = mobile.replace(/\D/g, '');
-        if (cleanMobile.length === 10) {
-            cleanMobile = '91' + cleanMobile; // default to India if only 10 digits
+        // If it's exactly 10 digits and the original didn't start with '+', assume India
+        if (cleanMobile.length === 10 && !mobile.startsWith('+')) {
+            cleanMobile = '91' + cleanMobile;
         }
 
         const payload = {

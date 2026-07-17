@@ -552,12 +552,16 @@ const DelhiveryCalculator = ({ isDashboard = false }) => {
                                                 <div className="text-4xl font-black text-gray-900 tracking-tight">₹{rateResult.finalPrice?.toLocaleString('en-IN', { minimumFractionDigits: 0 })}</div>
                                                 <p className="text-sm font-bold text-green-600 mt-2 flex items-center gap-1.5">
                                                     <Truck size={16} /> 
-                                                    {rateResult.breakup?.expected_delivery_date 
-                                                        ? `Delivery by ${new Date(rateResult.breakup.expected_delivery_date).toLocaleDateString('en-GB')}` 
-                                                        : (rateResult.breakup?.tat 
-                                                            ? `Delivery in ~${rateResult.breakup.tat} days` 
-                                                            : 'Delivery in ~4 days'
-                                                          )}
+                                                    {(() => {
+                                                        let baseDays = 4;
+                                                        if (rateResult.breakup?.tat) {
+                                                            baseDays = Number(rateResult.breakup.tat);
+                                                        } else if (rateResult.breakup?.expected_delivery_date) {
+                                                            const diff = new Date(rateResult.breakup.expected_delivery_date) - new Date();
+                                                            baseDays = Math.max(1, Math.ceil(diff / (1000 * 60 * 60 * 24)));
+                                                        }
+                                                        return `Delivery in ~${baseDays} - ${baseDays + 3} days`;
+                                                    })()}
                                                 </p>
                                             </div>
                                             <div className="w-14 h-14 bg-blue-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-blue-600/30">
@@ -641,9 +645,11 @@ const DelhiveryCalculator = ({ isDashboard = false }) => {
                                             </button>
                                         </div>
                                         
-                                        <p className="text-[11px] text-gray-400 text-center mt-4 font-medium">
-                                            Final charges may vary based on physical measurement at hub.
-                                        </p>
+                                        <div className="bg-slate-50 border border-slate-100 rounded-lg p-3 mt-4">
+                                            <p className="text-[11px] text-slate-500 font-medium leading-relaxed text-center">
+                                                <strong className="text-slate-700">Note:</strong> The quoted rates are based on the dimensions, weight, and invoice value provided by the customer. Any variation in these details at the time of shipment may lead to a revision of the applicable charges.
+                                            </p>
+                                        </div>
                                     </div>
                                 </div>
                             ) : (

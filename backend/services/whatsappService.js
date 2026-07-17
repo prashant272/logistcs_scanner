@@ -12,10 +12,11 @@ const sendWhatsAppTemplate = async (mobile, templateId, variables = [], country 
         // Clean mobile number (remove +, spaces, dashes)
         let cleanMobile = mobile ? mobile.replace(/\D/g, '') : '';
         
-        const isIndia = (country && country.toLowerCase().includes('india')) || (cleanMobile.length === 10);
+        // Check if India: if country contains 'india', or if country is missing/blank AND length is 10
+        const isIndia = (country && country.toLowerCase().includes('india')) || (!country && cleanMobile.length === 10);
         
-        // If it's identified as India and exactly 10 digits, prepend 91
-        if (isIndia && cleanMobile.length === 10) {
+        // If it's identified as India and exactly 10 digits (and didn't start with '+'), prepend 91
+        if (isIndia && cleanMobile.length === 10 && !mobile.startsWith('+')) {
             cleanMobile = '91' + cleanMobile;
         }
 

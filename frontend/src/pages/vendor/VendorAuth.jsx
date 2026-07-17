@@ -16,6 +16,7 @@ const VendorAuth = () => {
     const [forgotStep, setForgotStep] = useState(null); // null, 'request', 'reset'
     const [forgotEmail, setForgotEmail] = useState('');
     const [forgotPhoneCode, setForgotPhoneCode] = useState('+91');
+    const [customPhoneCode, setCustomPhoneCode] = useState('');
     const [forgotPhone, setForgotPhone] = useState('');
     const [forgotOtp, setForgotOtp] = useState('');
     const [newPassword, setNewPassword] = useState('');
@@ -139,7 +140,8 @@ const VendorAuth = () => {
         setOtpSuccess('');
         setLoading(true);
 
-        const fullPhone = `${forgotPhoneCode} ${forgotPhone}`.trim();
+        const activePhoneCode = forgotPhoneCode === 'Other' ? '' : forgotPhoneCode;
+        const fullPhone = forgotPhoneCode === 'Other' ? forgotPhone.trim() : `${activePhoneCode} ${forgotPhone}`.trim();
         const result = await forgotPassword(forgotEmail, fullPhone);
         if (result.success) {
             setOtpSuccess(result.message || 'OTP sent successfully!');
@@ -349,24 +351,33 @@ const VendorAuth = () => {
                                             Phone Number <span className="text-red-500">*</span>
                                         </label>
                                         <div className="flex gap-2">
-                                            <select
-                                                name="phoneCode"
-                                                value={forgotPhoneCode}
-                                                onChange={(e) => setForgotPhoneCode(e.target.value)}
-                                                className="w-24 px-3 py-2.5 border border-slate-200 rounded-xl bg-white !text-slate-900 font-medium focus:outline-none focus:border-[#00b2fe] focus:ring-2 focus:ring-[#00b2fe]/10 transition-all text-sm"
-                                            >
-                                                <option value="+91">+91 (IN)</option>
-                                                <option value="+1">+1 (US)</option>
-                                                <option value="+44">+44 (UK)</option>
-                                                <option value="+61">+61 (AU)</option>
-                                            </select>
+                                            {forgotPhoneCode !== 'Other' && (
+                                                <select
+                                                    name="phoneCode"
+                                                    value={forgotPhoneCode}
+                                                    onChange={(e) => setForgotPhoneCode(e.target.value)}
+                                                    className="w-24 px-3 py-2.5 border border-slate-200 rounded-xl bg-white !text-slate-900 font-medium focus:outline-none focus:border-[#00b2fe] focus:ring-2 focus:ring-[#00b2fe]/10 transition-all text-sm"
+                                                >
+                                                    <option value="+91">+91 (IN)</option>
+                                                    <option value="Other">Other</option>
+                                                </select>
+                                            )}
+                                            {forgotPhoneCode === 'Other' && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setForgotPhoneCode('+91')}
+                                                    className="w-24 px-3 py-2.5 border border-slate-200 rounded-xl bg-slate-100 !text-slate-600 font-medium hover:bg-slate-200 transition-all text-sm cursor-pointer"
+                                                >
+                                                    Cancel
+                                                </button>
+                                            )}
                                             <input
                                                 type="tel"
                                                 required
                                                 value={forgotPhone}
                                                 onChange={(e) => setForgotPhone(e.target.value)}
                                                 className="block flex-grow px-4 py-2.5 border border-slate-200 rounded-xl bg-white !text-slate-900 font-medium focus:outline-none focus:border-[#00b2fe] focus:ring-2 focus:ring-[#00b2fe]/10 transition-all placeholder:text-slate-400 text-sm"
-                                                placeholder="Phone number"
+                                                placeholder={forgotPhoneCode === 'Other' ? "Enter full number with country code (e.g. +XYZ 1234)" : "Phone number"}
                                             />
                                         </div>
                                     </div>
