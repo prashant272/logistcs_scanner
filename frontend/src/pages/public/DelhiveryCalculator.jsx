@@ -61,6 +61,7 @@ const DelhiveryCalculator = ({ isDashboard = false }) => {
     const [originPin, setOriginPin] = useState('');
     const [destPin, setDestPin] = useState('');
     const [boxes, setBoxes] = useState([{ id: 1, count: 1, l: 35, b: 35, h: 35 }]);
+    const [dimensionUnit, setDimensionUnit] = useState('cm');
     const [totalWeight, setTotalWeight] = useState(1);
     const [shipmentAmount, setShipmentAmount] = useState(1000);
     const [paymentMode, setPaymentMode] = useState('Prepaid');
@@ -155,11 +156,11 @@ const DelhiveryCalculator = ({ isDashboard = false }) => {
         try {
             const token = localStorage.getItem('userToken') || sessionStorage.getItem('adminToken');
             
-            // Format dimensions payload
+            const multiplier = dimensionUnit === 'inch' ? 2.54 : 1;
             const dimensionsPayload = boxes.map(b => ({
-                length_cm: parseFloat(b.l) || 10,
-                width_cm: parseFloat(b.b) || 10,
-                height_cm: parseFloat(b.h) || 10,
+                length_cm: parseFloat(b.l) * multiplier || 10,
+                width_cm: parseFloat(b.b) * multiplier || 10,
+                height_cm: parseFloat(b.h) * multiplier || 10,
                 box_count: parseInt(b.count) || 1
             }));
 
@@ -394,7 +395,14 @@ const DelhiveryCalculator = ({ isDashboard = false }) => {
                                                 <input type="number" value={box.b} onChange={e => updateBox(box.id, 'b', e.target.value)} placeholder="B" className="w-full min-w-0 bg-gray-50 border-2 border-gray-100 rounded-lg px-1 sm:px-2 py-3 text-sm sm:text-base font-bold text-gray-800 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 text-center transition-all" />
                                                 <span className="text-gray-300 font-bold text-sm sm:text-base">×</span>
                                                 <input type="number" value={box.h} onChange={e => updateBox(box.id, 'h', e.target.value)} placeholder="H" className="w-full min-w-0 bg-gray-50 border-2 border-gray-100 rounded-lg px-1 sm:px-2 py-3 text-sm sm:text-base font-bold text-gray-800 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 text-center transition-all" />
-                                                <div className="bg-gray-100 text-gray-500 font-bold px-2 sm:px-3 py-3 rounded-lg text-xs sm:text-sm border-2 border-gray-200">cm</div>
+                                                <select 
+                                                    value={dimensionUnit}
+                                                    onChange={(e) => setDimensionUnit(e.target.value)}
+                                                    className="bg-gray-100 text-gray-700 font-bold px-1 sm:px-2 py-3 rounded-lg text-xs sm:text-sm border-2 border-gray-200 focus:outline-none focus:border-blue-500 cursor-pointer"
+                                                >
+                                                    <option value="cm">cm</option>
+                                                    <option value="inch">inch</option>
+                                                </select>
                                             </div>
                                         </div>
                                         {boxes.length > 1 && (
@@ -609,10 +617,19 @@ const DelhiveryCalculator = ({ isDashboard = false }) => {
 
                                         <div className="flex flex-col gap-3 mt-auto">
                                             <button
-                                                onClick={() => navigate(isDashboard ? `/${user?.role || 'customer'}/ptl-calculator/order` : '/ptl-calculator/order', { 
+                                                onClick={() => {
+                                                    const multiplier = dimensionUnit === 'inch' ? 2.54 : 1;
+                                                    const convertedBoxes = boxes.map(b => ({
+                                                        ...b,
+                                                        l: parseFloat(b.l) * multiplier || 0,
+                                                        b: parseFloat(b.b) * multiplier || 0,
+                                                        h: parseFloat(b.h) * multiplier || 0
+                                                    }));
+
+                                                    navigate(isDashboard ? `/${user?.role || 'customer'}/ptl-calculator/order` : '/ptl-calculator/order', { 
                                                     state: { 
                                                         rateResult, 
-                                                        boxes, 
+                                                        boxes: convertedBoxes, 
                                                         totalWeight, 
                                                         originPin, 
                                                         destPin, 
@@ -622,7 +639,8 @@ const DelhiveryCalculator = ({ isDashboard = false }) => {
                                                         dropOff,
                                                         freightMode
                                                     } 
-                                                })}
+                                                });
+                                                }}
                                                 className="w-full bg-[#0B1E43] hover:bg-[#152a55] text-white py-4 rounded-xl font-bold text-lg transition-all shadow-lg shadow-[#0B1E43]/20 flex items-center justify-center gap-2"
                                             >
                                                 Book Shipment <ArrowRight size={20} />

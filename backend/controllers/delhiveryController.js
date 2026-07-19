@@ -260,9 +260,10 @@ exports.createPtlBooking = async (req, res) => {
             let errorMessage = whError?.error?.message || "";
             if (Array.isArray(errorMessage)) errorMessage = errorMessage[0] || "";
             
-            // If Duplicate PAN/GST, we MUST use a unique PAN to bypass Delhivery's strict 1-warehouse-per-PAN rule
-            // since we lost the original randomly generated warehouse name.
-            if (errorMessage.includes("Duplicate PAN") || errorMessage.includes("Duplicate GST")) {
+            if (typeof errorMessage === 'string' && (errorMessage.includes("already exists") || errorMessage.includes("CLIENT_STORES_CREATE"))) {
+                console.log("Warehouse already exists, reusing it:", dynamicWarehouseName);
+                // Proceed normally
+            } else if (typeof errorMessage === 'string' && (errorMessage.includes("Duplicate PAN") || errorMessage.includes("Duplicate GST"))) {
                 console.log("Retrying warehouse creation with a fallback generated PAN to bypass collision...");
                 const randomDigits = Math.floor(1000 + Math.random() * 9000);
                 const fallbackPan = `ABCPA${randomDigits}K`; // More realistic valid PAN structure
@@ -329,9 +330,11 @@ exports.createPtlBooking = async (req, res) => {
                 pin: billing_details?.pincode || origin_pin,
                 phone: billing_details?.mobile || pickup_details?.mobile || "9999999999",
                 gstin: billing_details?.gstin || gstin || "07AAAAA0000A1Z5",
-                pan: billing_details?.pan || gstin || "07AAAAA0000A1Z5", // Fallback mapping for Delhivery validation bug
+                pan: (/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(billing_details?.pan)) ? billing_details.pan : 
+                     (typeof (billing_details?.gstin || gstin) === 'string' && (billing_details?.gstin || gstin).length >= 12 ? (billing_details?.gstin || gstin).substring(2, 12).toUpperCase() : "AAAAA0000A"),
                 gst_number: billing_details?.gstin || gstin || "07AAAAA0000A1Z5",
-                pan_number: billing_details?.pan || gstin || "07AAAAA0000A1Z5"
+                pan_number: (/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(billing_details?.pan)) ? billing_details.pan : 
+                     (typeof (billing_details?.gstin || gstin) === 'string' && (billing_details?.gstin || gstin).length >= 12 ? (billing_details?.gstin || gstin).substring(2, 12).toUpperCase() : "AAAAA0000A")
             },
             fm_pickup: fm_pickup !== undefined ? fm_pickup : true,
             invoices: [
@@ -454,9 +457,13 @@ exports.checkManifestStatus = async (req, res) => {
         const delhiveryService = require('../services/delhiveryService');
         const statusResponse = await delhiveryService.getManifestStatus(booking.delhivery_job_id);
         
+        console.log(`\n🔍 CHECKING MANIFEST STATUS FOR JOB_ID: ${booking.delhivery_job_id}`);
+        console.log(JSON.stringify(statusResponse, null, 2));
+        console.log("=================================\n");
+
         if (statusResponse && statusResponse.data) {
             const data = statusResponse.data;
-            if (data.status === 'Complete' && data.lrnum) {
+            if ((data.status === 'Complete' || data.status === 'SUCCESS' || data.status === 'Success') && data.lrnum) {
                 booking.delhivery_lr_number = data.lrnum;
                 booking.delhivery_status = 'BOOKED';
                 await booking.save();
