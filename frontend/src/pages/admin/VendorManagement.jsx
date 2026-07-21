@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import useInfiniteScroll from '../../hooks/useInfiniteScroll';
-import { 
-  ShieldCheck, Truck, Mail, Phone, MapPin, Building, Calendar, 
+import {
+  ShieldCheck, Truck, Mail, Phone, MapPin, Building, Calendar,
   Search, ExternalLink, LogIn, CheckCircle2, AlertCircle, Upload, RefreshCw, Plus, X, Loader2, Activity, Edit, Download
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
@@ -19,7 +19,7 @@ const VendorManagement = () => {
   const [plans, setPlans] = useState([]);
   const [assigningRmId, setAssigningRmId] = useState(null);
   const [updatingPlanId, setUpdatingPlanId] = useState(null);
-  
+
   // Activity Modal State
   const [activityModalOpen, setActivityModalOpen] = useState(false);
   const [activityData, setActivityData] = useState(null);
@@ -90,14 +90,14 @@ const VendorManagement = () => {
       const { data } = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/admin/vendors?page=${targetPage}&limit=10&search=${debouncedSearchQuery}&status=${statusFilter}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      
+
       if (targetPage === 1 || isReset) {
         setVendors(data.data || []);
       } else {
         setVendors(prev => [...prev, ...(data.data || [])]);
       }
       setHasMore(targetPage < data.totalPages);
-      
+
       setLoading(false);
       setLoadingMore(false);
     } catch (err) {
@@ -155,13 +155,13 @@ const VendorManagement = () => {
         creditFormData,
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      
-      setVendors(prev => prev.map(v => 
-        v._id === creditVendorId 
+
+      setVendors(prev => prev.map(v =>
+        v._id === creditVendorId
           ? { ...v, takesCreditDays: creditFormData.takesCreditDays, givesCreditDays: creditFormData.givesCreditDays }
           : v
       ));
-      
+
       setShowCreditModal(false);
     } catch (err) {
       console.error('Error updating credit:', err);
@@ -211,9 +211,9 @@ const VendorManagement = () => {
       const token = sessionStorage.getItem('adminToken');
       const config = { headers: { Authorization: `Bearer ${token}` } };
       const { data } = await axios.put(`${import.meta.env.VITE_API_BASE_URL}/admin/vendors/${vendorId}/plan`, { planId }, config);
-      
+
       alert('Plan updated successfully!');
-      
+
       // Update local state
       setVendors(prev => prev.map(v => v._id === vendorId ? { ...v, activePlan: data.vendor.activePlan, planEndDate: data.vendor.planEndDate, topupEnquiryLimit: data.vendor.topupEnquiryLimit } : v));
     } catch (err) {
@@ -246,7 +246,7 @@ const VendorManagement = () => {
         }
       };
       const { data } = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/admin/impersonate/${vendorId}`, config);
-      
+
       // Save vendor's token into userToken
       localStorage.setItem('userToken', data.token);
       // Open vendor dashboard in the same tab
@@ -261,10 +261,10 @@ const VendorManagement = () => {
   const handleSetStatus = async (vendorId, status) => {
     // Optimistic Update
     const previousVendors = [...vendors];
-    setVendors(prev => prev.map(v => v._id === vendorId ? { 
-      ...v, 
-      isVerified: status === 'Approved', 
-      verificationStatus: status 
+    setVendors(prev => prev.map(v => v._id === vendorId ? {
+      ...v,
+      isVerified: status === 'Approved',
+      verificationStatus: status
     } : v));
 
     try {
@@ -289,7 +289,7 @@ const VendorManagement = () => {
       const token = sessionStorage.getItem('adminToken');
       const config = { headers: { Authorization: `Bearer ${token}` } };
       await axios.put(`${import.meta.env.VITE_API_BASE_URL}/rm/assign`, { vendorId, rmId }, config);
-      
+
       // Update local state
       setVendors(prev => prev.map(v => v._id === vendorId ? { ...v, assignedRM: rmId ? { _id: rmId } : null } : v));
     } catch (err) {
@@ -311,7 +311,7 @@ const VendorManagement = () => {
     try {
       setUploadingVendorId(vendorId);
       const token = sessionStorage.getItem('adminToken');
-      
+
       // 1. Upload the file
       const uploadRes = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/auth/upload`, formData, {
         headers: {
@@ -329,7 +329,7 @@ const VendorManagement = () => {
         headers: { Authorization: `Bearer ${token}` }
       });
       const vendorToken = impersonateRes.data.token;
-      
+
       await axios.put(`${import.meta.env.VITE_API_BASE_URL}/auth/profile`, {
         uploadedDocument: uploadedUrl
       }, {
@@ -375,15 +375,15 @@ const VendorManagement = () => {
     try {
       setVerifyingVendor(true);
       const token = sessionStorage.getItem('adminToken');
-      
+
       let payload = { ...verifyFormData };
-      
+
       if (isBranchOf) {
         payload = {
-            pan: branchFormData.pan, // The branch PAN (editable, defaults to duplicate's PAN)
-            gst: branchFormData.gst, // The NEW unique branch GST
-            branchAddress: branchFormData.address, // The NEW branch address (optional)
-            isBranchOf: isBranchOf
+          pan: branchFormData.pan, // The branch PAN (editable, defaults to duplicate's PAN)
+          gst: branchFormData.gst, // The NEW unique branch GST
+          branchAddress: branchFormData.address, // The NEW branch address (optional)
+          isBranchOf: isBranchOf
         };
       }
 
@@ -395,7 +395,7 @@ const VendorManagement = () => {
 
       // Update local state
       setVendors(prev => prev.map(v => v._id === verifyVendorId ? data.vendor : v));
-      
+
       alert('Documents verified successfully!');
       setShowVerifyModal(false);
       setShowDuplicateModal(false);
@@ -411,10 +411,10 @@ const VendorManagement = () => {
         setDuplicateVendorInfo(err.response.data.duplicateVendor);
         setShowDuplicateModal(true);
         setShowBranchForm(false);
-        setBranchFormData({ 
-            gst: '', 
-            pan: err.response.data.duplicateVendor?.pan || '', 
-            address: '' 
+        setBranchFormData({
+          gst: '',
+          pan: err.response.data.duplicateVendor?.pan || '',
+          address: ''
         });
       } else {
         alert(err.response?.data?.message || 'Failed to verify documents');
@@ -471,7 +471,7 @@ const VendorManagement = () => {
       const config = { headers: { Authorization: `Bearer ${token}` } };
       await axios.put(`${import.meta.env.VITE_API_BASE_URL}/admin/vendors/${vendorId}/enquiry-limit`, { limit }, config);
       alert('Limit updated successfully!');
-      
+
       // Update local state
       setVendors(prev => prev.map(v => v._id === vendorId ? { ...v, topupEnquiryLimit: Number(limit) } : v));
     } catch (err) {
@@ -488,7 +488,7 @@ const VendorManagement = () => {
       const { data } = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/admin/vendors?page=1&limit=100000&search=${debouncedSearchQuery}&status=${statusFilter}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      
+
       const allVendors = data.data || [];
       if (allVendors.length === 0) {
         alert("No data available to download.");
@@ -565,15 +565,15 @@ const VendorManagement = () => {
             <option value="Paid Vendors">Paid Vendors</option>
           </select>
 
-          <button 
-            onClick={handleRefresh} 
+          <button
+            onClick={handleRefresh}
             className="p-2.5 bg-white border border-slate-200/80 hover:bg-slate-50 text-slate-650 rounded-xl transition-all cursor-pointer shadow-sm"
             title="Refresh Vendors"
           >
             <RefreshCw size={18} className={loading ? "animate-spin text-[#0066FF]" : ""} />
           </button>
-          
-          <button 
+
+          <button
             onClick={handleDownloadExcel}
             disabled={downloadingExcel}
             className="px-4 py-2.5 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white rounded-xl transition-all shadow-sm font-bold flex items-center gap-2 text-xs"
@@ -581,8 +581,8 @@ const VendorManagement = () => {
             {downloadingExcel ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
             Download Excel
           </button>
-          
-          <button 
+
+          <button
             onClick={() => setShowAddModal(true)}
             className="px-4 py-2.5 bg-[#0066FF] hover:bg-blue-600 text-white rounded-xl transition-all shadow-sm font-bold flex items-center gap-2 text-xs"
           >
@@ -642,10 +642,10 @@ const VendorManagement = () => {
                   const lastName = vendor.lastName || vendor.name?.split(' ').slice(1).join(' ') || 'N/A';
                   const baseLimit = vendor.activePlan?.inquiryLimit || 5;
                   const totalLimit = baseLimit + (vendor.topupEnquiryLimit || 0);
-                  
+
                   return (
-                    <tr 
-                      key={vendor._id} 
+                    <tr
+                      key={vendor._id}
                       ref={index === filteredVendors.length - 1 ? lastVendorElementRef : null}
                       className="hover:bg-slate-50/50 transition-colors group"
                     >
@@ -691,7 +691,7 @@ const VendorManagement = () => {
                           title="Manage Vendor Credit"
                         >
                           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                           </svg>
                         </button>
                       </td>
@@ -736,7 +736,7 @@ const VendorManagement = () => {
                       </td>
                       <td className="p-4">
                         <div className="flex items-center gap-2">
-                          <input 
+                          <input
                             type="number"
                             defaultValue={totalLimit}
                             className="w-16 bg-white border border-slate-200 rounded p-1 text-[10px] text-center font-bold focus:outline-none focus:border-[#0066FF]"
@@ -753,21 +753,21 @@ const VendorManagement = () => {
                       </td>
                       <td className="p-4 font-mono text-[10px] text-slate-500">{vendor._id.slice(-8).toUpperCase()}</td>
                       <td className="p-4 text-slate-450 font-medium">
-                          <div className="flex flex-col gap-1">
-                            <span>{vendor.lastActive ? new Date(vendor.lastActive).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: true }) : 'N/A'}</span>
-                            {vendor.lastLoginSource && (
-                              <span className={`w-fit px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-widest ${vendor.lastLoginSource === 'app' ? 'bg-purple-100 text-purple-600' : 'bg-blue-100 text-blue-600'}`}>
-                                {vendor.lastLoginSource === 'app' ? '📱 App' : '🌐 Web'}
-                              </span>
-                            )}
-                          </div>
+                        <div className="flex flex-col gap-1">
+                          <span>{vendor.lastActive ? new Date(vendor.lastActive).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: true }) : 'N/A'}</span>
+                          {vendor.lastLoginSource && (
+                            <span className={`w-fit px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-widest ${vendor.lastLoginSource === 'app' ? 'bg-purple-100 text-purple-600' : 'bg-blue-100 text-blue-600'}`}>
+                              {vendor.lastLoginSource === 'app' ? '📱 App' : '🌐 Web'}
+                            </span>
+                          )}
+                        </div>
                       </td>
                       {/* Document Viewer */}
                       <td className="p-4">
                         {vendor.uploadedDocument ? (
-                          <a 
-                            href={vendor.uploadedDocument} 
-                            target="_blank" 
+                          <a
+                            href={vendor.uploadedDocument}
+                            target="_blank"
                             rel="noopener noreferrer"
                             className="text-[#0066FF] hover:underline flex items-center gap-1 uppercase text-[10px] font-black tracking-wider"
                           >
@@ -788,41 +788,37 @@ const VendorManagement = () => {
                         <div className="flex flex-col gap-1 w-fit mx-auto">
                           <button
                             onClick={() => handleSetStatus(vendor._id, 'Approved')}
-                            className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider cursor-pointer border transition-all ${
-                              (vendor.verificationStatus === 'Approved' || (vendor.isVerified && !vendor.verificationStatus))
-                                ? 'bg-green-500 text-white border-green-500 shadow-sm shadow-green-500/10' 
+                            className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider cursor-pointer border transition-all ${(vendor.verificationStatus === 'Approved' || (vendor.isVerified && !vendor.verificationStatus))
+                                ? 'bg-green-500 text-white border-green-500 shadow-sm shadow-green-500/10'
                                 : 'bg-green-50 text-green-650 border-green-100 hover:bg-green-100/50'
-                            }`}
+                              }`}
                           >
                             Approve
                           </button>
                           <button
                             onClick={() => handleSetStatus(vendor._id, 'Pending')}
-                            className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider cursor-pointer border transition-all ${
-                              (vendor.verificationStatus === 'Pending' || (!vendor.isVerified && !vendor.verificationStatus))
-                                ? 'bg-amber-500 text-white border-amber-500 shadow-sm shadow-amber-500/10' 
+                            className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider cursor-pointer border transition-all ${(vendor.verificationStatus === 'Pending' || (!vendor.isVerified && !vendor.verificationStatus))
+                                ? 'bg-amber-500 text-white border-amber-500 shadow-sm shadow-amber-500/10'
                                 : 'bg-amber-50 text-amber-600 border-amber-100 hover:bg-amber-100/50'
-                            }`}
+                              }`}
                           >
                             Pending
                           </button>
                           <button
                             onClick={() => handleSetStatus(vendor._id, 'Pre Approved')}
-                            className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider cursor-pointer border transition-all ${
-                              (vendor.verificationStatus === 'Pre Approved')
-                                ? 'bg-purple-500 text-white border-purple-500 shadow-sm shadow-purple-500/10' 
+                            className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider cursor-pointer border transition-all ${(vendor.verificationStatus === 'Pre Approved')
+                                ? 'bg-purple-500 text-white border-purple-500 shadow-sm shadow-purple-500/10'
                                 : 'bg-purple-50 text-purple-600 border-purple-100 hover:bg-purple-100/50'
-                            }`}
+                              }`}
                           >
                             Pre Approve
                           </button>
                           <button
                             onClick={() => handleSetStatus(vendor._id, 'Declined')}
-                            className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider cursor-pointer border transition-all ${
-                              vendor.verificationStatus === 'Declined'
-                                ? 'bg-red-500 text-white border-red-500 shadow-sm shadow-red-500/10' 
+                            className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider cursor-pointer border transition-all ${vendor.verificationStatus === 'Declined'
+                                ? 'bg-red-500 text-white border-red-500 shadow-sm shadow-red-500/10'
                                 : 'bg-red-50 text-red-650 border-red-100 hover:bg-red-100/50'
-                            }`}
+                              }`}
                           >
                             Decline
                           </button>
@@ -845,13 +841,13 @@ const VendorManagement = () => {
                       {/* Upload Certificate column */}
                       <td className="p-4 text-center">
                         <label className="cursor-pointer bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200/80 text-[10px] font-black px-3 py-1.5 rounded-lg inline-flex items-center gap-1.5 shadow-sm transition-all">
-                          <Upload size={12} /> 
+                          <Upload size={12} />
                           {uploadingVendorId === vendor._id ? 'Uploading...' : 'Upload'}
-                          <input 
-                            type="file" 
-                            className="hidden" 
-                            accept=".pdf,image/*" 
-                            onChange={(e) => handleCertificateUpload(e, vendor._id)} 
+                          <input
+                            type="file"
+                            className="hidden"
+                            accept=".pdf,image/*"
+                            onChange={(e) => handleCertificateUpload(e, vendor._id)}
                             disabled={uploadingVendorId === vendor._id}
                           />
                         </label>
@@ -883,42 +879,42 @@ const VendorManagement = () => {
             <form onSubmit={handleAddVendor} className="p-5 space-y-4">
               <div>
                 <label className="block text-xs font-bold text-slate-600 mb-1">Full Name *</label>
-                <input required type="text" value={addFormData.name} onChange={e => setAddFormData({...addFormData, name: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-500" placeholder="Enter name" />
+                <input required type="text" value={addFormData.name} onChange={e => setAddFormData({ ...addFormData, name: e.target.value })} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-500" placeholder="Enter name" />
               </div>
               <div>
                 <label className="block text-xs font-bold text-slate-600 mb-1">Email Address *</label>
-                <input required type="email" value={addFormData.email} onChange={e => setAddFormData({...addFormData, email: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-500" placeholder="Enter email" />
+                <input required type="email" value={addFormData.email} onChange={e => setAddFormData({ ...addFormData, email: e.target.value })} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-500" placeholder="Enter email" />
               </div>
               <div>
                 <label className="block text-xs font-bold text-slate-600 mb-1">Phone Number *</label>
-                <input required type="tel" value={addFormData.phone} onChange={e => setAddFormData({...addFormData, phone: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-500" placeholder="Enter phone" />
+                <input required type="tel" value={addFormData.phone} onChange={e => setAddFormData({ ...addFormData, phone: e.target.value })} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-500" placeholder="Enter phone" />
               </div>
               <div>
                 <label className="block text-xs font-bold text-slate-600 mb-1">Password</label>
-                <input type="text" value={addFormData.password} onChange={e => setAddFormData({...addFormData, password: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-500" placeholder="Leave blank to auto-generate" />
+                <input type="text" value={addFormData.password} onChange={e => setAddFormData({ ...addFormData, password: e.target.value })} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-500" placeholder="Leave blank to auto-generate" />
               </div>
               <div>
                 <label className="block text-xs font-bold text-slate-600 mb-1">Company Name</label>
-                <input type="text" value={addFormData.company} onChange={e => setAddFormData({...addFormData, company: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-500" placeholder="Enter company name (optional)" />
+                <input type="text" value={addFormData.company} onChange={e => setAddFormData({ ...addFormData, company: e.target.value })} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-500" placeholder="Enter company name (optional)" />
               </div>
               <div className="grid grid-cols-3 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-600 mb-1">Country</label>
-                  <input type="text" value={addFormData.country} onChange={e => setAddFormData({...addFormData, country: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-500" placeholder="Enter country" />
+                  <input type="text" value={addFormData.country} onChange={e => setAddFormData({ ...addFormData, country: e.target.value })} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-500" placeholder="Enter country" />
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-600 mb-1">State</label>
-                  <input type="text" value={addFormData.state} onChange={e => setAddFormData({...addFormData, state: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-500" placeholder="Enter state" />
+                  <input type="text" value={addFormData.state} onChange={e => setAddFormData({ ...addFormData, state: e.target.value })} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-500" placeholder="Enter state" />
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-600 mb-1">City</label>
-                  <input type="text" value={addFormData.city} onChange={e => setAddFormData({...addFormData, city: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-500" placeholder="Enter city" />
+                  <input type="text" value={addFormData.city} onChange={e => setAddFormData({ ...addFormData, city: e.target.value })} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-500" placeholder="Enter city" />
                 </div>
               </div>
               <div className="pt-2 flex justify-end gap-3">
                 <button type="button" onClick={() => setShowAddModal(false)} className="px-4 py-2 text-sm font-bold text-slate-600 bg-slate-100 rounded-xl hover:bg-slate-200 transition-colors">Cancel</button>
                 <button type="submit" disabled={addingVendor} className="px-4 py-2 text-sm font-bold text-white bg-blue-600 rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center gap-2">
-                  {addingVendor ? <Loader2 size={16} className="animate-spin" /> : <ShieldCheck size={16} />} 
+                  {addingVendor ? <Loader2 size={16} className="animate-spin" /> : <ShieldCheck size={16} />}
                   {addingVendor ? 'Creating...' : 'Create Vendor'}
                 </button>
               </div>
@@ -933,14 +929,14 @@ const VendorManagement = () => {
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
             <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50">
               <h2 className="text-lg font-black text-[#0B1E43]">Manage Credit Limits</h2>
-              <button 
+              <button
                 onClick={() => setShowCreditModal(false)}
                 className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-200/50 rounded-xl transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
-            
+
             <form onSubmit={handleUpdateCredit} className="p-5 space-y-4">
               <div>
                 <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">Takes Credit (Days)</label>
@@ -997,7 +993,7 @@ const VendorManagement = () => {
             <div className="flex justify-between items-center p-6 border-b border-slate-100 bg-gradient-to-r from-indigo-50/50 to-white">
               <div>
                 <h3 className="text-xl font-extrabold text-[#0B1E43] flex items-center gap-2">
-                  <Activity className="text-indigo-600" size={24} /> 
+                  <Activity className="text-indigo-600" size={24} />
                   Vendor Activity History
                 </h3>
                 {activityData?.vendor && (
@@ -1006,14 +1002,14 @@ const VendorManagement = () => {
                   </p>
                 )}
               </div>
-              <button 
+              <button
                 onClick={() => setActivityModalOpen(false)}
                 className="p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-colors cursor-pointer"
               >
                 <X size={20} />
               </button>
             </div>
-            
+
             <div className="p-6 overflow-y-auto">
               {loadingActivity ? (
                 <div className="flex flex-col items-center justify-center py-12">
@@ -1031,7 +1027,7 @@ const VendorManagement = () => {
                       <div>
                         <p className="text-[10px] uppercase tracking-widest text-slate-400 font-black mb-1">Last Login Date</p>
                         <p className="font-bold text-slate-700">
-                          {activityData.vendor.lastActive 
+                          {activityData.vendor.lastActive
                             ? new Date(activityData.vendor.lastActive).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })
                             : 'Never'
                           }
@@ -1046,12 +1042,30 @@ const VendorManagement = () => {
                     </div>
                   </div>
 
+                  {/* Stats Grid */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-white border border-slate-100 p-4 rounded-xl shadow-sm">
+                      <p className="text-[10px] uppercase tracking-widest text-slate-400 font-black mb-1">Total Accepted</p>
+                      <p className="text-2xl font-black text-slate-700">{activityData.history.length}</p>
+                    </div>
+                    <div className="bg-white border border-slate-100 p-4 rounded-xl shadow-sm">
+                      <p className="text-[10px] uppercase tracking-widest text-slate-400 font-black mb-1">This Month Accepted</p>
+                      <p className="text-2xl font-black text-indigo-600">
+                        {activityData.history.filter(h => {
+                          const date = new Date(h.acceptedAt);
+                          const now = new Date();
+                          return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
+                        }).length}
+                      </p>
+                    </div>
+                  </div>
+
                   {/* Accepted Enquiries Table */}
                   <div>
                     <h4 className="text-sm font-extrabold text-[#0B1E43] uppercase tracking-wider mb-4 flex items-center justify-between">
                       Accepted Enquiries ({activityData.history.length})
                     </h4>
-                    
+
                     {activityData.history.length === 0 ? (
                       <div className="bg-slate-50 border border-dashed border-slate-200 rounded-2xl p-8 text-center">
                         <p className="text-slate-400 font-bold">No accepted enquiries found for this vendor.</p>
@@ -1123,14 +1137,14 @@ const VendorManagement = () => {
                 <h3 className="text-xl font-black text-[#0B1E43]">Edit Vendor Details</h3>
                 <p className="text-xs text-slate-500 font-bold mt-1">Update vendor's profile information</p>
               </div>
-              <button 
+              <button
                 onClick={() => setShowEditModal(false)}
                 className="p-2 hover:bg-slate-200 rounded-full transition-colors text-slate-400"
               >
                 <X size={20} />
               </button>
             </div>
-            
+
             <form onSubmit={handleEditVendor} className="p-6 space-y-4">
               <div>
                 <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">Company Name</label>
@@ -1138,7 +1152,7 @@ const VendorManagement = () => {
                   type="text"
                   required
                   value={editFormData.company}
-                  onChange={(e) => setEditFormData({...editFormData, company: e.target.value})}
+                  onChange={(e) => setEditFormData({ ...editFormData, company: e.target.value })}
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-700 focus:outline-none focus:border-[#0066FF] focus:ring-1 focus:ring-[#0066FF] transition-all"
                   placeholder="Company Name"
                 />
@@ -1150,7 +1164,7 @@ const VendorManagement = () => {
                   type="email"
                   required
                   value={editFormData.email}
-                  onChange={(e) => setEditFormData({...editFormData, email: e.target.value})}
+                  onChange={(e) => setEditFormData({ ...editFormData, email: e.target.value })}
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-700 focus:outline-none focus:border-[#0066FF] focus:ring-1 focus:ring-[#0066FF] transition-all"
                   placeholder="vendor@company.com"
                 />
@@ -1161,7 +1175,7 @@ const VendorManagement = () => {
                 <input
                   type="text"
                   value={editFormData.phone}
-                  onChange={(e) => setEditFormData({...editFormData, phone: e.target.value})}
+                  onChange={(e) => setEditFormData({ ...editFormData, phone: e.target.value })}
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-700 focus:outline-none focus:border-[#0066FF] focus:ring-1 focus:ring-[#0066FF] transition-all"
                   placeholder="+91..."
                 />
@@ -1172,7 +1186,7 @@ const VendorManagement = () => {
                 <input
                   type="text"
                   value={editFormData.country}
-                  onChange={(e) => setEditFormData({...editFormData, country: e.target.value})}
+                  onChange={(e) => setEditFormData({ ...editFormData, country: e.target.value })}
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-700 focus:outline-none focus:border-[#0066FF] focus:ring-1 focus:ring-[#0066FF] transition-all"
                   placeholder="India"
                 />
@@ -1212,17 +1226,17 @@ const VendorManagement = () => {
             <form onSubmit={handleVerifyDocumentsSubmit} className="p-5 space-y-4">
               <div>
                 <label className="block text-xs font-bold text-slate-600 mb-1">GST Number</label>
-                <input required type="text" value={verifyFormData.gst} onChange={e => setVerifyFormData({...verifyFormData, gst: e.target.value.toUpperCase()})} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-500" placeholder="Enter GST" />
+                <input required type="text" value={verifyFormData.gst} onChange={e => setVerifyFormData({ ...verifyFormData, gst: e.target.value.toUpperCase() })} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-500" placeholder="Enter GST" />
               </div>
               <div>
                 <label className="block text-xs font-bold text-slate-600 mb-1">PAN Number</label>
-                <input required type="text" value={verifyFormData.pan} onChange={e => setVerifyFormData({...verifyFormData, pan: e.target.value.toUpperCase()})} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-500" placeholder="Enter PAN" />
+                <input required type="text" value={verifyFormData.pan} onChange={e => setVerifyFormData({ ...verifyFormData, pan: e.target.value.toUpperCase() })} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-500" placeholder="Enter PAN" />
               </div>
-              
+
               <div className="pt-2 flex justify-end gap-3">
                 <button type="button" onClick={() => setShowVerifyModal(false)} className="px-4 py-2 text-sm font-bold text-slate-600 bg-slate-100 rounded-xl hover:bg-slate-200 transition-colors">Cancel</button>
                 <button type="submit" disabled={verifyingVendor} className="px-4 py-2 text-sm font-bold text-white bg-blue-600 rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center gap-2">
-                  {verifyingVendor ? <Loader2 size={16} className="animate-spin" /> : <ShieldCheck size={16} />} 
+                  {verifyingVendor ? <Loader2 size={16} className="animate-spin" /> : <ShieldCheck size={16} />}
                   {verifyingVendor ? 'Verifying...' : 'Verify & Approve'}
                 </button>
               </div>
@@ -1239,83 +1253,83 @@ const VendorManagement = () => {
               <AlertCircle className="text-amber-500" size={24} />
               <h2 className="text-lg font-black text-amber-800">Duplicate Record Found</h2>
             </div>
-            
+
             <div className="p-5 space-y-4">
               {!showBranchForm ? (
-                  <>
-                      <p className="text-sm font-medium text-slate-700">
-                        The PAN you entered is already linked to another vendor account:
-                      </p>
-                      <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 text-sm">
-                        <p><strong>Company:</strong> {duplicateVendorInfo.company || 'N/A'}</p>
-                        <p><strong>Email:</strong> {duplicateVendorInfo.email || 'N/A'}</p>
-                        <p><strong>Phone:</strong> {duplicateVendorInfo.phone || 'N/A'}</p>
-                        <p><strong>GST:</strong> {duplicateVendorInfo.gst || 'N/A'}</p>
-                        <p><strong>PAN:</strong> {duplicateVendorInfo.pan || 'N/A'}</p>
-                      </div>
-                      <p className="text-sm font-bold text-slate-800">
-                        Is this vendor another branch of the above company?
-                      </p>
-                      <div className="pt-2 flex flex-col gap-3">
-                        <button 
-                          onClick={() => setShowBranchForm(true)}
-                          className="w-full px-4 py-2.5 text-sm font-bold text-white bg-amber-500 rounded-xl hover:bg-amber-600 transition-colors flex items-center justify-center gap-2 shadow-sm shadow-amber-500/20"
-                        >
-                          <Building size={16} /> 
-                          Yes, this is another branch
-                        </button>
-                        <button 
-                          type="button" 
-                          onClick={() => {
-                              setShowDuplicateModal(false);
-                              setShowBranchForm(false);
-                          }} 
-                          className="w-full px-4 py-2.5 text-sm font-bold text-slate-600 bg-slate-100 rounded-xl hover:bg-slate-200 transition-colors text-center"
-                        >
-                          No, cancel verification
-                        </button>
-                      </div>
-                  </>
+                <>
+                  <p className="text-sm font-medium text-slate-700">
+                    The PAN you entered is already linked to another vendor account:
+                  </p>
+                  <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 text-sm">
+                    <p><strong>Company:</strong> {duplicateVendorInfo.company || 'N/A'}</p>
+                    <p><strong>Email:</strong> {duplicateVendorInfo.email || 'N/A'}</p>
+                    <p><strong>Phone:</strong> {duplicateVendorInfo.phone || 'N/A'}</p>
+                    <p><strong>GST:</strong> {duplicateVendorInfo.gst || 'N/A'}</p>
+                    <p><strong>PAN:</strong> {duplicateVendorInfo.pan || 'N/A'}</p>
+                  </div>
+                  <p className="text-sm font-bold text-slate-800">
+                    Is this vendor another branch of the above company?
+                  </p>
+                  <div className="pt-2 flex flex-col gap-3">
+                    <button
+                      onClick={() => setShowBranchForm(true)}
+                      className="w-full px-4 py-2.5 text-sm font-bold text-white bg-amber-500 rounded-xl hover:bg-amber-600 transition-colors flex items-center justify-center gap-2 shadow-sm shadow-amber-500/20"
+                    >
+                      <Building size={16} />
+                      Yes, this is another branch
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowDuplicateModal(false);
+                        setShowBranchForm(false);
+                      }}
+                      className="w-full px-4 py-2.5 text-sm font-bold text-slate-600 bg-slate-100 rounded-xl hover:bg-slate-200 transition-colors text-center"
+                    >
+                      No, cancel verification
+                    </button>
+                  </div>
+                </>
               ) : (
-                  <form onSubmit={(e) => handleVerifyDocumentsSubmit(e, duplicateVendorInfo._id)} className="space-y-4">
-                      <div className="bg-blue-50/50 p-3 rounded-lg border border-blue-100 mb-4">
-                          <p className="text-xs font-bold text-blue-800 mb-1">Creating Branch for: {duplicateVendorInfo.company}</p>
-                          <p className="text-[10px] font-medium text-blue-600">Please provide the branch's unique GST. PAN can be the same or edited. Address is optional.</p>
-                      </div>
+                <form onSubmit={(e) => handleVerifyDocumentsSubmit(e, duplicateVendorInfo._id)} className="space-y-4">
+                  <div className="bg-blue-50/50 p-3 rounded-lg border border-blue-100 mb-4">
+                    <p className="text-xs font-bold text-blue-800 mb-1">Creating Branch for: {duplicateVendorInfo.company}</p>
+                    <p className="text-[10px] font-medium text-blue-600">Please provide the branch's unique GST. PAN can be the same or edited. Address is optional.</p>
+                  </div>
 
-                      <div>
-                        <label className="block text-xs font-bold text-slate-600 mb-1">Branch GST Number *</label>
-                        <input required type="text" value={branchFormData.gst} onChange={e => setBranchFormData({...branchFormData, gst: e.target.value.toUpperCase()})} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-500" placeholder="Enter branch's unique GST" />
-                      </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-600 mb-1">Branch GST Number *</label>
+                    <input required type="text" value={branchFormData.gst} onChange={e => setBranchFormData({ ...branchFormData, gst: e.target.value.toUpperCase() })} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-500" placeholder="Enter branch's unique GST" />
+                  </div>
 
-                      <div>
-                        <label className="block text-xs font-bold text-slate-600 mb-1">Branch PAN Number *</label>
-                        <input required type="text" value={branchFormData.pan} onChange={e => setBranchFormData({...branchFormData, pan: e.target.value.toUpperCase()})} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-500" placeholder="Enter branch's PAN" />
-                      </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-600 mb-1">Branch PAN Number *</label>
+                    <input required type="text" value={branchFormData.pan} onChange={e => setBranchFormData({ ...branchFormData, pan: e.target.value.toUpperCase() })} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-500" placeholder="Enter branch's PAN" />
+                  </div>
 
-                      <div>
-                        <label className="block text-xs font-bold text-slate-600 mb-1">Branch Address (Optional)</label>
-                        <textarea value={branchFormData.address} onChange={e => setBranchFormData({...branchFormData, address: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-500 h-20 resize-none" placeholder="Enter full branch address" />
-                      </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-600 mb-1">Branch Address (Optional)</label>
+                    <textarea value={branchFormData.address} onChange={e => setBranchFormData({ ...branchFormData, address: e.target.value })} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-500 h-20 resize-none" placeholder="Enter full branch address" />
+                  </div>
 
-                      <div className="pt-4 flex flex-col gap-3">
-                        <button 
-                          type="submit"
-                          disabled={verifyingVendor}
-                          className="w-full px-4 py-2.5 text-sm font-bold text-white bg-blue-600 rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-                        >
-                          {verifyingVendor ? <Loader2 size={16} className="animate-spin" /> : <ShieldCheck size={16} />} 
-                          Verify & Link Branch
-                        </button>
-                        <button 
-                          type="button" 
-                          onClick={() => setShowBranchForm(false)} 
-                          className="w-full px-4 py-2.5 text-sm font-bold text-slate-600 bg-slate-100 rounded-xl hover:bg-slate-200 transition-colors text-center"
-                        >
-                          Back
-                        </button>
-                      </div>
-                  </form>
+                  <div className="pt-4 flex flex-col gap-3">
+                    <button
+                      type="submit"
+                      disabled={verifyingVendor}
+                      className="w-full px-4 py-2.5 text-sm font-bold text-white bg-blue-600 rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                    >
+                      {verifyingVendor ? <Loader2 size={16} className="animate-spin" /> : <ShieldCheck size={16} />}
+                      Verify & Link Branch
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowBranchForm(false)}
+                      className="w-full px-4 py-2.5 text-sm font-bold text-slate-600 bg-slate-100 rounded-xl hover:bg-slate-200 transition-colors text-center"
+                    >
+                      Back
+                    </button>
+                  </div>
+                </form>
               )}
             </div>
           </div>

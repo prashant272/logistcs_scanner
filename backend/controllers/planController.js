@@ -11,11 +11,26 @@ exports.getPlans = async (req, res) => {
         let query = {};
         if (userType) query.userType = userType;
         if (country) {
-            query.$or = [
+            let countryRegexes = [
                 { country: { $regex: new RegExp(`\\b${country}\\b`, 'i') } },
                 { country: { $regex: /Others/i } },
                 { country: { $regex: /Worldwide/i } }
             ];
+
+            const cLower = country.toLowerCase();
+            if (cLower === 'united states' || cLower === 'usa' || cLower === 'us') {
+                countryRegexes.push({ country: { $regex: /\bunited states\b/i } });
+                countryRegexes.push({ country: { $regex: /\busa\b/i } });
+                countryRegexes.push({ country: { $regex: /\bus\b/i } });
+            } else if (cLower === 'uae' || cLower === 'united arab emirates') {
+                countryRegexes.push({ country: { $regex: /\buae\b/i } });
+                countryRegexes.push({ country: { $regex: /\bunited arab emirates\b/i } });
+            } else if (cLower === 'uk' || cLower === 'united kingdom') {
+                countryRegexes.push({ country: { $regex: /\buk\b/i } });
+                countryRegexes.push({ country: { $regex: /\bunited kingdom\b/i } });
+            }
+            
+            query.$or = countryRegexes;
         }
         if (activeOnly === 'true') {
             query.status = 'Active';
@@ -220,7 +235,8 @@ exports.createRazorpayOrder = async (req, res) => {
         const keyId = process.env.RAZORPAY_KEY_ID || 'rzp_test_SQFIjwkG0C66Mu';
         const keySecret = process.env.RAZORPAY_KEY_SECRET || '1Z1SD6PB3KZG5IVSyZ7FitVD';
 
-        let gstAmount = Math.round((finalPrice * 18) / 100);
+        let isIndiaPlan = plan.country && (plan.country.toLowerCase() === 'india' || plan.country.toLowerCase() === 'in');
+        let gstAmount = isIndiaPlan ? Math.round((finalPrice * 18) / 100) : 0;
         let totalPriceWithGst = finalPrice + gstAmount;
 
         const amountInPaise = Math.round(totalPriceWithGst * 100);

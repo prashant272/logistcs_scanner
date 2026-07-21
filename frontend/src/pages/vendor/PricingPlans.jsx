@@ -711,12 +711,14 @@ const PricingPlans = () => {
                                 </span>
                             </div>
 
-                            <div className="flex justify-between items-center pb-3 border-b border-slate-100">
-                                <span className="text-slate-500 font-bold text-sm">GST (18%)</span>
-                                <span className="text-slate-800 font-black text-sm">
-                                    + {paymentModalData.currency === 'INR' ? '₹' : '$'}{paymentModalData.gstAmount.toLocaleString()}
-                                </span>
-                            </div>
+                            {paymentModalData.gstAmount > 0 && (
+                                <div className="flex justify-between items-center pb-3 border-b border-slate-100">
+                                    <span className="text-slate-500 font-bold text-sm">GST (18%)</span>
+                                    <span className="text-slate-800 font-black text-sm">
+                                        + {paymentModalData.currency === 'INR' ? '₹' : '$'}{paymentModalData.gstAmount.toLocaleString()}
+                                    </span>
+                                </div>
+                            )}
 
                             <div className="flex justify-between items-center pt-2">
                                 <span className="text-[#0066FF] font-black text-base">Total Amount</span>

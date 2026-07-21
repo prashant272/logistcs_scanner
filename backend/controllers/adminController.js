@@ -49,7 +49,7 @@ exports.getVendors = async (req, res) => {
         if (req.user && req.user.role === 'RM') {
             query.assignedRM = req.user.id;
         }
-        
+
         if (search) {
             query.$or = [
                 { name: { $regex: search, $options: 'i' } },
@@ -79,7 +79,7 @@ exports.getVendors = async (req, res) => {
             } else if (statusFilter === 'Premium Vendors') {
                 const Plan = require('../models/Plan');
                 // Find plans containing the word 'Premium'
-                const premiumPlans = await Plan.find({ 
+                const premiumPlans = await Plan.find({
                     price: { $gt: 0 },
                     name: { $regex: /premium/i }
                 }).select('_id');
@@ -89,7 +89,7 @@ exports.getVendors = async (req, res) => {
             } else if (statusFilter === 'Paid Vendors') {
                 const Plan = require('../models/Plan');
                 // Find plans NOT containing the word 'Premium' but with price > 0
-                const otherPaidPlans = await Plan.find({ 
+                const otherPaidPlans = await Plan.find({
                     price: { $gt: 0 },
                     name: { $not: /premium/i }
                 }).select('_id');
@@ -166,9 +166,9 @@ exports.getGuests = async (req, res) => {
     try {
         const Enquiry = require('../models/Enquiry');
         // Find enquiries where client is not set but guestEmail/guestName is provided
-        const enquiries = await Enquiry.find({ 
-            client: null, 
-            guestEmail: { $ne: '' } 
+        const enquiries = await Enquiry.find({
+            client: null,
+            guestEmail: { $ne: '' }
         }).sort({ createdAt: -1 });
 
         const uniqueGuestsMap = {};
@@ -183,7 +183,7 @@ exports.getGuests = async (req, res) => {
                 };
             }
         });
-        
+
         res.json(Object.values(uniqueGuestsMap));
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
@@ -258,7 +258,7 @@ exports.getVendorHistory = async (req, res) => {
     try {
         const User = require('../models/User');
         const Enquiry = require('../models/Enquiry');
-        
+
         const vendor = await User.findById(req.params.id).select('name company email lastActive createdAt');
         if (!vendor) {
             return res.status(404).json({ message: 'Vendor not found' });
@@ -365,7 +365,7 @@ exports.impersonateVendor = async (req, res) => {
         if (!vendor || vendor.role !== 'vendor') {
             return res.status(404).json({ message: 'Vendor not found' });
         }
-        
+
         // Generate userToken for this vendor with impersonated flag
         const token = jwt.sign({ id: vendor._id, impersonated: true }, process.env.JWT_SECRET, { expiresIn: '30d' });
         res.json({ token, user: vendor });
@@ -577,7 +577,7 @@ exports.getAdminDashboardStats = async (req, res) => {
         const Complaint = require('../models/Complaint');
         const FinanceApplication = require('../models/FinanceApplication');
         const User = require('../models/User');
-        
+
         let dateFilter = {};
         if (req.query.startDate && req.query.endDate) {
             const startDate = new Date(req.query.startDate);
@@ -585,7 +585,7 @@ exports.getAdminDashboardStats = async (req, res) => {
             endDate.setHours(23, 59, 59, 999);
             dateFilter = { createdAt: { $gte: startDate, $lte: endDate } };
         }
-        
+
         // Parallel queries for speed
         const [
             totalCustomers,
@@ -656,7 +656,7 @@ exports.getEnquiries = async (req, res) => {
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 10;
         const search = req.query.search || '';
-        
+
         let query = {};
         if (search) {
             query = {
@@ -678,7 +678,7 @@ exports.getEnquiries = async (req, res) => {
             .populate('client', 'name email company phone')
             .populate('vendor', 'name email company phone')
             .populate('responses.vendor', 'name email company phone');
-            
+
         const total = await Enquiry.countDocuments(query);
 
         res.json({
@@ -790,7 +790,7 @@ exports.updateVendorCreditDays = async (req, res) => {
 
         vendor.takesCreditDays = Number(takesCreditDays) || 0;
         vendor.givesCreditDays = Number(givesCreditDays) || 0;
-        
+
         await vendor.save();
 
         await logActivity('UPDATE_CREDIT_LIMIT', req, vendorId, { takesCreditDays, givesCreditDays });
@@ -818,7 +818,7 @@ exports.updateVendorEnquiryLimit = async (req, res) => {
         }
 
         vendor.topupEnquiryLimit = Number(limit);
-        
+
         // If admin updates the limit manually, we should ensure it doesn't instantly expire.
         // Sync it with the main plan's end date, or if they don't have one, just clear the topup expiry
         // so it's a permanent override until changed.
@@ -827,7 +827,7 @@ exports.updateVendorEnquiryLimit = async (req, res) => {
         } else {
             vendor.topupPlanEndDate = null;
         }
-        
+
         await vendor.save();
 
         await logActivity('UPDATE_ENQUIRY_LIMIT', req, vendorId, { limit });
@@ -861,7 +861,7 @@ exports.updateVendorPlan = async (req, res) => {
             }
 
             vendor.activePlan = plan._id;
-            
+
             // Set end date based on duration
             const endDate = new Date();
             if (plan.duration === 'Yearly') {
@@ -966,7 +966,7 @@ exports.verifyVendorDocuments = async (req, res) => {
         if (gst) vendor.gst = gst;
         if (pan) vendor.pan = pan;
         if (branchAddress) vendor.address = branchAddress;
-        
+
         if (isBranchOf) {
             vendor.isBranch = true;
             vendor.parentCompany = isBranchOf;
@@ -974,13 +974,13 @@ exports.verifyVendorDocuments = async (req, res) => {
 
         vendor.isVerified = true;
         vendor.verificationStatus = 'Approved';
-        
+
         if (!vendor.approvedAt) {
             vendor.approvedAt = new Date();
         }
 
         await vendor.save();
-        
+
         const updatedVendor = await User.findById(vendorId).populate('activePlan').populate('parentCompany', 'company gst pan').select('-password');
         res.json({ message: 'Vendor verified successfully', vendor: updatedVendor });
     } catch (error) {
