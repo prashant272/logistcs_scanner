@@ -8,5 +8,6 @@ router.get('/vendor/stats', authMiddleware, enquiryController.getVendorStats);
 router.get('/vendor', authMiddleware, enquiryController.getVendorEnquiries);
 router.get('/client', authMiddleware, enquiryController.getClientEnquiries);
 router.put('/:id/status', authMiddleware, enquiryController.updateEnquiryStatus);
-
+router.post('/:id/broadcast', authMiddleware, enquiryController.broadcastEnquiry);
+router.post('/:id/schedule', authMiddleware, enquiryController.scheduleEnquiry);
 module.exports = router;

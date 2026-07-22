@@ -43,6 +43,11 @@ const planSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    serviceType: {
+        type: String,
+        enum: ['All', 'Land'],
+        default: 'All'
+    },
     description: {
         type: String,
         default: ''

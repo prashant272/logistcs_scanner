@@ -24,6 +24,7 @@ const PlanManagement = () => {
   const [inquiryLimit, setInquiryLimit] = useState('');
   const [duration, setDuration] = useState('Monthly');
   const [userType, setUserType] = useState('customer');
+  const [serviceType, setServiceType] = useState('All');
   const [countries, setCountries] = useState([]);
   
   const editorRef = useRef(null);
@@ -64,6 +65,7 @@ const PlanManagement = () => {
     setInquiryLimit(plan.inquiryLimit !== undefined ? plan.inquiryLimit : '');
     setDuration(plan.duration || 'Monthly');
     setUserType(plan.userType || 'customer');
+    setServiceType(plan.serviceType || 'All');
     setCountries(plan.country ? plan.country.split(',').map(c => c.trim()) : []);
     if (editorRef.current) {
       editorRef.current.innerHTML = plan.description || '';
@@ -82,6 +84,7 @@ const PlanManagement = () => {
     setInquiryLimit('');
     setDuration('Monthly');
     setUserType('customer');
+    setServiceType('All');
     setCountries([]);
     if (editorRef.current) {
       editorRef.current.innerHTML = '';
@@ -118,6 +121,7 @@ const PlanManagement = () => {
         inquiryLimit: Number(inquiryLimit),
         duration,
         userType,
+        serviceType,
         country: countries.join(', '),
         description: descriptionHtml
       };
@@ -340,7 +344,7 @@ const PlanManagement = () => {
               </div>
             </div>
 
-            {/* Country Dropdown */}
+            {/* Country Dropdown & Service Type */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <MultiCountrySelect
                 selectedCountries={countries}
@@ -349,6 +353,19 @@ const PlanManagement = () => {
                 required={true}
                 showCustomOthersInput={false}
               />
+              <div className="group">
+                <label className="block text-xs font-bold !text-slate-900 mb-1">
+                  Select Service Type <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={serviceType}
+                  onChange={(e) => setServiceType(e.target.value)}
+                  className="w-full bg-[#f4f7fc] border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-800 focus:outline-none focus:bg-white focus:border-[#00b2fe] cursor-pointer transition-all"
+                >
+                  <option value="All">All Services</option>
+                  <option value="Land">Land Only</option>
+                </select>
+              </div>
             </div>
 
             {/* Custom Rich Text Description Editor */}
@@ -513,6 +530,7 @@ const PlanManagement = () => {
                     <th className="p-4">Plan Name</th>
                     <th className="p-4">Type</th>
                     <th className="p-4">User Type</th>
+                    <th className="p-4">Service</th>
                     <th className="p-4">Country</th>
                     <th className="p-4">Price</th>
                     <th className="p-4">Duration</th>
@@ -531,6 +549,7 @@ const PlanManagement = () => {
                         </span>
                       </td>
                       <td className="p-4 uppercase tracking-wider text-slate-500">{p.userType}</td>
+                      <td className="p-4 text-slate-500 font-bold">{p.serviceType || 'All'}</td>
                       <td className="p-4 flex items-center gap-1.5 mt-1.5">
                         <Globe size={13} className="text-slate-400" />
                         <span className="truncate max-w-[120px]" title={p.country}>{p.country}</span>

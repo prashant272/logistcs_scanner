@@ -41,7 +41,7 @@ const VendorManagement = () => {
   const [editingVendor, setEditingVendor] = useState(false);
   const [editVendorId, setEditVendorId] = useState(null);
   const [editFormData, setEditFormData] = useState({
-    company: '', email: '', phone: '', country: ''
+    company: '', email: '', phone: '', country: '', services: []
   });
 
   // Credit Vendor Modal State
@@ -439,7 +439,8 @@ const VendorManagement = () => {
       company: vendor.company || '',
       email: vendor.email || '',
       phone: vendor.phone || '',
-      country: vendor.country || 'India'
+      country: vendor.country || 'India',
+      services: vendor.services || []
     });
     setShowEditModal(true);
   };
@@ -1190,6 +1191,28 @@ const VendorManagement = () => {
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-700 focus:outline-none focus:border-[#0066FF] focus:ring-1 focus:ring-[#0066FF] transition-all"
                   placeholder="India"
                 />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">Services</label>
+                <div className="flex flex-wrap gap-2">
+                  {['Air', 'Sea', 'Land', 'Warehouse', 'CHA'].map(service => (
+                    <label key={service} className="flex items-center gap-2 text-sm font-bold text-slate-700 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg cursor-pointer hover:bg-slate-100">
+                      <input 
+                        type="checkbox" 
+                        className="w-4 h-4 accent-[#0066FF]"
+                        checked={editFormData.services?.includes(service)}
+                        onChange={(e) => {
+                          const updatedServices = e.target.checked
+                            ? [...(editFormData.services || []), service]
+                            : (editFormData.services || []).filter(s => s !== service);
+                          setEditFormData({ ...editFormData, services: updatedServices });
+                        }}
+                      />
+                      {service}
+                    </label>
+                  ))}
+                </div>
               </div>
 
               <div className="pt-4 flex gap-3">

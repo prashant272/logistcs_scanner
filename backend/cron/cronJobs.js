@@ -82,6 +82,28 @@ const initCronJobs = () => {
             console.error('[CRON ERROR]', error);
         }
     });
+
+    // Run every minute for scheduled enquiry broadcasts
+    cron.schedule('* * * * *', async () => {
+        try {
+            const Enquiry = require('../models/Enquiry');
+            const { triggerVendorBroadcast } = require('../controllers/enquiryController');
+            const now = new Date();
+            
+            // Find enquiries that are scheduled, not yet broadcasted, and the time has passed
+            const pendingBroadcasts = await Enquiry.find({
+                isBroadcasted: false,
+                scheduledBroadcastTime: { $lte: now, $ne: null }
+            });
+
+            for (const enquiry of pendingBroadcasts) {
+                console.log(`[CRON] Executing scheduled broadcast for enquiry: ${enquiry._id}`);
+                await triggerVendorBroadcast(enquiry._id);
+            }
+        } catch (error) {
+            console.error('[CRON ERROR] Scheduled broadcast cron job:', error);
+        }
+    });
 };
 
 module.exports = { initCronJobs };

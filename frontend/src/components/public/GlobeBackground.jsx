@@ -71,9 +71,14 @@ const GlobeBackground = () => {
         return () => cancelAnimationFrame(animationFrameId);
     }, []);
 
+    // Hide on mobile devices for better performance and UI
+    if (dimensions.width <= 768) {
+        return null;
+    }
+
     return (
-        <div className="absolute inset-0 w-full h-full pointer-events-none flex items-center justify-end overflow-hidden z-0 opacity-90" style={{ transform: 'scale(1.15) translateX(10%)' }}>
-            {/* Position globe to the right side and scale it up to look like SeaRates */}
+        <div className="absolute inset-0 w-full h-full pointer-events-none flex items-center justify-end overflow-hidden z-0 opacity-90">
+            {/* Position globe to the right side */}
             <Globe
                 ref={globeRef}
                 backgroundColor="rgba(0,0,0,0)" // Transparent background
@@ -109,8 +114,8 @@ const GlobeBackground = () => {
                     return el;
                 }}
                 
-                // Sizing (approximate viewport width)
-                width={dimensions.width > 768 ? dimensions.width * 0.7 : dimensions.width}
+                // Responsive sizing to fit large devices properly
+                width={dimensions.width > 1280 ? dimensions.width * 0.45 : dimensions.width > 1024 ? dimensions.width * 0.5 : dimensions.width * 0.6}
                 height={dimensions.height}
             />
         </div>

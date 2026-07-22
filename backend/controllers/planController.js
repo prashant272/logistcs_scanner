@@ -46,7 +46,7 @@ exports.getPlans = async (req, res) => {
 // Create a plan
 exports.createPlan = async (req, res) => {
     try {
-        const { name, price, currency, status, inquiryLimit, duration, userType, country, description, planType } = req.body;
+        const { name, price, currency, status, inquiryLimit, duration, userType, country, description, planType, serviceType } = req.body;
         if (!name || !price || !inquiryLimit || !duration || !userType || !country) {
             return res.status(400).json({ message: 'Missing required fields' });
         }
@@ -61,6 +61,7 @@ exports.createPlan = async (req, res) => {
             duration,
             userType,
             country,
+            serviceType: serviceType || 'All',
             description: description || ''
         });
 

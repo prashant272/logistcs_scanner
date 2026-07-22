@@ -83,7 +83,7 @@ const sendEnquiryAcceptedWhatsApp = async (mobile, enquiryDetails, vendorName, c
  * @param {string} country - Country of the vendor
  */
 const sendNewEnquiryVendorWhatsApp = async (mobile, enquiryDetails, vendorName, country = '') => {
-    const TEMPLATE_ID = process.env.WABRIDGE_NEW_ENQUIRY_VENDOR_TEMPLATE_ID || "4573386356251819";
+    const TEMPLATE_ID = process.env.WABRIDGE_NEW_ENQUIRY_VENDOR_TEMPLATE_ID || "2036990327205753";
     
     // Format date as DD MMM YYYY (e.g. 14 Jul 2026)
     const dateObj = new Date();

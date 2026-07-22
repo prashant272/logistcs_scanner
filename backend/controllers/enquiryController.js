@@ -123,11 +123,15 @@ exports.createEnquiry = async (req, res) => {
         const sanitizedType = (type && ['air', 'sea', 'land', 'warehouse', 'cha'].includes(type.toLowerCase())) ? type.toLowerCase() : 'air';
         const sanitizedCategory = (category && ['domestic', 'international'].includes(category.toLowerCase())) ? category.toLowerCase() : 'domestic';
 
+        // Fallback for warehouse or CHA enquiries where fromLocation/toLocation might not be explicitly sent
+        const finalFromLocation = fromLocation || req.body.location || req.body.city || 'Not Specified';
+        const finalToLocation = toLocation || req.body.location || req.body.city || 'Not Specified';
+
         const enquiry = await Enquiry.create({
             client: validatedClientId,
             vendor: validatedVendorId,
-            fromLocation,
-            toLocation,
+            fromLocation: finalFromLocation,
+            toLocation: finalToLocation,
             type: sanitizedType,
             category: sanitizedCategory,
             airline,
@@ -187,104 +191,7 @@ exports.createEnquiry = async (req, res) => {
             }).catch(err => console.error('Error sending customer confirmation email:', err));
         }
 
-        if (validatedVendorId) {
-            const { sendNotification } = require('../utils/notificationService');
-
-            // Send In-App Notification to Vendor (Bell Notification)
-            sendNotification(
-                validatedVendorId,
-                `New direct ${isBooking ? 'booking' : 'enquiry'} received for ${sanitizedType} freight from ${fromLocation} to ${toLocation}`,
-                'info',
-                isBooking ? '/vendor/my-bookings' : '/vendor/my-enquiries'
-            ).catch(err => console.error('Error sending vendor bell notification:', err));
-
-            const User = require('../models/User');
-            User.findById(validatedVendorId).populate('activePlan').then(vendorUser => {
-                if (vendorUser) {
-                    sendEnquiryToVendorAlert(vendorUser.email, {
-                        cargoType: sanitizedType,
-                        pickupCity: fromLocation,
-                        destinationCity: toLocation,
-                        weight: weightRange || 'N/A',
-                        volume: 'N/A'
-                    }).catch(err => console.error('Error sending vendor email:', err));
-
-                    if (vendorUser.phone) {
-                        const { sendNewEnquiryVendorWhatsApp } = require('../services/whatsappService');
-                        const vendorName = vendorUser.company || vendorUser.name || 'Vendor';
-                        sendNewEnquiryVendorWhatsApp(vendorUser.phone, {
-                            cargoType: sanitizedType,
-                            pickupCity: fromLocation,
-                            destinationCity: toLocation
-                        }, vendorName, vendorUser.country || '')
-                        .catch(err => console.error('Error sending vendor new enquiry WhatsApp:', err));
-
-                        // Check if vendor has an active paid plan for SMS
-                        const hasActivePlan = vendorUser.activePlan && vendorUser.planEndDate && new Date(vendorUser.planEndDate) > new Date();
-                        const isPaidPlan = hasActivePlan && vendorUser.activePlan.price > 0;
-                        if (isPaidPlan) {
-                            const { sendNewEnquiryVendorSMS } = require('../services/notificationService');
-                            sendNewEnquiryVendorSMS(vendorUser.phone, vendorName, {
-                                cargoType: sanitizedType,
-                                pickupCity: fromLocation,
-                                destinationCity: toLocation
-                            }).catch(err => console.error('Error sending direct SMS to paid vendor:', err));
-                        }
-                    }
-                }
-            }).catch(err => console.error('Error looking up vendor user for email/SMS:', err));
-        } else if (isDirect) {
-            // This is a marketplace broadcast enquiry
-            const { broadcastVendorNotification } = require('../utils/notificationService');
-            broadcastVendorNotification(
-                `New marketplace ${isBooking ? 'booking' : 'enquiry'} broadcasted for ${sanitizedType} freight from ${fromLocation} to ${toLocation}`,
-                'info',
-                isBooking ? '/vendor/direct-booking' : '/vendor/direct-enquiries',
-                sanitizedType
-            ).catch(err => console.error('Error broadcasting vendor bell notification:', err));
-
-            // Also broadcast emails to eligible vendors
-            const User = require('../models/User');
-            const query = { role: 'vendor', verificationStatus: 'Approved' };
-
-            User.find(query).populate('activePlan').then(vendors => {
-                const { sendNewEnquiryVendorWhatsApp } = require('../services/whatsappService');
-                const { sendNewEnquiryVendorSMS } = require('../services/notificationService');
-                vendors.forEach(vendorUser => {
-                    // Check if vendor has an active paid plan
-                    const hasActivePlan = vendorUser.activePlan && vendorUser.planEndDate && new Date(vendorUser.planEndDate) > new Date();
-                    const isPaidPlan = hasActivePlan && vendorUser.activePlan.price > 0;
-
-                    if (isPaidPlan) {
-                        if (vendorUser.email) {
-                            sendEnquiryToVendorAlert(vendorUser.email, {
-                                cargoType: sanitizedType,
-                                pickupCity: fromLocation,
-                                destinationCity: toLocation,
-                                weight: weightRange || 'N/A',
-                                volume: 'N/A'
-                            }).catch(err => console.error('Error sending broadcast email to paid vendor:', err));
-                        }
-                        
-                        if (vendorUser.phone) {
-                            const vendorName = vendorUser.company || vendorUser.name || 'Vendor';
-                            sendNewEnquiryVendorWhatsApp(vendorUser.phone, {
-                                cargoType: sanitizedType,
-                                pickupCity: fromLocation,
-                                destinationCity: toLocation
-                            }, vendorName, vendorUser.country || '')
-                            .catch(err => console.error('Error sending broadcast WhatsApp to paid vendor:', err));
-
-                            sendNewEnquiryVendorSMS(vendorUser.phone, vendorName, {
-                                cargoType: sanitizedType,
-                                pickupCity: fromLocation,
-                                destinationCity: toLocation
-                            }).catch(err => console.error('Error sending broadcast SMS to paid vendor:', err));
-                        }
-                    }
-                });
-            }).catch(err => console.error('Error looking up vendors for broadcast email:', err));
-        }
+        // Vendor notifications are now deferred to manual trigger or scheduled cron job
 
         res.status(201).json(enquiry);
     } catch (error) {
@@ -1071,3 +978,182 @@ exports.getVendorStats = async (req, res) => {
     }
 };
 
+// Helper function to trigger the broadcast to vendors
+const triggerVendorBroadcast = async (enquiryId) => {
+    try {
+        const Enquiry = require('../models/Enquiry');
+        const enquiry = await Enquiry.findById(enquiryId);
+        if (!enquiry) return;
+
+        const isBooking = enquiry.isBooking;
+        const sanitizedType = enquiry.type;
+        const fromLocation = enquiry.fromLocation;
+        const toLocation = enquiry.toLocation;
+        const weightRange = enquiry.weightRange;
+        const isDirect = enquiry.isDirect;
+        const validatedVendorId = enquiry.vendor;
+
+        if (validatedVendorId) {
+            const { sendNotification } = require('../utils/notificationService');
+            const { sendEnquiryToVendorAlert } = require('../services/notificationService');
+
+            // Send In-App Notification to Vendor (Bell Notification)
+            sendNotification(
+                validatedVendorId,
+                `New direct ${isBooking ? 'booking' : 'enquiry'} received for ${sanitizedType} freight from ${fromLocation} to ${toLocation}`,
+                'info',
+                isBooking ? '/vendor/my-bookings' : '/vendor/my-enquiries'
+            ).catch(err => console.error('Error sending vendor bell notification:', err));
+
+            const User = require('../models/User');
+            User.findById(validatedVendorId).populate('activePlan').then(vendorUser => {
+                if (vendorUser) {
+                    sendEnquiryToVendorAlert(vendorUser.email, {
+                        cargoType: sanitizedType,
+                        pickupCity: fromLocation,
+                        destinationCity: toLocation,
+                        weight: weightRange || 'N/A',
+                        volume: 'N/A'
+                    }).catch(err => console.error('Error sending vendor email:', err));
+
+                    if (vendorUser.phone) {
+                        const { sendNewEnquiryVendorWhatsApp } = require('../services/whatsappService');
+                        const vendorName = vendorUser.company || vendorUser.name || 'Vendor';
+                        sendNewEnquiryVendorWhatsApp(vendorUser.phone, {
+                            cargoType: sanitizedType,
+                            pickupCity: fromLocation,
+                            destinationCity: toLocation
+                        }, vendorName, vendorUser.country || '')
+                        .catch(err => console.error('Error sending vendor new enquiry WhatsApp:', err));
+
+                        // Check if vendor has an active paid plan for SMS
+                        const hasActivePlan = vendorUser.activePlan && vendorUser.planEndDate && new Date(vendorUser.planEndDate) > new Date();
+                        const isPaidPlan = hasActivePlan && vendorUser.activePlan.price > 0;
+                        if (isPaidPlan) {
+                            const { sendNewEnquiryVendorSMS } = require('../services/notificationService');
+                            sendNewEnquiryVendorSMS(vendorUser.phone, vendorName, {
+                                cargoType: sanitizedType,
+                                pickupCity: fromLocation,
+                                destinationCity: toLocation
+                            }).catch(err => console.error('Error sending direct SMS to paid vendor:', err));
+                        }
+                    }
+                }
+            }).catch(err => console.error('Error looking up vendor user for email/SMS:', err));
+        } else if (isDirect) {
+            // This is a marketplace broadcast enquiry
+            const { broadcastVendorNotification } = require('../utils/notificationService');
+            broadcastVendorNotification(
+                `New marketplace ${isBooking ? 'booking' : 'enquiry'} broadcasted for ${sanitizedType} freight from ${fromLocation} to ${toLocation}`,
+                'info',
+                isBooking ? '/vendor/direct-booking' : '/vendor/direct-enquiries',
+                sanitizedType
+            ).catch(err => console.error('Error broadcasting vendor bell notification:', err));
+
+            // Also broadcast emails to eligible vendors
+            const User = require('../models/User');
+            const query = { role: 'vendor', verificationStatus: 'Approved' };
+
+            User.find(query).populate('activePlan').then(vendors => {
+                const { sendNewEnquiryVendorWhatsApp } = require('../services/whatsappService');
+                const { sendNewEnquiryVendorSMS } = require('../services/notificationService');
+                const { sendEnquiryToVendorAlert } = require('../services/notificationService');
+                
+                vendors.forEach(vendorUser => {
+                    // Filter by service type
+                    if (vendorUser.services && vendorUser.services.length > 0) {
+                        const mappedServices = vendorUser.services.map(s => s.toLowerCase().trim());
+                        if (!mappedServices.includes(sanitizedType)) {
+                            return; // skip this vendor if their services do not match the enquiry type
+                        }
+                    }
+
+                    // Check if vendor has an active paid plan
+                    const hasActivePlan = vendorUser.activePlan && vendorUser.planEndDate && new Date(vendorUser.planEndDate) > new Date();
+                    const isPaidPlan = hasActivePlan && vendorUser.activePlan.price > 0;
+
+                    if (isPaidPlan) {
+                        if (vendorUser.email) {
+                            sendEnquiryToVendorAlert(vendorUser.email, {
+                                cargoType: sanitizedType,
+                                pickupCity: fromLocation,
+                                destinationCity: toLocation,
+                                weight: weightRange || 'N/A',
+                                volume: 'N/A'
+                            }).catch(err => console.error('Error sending broadcast email to paid vendor:', err));
+                        }
+                        
+                        if (vendorUser.phone) {
+                            const vendorName = vendorUser.company || vendorUser.name || 'Vendor';
+                            sendNewEnquiryVendorWhatsApp(vendorUser.phone, {
+                                cargoType: sanitizedType,
+                                pickupCity: fromLocation,
+                                destinationCity: toLocation
+                            }, vendorName, vendorUser.country || '')
+                            .catch(err => console.error('Error sending broadcast WhatsApp to paid vendor:', err));
+
+                            sendNewEnquiryVendorSMS(vendorUser.phone, vendorName, {
+                                cargoType: sanitizedType,
+                                pickupCity: fromLocation,
+                                destinationCity: toLocation
+                            }).catch(err => console.error('Error sending broadcast SMS to paid vendor:', err));
+                        }
+                    }
+                });
+            }).catch(err => console.error('Error looking up vendors for broadcast email:', err));
+        }
+        
+        enquiry.isBroadcasted = true;
+        await enquiry.save();
+    } catch (error) {
+        console.error('Error triggering vendor broadcast:', error);
+    }
+};
+
+exports.triggerVendorBroadcast = triggerVendorBroadcast;
+
+exports.broadcastEnquiry = async (req, res) => {
+    try {
+        if (req.user && req.user.id !== 'ad0000000000000000000000' && req.user.role !== 'admin') {
+            return res.status(403).json({ message: 'Unauthorized' });
+        }
+        const { id } = req.params;
+        const Enquiry = require('../models/Enquiry');
+        const enquiry = await Enquiry.findById(id);
+        if (!enquiry) {
+            return res.status(404).json({ message: 'Enquiry not found' });
+        }
+        if (enquiry.isBroadcasted) {
+            return res.status(400).json({ message: 'Already broadcasted' });
+        }
+        
+        await triggerVendorBroadcast(id);
+        res.json({ message: 'Broadcast triggered successfully' });
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
+
+exports.scheduleEnquiry = async (req, res) => {
+    try {
+        if (req.user && req.user.id !== 'ad0000000000000000000000' && req.user.role !== 'admin') {
+            return res.status(403).json({ message: 'Unauthorized' });
+        }
+        const { id } = req.params;
+        const { scheduledTime } = req.body;
+        const Enquiry = require('../models/Enquiry');
+        const enquiry = await Enquiry.findById(id);
+        if (!enquiry) {
+            return res.status(404).json({ message: 'Enquiry not found' });
+        }
+        if (enquiry.isBroadcasted) {
+            return res.status(400).json({ message: 'Already broadcasted' });
+        }
+        
+        enquiry.scheduledBroadcastTime = new Date(scheduledTime);
+        await enquiry.save();
+        res.json({ message: 'Broadcast scheduled successfully', scheduledTime: enquiry.scheduledBroadcastTime });
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};

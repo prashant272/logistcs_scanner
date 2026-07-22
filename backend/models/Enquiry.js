@@ -198,6 +198,14 @@ const enquirySchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
     }],
+    isBroadcasted: {
+        type: Boolean,
+        default: false
+    },
+    scheduledBroadcastTime: {
+        type: Date,
+        default: null
+    },
     createdAt: {
         type: Date,
         default: Date.now

@@ -85,10 +85,22 @@ const broadcastVendorNotification = async (message, type = 'info', link = null, 
     try {
         const query = { role: 'vendor', verificationStatus: 'Approved' };
 
-        const vendors = await User.find(query).select('_id');
+        const vendors = await User.find(query).select('_id services');
         if (!vendors.length) return;
 
-        const notifications = vendors.map(vendor => ({
+        let eligibleVendors = vendors;
+        if (filterType) {
+            const lowerFilter = filterType.toLowerCase();
+            eligibleVendors = vendors.filter(v => {
+                if (!v.services || v.services.length === 0) return true; // Default to send if no services selected
+                const mapped = v.services.map(s => s.toLowerCase().trim());
+                return mapped.includes(lowerFilter);
+            });
+        }
+
+        if (!eligibleVendors.length) return;
+
+        const notifications = eligibleVendors.map(vendor => ({
             userId: vendor._id,
             message,
             type,

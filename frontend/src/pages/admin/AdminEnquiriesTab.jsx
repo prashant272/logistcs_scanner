@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import axios from 'axios';
-import { Search, Loader2, Trash2, Edit, AlertCircle, CheckCircle, FileText, ChevronLeft, ChevronRight, Save, X, Globe, UserCheck } from 'lucide-react';
+import { Search, Loader2, Trash2, Edit, AlertCircle, CheckCircle, FileText, ChevronLeft, ChevronRight, Save, X, Globe, UserCheck, Send, Clock, Calendar } from 'lucide-react';
 
 const AdminEnquiriesTab = () => {
     const [enquiries, setEnquiries] = useState([]);
@@ -12,6 +12,9 @@ const AdminEnquiriesTab = () => {
     
     const [editingEnq, setEditingEnq] = useState(null);
     const [editFormData, setEditFormData] = useState({ status: '', price: '' });
+    
+    // Broadcast scheduling state
+    const [scheduleModal, setScheduleModal] = useState({ isOpen: false, enqId: null, date: '' });
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -89,6 +92,40 @@ const AdminEnquiriesTab = () => {
             fetchEnquiries();
         } catch (error) {
             alert('Failed to update enquiry');
+        }
+    };
+
+    const handleBroadcastNow = async (id) => {
+        if (!window.confirm('Are you sure you want to broadcast this enquiry to vendors right now?')) return;
+        try {
+            const token = sessionStorage.getItem('adminToken');
+            await axios.post(`${import.meta.env.VITE_API_BASE_URL}/enquiries/${id}/broadcast`, {}, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            alert('Enquiry broadcasted successfully!');
+            fetchEnquiries();
+        } catch (error) {
+            alert('Failed to broadcast enquiry');
+        }
+    };
+
+    const handleScheduleSubmit = async () => {
+        if (!scheduleModal.date) {
+            alert('Please select a date and time');
+            return;
+        }
+        try {
+            const token = sessionStorage.getItem('adminToken');
+            await axios.post(`${import.meta.env.VITE_API_BASE_URL}/enquiries/${scheduleModal.enqId}/schedule`, {
+                scheduledTime: scheduleModal.date
+            }, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            alert('Enquiry scheduled successfully!');
+            setScheduleModal({ isOpen: false, enqId: null, date: '' });
+            fetchEnquiries();
+        } catch (error) {
+            alert('Failed to schedule enquiry');
         }
     };
 
@@ -201,7 +238,7 @@ const AdminEnquiriesTab = () => {
                                             ) : (
                                                 <div>
                                                     {getStatusBadge(enq.status)}
-                                                    {enq.price && <p className="text-xs font-black text-slate-700 mt-1.5">₹ {enq.price}</p>}
+                                                    {enq.price && <p className="text-xs font-black text-slate-700 mt-1.5">$ {enq.price}</p>}
                                                     {enq.responses && enq.responses.filter(r => r.status === 'Accepted').length > 0 && (
                                                         <div className="mt-2 text-[10px] bg-slate-50 p-1.5 rounded-lg border border-slate-100">
                                                             <p className="font-bold text-slate-500 mb-1">Accepted by:</p>
@@ -211,7 +248,25 @@ const AdminEnquiriesTab = () => {
                                                                 </p>
                                                             ))}
                                                         </div>
+                                                    
                                                     )}
+                                                    
+                                                    {/* Broadcast Status */}
+                                                    <div className="mt-3">
+                                                        {enq.isBroadcasted ? (
+                                                            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md border border-emerald-100">
+                                                                <CheckCircle size={10} /> Broadcasted
+                                                            </span>
+                                                        ) : enq.scheduledBroadcastTime ? (
+                                                            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded-md border border-blue-100">
+                                                                <Clock size={10} /> Scheduled: {new Date(enq.scheduledBroadcastTime).toLocaleString()}
+                                                            </span>
+                                                        ) : (
+                                                            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-1 rounded-md border border-amber-100">
+                                                                <AlertCircle size={10} /> Pending Broadcast
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             )}
                                         </td>
@@ -225,6 +280,13 @@ const AdminEnquiriesTab = () => {
                                                 <>
                                                     <button onClick={() => handleEditClick(enq)} className="inline-flex p-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg transition-colors" title="Edit"><Edit size={14} /></button>
                                                     <button onClick={() => handleDelete(enq._id)} className="inline-flex p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg transition-colors" title="Delete"><Trash2 size={14} /></button>
+                                                    
+                                                    {!enq.isBroadcasted && !enq.scheduledBroadcastTime && (
+                                                        <>
+                                                            <button onClick={() => handleBroadcastNow(enq._id)} className="inline-flex p-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-600 rounded-lg transition-colors ml-2" title="Send to Vendors Now"><Send size={14} /></button>
+                                                            <button onClick={() => setScheduleModal({ isOpen: true, enqId: enq._id, date: enq.scheduledBroadcastTime ? new Date(new Date(enq.scheduledBroadcastTime).getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0,16) : '' })} className="inline-flex p-1.5 bg-amber-50 hover:bg-amber-100 text-amber-600 rounded-lg transition-colors" title="Schedule Broadcast"><Clock size={14} /></button>
+                                                        </>
+                                                    )}
                                                 </>
                                             )}
                                         </td>
@@ -244,6 +306,53 @@ const AdminEnquiriesTab = () => {
                     </table>
                 </div>
             </div>
+
+            {/* Schedule Modal */}
+            {scheduleModal.isOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
+                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
+                        <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+                            <h3 className="text-lg font-black text-slate-800 flex items-center gap-2">
+                                <Calendar className="text-blue-500" size={20} />
+                                Schedule Broadcast
+                            </h3>
+                            <button onClick={() => setScheduleModal({ isOpen: false, enqId: null, date: '' })} className="text-slate-400 hover:text-slate-600 transition-colors p-1 rounded-md hover:bg-slate-100">
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <div className="p-5">
+                            <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-2">Select Date & Time</label>
+                            <input 
+                                type="datetime-local" 
+                                value={scheduleModal.date}
+                                onClick={(e) => {
+                                    try { e.target.showPicker(); } catch (err) {} 
+                                }}
+                                onChange={(e) => setScheduleModal({ ...scheduleModal, date: e.target.value })}
+                                className="w-full p-3 border-2 border-slate-100 rounded-xl outline-none focus:border-blue-500 transition-colors text-sm font-bold text-slate-700 cursor-pointer"
+                            />
+                            <p className="text-[10px] font-bold text-slate-400 mt-3 flex items-center gap-1.5 bg-blue-50 text-blue-600 p-2 rounded-lg">
+                                <AlertCircle size={12} className="shrink-0" />
+                                The enquiry will be automatically broadcasted to vendors at this exact time.
+                            </p>
+                        </div>
+                        <div className="p-4 border-t border-slate-100 bg-slate-50/50 flex justify-end gap-3">
+                            <button 
+                                onClick={() => setScheduleModal({ isOpen: false, enqId: null, date: '' })}
+                                className="px-4 py-2 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-200 transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button 
+                                onClick={handleScheduleSubmit}
+                                className="px-6 py-2 rounded-xl text-sm font-black text-white bg-[#0066FF] hover:bg-blue-700 shadow-lg shadow-blue-500/30 transition-all active:scale-95 flex items-center gap-2"
+                            >
+                                <Clock size={16} /> Confirm Schedule
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

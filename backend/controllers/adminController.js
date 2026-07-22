@@ -887,7 +887,7 @@ exports.updateVendorPlan = async (req, res) => {
 exports.updateVendorDetails = async (req, res) => {
     try {
         const vendorId = req.params.id;
-        const { company, email, phone, country } = req.body;
+        const { company, email, phone, country, services } = req.body;
 
         const vendor = await User.findById(vendorId);
         if (!vendor || vendor.role !== 'vendor') {
@@ -898,6 +898,7 @@ exports.updateVendorDetails = async (req, res) => {
         if (email) vendor.email = email;
         if (phone) vendor.phone = phone;
         if (country) vendor.country = country;
+        if (services) vendor.services = services;
 
         await vendor.save();
 

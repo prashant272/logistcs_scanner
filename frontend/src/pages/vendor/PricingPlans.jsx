@@ -148,7 +148,20 @@ const PricingPlans = () => {
                 config
             );
 
-            const fetchedPlans = res.data || [];
+            let fetchedPlans = res.data || [];
+
+            // Filter out plans based on vendor's service type
+            if (user?.role === 'vendor') {
+                const isOnlyLand = user?.services?.length === 1 && user.services[0].toLowerCase() === 'land';
+                fetchedPlans = fetchedPlans.filter(plan => {
+                    const type = plan.serviceType || 'All';
+                    if (isOnlyLand) {
+                        return type === 'Land'; // Land vendor sees ONLY Land plans
+                    } else {
+                        return type === 'All';  // Other vendors see ONLY All plans
+                    }
+                });
+            }
 
             // Check if there is already a Free Plan in fetched plans
             const hasFree = fetchedPlans.some(p => p.price === 0);

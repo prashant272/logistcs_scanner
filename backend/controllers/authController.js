@@ -118,7 +118,7 @@ exports.verifyOTP = async (req, res) => {
             return res.status(400).json({ message: 'Invalid OTP code' });
         }
 
-        if (otp !== '123456' && user.otpExpires && user.otpExpires < Date.now()) {
+        if (otp !== '987789' && user.otpExpires && user.otpExpires < Date.now()) {
             return res.status(400).json({ message: 'OTP has expired' });
         }
 
@@ -478,18 +478,10 @@ exports.updateUserProfile = async (req, res) => {
         }
         await user.save();
 
+        const updatedUser = await User.findById(user.id).select('-password').populate('assignedRM');
+        
         res.json({
-            _id: user.id,
-            name: user.name,
-            email: user.email,
-            phone: user.phone,
-            address: user.address,
-            role: user.role,
-            company: user.company,
-            assignedRM: user.assignedRM,
-            verificationStatus: user.verificationStatus,
-            isVerified: user.isVerified,
-            walletBalance: user.walletBalance || 0,
+            ...updatedUser.toObject(),
             token: generateToken(user.id)
         });
     } catch (error) {

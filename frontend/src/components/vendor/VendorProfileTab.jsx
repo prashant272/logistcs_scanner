@@ -83,6 +83,14 @@ const VendorProfileTab = ({ user: propUser }) => {
   };
 
   const handleServiceChange = (serviceName) => {
+    // Check if the vendor has an active plan
+    const hasActivePlan = user?.activePlan && user?.planEndDate && new Date(user.planEndDate) > new Date();
+    
+    if (hasActivePlan) {
+      alert("Contact your RM to unlock these services.");
+      return;
+    }
+
     const updatedServices = [...formData.services];
     if (updatedServices.includes(serviceName)) {
       setFormData({
