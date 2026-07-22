@@ -14,6 +14,7 @@ const AdminDashboard = () => {
         sessionStorage.removeItem('adminRole');
         sessionStorage.removeItem('adminName');
         sessionStorage.removeItem('adminPermissions');
+        localStorage.removeItem('adminRole'); // Remove cross-tab popup state
         
         if (role === 'RM') {
             navigate('/rm-login');

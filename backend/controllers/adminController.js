@@ -988,3 +988,39 @@ exports.verifyVendorDocuments = async (req, res) => {
         res.status(500).json({ message: 'Server error', error: error.message });
     }
 };
+
+const Setting = require('../models/Setting');
+
+// @desc    Get hold enquiries setting
+// @route   GET /api/admin/settings/hold-enquiries
+// @access  Private (Admin)
+exports.getHoldEnquiriesSetting = async (req, res) => {
+    try {
+        let setting = await Setting.findOne({ key: 'holdEnquiriesForManualBroadcast' });
+        if (!setting) {
+            // Default to true if not exists (current behavior)
+            setting = await Setting.create({ key: 'holdEnquiriesForManualBroadcast', value: true });
+        }
+        res.json({ holdEnquiriesForManualBroadcast: setting.value });
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
+
+// @desc    Update hold enquiries setting
+// @route   PUT /api/admin/settings/hold-enquiries
+// @access  Private (Admin)
+exports.updateHoldEnquiriesSetting = async (req, res) => {
+    try {
+        const { value } = req.body;
+        let setting = await Setting.findOne({ key: 'holdEnquiriesForManualBroadcast' });
+        if (!setting) {
+            setting = new Setting({ key: 'holdEnquiriesForManualBroadcast' });
+        }
+        setting.value = Boolean(value);
+        await setting.save();
+        res.json({ message: 'Setting updated successfully', holdEnquiriesForManualBroadcast: setting.value });
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};

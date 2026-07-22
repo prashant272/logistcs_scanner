@@ -21,6 +21,8 @@ const AdminLogin = () => {
         try {
             const { data } = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/admin/login`, { email, password });
             sessionStorage.setItem('adminToken', data.token);
+            sessionStorage.setItem('adminRole', 'admin');
+            localStorage.setItem('adminRole', 'admin'); // For cross-tab RM popup detection
             navigate('/admin/dashboard');
         } catch (err) {
             setError('Invalid credentials');

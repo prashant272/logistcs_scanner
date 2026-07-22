@@ -9,6 +9,7 @@ import {
 import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
 import { useEnquiries } from '../../services/EnquiryService';
+import RMEnquiryModal from '../../components/admin/RMEnquiryModal';
 import { useLocations } from '../../services/LocationService';
 
 import { COUNTRIES } from '../../utils/countries';
@@ -41,6 +42,10 @@ const SearchResults = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { createEnquiry } = useEnquiries();
+
+  // RM Enquiry State
+  const [rmModalOpen, setRmModalOpen] = useState(false);
+  const [pendingEnquiryPayload, setPendingEnquiryPayload] = useState(null);
 
   useSEO({
     title: 'Search Logistics Vendors | Compare Freight Providers',
@@ -204,6 +209,16 @@ const SearchResults = () => {
         isDirect: true,
         isBooking: !!(user && user.role === 'vendor')
       };
+
+      const adminRole = sessionStorage.getItem('adminRole') || localStorage.getItem('adminRole');
+      const isRM = adminRole === 'admin' || adminRole === 'RM';
+
+      if (isRM || (user && (user.role === 'admin' || user.role === 'rm' || user.role === 'RM'))) {
+          setPendingEnquiryPayload(broadcastPayload);
+          setRmModalOpen(true);
+          return;
+      }
+
       await createEnquiry(broadcastPayload);
       setSuccess(true);
     } catch (err) {
@@ -317,9 +332,24 @@ const SearchResults = () => {
         }, {
           headers: token ? { Authorization: `Bearer ${token}` } : {}
         });
-      } else {
         // Trigger targeted enquiry
+        const adminRole = sessionStorage.getItem('adminRole') || localStorage.getItem('adminRole');
+        const isRM = adminRole === 'admin' || adminRole === 'RM';
+        if (isRM || (user && (user.role === 'admin' || user.role === 'rm' || user.role === 'RM'))) {
+            setPendingEnquiryPayload(primaryPayload);
+            setRmModalOpen(true);
+            return;
+        }
         await createEnquiry(primaryPayload);
+      } else {
+          const adminRole = sessionStorage.getItem('adminRole') || localStorage.getItem('adminRole');
+          const isRM = adminRole === 'admin' || adminRole === 'RM';
+          if (isRM || (user && (user.role === 'admin' || user.role === 'rm' || user.role === 'RM'))) {
+              setPendingEnquiryPayload(primaryPayload);
+              setRmModalOpen(true);
+              return;
+          }
+          await createEnquiry(primaryPayload);
       }
 
       setSuccess(true);
@@ -391,6 +421,16 @@ const SearchResults = () => {
         clientCreditRequired,
         ...guestInfo
       };
+      
+      const adminRole = sessionStorage.getItem('adminRole') || localStorage.getItem('adminRole');
+      const isRM = adminRole === 'admin' || adminRole === 'RM';
+      if (isRM || (user && (user.role === 'admin' || user.role === 'rm' || user.role === 'RM'))) {
+          setPendingEnquiryPayload(broadcastPayload);
+          setRmModalOpen(true);
+          setLoading(false);
+          return;
+      }
+
       createEnquiry(broadcastPayload)
         .then(() => {
           setSuccess(true);
@@ -835,7 +875,7 @@ const SearchResults = () => {
 
       {/* GUEST INFO MODAL */}
       {isGuestModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
           <div className="bg-white rounded-3xl w-full max-w-md shadow-[0_24px_60px_rgba(11,30,67,0.15)] border border-slate-150 overflow-hidden flex flex-col animate-scaleUp">
 
             {/* Header */}
@@ -1213,6 +1253,22 @@ const SearchResults = () => {
           </div>
         </div>
       )}
+
+      <RMEnquiryModal 
+          isOpen={rmModalOpen} 
+          onClose={() => setRmModalOpen(false)} 
+          onSubmit={async (options) => {
+              setRmModalOpen(false);
+              try {
+                  await createEnquiry({ ...pendingEnquiryPayload, ...options });
+                  setSuccess(true);
+                  setIsGuestModalOpen(false);
+              } catch (err) {
+                  console.error('Error submitting RM enquiry:', err);
+                  setError("An error occurred while submitting your request.");
+              }
+          }} 
+      />
     </div>
   );
 };

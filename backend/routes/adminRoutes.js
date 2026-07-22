@@ -58,4 +58,9 @@ router.get("/enquiries", auth, getEnquiries);
 router.put("/enquiries/:id", auth, updateEnquiry);
 router.delete("/enquiries/:id", auth, deleteEnquiry);
 
+// Settings
+const { getHoldEnquiriesSetting, updateHoldEnquiriesSetting } = require("../controllers/adminController");
+router.get("/settings/hold-enquiries", auth, getHoldEnquiriesSetting);
+router.put("/settings/hold-enquiries", auth, updateHoldEnquiriesSetting);
+
 module.exports = router;

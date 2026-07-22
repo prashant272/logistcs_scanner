@@ -21,11 +21,11 @@ const RMLogin = () => {
         try {
             const { data } = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/rm/login`, { email, password });
             
-            // We use the same 'adminToken' so that the admin dashboard layout works seamlessly
             sessionStorage.setItem('adminToken', data.token);
             sessionStorage.setItem('adminRole', data.role);
             sessionStorage.setItem('adminPermissions', JSON.stringify(data.permissions || []));
             sessionStorage.setItem('adminName', data.name);
+            localStorage.setItem('adminRole', data.role); // For cross-tab popup detection
             
             navigate('/admin/dashboard');
         } catch (err) {

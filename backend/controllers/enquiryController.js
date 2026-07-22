@@ -191,7 +191,27 @@ exports.createEnquiry = async (req, res) => {
             }).catch(err => console.error('Error sending customer confirmation email:', err));
         }
 
-        // Vendor notifications are now deferred to manual trigger or scheduled cron job
+        // Vendor notifications
+        const { broadcastNow, scheduledTime } = req.body;
+        
+        if (broadcastNow) {
+            // RM explicitly chose to broadcast now
+            await exports.triggerVendorBroadcast(enquiry._id);
+        } else if (scheduledTime) {
+            // RM explicitly chose to schedule
+            enquiry.scheduledBroadcastTime = new Date(scheduledTime);
+            await enquiry.save();
+        } else {
+            // Default global settings behavior
+            const Setting = require('../models/Setting');
+            const autoBroadcastSetting = await Setting.findOne({ key: 'holdEnquiriesForManualBroadcast' });
+            const holdForManual = autoBroadcastSetting ? autoBroadcastSetting.value : true;
+
+            if (!holdForManual) {
+                // Auto broadcast immediately
+                await exports.triggerVendorBroadcast(enquiry._id);
+            }
+        }
 
         res.status(201).json(enquiry);
     } catch (error) {

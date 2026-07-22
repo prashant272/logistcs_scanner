@@ -16,6 +16,34 @@ const AdminEnquiriesTab = () => {
     // Broadcast scheduling state
     const [scheduleModal, setScheduleModal] = useState({ isOpen: false, enqId: null, date: '' });
 
+    // Auto broadcast settings state
+    const [holdEnquiries, setHoldEnquiries] = useState(true);
+
+    const fetchHoldSetting = async () => {
+        try {
+            const token = sessionStorage.getItem('adminToken');
+            const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/admin/settings/hold-enquiries`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setHoldEnquiries(res.data.holdEnquiriesForManualBroadcast);
+        } catch (error) {
+            console.error('Failed to fetch hold setting');
+        }
+    };
+
+    const toggleHoldSetting = async () => {
+        try {
+            const token = sessionStorage.getItem('adminToken');
+            const newValue = !holdEnquiries;
+            await axios.put(`${import.meta.env.VITE_API_BASE_URL}/admin/settings/hold-enquiries`, { value: newValue }, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setHoldEnquiries(newValue);
+        } catch (error) {
+            alert('Failed to update setting');
+        }
+    };
+
     useEffect(() => {
         const timer = setTimeout(() => {
             setDebouncedSearch(searchQuery);
@@ -58,6 +86,7 @@ const AdminEnquiriesTab = () => {
 
     useEffect(() => {
         fetchEnquiries();
+        fetchHoldSetting();
     }, [page, debouncedSearch]);
 
     const handleDelete = async (id) => {
@@ -116,8 +145,9 @@ const AdminEnquiriesTab = () => {
         }
         try {
             const token = sessionStorage.getItem('adminToken');
+            const isoStringTime = new Date(scheduleModal.date).toISOString();
             await axios.post(`${import.meta.env.VITE_API_BASE_URL}/enquiries/${scheduleModal.enqId}/schedule`, {
-                scheduledTime: scheduleModal.date
+                scheduledTime: isoStringTime
             }, {
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -155,6 +185,21 @@ const AdminEnquiriesTab = () => {
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:border-[#0066FF] outline-none text-sm font-bold text-slate-700 transition-all bg-slate-50"
                     />
+                </div>
+
+                <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 px-4 py-2.5 rounded-xl">
+                    <span className="text-xs font-black uppercase tracking-wider text-slate-600">
+                        Stop Enquiries (Manual)
+                    </span>
+                    <button 
+                        onClick={toggleHoldSetting}
+                        className={`w-12 h-6 rounded-full transition-colors relative ${holdEnquiries ? 'bg-[#0066FF]' : 'bg-slate-300'}`}
+                    >
+                        <span className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${holdEnquiries ? 'left-7' : 'left-1'}`}></span>
+                    </button>
+                    <span className={`text-[10px] font-black uppercase ${holdEnquiries ? 'text-[#0066FF]' : 'text-slate-400'}`}>
+                        {holdEnquiries ? 'ON' : 'OFF'}
+                    </span>
                 </div>
             </div>
 

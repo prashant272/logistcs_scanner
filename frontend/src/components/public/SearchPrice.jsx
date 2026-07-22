@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { useLocations } from '../../services/LocationService';
 import { usePricing } from '../../services/PricingService';
 import { useEnquiries } from '../../services/EnquiryService';
+import RMEnquiryModal from '../admin/RMEnquiryModal';
 
 const AIRLINES_DOMESTIC = ['IndiGo', 'Air India', 'SpiceJet', 'Vistara', 'Akasa Air'];
 const AIRLINES_INTERNATIONAL = ['Emirates', 'Qatar Airways', 'Singapore Airlines', 'British Airways', 'Lufthansa', 'Delta Air Lines', 'Etihad Airways'];
@@ -93,9 +94,13 @@ const SearchPrice = ({ isDashboard = false }) => {
 
     // Search Action States
     const [searching, setSearching] = useState(false);
-    const [searchResults, setSearchResults] = useState(null); // null means not searched yet, [] means no results, [...] means matched
+    const [searchResults, setSearchResults] = useState(null); 
     const [searchPerformed, setSearchPerformed] = useState(false);
     const [showSuccessPage, setShowSuccessPage] = useState(false);
+
+    // RM Enquiry State
+    const [rmModalOpen, setRmModalOpen] = useState(false);
+    const [pendingEnquiryPayload, setPendingEnquiryPayload] = useState(null);
 
     // IHC / Via Ports States
     const [availableViaPorts, setAvailableViaPorts] = useState([]);
@@ -301,15 +306,11 @@ const SearchPrice = ({ isDashboard = false }) => {
             
             if (activeTab === 'land' && loadType === 'PTL') {
                 const token = localStorage.getItem('token');
-                // Calculate total weight in grams based on quantity and weight
-                // Assuming weight is entered as a number in kg for PTL, wait, they select weight range or enter number?
-                // Let's pass what we have to a custom payload
                 const delhiveryPayload = {
                     origin_pin: origin,
                     dest_pin: destination,
                     weight_g: (parseFloat(weight) || 1) * 1000,
                 };
-                // Redirect to search-results with a special flag
                 const res = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/delhivery/estimate`, delhiveryPayload, {
                     headers: token ? { Authorization: `Bearer ${token}` } : {}
                 });
@@ -461,11 +462,30 @@ const SearchPrice = ({ isDashboard = false }) => {
             chaCargoType: activeTab === 'cha' ? chaCargoType : undefined
         };
 
+        const adminRole = sessionStorage.getItem('adminRole') || localStorage.getItem('adminRole');
+        const isRM = adminRole === 'admin' || adminRole === 'RM';
+
+        if (isRM || (user && (user.role === 'admin' || user.role === 'rm' || user.role === 'RM'))) {
+            setPendingEnquiryPayload(payload);
+            setRmModalOpen(true);
+            return;
+        }
+
         try {
             await createEnquiry(payload);
             setShowSuccessPage(true);
         } catch (err) {
             console.error('Error submitting enquiry:', err);
+        }
+    };
+
+    const handleRmEnquirySubmit = async (options) => {
+        setRmModalOpen(false);
+        try {
+            await createEnquiry({ ...pendingEnquiryPayload, ...options });
+            setShowSuccessPage(true);
+        } catch (err) {
+            console.error('Error submitting RM enquiry:', err);
         }
     };
 
@@ -787,11 +807,11 @@ const SearchPrice = ({ isDashboard = false }) => {
                                                 <div className="w-48">
                                                     <select value={fclStandard} onChange={(e) => setFclStandard(e.target.value)} className="w-full bg-white border border-slate-300 rounded-xl px-3 py-3 text-xs font-bold !text-slate-900 focus:outline-none focus:border-[#0066FF] shadow-sm cursor-pointer">
                                                         <option value="20ft">20ft Standard</option>
-<option value="40ft">40ft Standard</option>
-<option value="40ft HC">40ft High Cube</option>
-<option value="20ft Reefer">20ft REFRIGERATED</option>
-<option value="40ft Reefer">40ft REFRIGERATED</option>
-<option value="40ft Flat Rack">40' Flat Rack</option>
+                                                        <option value="40ft">40ft Standard</option>
+                                                        <option value="40ft HC">40ft High Cube</option>
+                                                        <option value="20ft Reefer">20ft REFRIGERATED</option>
+                                                        <option value="40ft Reefer">40ft REFRIGERATED</option>
+                                                        <option value="40ft Flat Rack">40' Flat Rack</option>
                                                     </select>
                                                 </div>
                                                 <div className="w-40">
@@ -1296,7 +1316,6 @@ const SearchPrice = ({ isDashboard = false }) => {
                                         </div>
                                     </div>
                                 ) : (
-                                    /* No direct rates found loading state or custom message placeholder (since logged in automatically submits, this only shows briefly) */
                                     <div className="text-center py-6 text-slate-400 font-bold text-xs uppercase tracking-wider">
                                         Processing Direct Enquiry...
                                     </div>
@@ -1454,6 +1473,7 @@ const SearchPrice = ({ isDashboard = false }) => {
                     </div>
                 </div>
             )}
+            
             {showLandPopup && (
                 <div className="fixed inset-0 bg-[#0B1E43]/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-fadeIn">
                     <div className="bg-white rounded-3xl w-full max-w-md p-8 shadow-2xl relative animate-scaleUp">
@@ -1495,12 +1515,14 @@ const SearchPrice = ({ isDashboard = false }) => {
                     </div>
                 </div>
             )}
+
+            <RMEnquiryModal 
+                isOpen={rmModalOpen} 
+                onClose={() => setRmModalOpen(false)} 
+                onSubmit={handleRmEnquirySubmit} 
+            />
         </section>
     );
 };
 
 export default SearchPrice;
-
-
-
-
