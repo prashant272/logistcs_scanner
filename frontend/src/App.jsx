@@ -195,6 +195,8 @@ function App() {
             <Route path="/rm-login" element={<RMLogin />} />
             <Route path="/admin" element={<PrivateRoute><AdminDashboard /></PrivateRoute>}>
               <Route path="dashboard" element={<AdminDashboardMain />} />
+              <Route path="search-price" element={<SearchPrice isDashboard={true} />} />
+              <Route path="search-results" element={<SearchResults />} />
               <Route path="menu" element={<MenuManagement />} />
               <Route path="orders" element={<OrderManagement />} />
               <Route path="vendors" element={<VendorManagement />} />

@@ -193,7 +193,7 @@ exports.createEnquiry = async (req, res) => {
 
         // Vendor notifications
         const { broadcastNow, scheduledTime } = req.body;
-        
+
         if (broadcastNow) {
             // RM explicitly chose to broadcast now
             await exports.triggerVendorBroadcast(enquiry._id);
@@ -644,7 +644,7 @@ exports.updateEnquiryStatus = async (req, res) => {
                     customerEmail = clientUser.email;
                     customerPhone = clientUser.phone;
                     customerCountry = clientUser.country || '';
-                    
+
                     let fullName = '';
                     if (clientUser.firstName || clientUser.lastName) {
                         fullName = `${clientUser.firstName || ''} ${clientUser.lastName || ''}`.trim();
@@ -1044,7 +1044,7 @@ const triggerVendorBroadcast = async (enquiryId) => {
                             pickupCity: fromLocation,
                             destinationCity: toLocation
                         }, vendorName, vendorUser.country || '')
-                        .catch(err => console.error('Error sending vendor new enquiry WhatsApp:', err));
+                            .catch(err => console.error('Error sending vendor new enquiry WhatsApp:', err));
 
                         // Check if vendor has an active paid plan for SMS
                         const hasActivePlan = vendorUser.activePlan && vendorUser.planEndDate && new Date(vendorUser.planEndDate) > new Date();
@@ -1078,7 +1078,7 @@ const triggerVendorBroadcast = async (enquiryId) => {
                 const { sendNewEnquiryVendorWhatsApp } = require('../services/whatsappService');
                 const { sendNewEnquiryVendorSMS } = require('../services/notificationService');
                 const { sendEnquiryToVendorAlert } = require('../services/notificationService');
-                
+
                 vendors.forEach(vendorUser => {
                     // Filter by service type
                     if (vendorUser.services && vendorUser.services.length > 0) {
@@ -1102,7 +1102,7 @@ const triggerVendorBroadcast = async (enquiryId) => {
                                 volume: 'N/A'
                             }).catch(err => console.error('Error sending broadcast email to paid vendor:', err));
                         }
-                        
+
                         if (vendorUser.phone) {
                             const vendorName = vendorUser.company || vendorUser.name || 'Vendor';
                             sendNewEnquiryVendorWhatsApp(vendorUser.phone, {
@@ -1110,7 +1110,7 @@ const triggerVendorBroadcast = async (enquiryId) => {
                                 pickupCity: fromLocation,
                                 destinationCity: toLocation
                             }, vendorName, vendorUser.country || '')
-                            .catch(err => console.error('Error sending broadcast WhatsApp to paid vendor:', err));
+                                .catch(err => console.error('Error sending broadcast WhatsApp to paid vendor:', err));
 
                             sendNewEnquiryVendorSMS(vendorUser.phone, vendorName, {
                                 cargoType: sanitizedType,
@@ -1122,7 +1122,7 @@ const triggerVendorBroadcast = async (enquiryId) => {
                 });
             }).catch(err => console.error('Error looking up vendors for broadcast email:', err));
         }
-        
+
         enquiry.isBroadcasted = true;
         await enquiry.save();
     } catch (error) {
@@ -1146,7 +1146,7 @@ exports.broadcastEnquiry = async (req, res) => {
         if (enquiry.isBroadcasted) {
             return res.status(400).json({ message: 'Already broadcasted' });
         }
-        
+
         await triggerVendorBroadcast(id);
         res.json({ message: 'Broadcast triggered successfully' });
     } catch (error) {
@@ -1169,7 +1169,7 @@ exports.scheduleEnquiry = async (req, res) => {
         if (enquiry.isBroadcasted) {
             return res.status(400).json({ message: 'Already broadcasted' });
         }
-        
+
         enquiry.scheduledBroadcastTime = new Date(scheduledTime);
         await enquiry.save();
         res.json({ message: 'Broadcast scheduled successfully', scheduledTime: enquiry.scheduledBroadcastTime });

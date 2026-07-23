@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { 
-    LayoutDashboard, User, Truck, DollarSign, PlusCircle, MapPin, 
-    Percent, FileText, UserPlus, Users, FileSpreadsheet, Globe, 
+import {
+    LayoutDashboard, User, Truck, DollarSign, PlusCircle, MapPin,
+    Percent, FileText, UserPlus, Users, FileSpreadsheet, Globe,
     TrendingUp, AlertCircle, Settings, ChevronDown, ChevronRight, LogOut
 } from 'lucide-react';
 
@@ -28,6 +28,12 @@ const AdminSidebar = ({ isSidebarOpen, logout }) => {
             category: 'Dashboard',
             items: [
                 { name: 'Dashboard', path: '/admin/dashboard', icon: <LayoutDashboard size={16} /> }
+            ]
+        },
+        {
+            category: 'Quick Actions',
+            items: [
+                { name: 'Live Price', path: '/admin/search-price', icon: <DollarSign size={16} /> }
             ]
         },
         {
@@ -110,8 +116,8 @@ const AdminSidebar = ({ isSidebarOpen, logout }) => {
 
     if (adminRole === 'RM') {
         filteredMenuStructure = menuStructure.map(group => {
-            const filteredItems = group.items.filter(item => 
-                item.name === 'Dashboard' || adminPermissions.includes(item.name)
+            const filteredItems = group.items.filter(item =>
+                item.name === 'Dashboard' || item.name === 'Live Price' || adminPermissions.includes(item.name)
             );
             return { ...group, items: filteredItems };
         }).filter(group => group.items.length > 0);
@@ -166,11 +172,10 @@ const AdminSidebar = ({ isSidebarOpen, logout }) => {
                                                 <Link
                                                     key={item.name}
                                                     to={item.path}
-                                                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[11px] font-bold transition-all duration-200 relative group ${
-                                                        isActive
+                                                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[11px] font-bold transition-all duration-200 relative group ${isActive
                                                             ? 'bg-gradient-to-r from-[#0066FF] to-[#00b2fe] text-white shadow-md shadow-[#0066FF]/10'
                                                             : 'text-white/90 hover:bg-white/[0.03] hover:text-white'
-                                                    }`}
+                                                        }`}
                                                 >
                                                     {isActive && (
                                                         <span className="absolute left-0 top-2.5 bottom-2.5 w-0.5 bg-white rounded-r-full" />
@@ -202,11 +207,10 @@ const AdminSidebar = ({ isSidebarOpen, logout }) => {
                                     <Link
                                         key={item.name}
                                         to={item.path}
-                                        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[11px] font-bold transition-all duration-200 relative group ${
-                                            isActive
+                                        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[11px] font-bold transition-all duration-200 relative group ${isActive
                                                 ? 'bg-gradient-to-r from-[#0066FF] to-[#00b2fe] text-white shadow-md shadow-[#0066FF]/10'
                                                 : 'text-white/90 hover:bg-white/[0.03] hover:text-white'
-                                        }`}
+                                            }`}
                                     >
                                         {isActive && (
                                             <span className="absolute left-0 top-2.5 bottom-2.5 w-0.5 bg-white rounded-r-full" />

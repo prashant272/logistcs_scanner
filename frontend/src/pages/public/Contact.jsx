@@ -253,7 +253,7 @@ const Contact = () => {
                                     </div>
                                     <div>
                                         <h4 className="font-semibold text-white mb-1">Email Us</h4>
-                                        <p className="text-slate-300 text-sm">info@logisticdekho.com</p>
+                                        <p className="text-slate-300 text-sm">info@logisticsscanner.com</p>
                                     </div>
                                 </div>
                             </div>

@@ -151,7 +151,7 @@ const Privacy = () => {
                                         <div className="w-10 h-10 rounded-full bg-[#0066FF]/10 flex items-center justify-center shrink-0">
                                             <Mail size={18} className="text-[#0066FF]" />
                                         </div>
-                                        <span className="text-sm font-semibold text-slate-700">info@logisticdekho.com</span>
+                                        <span className="text-sm font-semibold text-slate-700">info@logisticsscanner.com</span>
                                     </div>
                                     <div className="flex items-center gap-3">
                                         <div className="w-10 h-10 rounded-full bg-[#0066FF]/10 flex items-center justify-center shrink-0">

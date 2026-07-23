@@ -9,6 +9,19 @@ const Navbar = () => {
     const { user, logout } = useAuth();
     const location = useLocation();
 
+    // Check for admin/RM session
+    const adminRole = sessionStorage.getItem('adminRole') || localStorage.getItem('adminRole');
+    const adminName = sessionStorage.getItem('adminName') || 'Admin';
+
+    const handleAdminLogout = () => {
+        sessionStorage.removeItem('adminToken');
+        sessionStorage.removeItem('adminRole');
+        sessionStorage.removeItem('adminName');
+        sessionStorage.removeItem('adminPermissions');
+        localStorage.removeItem('adminRole');
+        window.location.href = '/';
+    };
+
     // Check if the current page is the Home page
     const isHomePage = location.pathname === '/';
 
@@ -70,16 +83,16 @@ const Navbar = () => {
 
                 {/* Actions */}
                 <div className="hidden md:flex items-center space-x-4">
-                    {user ? (
+                    {user || adminRole ? (
                         <div className="flex items-center gap-4">
                             <Link 
-                                to={user.role === 'customer' ? '/customer' : user.role === 'vendor' ? '/vendor' : '/admin'}
+                                to={user ? (user.role === 'customer' ? '/customer' : user.role === 'vendor' ? '/vendor' : '/admin') : '/admin/dashboard'}
                                 className={`font-black text-xs uppercase tracking-widest transition-colors ${showWhiteBg ? 'text-gray-950 hover:text-[#0066FF]' : '!text-black hover:!text-[#0066FF]'}`}
                             >
-                                {user.name.split(' ')[0]}
+                                {user ? user.name.split(' ')[0] : adminName.split(' ')[0]}
                             </Link>
                             <button 
-                                onClick={logout} 
+                                onClick={user ? logout : handleAdminLogout} 
                                 className={`text-xs uppercase tracking-widest cursor-pointer font-black transition-colors ${
                                     showWhiteBg 
                                         ? 'text-gray-500 hover:text-[#0091d5]' 
@@ -153,10 +166,10 @@ const Navbar = () => {
                         Contact Us
                     </Link>
 
-                    {user ? (
+                    {user || adminRole ? (
                         <div className="flex flex-col items-center gap-2 pt-2">
-                            <span className="text-gray-950 font-bold text-base">{user.name}</span>
-                            <button onClick={() => { logout(); setIsMobileMenuOpen(false); }} className="text-gray-500 hover:text-[#0091d5] text-base uppercase tracking-widest font-bold">Logout</button>
+                            <span className="text-gray-950 font-bold text-base">{user ? user.name : adminName}</span>
+                            <button onClick={() => { (user ? logout() : handleAdminLogout()); setIsMobileMenuOpen(false); }} className="text-gray-500 hover:text-[#0091d5] text-base uppercase tracking-widest font-bold">Logout</button>
                         </div>
                     ) : (
                         <div className="flex flex-col items-center gap-3 pt-4 w-full px-6">

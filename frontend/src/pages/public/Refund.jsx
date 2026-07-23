@@ -90,7 +90,7 @@ const Refund = () => {
                             </h2>
                             <div className="pl-5">
                                 <ol className="list-decimal list-outside text-slate-600 space-y-3 pl-4 leading-relaxed marker:text-[#0066FF] marker:font-bold">
-                                    <li>Email <span className="text-[#0B1E43] font-bold">info@logisticdekho.com</span> with clear payment proof and your reason for requesting a refund.</li>
+                                    <li>Email <span className="text-[#0B1E43] font-bold">info@logisticsscanner.com</span> with clear payment proof and your reason for requesting a refund.</li>
                                     <li>Approved refunds will be processed directly to your original payment method.</li>
                                     <li>Please allow <span className="text-[#0066FF] font-bold">7 to 10 Business Days</span> for the credited amount to reflect in your account.</li>
                                 </ol>
@@ -138,7 +138,7 @@ const Refund = () => {
                                         <div className="w-10 h-10 rounded-full bg-[#0066FF]/10 flex items-center justify-center shrink-0">
                                             <Mail size={18} className="text-[#0066FF]" />
                                         </div>
-                                        <span className="text-sm font-semibold text-slate-700">info@logisticdekho.com</span>
+                                        <span className="text-sm font-semibold text-slate-700">info@logisticsscanner.com</span>
                                     </div>
                                     <div className="flex items-center gap-3">
                                         <div className="w-10 h-10 rounded-full bg-[#0066FF]/10 flex items-center justify-center shrink-0">

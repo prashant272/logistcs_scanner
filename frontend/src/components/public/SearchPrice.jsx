@@ -332,9 +332,12 @@ const SearchPrice = ({ isDashboard = false }) => {
             }
             
             setSearching(false);
-            const targetPath = user 
-                ? (user.role === 'customer' ? '/customer/search-results' : '/vendor/search-results')
-                : '/search-results';
+            let targetPath = '/search-results';
+            if (user) {
+                targetPath = user.role === 'customer' ? '/customer/search-results' : '/vendor/search-results';
+            } else if (isDashboard && (sessionStorage.getItem('adminRole') === 'admin' || sessionStorage.getItem('adminRole') === 'RM')) {
+                targetPath = '/admin/search-results';
+            }
             navigate(targetPath, {
                 state: {
                     payload,
@@ -375,9 +378,12 @@ const SearchPrice = ({ isDashboard = false }) => {
         } catch (err) {
             console.error('Search error:', err);
             setSearching(false);
-            const targetPath = user 
-                ? (user.role === 'customer' ? '/customer/search-results' : '/vendor/search-results')
-                : '/search-results';
+            let targetPath = '/search-results';
+            if (user) {
+                targetPath = user.role === 'customer' ? '/customer/search-results' : '/vendor/search-results';
+            } else if (isDashboard && (sessionStorage.getItem('adminRole') === 'admin' || sessionStorage.getItem('adminRole') === 'RM')) {
+                targetPath = '/admin/search-results';
+            }
             navigate(targetPath, {
                 state: {
                     payload,
