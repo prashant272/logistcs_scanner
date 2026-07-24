@@ -550,8 +550,9 @@ const DelhiveryCalculator = ({ isDashboard = false }) => {
                     <div className="lg:col-span-4">
                         <div className="sticky top-28">
                             {rateResult ? (
-                                <div className="bg-[#0B1E43] rounded-3xl p-1 overflow-hidden shadow-[0_10px_40px_-10px_rgba(11,30,67,0.4)] transition-all">
-                                    <div className="bg-white rounded-[22px] p-6 md:p-8 h-full flex flex-col">
+                                <div className="flex flex-col gap-6">
+                                    <div className="bg-[#0B1E43] rounded-3xl p-1 overflow-hidden shadow-[0_10px_40px_-10px_rgba(11,30,67,0.4)] transition-all">
+                                        <div className="bg-white rounded-[22px] p-6 md:p-8 h-full flex flex-col">
                                         <div className="flex justify-between items-start mb-6">
                                             <div>
                                                 <span className="inline-block bg-blue-50 text-blue-600 text-xs font-black px-2.5 py-1 rounded mb-3 uppercase tracking-widest border border-blue-100">
@@ -667,6 +668,55 @@ const DelhiveryCalculator = ({ isDashboard = false }) => {
                                             <p className="text-[11px] text-slate-500 font-medium leading-relaxed text-center">
                                                 <strong className="text-slate-700">Note:</strong> The quoted rates are based on the dimensions, weight, and invoice value provided by the customer. Any variation in these details at the time of shipment may lead to a revision of the applicable charges.
                                             </p>
+                                        </div>
+                                    </div>
+                                    </div>
+                                    
+                                    {/* Market Rate Comparison Section */}
+                                    <div className="bg-white rounded-[22px] p-6 md:p-8 border border-gray-200 shadow-[0_4px_20px_rgba(0,0,0,0.03)]">
+                                        <div className="flex items-center gap-2 mb-4">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-[#0066FF]"></div>
+                                            <h4 className="text-xs font-black text-gray-800 uppercase tracking-wider">Market Rate Comparison (Estimated)</h4>
+                                        </div>
+                                        
+                                        <div className="grid grid-cols-2 gap-3 mb-4">
+                                            {/* Delhivery */}
+                                            <div className="bg-white border border-blue-100 rounded-xl p-3 text-center shadow-sm relative overflow-hidden">
+                                                <div className="absolute top-0 left-0 w-full h-1 bg-blue-500"></div>
+                                                <div className="text-[10px] text-blue-600 font-bold uppercase mb-1">Delhivery</div>
+                                                <div className="text-sm font-black text-gray-800">₹{Math.round(rateResult.finalPrice).toLocaleString('en-IN')}</div>
+                                            </div>
+                                            {/* TCI Freight */}
+                                            <div className="bg-white border border-gray-200 rounded-xl p-3 text-center shadow-sm relative overflow-hidden">
+                                                <div className="absolute top-0 left-0 w-full h-1 bg-gray-300"></div>
+                                                <div className="text-[10px] text-gray-500 font-bold uppercase mb-1">TCI Freight</div>
+                                                <div className="text-xs font-black text-gray-800">
+                                                    ₹{Math.round(rateResult.finalPrice * 1.10).toLocaleString('en-IN')} - ₹{Math.round(rateResult.finalPrice * 1.12).toLocaleString('en-IN')}
+                                                </div>
+                                            </div>
+                                            {/* VRL Logistics */}
+                                            <div className="bg-white border border-gray-200 rounded-xl p-3 text-center shadow-sm relative overflow-hidden">
+                                                <div className="absolute top-0 left-0 w-full h-1 bg-gray-300"></div>
+                                                <div className="text-[10px] text-gray-500 font-bold uppercase mb-1">VRL Logistics</div>
+                                                <div className="text-xs font-black text-gray-800">
+                                                    ₹{Math.round(rateResult.finalPrice * 1.22).toLocaleString('en-IN')} - ₹{Math.round(rateResult.finalPrice * 1.25).toLocaleString('en-IN')}
+                                                </div>
+                                            </div>
+                                            {/* Gati */}
+                                            <div className="bg-white border border-gray-200 rounded-xl p-3 text-center shadow-sm relative overflow-hidden">
+                                                <div className="absolute top-0 left-0 w-full h-1 bg-gray-300"></div>
+                                                <div className="text-[10px] text-gray-500 font-bold uppercase mb-1">Gati</div>
+                                                <div className="text-xs font-black text-gray-800">
+                                                    ₹{Math.round(rateResult.finalPrice * 1.13).toLocaleString('en-IN')} - ₹{Math.round(rateResult.finalPrice * 1.15).toLocaleString('en-IN')}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="bg-green-50 border border-green-100 rounded-xl p-3 text-center flex flex-col items-center justify-center gap-2">
+                                            <span className="text-[10px] font-black text-green-600 uppercase tracking-wider">Average Market Rate</span>
+                                            <span className="text-sm font-black text-green-700 bg-green-100 px-3 py-1 rounded-lg">
+                                                ₹{Math.round(rateResult.finalPrice * 1.1125).toLocaleString('en-IN')} - ₹{Math.round(rateResult.finalPrice * 1.13).toLocaleString('en-IN')}
+                                            </span>
                                         </div>
                                     </div>
                                 </div>
