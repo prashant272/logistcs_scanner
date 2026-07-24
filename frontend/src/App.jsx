@@ -72,6 +72,7 @@ import SearchResults from './pages/public/SearchResults';
 const VendorNetwork = lazy(() => import('./pages/public/VendorNetwork'));
 const VendorPublicProfile = lazy(() => import('./pages/public/VendorPublicProfile'));
 const TrackShipment = lazy(() => import('./pages/public/TrackShipment'));
+const TrackPtl = lazy(() => import('./pages/public/TrackPtl'));
 const Terms = lazy(() => import('./pages/public/Terms'));
 const Privacy = lazy(() => import('./pages/public/Privacy'));
 const Refund = lazy(() => import('./pages/public/Refund'));
@@ -290,6 +291,7 @@ function App() {
                     <Route path="/vendor-network" element={<VendorNetwork />} />
                     <Route path="/vendor-network/profile/:id" element={<VendorPublicProfile />} />
                     <Route path="/track" element={<TrackShipment />} />
+                    <Route path="/track-ptl" element={<TrackPtl />} />
                     <Route path="/ptl-calculator" element={<DelhiveryCalculator />} />
                     <Route path="/ptl-calculator/order" element={<DelhiveryCreateOrder />} />
                     <Route path="/search-results" element={<SearchResults />} />

@@ -269,7 +269,7 @@ const SearchResults = () => {
       quantity: queryDetails.quantity || '',
       deliverySpeed: rate ? rate.deliverySpeed : '3-5',
       price: rate ? rate.price : null,
-      targetPrice: targetPrice ? Number(targetPrice) : null,
+      targetPrice: targetPrice || null,
       attachment: attachment || '',
       vendor: rate ? rate.vendor._id : null,
       isDirect: false, // Targeted matched enquiry
@@ -306,7 +306,7 @@ const SearchResults = () => {
       quantity: queryDetails.quantity || '',
       deliverySpeed: '3-5',
       price: null,
-      targetPrice: targetPrice ? Number(targetPrice) : null,
+      targetPrice: targetPrice || null,
       attachment: attachment || '',
       vendor: null,
       isDirect: true, // Public broadcast direct enquiry
@@ -413,7 +413,7 @@ const SearchResults = () => {
         quantity: queryDetails.quantity || '',
         deliverySpeed: '3-5',
         price: null,
-        targetPrice: targetPrice ? Number(targetPrice) : null,
+        targetPrice: targetPrice || null,
         vendor: null,
         isDirect: true,
         isBooking: isBooking,
@@ -939,7 +939,7 @@ const SearchResults = () => {
                     quantity: queryDetails.quantity || '',
                     deliverySpeed: '3-5',
                     price: null,
-                    targetPrice: targetPrice ? Number(targetPrice) : null,
+                    targetPrice: targetPrice || null,
                     vendor: null,
                     isDirect: true,
                     isBooking: isBooking,
@@ -1048,7 +1048,7 @@ const SearchResults = () => {
                   <Coins size={11} className="text-slate-400" /> My Target Price
                 </label>
                 <input
-                  type="number"
+                  type="text"
                   placeholder="Enter your target price"
                   value={targetPrice}
                   onChange={(e) => setTargetPrice(e.target.value)}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, ChevronDown } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
@@ -73,9 +73,16 @@ const Navbar = () => {
                     <Link to="/vendor-network" className={linkClass}>
                         Vendor Network Search
                     </Link>
-                    <span className={`cursor-default text-xs uppercase tracking-widest font-black !text-black`}>
-                        Track
-                    </span>
+                    <div className="relative group py-2">
+                        <span className={`cursor-pointer ${linkClass} flex items-center gap-1`}>
+                            Track <ChevronDown size={14} className="group-hover:rotate-180 transition-transform duration-200" />
+                        </span>
+                        <div className="absolute top-full left-0 mt-1 w-48 bg-white border border-slate-100 shadow-xl rounded-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 flex flex-col overflow-hidden before:absolute before:content-[''] before:w-full before:h-4 before:-top-4 before:left-0">
+                            <Link to="/track-ptl" className="px-4 py-3 text-xs font-bold text-slate-700 hover:bg-slate-50 hover:text-[#0066FF]">
+                                Track PTL Booking
+                            </Link>
+                        </div>
+                    </div>
                     <Link to="/contact" className={linkClass}>
                         Contact Us
                     </Link>
@@ -153,11 +160,18 @@ const Navbar = () => {
                     >
                         Vendor Network Search
                     </Link>
-                    <span
-                        className="text-black text-base uppercase tracking-widest font-black cursor-default"
-                    >
-                        Track
-                    </span>
+                    <div className="flex flex-col items-center space-y-3 w-full border-y border-slate-100 py-3">
+                        <span className="text-black text-base uppercase tracking-widest font-black cursor-default">
+                            Track
+                        </span>
+                        <Link
+                            to="/track-ptl"
+                            onClick={() => setIsMobileMenuOpen(false)}
+                            className="text-slate-500 hover:text-[#0091d5] text-sm font-bold uppercase tracking-wider"
+                        >
+                            Track PTL Booking
+                        </Link>
+                    </div>
                     <Link
                         to="/contact"
                         onClick={() => setIsMobileMenuOpen(false)}

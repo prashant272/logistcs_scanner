@@ -169,8 +169,8 @@ const enquirySchema = new mongoose.Schema({
         default: null
     },
     targetPrice: {
-        type: Number,
-        default: null
+        type: String,
+        default: ''
     },
     attachment: {
         type: String,

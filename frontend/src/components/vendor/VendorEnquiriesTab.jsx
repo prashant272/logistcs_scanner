@@ -759,7 +759,10 @@ const VendorEnquiriesTab = ({ title, type }) => {
                             <span className="text-[8px] uppercase">Hidden</span>
                           </div>
                         ) : (
-                          enq.targetPrice ? `${enq.targetCurrency || '₹'} ${enq.targetPrice.toLocaleString()}` : 'N/A'
+                          enq.targetPrice ? (() => {
+                              const str = String(enq.targetPrice).trim();
+                              return /^[\d,\.]+$/.test(str) ? `$ ${str}` : str;
+                          })() : 'N/A'
                         )}
                       </div>
                     </div>
@@ -932,9 +935,14 @@ const VendorEnquiriesTab = ({ title, type }) => {
                 </div>
               )}
               {viewingEnquiry.targetPrice && (
-                <div className="space-y-1">
+                <div className="space-y-1.5">
                   <span className="text-[10px] text-slate-600 uppercase font-black tracking-wider">Target Price</span>
-                  <p className="text-sm font-bold text-[#0066FF] bg-blue-50/50 p-3 rounded-xl border border-blue-100/60">$ {viewingEnquiry.targetPrice.toLocaleString()}</p>
+                  <p className="text-sm font-bold text-[#0066FF] bg-blue-50/50 p-3 rounded-xl border border-blue-100/60">
+                    {(() => {
+                        const str = String(viewingEnquiry.targetPrice).trim();
+                        return /^[\d,\.]+$/.test(str) ? `$ ${str}` : str;
+                    })()}
+                  </p>
                 </div>
               )}
               {viewingEnquiry.attachment && (

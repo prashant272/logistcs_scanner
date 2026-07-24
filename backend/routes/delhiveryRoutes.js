@@ -18,7 +18,7 @@ router.post('/estimate', authMiddleware.optional, delhiveryController.estimatePr
 router.post('/book', authMiddleware.optional, upload.single('invoice_file'), delhiveryController.createPtlBooking);
 router.get('/manifest/status/:id', authMiddleware, delhiveryController.checkManifestStatus);
 router.get('/my-bookings', authMiddleware, delhiveryController.getMyPtlBookings);
-router.get('/track/:lrn', authMiddleware, delhiveryController.trackPtlBooking);
+router.get('/track/:lrn', delhiveryController.trackPtlBooking);
 router.get('/label/:lrn', authMiddleware, delhiveryController.printLabel);
 router.delete('/cancel/:lrn', authMiddleware, delhiveryController.cancelPtlBooking);
 router.post('/pickup/:lrn', authMiddleware, delhiveryController.schedulePickup);
