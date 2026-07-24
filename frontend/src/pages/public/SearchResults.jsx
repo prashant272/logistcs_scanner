@@ -657,7 +657,7 @@ const SearchResults = () => {
                           <>
                             <div className="bg-blue-50 border border-blue-200 rounded-xl px-3 py-2 text-center min-w-[90px] shadow-sm">
                               <div className="text-[9px] text-blue-705 font-black uppercase tracking-wider">Container / Size</div>
-                              <div className="text-xs font-black text-slate-900 mt-0.5">{rate.vehicleType || rate.fclStandard || '40 FT'}</div>
+                              <div className="text-xs font-black text-slate-900 mt-0.5">{rate.vehicleType || rate.fclStandard || searchPayload.fclStandard || queryDetails.fclStandard || '20ft Standard'}</div>
                             </div>
                             <div className="bg-indigo-50 border border-indigo-200 rounded-xl px-3 py-2 text-center min-w-[90px] shadow-sm">
                               <div className="text-[9px] text-indigo-700 font-black uppercase tracking-wider">Load Type</div>

@@ -245,7 +245,7 @@ const VendorBookingsTab = ({ title = 'Bookings', type = 'my' }) => {
                             <span className="text-slate-400 block uppercase font-black text-[8px] tracking-wider">Sea Load</span>
                             <span className="text-slate-800 truncate block font-black">
                               {bkg.seaLoadType ? bkg.seaLoadType + ' ' : ''}
-                              {bkg.seaLoadType === 'LCL' ? (bkg.cbmRange ? `(${bkg.cbmRange} CBM)` : '') : (bkg.fclStandard || '')}
+                              {bkg.seaLoadType === 'LCL' ? (bkg.cbmRange ? `(${bkg.cbmRange} CBM)` : '') : (bkg.fclStandard || '20ft Standard')}
                             </span>
                           </div>
                         )}

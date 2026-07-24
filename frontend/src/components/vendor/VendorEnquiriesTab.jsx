@@ -499,10 +499,10 @@ const VendorEnquiriesTab = ({ title, type }) => {
                     </div>
 
                     {/* Container Type for Sea FCL */}
-                    {(enq.type === 'sea' && (enq.seaLoadType?.toUpperCase() === 'FCL' || enq.truckLoad?.toUpperCase() === 'FCL') && enq.fclStandard) && (
+                    {(enq.type === 'sea' && (enq.seaLoadType?.toUpperCase() === 'FCL' || enq.truckLoad?.toUpperCase() === 'FCL')) && (
                       <div className="bg-white border border-slate-200/80 rounded-lg px-3 py-1.5 text-center min-w-[70px] shadow-sm">
                         <div className="text-[9px] text-slate-600 font-black uppercase tracking-wider">Container Type</div>
-                        <div className="text-[10px] font-black text-slate-800 mt-0.5">{enq.fclStandard}</div>
+                        <div className="text-[10px] font-black text-slate-800 mt-0.5">{enq.fclStandard || '20ft'}</div>
                       </div>
                     )}
 
