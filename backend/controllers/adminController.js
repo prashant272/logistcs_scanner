@@ -44,8 +44,14 @@ exports.getVendors = async (req, res) => {
         const skip = (page - 1) * limit;
         const search = req.query.search || '';
         const statusFilter = req.query.status || 'All Status';
+        const serviceFilter = req.query.service || '';
 
         const query = { role: 'vendor' };
+        
+        if (serviceFilter) {
+            const servicesArray = serviceFilter.split(',').map(s => s.trim());
+            query.services = { $in: servicesArray };
+        }
         if (req.user && req.user.role === 'RM') {
             query.assignedRM = req.user.id;
         }

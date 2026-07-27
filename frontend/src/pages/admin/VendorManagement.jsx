@@ -3,7 +3,7 @@ import axios from 'axios';
 import useInfiniteScroll from '../../hooks/useInfiniteScroll';
 import {
   ShieldCheck, Truck, Mail, Phone, MapPin, Building, Calendar,
-  Search, ExternalLink, LogIn, CheckCircle2, AlertCircle, Upload, RefreshCw, Plus, X, Loader2, Activity, Edit, Download
+  Search, ExternalLink, LogIn, CheckCircle2, AlertCircle, Upload, RefreshCw, Plus, X, Loader2, Activity, Edit, Download, ChevronDown
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
@@ -14,11 +14,15 @@ const VendorManagement = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('All Status');
+  const [serviceFilter, setServiceFilter] = useState([]);
+  const [showServiceDropdown, setShowServiceDropdown] = useState(false);
   const [uploadingVendorId, setUploadingVendorId] = useState(null);
   const [rms, setRms] = useState([]);
   const [plans, setPlans] = useState([]);
   const [assigningRmId, setAssigningRmId] = useState(null);
   const [updatingPlanId, setUpdatingPlanId] = useState(null);
+
+  const toggleService = (s) => setServiceFilter(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s]);
 
   // Activity Modal State
   const [activityModalOpen, setActivityModalOpen] = useState(false);
@@ -87,7 +91,7 @@ const VendorManagement = () => {
       else setLoadingMore(true);
       setError('');
       const token = sessionStorage.getItem('adminToken');
-      const { data } = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/admin/vendors?page=${targetPage}&limit=10&search=${debouncedSearchQuery}&status=${statusFilter}`, {
+      const { data } = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/admin/vendors?page=${targetPage}&limit=10&search=${debouncedSearchQuery}&status=${statusFilter}&service=${serviceFilter.join(',')}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -106,14 +110,14 @@ const VendorManagement = () => {
       setLoading(false);
       setLoadingMore(false);
     }
-  }, [debouncedSearchQuery, statusFilter]);
+  }, [debouncedSearchQuery, statusFilter, serviceFilter]);
 
   // Reset page when search or status changes
   useEffect(() => {
     setPage(1);
     setVendors([]);
     fetchVendors(1, true);
-  }, [debouncedSearchQuery, statusFilter, fetchVendors]);
+  }, [debouncedSearchQuery, statusFilter, serviceFilter, fetchVendors]);
 
   // Fetch vendors when page changes
   useEffect(() => {
@@ -486,7 +490,7 @@ const VendorManagement = () => {
       setDownloadingExcel(true);
       const token = sessionStorage.getItem('adminToken');
       // Fetch all vendors matching current filters by setting a high limit
-      const { data } = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/admin/vendors?page=1&limit=100000&search=${debouncedSearchQuery}&status=${statusFilter}`, {
+      const { data } = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/admin/vendors?page=1&limit=100000&search=${debouncedSearchQuery}&status=${statusFilter}&service=${serviceFilter.join(',')}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -504,6 +508,7 @@ const VendorManagement = () => {
         "Organization": v.company || 'N/A',
         "Country": v.country || 'N/A',
         "Mobile": v.phone || 'N/A',
+        "Services": v.services && v.services.length > 0 ? v.services.join(', ') : 'None',
         "Status": v.verificationStatus || 'Pending',
         "Created At": new Date(v.createdAt).toLocaleDateString(),
         "Plan": v.activePlan?.name || 'Basic',
@@ -565,6 +570,35 @@ const VendorManagement = () => {
             <option value="Premium Vendors">Premium Vendors</option>
             <option value="Paid Vendors">Paid Vendors</option>
           </select>
+
+          {/* Service Filter Multi-Select */}
+          <div className="relative">
+            <button
+              onClick={() => setShowServiceDropdown(!showServiceDropdown)}
+              className="bg-white border border-slate-200/80 rounded-xl px-4 py-2.5 text-xs text-slate-700 font-bold focus:outline-none focus:border-[#0066FF] focus:ring-1 focus:ring-[#0066FF] transition-all shadow-sm cursor-pointer flex items-center justify-between gap-2 min-w-[140px]"
+            >
+              <span className="truncate">
+                {serviceFilter.length === 0 ? 'All Services' : `${serviceFilter.length} Selected`}
+              </span>
+              <ChevronDown size={14} className={`transition-transform ${showServiceDropdown ? 'rotate-180' : ''}`} />
+            </button>
+
+            {showServiceDropdown && (
+              <div className="absolute z-10 mt-2 w-48 bg-white border border-slate-200 rounded-xl shadow-lg p-2 max-h-60 overflow-y-auto left-0">
+                {['Land', 'Sea', 'Air', 'Warehouse', 'CHA'].map((s) => (
+                  <label key={s} className="flex items-center gap-2 p-2 hover:bg-slate-50 rounded-lg cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={serviceFilter.includes(s)}
+                      onChange={() => toggleService(s)}
+                      className="rounded border-slate-300 text-[#0066FF] focus:ring-[#0066FF] cursor-pointer"
+                    />
+                    <span className="text-xs font-bold text-slate-700">{s === 'Land' ? 'Land / Transporter' : s === 'Sea' ? 'Sea / Forwarder' : s}</span>
+                  </label>
+                ))}
+              </div>
+            )}
+          </div>
 
           <button
             onClick={handleRefresh}
