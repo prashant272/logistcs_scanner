@@ -183,7 +183,20 @@ const VendorFinanceList = () => {
                                         </td>
                                         <td className="p-4 text-slate-700">{app.approvedAmount ? `₹${Number(app.approvedAmount).toLocaleString('en-IN')}` : '-'}</td>
                                         <td className="p-4 text-slate-700">{app.processingFees ? `₹${Number(app.processingFees).toLocaleString('en-IN')}` : '-'}</td>
-                                        <td className="p-4 text-red-650 max-w-[150px] truncate">{app.rejectionReason || '-'}</td>
+                                        <td className="p-4 text-red-650 max-w-[150px]">
+                                            {app.rejectionReason ? (
+                                                <div className="flex items-center gap-2 group relative">
+                                                    <span className="truncate">{app.rejectionReason}</span>
+                                                    <Eye size={14} className="text-slate-400 cursor-pointer hover:text-slate-600 flex-shrink-0" />
+                                                    
+                                                    {/* Tooltip on hover */}
+                                                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max max-w-xs bg-slate-800 text-white text-[10px] p-2.5 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10 whitespace-normal leading-relaxed">
+                                                        {app.rejectionReason}
+                                                        <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-800"></div>
+                                                    </div>
+                                                </div>
+                                            ) : '-'}
+                                        </td>
                                         <td className="p-4 text-center">
                                             {app.adminStatus === 'Approved' ? (
                                                 app.isFeePaid ? (

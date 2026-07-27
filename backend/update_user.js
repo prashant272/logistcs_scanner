@@ -9,7 +9,7 @@ const User = require('./models/User'); // Adjust path if needed. Assuming models
 mongoose.connect(process.env.MONGO_URI)
     .then(async () => {
         try {
-            const email = 'business@droobvoyage.com';
+            const email = 'amit@vertexexim.com';
             const user = await User.findOne({ email });
 
             if (!user) {
