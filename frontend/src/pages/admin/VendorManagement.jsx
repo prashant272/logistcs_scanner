@@ -585,7 +585,7 @@ const VendorManagement = () => {
 
             {showServiceDropdown && (
               <div className="absolute z-10 mt-2 w-48 bg-white border border-slate-200 rounded-xl shadow-lg p-2 max-h-60 overflow-y-auto left-0">
-                {['Land', 'Sea', 'Air', 'Warehouse', 'CHA'].map((s) => (
+                {['Land', 'Only Land', 'Sea', 'Air', 'Warehouse', 'CHA'].map((s) => (
                   <label key={s} className="flex items-center gap-2 p-2 hover:bg-slate-50 rounded-lg cursor-pointer">
                     <input
                       type="checkbox"
@@ -593,7 +593,7 @@ const VendorManagement = () => {
                       onChange={() => toggleService(s)}
                       className="rounded border-slate-300 text-[#0066FF] focus:ring-[#0066FF] cursor-pointer"
                     />
-                    <span className="text-xs font-bold text-slate-700">{s === 'Land' ? 'Land / Transporter' : s === 'Sea' ? 'Sea / Forwarder' : s}</span>
+                    <span className="text-xs font-bold text-slate-700">{s === 'Land' ? 'Land / Transporter' : s === 'Only Land' ? 'Only Land (Exact Match)' : s === 'Sea' ? 'Sea / Forwarder' : s}</span>
                   </label>
                 ))}
               </div>

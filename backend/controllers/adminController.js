@@ -50,7 +50,11 @@ exports.getVendors = async (req, res) => {
         
         if (serviceFilter) {
             const servicesArray = serviceFilter.split(',').map(s => s.trim());
-            query.services = { $in: servicesArray };
+            if (servicesArray.includes('Only Land')) {
+                query.services = ['Land'];
+            } else {
+                query.services = { $in: servicesArray };
+            }
         }
         if (req.user && req.user.role === 'RM') {
             query.assignedRM = req.user.id;
