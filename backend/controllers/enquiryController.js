@@ -59,8 +59,14 @@ exports.createEnquiry = async (req, res) => {
             }
         }
 
-        // Validate client and vendor ObjectIds
-        let validatedClientId = (clientId && mongoose.Types.ObjectId.isValid(clientId)) ? clientId : null;
+        let validatedClientId = null;
+        if (clientId && mongoose.Types.ObjectId.isValid(clientId)) {
+            const User = require('../models/User');
+            const exists = await User.findById(clientId);
+            if (exists) {
+                validatedClientId = clientId;
+            }
+        }
         const validatedVendorId = (vendor && mongoose.Types.ObjectId.isValid(vendor)) ? vendor : null;
         const validatedExcludedVendorId = (excludedVendor && mongoose.Types.ObjectId.isValid(excludedVendor)) ? excludedVendor : null;
 
@@ -68,25 +74,16 @@ exports.createEnquiry = async (req, res) => {
         const bcrypt = require('bcryptjs');
         const { sendGuestAccountCreatedEmail } = require('../services/notificationService');
 
-        // Check customer enquiry limits if logged in
+        let loggedInUser = null;
         if (validatedClientId) {
-            const userObj = await User.findById(validatedClientId);
-            const hasActivePlan = userObj && userObj.activePlan && userObj.planEndDate && new Date(userObj.planEndDate) > new Date();
+            loggedInUser = await User.findById(validatedClientId);
+        }
 
-            if (!hasActivePlan) {
-                const count = await Enquiry.countDocuments({ client: validatedClientId });
-                if (count >= 5) {
-                    return res.status(403).json({
-                        message: 'You have reached the limit of 5 free enquiries. Please upgrade your plan to continue.'
-                    });
-                }
-            }
-        } else if (guestEmail) {
-            // Check if user already exists
+        // If guestEmail is provided and differs from logged-in user, use guestEmail to find/create client
+        if (guestEmail && (!loggedInUser || loggedInUser.email.toLowerCase() !== guestEmail.toLowerCase())) {
             let guestUser = await User.findOne({ email: guestEmail.toLowerCase() });
 
             if (!guestUser) {
-                // Create a new customer account automatically
                 const generatedPassword = Math.random().toString(36).slice(-8) + Math.floor(Math.random() * 1000);
                 const salt = await bcrypt.genSalt(10);
                 const hashedPassword = await bcrypt.hash(generatedPassword, salt);
@@ -98,16 +95,29 @@ exports.createEnquiry = async (req, res) => {
                     password: hashedPassword,
                     role: 'customer',
                     company: guestCompany || '',
-                    isVerified: true // Auto-verify so they can login directly
+                    isVerified: true
                 });
 
-                // Send email with credentials (run in background)
                 sendGuestAccountCreatedEmail(guestEmail, guestName, generatedPassword)
                     .catch(err => console.error('Error sending guest account email:', err));
             }
 
-            // Link the enquiry to this user
             validatedClientId = guestUser._id;
+            loggedInUser = guestUser;
+        }
+
+        // Check customer enquiry limits if it's a customer
+        if (loggedInUser && loggedInUser.role !== 'admin' && loggedInUser.role !== 'rm') {
+            const hasActivePlan = loggedInUser.activePlan && loggedInUser.planEndDate && new Date(loggedInUser.planEndDate) > new Date();
+
+            if (!hasActivePlan) {
+                const count = await Enquiry.countDocuments({ client: validatedClientId });
+                if (count >= 5) {
+                    return res.status(403).json({
+                        message: 'You have reached the limit of 5 free enquiries. Please upgrade your plan to continue.'
+                    });
+                }
+            }
         }
 
         // Auto-correct isBooking if the client is a vendor (helps when they created it as a guest)
@@ -279,6 +289,7 @@ exports.getVendorEnquiries = async (req, res) => {
                         isDirect: true,
                         $or: [
                             { client: { $in: customerIds } },
+                            { client: null },
                             { type: 'land', client: { $ne: req.user.id } } // Includes 'land' enquiries created by vendors
                         ]
                     };
