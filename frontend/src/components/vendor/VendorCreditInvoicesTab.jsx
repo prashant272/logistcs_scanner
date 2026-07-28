@@ -120,7 +120,7 @@ const VendorCreditInvoicesTab = () => {
                                 <th className="px-6 py-4 text-xs font-black text-slate-500 uppercase tracking-wider">Uploaded By</th>
                                 <th className="px-6 py-4 text-xs font-black text-slate-500 uppercase tracking-wider">Invoice Doc</th>
                                 <th className="px-6 py-4 text-xs font-black text-slate-500 uppercase tracking-wider">Amount</th>
-                                <th className="px-6 py-4 text-xs font-black text-slate-500 uppercase tracking-wider">Status</th>
+                                <th className="p-4 text-center">Action</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100 text-xs font-bold">
@@ -165,16 +165,6 @@ const VendorCreditInvoicesTab = () => {
                                                 <IndianRupee className="w-3.5 h-3.5 mr-0.5 text-slate-400" />
                                                 {inv.amount.toLocaleString()}
                                             </span>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold border ${getStatusColor(inv.status)}`}>
-                                                {inv.status === 'Paid' ? 'Approved' : inv.status}
-                                            </span>
-                                            {inv.status === 'Rejected' && inv.rejectionReason && (
-                                                <p className="text-xs text-red-500 mt-1 font-semibold max-w-[200px] truncate" title={inv.rejectionReason}>
-                                                    {inv.rejectionReason}
-                                                </p>
-                                            )}
                                         </td>
                                         <td className="p-4 text-center">
                                             <div className="flex justify-center">
@@ -239,7 +229,7 @@ const VendorCreditInvoicesTab = () => {
                                     <div>
                                         <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-1">Current Status</span>
                                         <span className={`px-3 py-1 rounded-lg text-xs font-black uppercase tracking-wider ${getStatusColor(selectedInvoice.status)}`}>
-                                            {selectedInvoice.status === 'Paid' ? 'Approved' : selectedInvoice.status}
+                                            {(selectedInvoice.status === 'Paid' || selectedInvoice.status === 'Approved') ? 'APPROVED INVOICE' : (selectedInvoice.status === 'Repayment Pending' ? 'VERIFICATION PENDING' : selectedInvoice.status)}
                                         </span>
                                     </div>
                                 </div>

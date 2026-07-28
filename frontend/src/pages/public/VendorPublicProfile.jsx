@@ -185,6 +185,16 @@ const VendorPublicProfile = () => {
     // Determine verification badge
     const isVerified = vendor.isVerified;
 
+    const renderContactDetail = (value) => {
+        if (!value) return 'N/A';
+        if (user?.role === 'admin' || user?._id === vendor?._id) return value;
+        if (user?.role === 'vendor' || user?.role === 'vendor-sub') {
+            if (user?.activePlan && user.activePlan.price > 0) return value;
+            return <span className="text-[10px] text-amber-600 font-bold bg-amber-50 px-2 py-0.5 rounded">Please upgrade your plan to see these details</span>;
+        }
+        return <span className="text-[10px] text-slate-500 font-bold bg-slate-100 px-2 py-0.5 rounded">This is only for vendors</span>;
+    };
+
     return (
         <div className="bg-slate-50 min-h-screen pt-28 pb-16 font-sans text-slate-800">
             {/* Breadcrumbs */}
@@ -357,11 +367,11 @@ const VendorPublicProfile = () => {
                                 </div>
                                 <div className="flex justify-between border-b border-slate-50 pb-2 hover:bg-slate-50/50 rounded transition-colors px-2 -mx-2">
                                     <span className="text-slate-400 font-bold">Alternative Email</span>
-                                    <span className="text-slate-800 font-extrabold">{vendor.alternativeEmail || 'N/A'}</span>
+                                    <span className="text-slate-800 font-extrabold text-right">{renderContactDetail(vendor.alternativeEmail)}</span>
                                 </div>
                                 <div className="flex justify-between border-b border-slate-50 pb-2 hover:bg-slate-50/50 rounded transition-colors px-2 -mx-2">
                                     <span className="text-slate-400 font-bold">Alternative Contact</span>
-                                    <span className="text-slate-800 font-extrabold">{vendor.alternativeNumber || 'N/A'}</span>
+                                    <span className="text-slate-800 font-extrabold text-right">{renderContactDetail(vendor.alternativeNumber)}</span>
                                 </div>
                             </div>
                         </div>
@@ -379,11 +389,11 @@ const VendorPublicProfile = () => {
                                 </div>
                                 <div className="flex justify-between border-b border-slate-50 pb-2 hover:bg-slate-50/50 rounded transition-colors px-2 -mx-2">
                                     <span className="text-slate-400 font-bold">Email</span>
-                                    <span className="text-slate-800 font-extrabold">{vendor.email || 'N/A'}</span>
+                                    <span className="text-slate-800 font-extrabold text-right">{renderContactDetail(vendor.email)}</span>
                                 </div>
                                 <div className="flex justify-between border-b border-slate-50 pb-2 hover:bg-slate-50/50 rounded transition-colors px-2 -mx-2">
                                     <span className="text-slate-400 font-bold">Phone Number</span>
-                                    <span className="text-slate-800 font-extrabold">{vendor.phone || 'N/A'}</span>
+                                    <span className="text-slate-800 font-extrabold text-right">{renderContactDetail(vendor.phone)}</span>
                                 </div>
                             </div>
                         </div>

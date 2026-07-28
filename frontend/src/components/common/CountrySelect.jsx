@@ -69,6 +69,22 @@ const CountrySelect = ({
     onChange({ country: customCountryName || 'Others', phoneCode: val });
   };
 
+  const handleCustomCountryBlur = () => {
+    const trimmedVal = customCountryName.trim();
+    if (trimmedVal !== customCountryName) {
+      setCustomCountryName(trimmedVal);
+      onChange({ country: trimmedVal, phoneCode: customPhoneCode });
+    }
+  };
+
+  const handleCustomPhoneCodeBlur = () => {
+    const trimmedVal = customPhoneCode.trim();
+    if (trimmedVal !== customPhoneCode) {
+      setCustomPhoneCode(trimmedVal);
+      onChange({ country: customCountryName || 'Others', phoneCode: trimmedVal });
+    }
+  };
+
   // Filter countries by name or dialing code
   const filteredCountries = COUNTRIES.filter(c => {
     const q = searchQuery.toLowerCase();
@@ -153,6 +169,7 @@ const CountrySelect = ({
               placeholder="e.g. Costa Rica"
               value={customCountryName}
               onChange={handleCustomCountryChange}
+              onBlur={handleCustomCountryBlur}
               className="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-bold text-slate-800 focus:outline-none focus:border-[#00b2fe] transition-all"
             />
           </div>
@@ -166,6 +183,7 @@ const CountrySelect = ({
               placeholder="e.g. +506"
               value={customPhoneCode}
               onChange={handleCustomPhoneCodeChange}
+              onBlur={handleCustomPhoneCodeBlur}
               className="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-bold text-slate-800 focus:outline-none focus:border-[#00b2fe] transition-all"
             />
           </div>

@@ -340,7 +340,7 @@ const UploadInvoiceTab = () => {
                                         </td>
                                         <td className="px-6 py-4">
                                             <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold border ${getStatusColor(inv.status)}`}>
-                                                {inv.status}
+                                                {(inv.status === 'Paid' || inv.status === 'Approved') ? 'APPROVED INVOICE' : (inv.status === 'Repayment Pending' ? 'VERIFICATION PENDING' : inv.status)}
                                             </span>
                                             {inv.status === 'Rejected' && inv.rejectionReason && (
                                                 <p className="text-xs text-red-500 mt-1 font-semibold max-w-[200px] truncate" title={inv.rejectionReason}>
@@ -445,7 +445,7 @@ const UploadInvoiceTab = () => {
                                     <div>
                                         <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-1">Current Status</span>
                                         <span className={`px-3 py-1 rounded-lg text-xs font-black uppercase tracking-wider ${getStatusColor(selectedInvoice.status)}`}>
-                                            {selectedInvoice.status}
+                                            {(selectedInvoice.status === 'Paid' || selectedInvoice.status === 'Approved') ? 'APPROVED INVOICE' : (selectedInvoice.status === 'Repayment Pending' ? 'VERIFICATION PENDING' : selectedInvoice.status)}
                                         </span>
                                     </div>
                                     {selectedInvoice.timelineDate && (

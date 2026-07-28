@@ -193,7 +193,7 @@ const AdminInvoiceRequests = () => {
                                         </td>
                                         <td className="p-4 text-center">
                                             <span className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider ${getStatusColor(inv.status)}`}>
-                                                {inv.status}
+                                                {inv.status === 'Repayment Pending' ? 'Repayment Approval Pending' : (inv.status === 'Approved' ? 'DUE' : inv.status)}
                                             </span>
                                         </td>
                                         <td className="p-4">
@@ -318,7 +318,7 @@ const AdminInvoiceRequests = () => {
                                     <div>
                                         <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-1">Current Status</span>
                                         <span className={`px-3 py-1 rounded-lg text-xs font-black uppercase tracking-wider ${getStatusColor(selectedInvoice.status)}`}>
-                                            {selectedInvoice.status}
+                                            {selectedInvoice.status === 'Repayment Pending' ? 'VERIFY PAYMENT REQUEST' : (selectedInvoice.status === 'Approved' ? 'DUE' : selectedInvoice.status)}
                                         </span>
                                     </div>
                                     {selectedInvoice.timelineDate && (

@@ -15,6 +15,92 @@ const WalletLedgerTab = () => {
     const [repayProofFile, setRepayProofFile] = useState(null);
     const [repaySubmitting, setRepaySubmitting] = useState(false);
     const [success, setSuccess] = useState('');
+    const [payOnlineLoading, setPayOnlineLoading] = useState(false);
+    const [showOnlineBreakdown, setShowOnlineBreakdown] = useState(false);
+
+    const loadRazorpayScript = () => {
+        return new Promise((resolve) => {
+            if (window.Razorpay) {
+                resolve(true);
+                return;
+            }
+            const script = document.createElement('script');
+            script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+            script.onload = () => resolve(true);
+            script.onerror = () => resolve(false);
+            document.body.appendChild(script);
+        });
+    };
+
+    const handlePayOnline = async () => {
+        if (!selectedRepayInvoice) return;
+        try {
+            setPayOnlineLoading(true);
+            const scriptLoaded = await loadRazorpayScript();
+            if (!scriptLoaded) {
+                alert('Razorpay SDK failed to load. Please check your internet connection.');
+                setPayOnlineLoading(false);
+                return;
+            }
+
+            const token = localStorage.getItem('userToken');
+            const baseAmount = (selectedRepayInvoice.approvedAmount || selectedRepayInvoice.amount || 0) + (selectedRepayInvoice.penaltyAmount || 0) + (selectedRepayInvoice.processingFee || 0);
+
+            // 1. Create order
+            const orderRes = await axios.post(
+                `${import.meta.env.VITE_API_BASE_URL}/payments/invoice-order`,
+                { invoiceId: selectedRepayInvoice._id, amount: baseAmount },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            const { orderId, amount, currency, keyId } = orderRes.data;
+
+            // 2. Open Razorpay
+            const options = {
+                key: keyId,
+                amount: amount.toString(),
+                currency: currency,
+                name: 'Logistics Scanner',
+                description: 'Invoice Repayment',
+                order_id: orderId,
+                handler: async function (response) {
+                    try {
+                        await axios.post(
+                            `${import.meta.env.VITE_API_BASE_URL}/payments/invoice-verify`,
+                            {
+                                invoiceId: selectedRepayInvoice._id,
+                                razorpay_order_id: response.razorpay_order_id,
+                                razorpay_payment_id: response.razorpay_payment_id,
+                                razorpay_signature: response.razorpay_signature
+                            },
+                            { headers: { Authorization: `Bearer ${token}` } }
+                        );
+                        
+                        setSuccess('Payment verified successfully!');
+                        setRepayModalOpen(false);
+                        setSelectedRepayInvoice(null);
+                        fetchLedger();
+                        alert('Payment Successful!');
+                    } catch (verifyErr) {
+                        console.error('Payment verification error:', verifyErr);
+                        alert(verifyErr.response?.data?.message || 'Payment verification failed.');
+                    }
+                },
+                theme: { color: '#0066FF' }
+            };
+
+            const rzp = new window.Razorpay(options);
+            rzp.on('payment.failed', function (response) {
+                alert('Payment failed or was cancelled.');
+            });
+            rzp.open();
+
+        } catch (err) {
+            console.error('Error initiating payment:', err);
+            alert(err.response?.data?.message || 'Failed to initiate online payment.');
+        } finally {
+            setPayOnlineLoading(false);
+        }
+    };
 
     useEffect(() => {
         fetchLedger();
@@ -227,47 +313,110 @@ const WalletLedgerTab = () => {
                     <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300">
                         <div className="p-6 border-b border-slate-100 flex justify-between items-center">
                             <h3 className="text-xl font-black text-[#0B1E43]">Repay Invoice</h3>
-                            <button onClick={() => { setRepayModalOpen(false); setSelectedRepayInvoice(null); }} className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-50 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors">
+                            <button onClick={() => { setRepayModalOpen(false); setSelectedRepayInvoice(null); setShowOnlineBreakdown(false); }} className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-50 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors">
                                 <XCircle className="w-5 h-5" />
                             </button>
                         </div>
                         <form onSubmit={handleRepaySubmit} className="p-6 space-y-5">
                             <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2 mb-4 text-center">
-                                <p className="text-sm font-bold text-slate-500">Please transfer the amount to:</p>
-                                <p className="text-lg font-black text-[#0B1E43]">BNB WORLDWIDE PVT LTD</p>
-                                <p className="text-sm font-black text-slate-700">Bank: AXIS BANK</p>
-                                <p className="text-sm font-black text-slate-700">A/C: 925020028362256</p>
-                                <p className="text-sm font-black text-slate-700">IFSC: UTIB0001147</p>
-                                <p className="text-sm font-black text-slate-700">Branch: JANAK PURI B BLOCK</p>
-                                <p className="text-sm font-black text-slate-700 mb-2">SWIFT: AXISINBB207</p>
-                                <div className="pt-2 border-t border-slate-200">
-                                    <span className="text-xs font-bold text-slate-500">Amount to Pay</span>
-                                    <span className="text-xl font-black text-amber-600 flex items-center justify-center">
-                                        <IndianRupee className="w-5 h-5 mr-0.5" />
-                                        {((selectedRepayInvoice.approvedAmount || selectedRepayInvoice.amount) + selectedRepayInvoice.penaltyAmount + (selectedRepayInvoice.processingFee || 0)).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                                    </span>
+                                {!showOnlineBreakdown && (
+                                    <>
+                                        <p className="text-sm font-bold text-slate-500">Please transfer the amount to:</p>
+                                        <p className="text-lg font-black text-[#0B1E43]">BNB WORLDWIDE PVT LTD</p>
+                                        <p className="text-sm font-black text-slate-700">Bank: AXIS BANK</p>
+                                        <p className="text-sm font-black text-slate-700">A/C: 925020028362256</p>
+                                        <p className="text-sm font-black text-slate-700">IFSC: UTIB0001147</p>
+                                        <p className="text-sm font-black text-slate-700">Branch: JANAK PURI B BLOCK</p>
+                                        <p className="text-sm font-black text-slate-700 mb-2">SWIFT: AXISINBB207</p>
+                                        <div className="pt-2 border-t border-slate-200">
+                                            <span className="text-xs font-bold text-slate-500">Amount to Pay</span>
+                                            <span className="text-xl font-black text-amber-600 flex items-center justify-center">
+                                                <IndianRupee className="w-5 h-5 mr-0.5" />
+                                                {((selectedRepayInvoice.approvedAmount || selectedRepayInvoice.amount || 0) + (selectedRepayInvoice.penaltyAmount || 0) + (selectedRepayInvoice.processingFee || 0)).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                            </span>
+                                        </div>
+                                    </>
+                                )}
+                                
+                                {showOnlineBreakdown && (() => {
+                                    const baseAmount = ((selectedRepayInvoice.approvedAmount || selectedRepayInvoice.amount || 0) + (selectedRepayInvoice.penaltyAmount || 0) + (selectedRepayInvoice.processingFee || 0));
+                                    const gatewayCharge = baseAmount * 0.02;
+                                    const gstAmount = gatewayCharge * 0.18;
+                                    const finalAmount = baseAmount + gatewayCharge + gstAmount;
+                                    
+                                    return (
+                                        <div className="text-left space-y-1">
+                                            <div className="flex justify-between items-center text-xs font-bold text-slate-500">
+                                                <span>Base Amount</span>
+                                                <span className="flex items-center"><IndianRupee className="w-3.5 h-3.5 mr-0.5" /> {baseAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                                            </div>
+                                            <div className="flex justify-between items-center text-xs font-bold text-slate-500">
+                                                <span>Gateway Charge (2%)</span>
+                                                <span className="flex items-center"><IndianRupee className="w-3.5 h-3.5 mr-0.5" /> {gatewayCharge.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                                            </div>
+                                            <div className="flex justify-between items-center text-xs font-bold text-slate-500 text-red-500">
+                                                <span>GST (18% only on Gateway Charge)</span>
+                                                <span className="flex items-center"><IndianRupee className="w-3.5 h-3.5 mr-0.5" /> {gstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                                            </div>
+                                            <div className="flex justify-between items-center text-sm font-black text-[#0B1E43] pt-2 border-t border-slate-200 mt-2">
+                                                <span>Total Payable (Online)</span>
+                                                <span className="flex items-center text-amber-600"><IndianRupee className="w-4 h-4 mr-0.5" /> {finalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                                            </div>
+                                        </div>
+                                    );
+                                })()}
+                            </div>
+
+                            {!showOnlineBreakdown ? (
+                                <>
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-bold text-slate-700">Attach Payment Screenshot (Mandatory for Pay Bank)</label>
+                                        <input
+                                            type="file"
+                                            onChange={(e) => setRepayProofFile(e.target.files[0])}
+                                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-semibold focus:outline-none focus:border-amber-500 transition-colors file:mr-4 file:py-1 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-amber-100 file:text-amber-700 hover:file:bg-amber-200"
+                                            accept="image/*,.pdf"
+                                        />
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-3 mt-4">
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowOnlineBreakdown(true)}
+                                            className="w-full bg-[#0066FF] text-white px-4 py-3 rounded-xl font-black text-sm transition-colors hover:bg-[#0052cc] flex items-center justify-center gap-2"
+                                        >
+                                            Pay Card / UPI
+                                        </button>
+                                        <button
+                                            type="submit"
+                                            disabled={repaySubmitting}
+                                            className="w-full bg-amber-600 text-white px-4 py-3 rounded-xl font-black text-sm transition-colors hover:bg-amber-700 flex items-center justify-center gap-2"
+                                        >
+                                            {repaySubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
+                                            Pay Bank
+                                        </button>
+                                    </div>
+                                </>
+                            ) : (
+                                <div className="grid grid-cols-2 gap-3 mt-4">
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowOnlineBreakdown(false)}
+                                        className="w-full bg-slate-100 text-slate-700 px-4 py-3 rounded-xl font-black text-sm transition-colors hover:bg-slate-200 flex items-center justify-center gap-2"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={handlePayOnline}
+                                        disabled={payOnlineLoading}
+                                        className="w-full bg-[#0066FF] text-white px-4 py-3 rounded-xl font-black text-sm transition-colors hover:bg-[#0052cc] flex items-center justify-center gap-2"
+                                    >
+                                        {payOnlineLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+                                        Proceed to Pay
+                                    </button>
                                 </div>
-                            </div>
-
-                            <div className="space-y-2">
-                                <label className="text-sm font-bold text-slate-700">Attach Payment Screenshot</label>
-                                <input
-                                    type="file"
-                                    onChange={(e) => setRepayProofFile(e.target.files[0])}
-                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-semibold focus:outline-none focus:border-amber-500 transition-colors file:mr-4 file:py-1 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-amber-100 file:text-amber-700 hover:file:bg-amber-200"
-                                    accept="image/*,.pdf"
-                                    required
-                                />
-                            </div>
-
-                            <button
-                                type="submit"
-                                disabled={repaySubmitting}
-                                className="w-full bg-amber-600 text-white px-4 py-3 rounded-xl font-black text-sm transition-colors hover:bg-amber-700 flex items-center justify-center gap-2"
-                            >
-                                {repaySubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
-                                Submit Repayment
-                            </button>
+                            )}
                         </form>
                     </div>
                 </div>

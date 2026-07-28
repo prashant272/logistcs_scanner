@@ -240,7 +240,7 @@ const SearchResults = () => {
   const executeEnquiryFlow = async (actionType, rate, guestInfo = null) => {
     setLoading(true);
     setError(null);
-
+    setSuccess(false);
     const isBooking = !!(user && user.role === 'vendor');
 
     // 1. Primary Payload targeted specifically to this vendor
@@ -374,6 +374,9 @@ const SearchResults = () => {
       guestPhone: `${guestPhoneCode}${guestPhone}`,
       commodity: guestCommodity
     };
+
+    setError(null);
+    setSuccess(false);
 
     // Cache guest details in localStorage only if not logged in
     if (!user) {

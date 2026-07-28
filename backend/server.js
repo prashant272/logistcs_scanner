@@ -1,12 +1,13 @@
 const express = require("express");
 const dotenv = require("dotenv");
+dotenv.config();
 const cors = require("cors");
 const http = require("http");
 const connectDB = require("./config/db");
 const { initSocket } = require('./utils/socketSetup');
 const { initCronJobs } = require('./cron/cronJobs');
 
-dotenv.config();
+
 connectDB();
 
 const app = express();
@@ -34,7 +35,7 @@ app.use("/api/notifications", require("./routes/notificationRoutes"));
 app.use("/api/ihc", require("./routes/ihcRoutes"));
 app.use("/api/upload", require("./routes/uploadRoutes"));
 app.use("/api/delhivery", require("./routes/delhiveryRoutes"));
-
+app.use("/api/payments", require("./routes/paymentRoutes"));
 app.get("/", (req, res) => {
     res.send("logistics scanner API Running...");
 });

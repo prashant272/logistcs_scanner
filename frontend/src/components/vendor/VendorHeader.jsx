@@ -31,7 +31,7 @@ const VendorHeader = ({ isSidebarOpen, setSidebarOpen, user, logout, searchQuery
                 {/* Available Wallet Balance */}
                 {user?.role === 'vendor' && (
                     <div
-                        onClick={() => navigate('/vendor/wallet')}
+                        onClick={() => navigate('/vendor/wallet-ledger')}
                         className={`flex items-center gap-2 px-4 py-2 rounded-xl border cursor-pointer transition-colors hover:shadow-sm ${user.walletBalance && user.walletBalance > 0
                                 ? 'bg-emerald-50 border-emerald-100 hover:bg-emerald-100'
                                 : 'bg-red-50 border-red-100 hover:bg-red-100'
