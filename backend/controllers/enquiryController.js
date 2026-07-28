@@ -464,8 +464,8 @@ exports.getVendorEnquiries = async (req, res) => {
 
             const acceptedCount = await Enquiry.countDocuments({
                 $or: [
-                    { vendor: req.user.id, status: 'Accepted', createdAt: { $gte: startOfMonth } },
-                    { 'responses': { $elemMatch: { vendor: req.user.id, status: 'Accepted' } }, createdAt: { $gte: startOfMonth } }
+                    { vendor: req.user.id, status: { $in: ['Accepted', 'Quoted'] }, updatedAt: { $gte: startOfMonth }, 'responses.vendor': { $ne: req.user.id } },
+                    { responses: { $elemMatch: { vendor: req.user.id, status: { $in: ['Accepted', 'Quoted'] }, createdAt: { $gte: startOfMonth } } } }
                 ]
             });
 
@@ -554,8 +554,8 @@ exports.updateEnquiryStatus = async (req, res) => {
                 const vendorObjectId = new mongoose.Types.ObjectId(req.user.id);
                 const acceptedCount = await Enquiry.countDocuments({
                     $or: [
-                        { vendor: vendorObjectId, status: { $in: ['Accepted', 'Quoted'] }, updatedAt: { $gte: startOfMonth } },
-                        { 'responses': { $elemMatch: { vendor: vendorObjectId, status: { $in: ['Accepted', 'Quoted'] }, createdAt: { $gte: startOfMonth } } } }
+                        { vendor: vendorObjectId, status: { $in: ['Accepted', 'Quoted'] }, updatedAt: { $gte: startOfMonth }, 'responses.vendor': { $ne: vendorObjectId } },
+                        { responses: { $elemMatch: { vendor: vendorObjectId, status: { $in: ['Accepted', 'Quoted'] }, createdAt: { $gte: startOfMonth } } } }
                     ]
                 });
 
@@ -811,6 +811,7 @@ exports.getVendorStats = async (req, res) => {
             { $match: query },
             {
                 $project: {
+                    vendor: 1,
                     isLocked: 1,
                     isDirect: 1,
                     status: 1,
@@ -835,12 +836,20 @@ exports.getVendorStats = async (req, res) => {
             },
             {
                 $project: {
+                    vendor: 1,
                     isLocked: 1,
                     isDirect: 1,
                     status: 1,
                     createdAt: 1,
                     updatedAt: 1,
                     myResponse: 1,
+                    actionDate: {
+                        $cond: {
+                            if: { $eq: ["$isDirect", true] },
+                            then: { $ifNull: ["$myResponse.createdAt", { $ifNull: ["$updatedAt", "$createdAt"] }] },
+                            else: { $ifNull: ["$updatedAt", "$createdAt"] }
+                        }
+                    },
                     isMyResponseAccepted: {
                         $cond: {
                             if: { $eq: [isAdmin, false] },
@@ -894,8 +903,8 @@ exports.getVendorStats = async (req, res) => {
                                     $and: [
                                         { $not: ["$isLocked"] },
                                         "$isMyResponseAccepted",
-                                        startDate ? { $gte: [{ $ifNull: ["$updatedAt", { $ifNull: ["$myResponse.createdAt", "$createdAt"] }] }, startDate] } : true,
-                                        endDate ? { $lte: [{ $ifNull: ["$updatedAt", { $ifNull: ["$myResponse.createdAt", "$createdAt"] }] }, endDate] } : true
+                                        startDate ? { $gte: ["$actionDate", startDate] } : true,
+                                        endDate ? { $lte: ["$actionDate", endDate] } : true
                                     ]
                                 },
                                 1, 0
@@ -909,8 +918,8 @@ exports.getVendorStats = async (req, res) => {
                                     $and: [
                                         { $not: ["$isLocked"] },
                                         "$isMyResponseDeclined",
-                                        startDate ? { $gte: [{ $ifNull: ["$updatedAt", { $ifNull: ["$myResponse.createdAt", "$createdAt"] }] }, startDate] } : true,
-                                        endDate ? { $lte: [{ $ifNull: ["$updatedAt", { $ifNull: ["$myResponse.createdAt", "$createdAt"] }] }, endDate] } : true
+                                        startDate ? { $gte: ["$actionDate", startDate] } : true,
+                                        endDate ? { $lte: ["$actionDate", endDate] } : true
                                     ]
                                 },
                                 1, 0
@@ -941,8 +950,7 @@ exports.getVendorStats = async (req, res) => {
                     total: 1,
                     accepted: 1,
                     declined: 1,
-                    // Mathematically force 'rejected' (Not Accepted) to be Total - Accepted as requested
-                    rejected: { $max: [0, { $subtract: ["$total", "$accepted"] }] }
+                    rejected: 1
                 }
             }
         ];
@@ -957,6 +965,7 @@ exports.getVendorStats = async (req, res) => {
                     total: { $sum: 1 },
                     accepted: { $sum: { $cond: [{ $in: ["$status", ["Accepted", "Confirmed", "Delivered"]] }, 1, 0] } },
                     declined: { $sum: { $cond: [{ $eq: ["$status", "Declined"] }, 1, 0] } },
+                    rejected: { $sum: { $cond: [{ $not: { $in: ["$status", ["Accepted", "Confirmed", "Delivered", "Declined"]] } }, 1, 0] } },
                     upcomingPaymentDue: { $sum: { $cond: [{ $in: ["$status", ["Accepted", "Confirmed", "Delivered"]] }, "$price", 0] } },
                     dueIn5Days: { $sum: { $cond: [{ $eq: ["$status", "Pending"] }, "$price", 0] } }
                 }
@@ -968,7 +977,7 @@ exports.getVendorStats = async (req, res) => {
                     declined: 1,
                     upcomingPaymentDue: 1,
                     dueIn5Days: 1,
-                    rejected: { $max: [0, { $subtract: ["$total", "$accepted"] }] }
+                    rejected: 1
                 }
             }
         ];

@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import {
     LayoutDashboard, User, Truck, DollarSign, PlusCircle, MapPin,
     Percent, FileText, UserPlus, Users, FileSpreadsheet, Globe,
-    TrendingUp, AlertCircle, Settings, ChevronDown, ChevronRight, LogOut
+    TrendingUp, AlertCircle, Settings, ChevronDown, ChevronRight, LogOut, CreditCard
 } from 'lucide-react';
 
 const AdminSidebar = ({ isSidebarOpen, logout }) => {
@@ -78,9 +78,10 @@ const AdminSidebar = ({ isSidebarOpen, logout }) => {
             ]
         },
         {
-            category: 'Invoice Request',
+            category: 'Finance',
             items: [
-                { name: 'Invoice Request', path: '/admin/invoice-request', icon: <FileText size={16} /> }
+                { name: 'Invoice Request', path: '/admin/invoice-request', icon: <FileText size={16} /> },
+                { name: 'Recharge Requests', path: '/admin/recharge-requests', icon: <CreditCard size={16} /> }
             ]
         },
         {

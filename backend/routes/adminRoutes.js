@@ -25,7 +25,9 @@ const {
     updateVendorPlan,
     updateVendorDetails,
     updateVendorCreditDays,
-    verifyVendorDocuments
+    verifyVendorDocuments,
+    getRechargeRequests,
+    updateRechargeRequestStatus
 } = require("../controllers/adminController");
 const auth = require("../middleware/authMiddleware");
 
@@ -46,6 +48,11 @@ router.put("/vendors/:id/credit", auth, updateVendorCreditDays);
 router.put("/vendors/:id/enquiry-limit", auth, updateVendorEnquiryLimit);
 router.put("/vendors/:id/plan", auth, updateVendorPlan);
 router.put("/vendors/:id", auth, updateVendorDetails);
+
+// Recharge Requests
+router.get("/recharge-requests", auth, getRechargeRequests);
+router.put("/recharge-requests/:id", auth, updateRechargeRequestStatus);
+
 // Admin pricing management routes
 router.get("/pricing/:vendorId", auth, adminGetVendorPricing);
 router.post("/pricing", auth, adminAddPricing);

@@ -129,6 +129,7 @@ const AdminFinanceListing = lazy(() => import('./pages/admin/AdminFinanceListing
 const AdminEnquiriesTab = lazy(() => import('./pages/admin/AdminEnquiriesTab'));
 const AdminUpgradationRequests = lazy(() => import('./pages/admin/AdminUpgradationRequests'));
 const AdminInvoiceRequests = lazy(() => import('./pages/admin/AdminInvoiceRequests'));
+const AdminRechargeRequests = lazy(() => import('./pages/admin/AdminRechargeRequests'));
 const DelhiverySettings = lazy(() => import('./pages/admin/DelhiverySettings'));
 const AdminPtlBookings = lazy(() => import('./pages/admin/AdminPtlBookings'));
 const PtlBookingsTab = lazy(() => import('./components/common/PtlBookingsTab'));
@@ -221,6 +222,7 @@ function App() {
               
               {/* Request Management */}
               <Route path="invoice-request" element={<AdminInvoiceRequests />} />
+              <Route path="recharge-requests" element={<AdminRechargeRequests />} />
               <Route path="upgrade-requests" element={<AdminUpgradationRequests />} />
               
               {/* Other sections */}

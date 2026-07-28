@@ -1034,3 +1034,57 @@ exports.updateHoldEnquiriesSetting = async (req, res) => {
         res.status(500).json({ message: 'Server error', error: error.message });
     }
 };
+
+const RechargeRequest = require('../models/RechargeRequest');
+const WalletTransaction = require('../models/WalletTransaction');
+
+exports.getRechargeRequests = async (req, res) => {
+    try {
+        const requests = await RechargeRequest.find()
+            .populate('vendor', 'name organizationName email mobile lsid')
+            .sort({ createdAt: -1 });
+        res.json(requests);
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
+
+exports.updateRechargeRequestStatus = async (req, res) => {
+    try {
+        const { status, rejectionReason } = req.body;
+        const request = await RechargeRequest.findById(req.params.id).populate('vendor');
+
+        if (!request) {
+            return res.status(404).json({ message: 'Recharge request not found' });
+        }
+
+        if (request.status !== 'Pending') {
+            return res.status(400).json({ message: 'Request is already processed' });
+        }
+
+        request.status = status;
+        if (status === 'Rejected') {
+            request.rejectionReason = rejectionReason;
+        }
+
+        await request.save();
+
+        if (status === 'Approved') {
+            const vendor = request.vendor;
+            vendor.walletBalance = (vendor.walletBalance || 0) + request.amount;
+            await vendor.save();
+
+            await WalletTransaction.create({
+                vendor: vendor._id,
+                type: 'Credit',
+                amount: request.amount,
+                description: `Wallet Recharge via Bank Transfer`,
+                balanceAfter: vendor.walletBalance
+            });
+        }
+
+        res.json({ message: `Recharge request ${status}`, request });
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};

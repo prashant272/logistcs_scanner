@@ -18,6 +18,14 @@ const WalletLedgerTab = () => {
     const [payOnlineLoading, setPayOnlineLoading] = useState(false);
     const [showOnlineBreakdown, setShowOnlineBreakdown] = useState(false);
 
+    // Recharge Wallet State
+    const [rechargeModalOpen, setRechargeModalOpen] = useState(false);
+    const [rechargeAmount, setRechargeAmount] = useState('');
+    const [rechargeProofFile, setRechargeProofFile] = useState(null);
+    const [rechargeSubmitting, setRechargeSubmitting] = useState(false);
+    const [rechargeOnlineLoading, setRechargeOnlineLoading] = useState(false);
+    const [showRechargeOnlineBreakdown, setShowRechargeOnlineBreakdown] = useState(false);
+
     const loadRazorpayScript = () => {
         return new Promise((resolve) => {
             if (window.Razorpay) {
@@ -164,6 +172,99 @@ const WalletLedgerTab = () => {
         }
     };
 
+    const handleRechargeBank = async (e) => {
+        e.preventDefault();
+        if (!rechargeAmount || rechargeAmount <= 0) return alert('Enter valid amount');
+        if (!rechargeProofFile) return alert('Please upload screenshot for Bank transfer');
+
+        try {
+            setRechargeSubmitting(true);
+            const token = localStorage.getItem('userToken');
+            
+            const formDataUpload = new FormData();
+            formDataUpload.append('file', rechargeProofFile);
+            const uploadRes = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/upload`, formDataUpload, {
+                headers: { 
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'multipart/form-data'
+                }
+            });
+            const uploadedProofUrl = uploadRes.data.url;
+
+            await axios.post(`${import.meta.env.VITE_API_BASE_URL}/payments/recharge/bank`, {
+                amount: rechargeAmount,
+                screenshot: uploadedProofUrl
+            }, { headers: { Authorization: `Bearer ${token}` }});
+
+            setRechargeModalOpen(false);
+            setRechargeAmount('');
+            setRechargeProofFile(null);
+            fetchLedger();
+            setSuccess('Recharge request submitted! Waiting for Admin verification.');
+            setTimeout(() => setSuccess(''), 4000);
+        } catch (err) {
+            console.error(err);
+            alert(err.response?.data?.message || 'Failed to submit recharge request');
+        } finally {
+            setRechargeSubmitting(false);
+        }
+    };
+
+    const handleRechargeOnline = async () => {
+        if (!rechargeAmount || rechargeAmount <= 0) return alert('Enter valid amount');
+        try {
+            setRechargeOnlineLoading(true);
+            const scriptLoaded = await loadRazorpayScript();
+            if (!scriptLoaded) return alert('Razorpay failed to load.');
+
+            const token = localStorage.getItem('userToken');
+            const orderRes = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/payments/recharge/gateway/create-order`, 
+                { amount: rechargeAmount }, 
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+
+            const { orderId, amount, currency, keyId } = orderRes.data;
+
+            const options = {
+                key: keyId,
+                amount: amount.toString(),
+                currency: currency,
+                name: 'Logistics Scanner',
+                description: 'Wallet Recharge',
+                order_id: orderId,
+                handler: async function (response) {
+                    try {
+                        await axios.post(`${import.meta.env.VITE_API_BASE_URL}/payments/recharge/gateway/verify`, {
+                            amount: rechargeAmount,
+                            razorpay_order_id: response.razorpay_order_id,
+                            razorpay_payment_id: response.razorpay_payment_id,
+                            razorpay_signature: response.razorpay_signature
+                        }, { headers: { Authorization: `Bearer ${token}` } });
+                        
+                        setSuccess('Wallet Recharged Successfully!');
+                        setTimeout(() => setSuccess(''), 4000);
+                        setRechargeModalOpen(false);
+                        setRechargeAmount('');
+                        fetchLedger();
+                    } catch (err) {
+                        alert(err.response?.data?.message || 'Verification failed');
+                    }
+                },
+                theme: { color: '#00b2fe' }
+            };
+            const rzp = new window.Razorpay(options);
+            rzp.on('payment.failed', function (response) {
+                alert('Payment Failed!');
+            });
+            rzp.open();
+        } catch (err) {
+            console.error(err);
+            alert('Failed to initiate online recharge');
+        } finally {
+            setRechargeOnlineLoading(false);
+        }
+    };
+
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
             {/* Wallet Balance Card */}
@@ -184,21 +285,31 @@ const WalletLedgerTab = () => {
                         </div>
                     </div>
                     
-                    <button 
-                        onClick={() => {
-                            const pendingInvoiceTxns = transactions.filter(t => t.type === 'Debit' && t.referenceId && (t.referenceId.status === 'Approved' || t.referenceId.status === 'Paid'));
-                            if (pendingInvoiceTxns.length > 0) {
-                                setSelectedRepayInvoice(pendingInvoiceTxns[0].referenceId);
-                                setRepayModalOpen(true);
-                            } else {
-                                alert('No pending invoices found to repay. New approved invoices will appear here.');
-                            }
-                        }}
-                        className="bg-white hover:bg-slate-50 text-[#0B1E43] px-5 py-2.5 rounded-xl text-sm font-black flex items-center gap-2 transition-all shadow-xl hover:shadow-2xl hover:-translate-y-0.5 shrink-0"
-                    >
-                        <CreditCard className="w-4 h-4" />
-                        Repay Invoice
-                    </button>
+                    <div className="flex flex-col sm:flex-row gap-3">
+                        <button 
+                            onClick={() => {
+                                const pendingInvoiceTxns = transactions.filter(t => t.type === 'Debit' && t.referenceId && (t.referenceId.status === 'Approved' || t.referenceId.status === 'Paid'));
+                                if (pendingInvoiceTxns.length > 0) {
+                                    setSelectedRepayInvoice(pendingInvoiceTxns[0].referenceId);
+                                    setRepayModalOpen(true);
+                                } else {
+                                    alert('No pending invoices found to repay. New approved invoices will appear here.');
+                                }
+                            }}
+                            className="bg-white hover:bg-slate-50 text-[#0B1E43] px-5 py-2.5 rounded-xl text-sm font-black flex items-center justify-center gap-2 transition-all shadow-xl hover:shadow-2xl hover:-translate-y-0.5 shrink-0"
+                        >
+                            <CreditCard className="w-4 h-4" />
+                            Repay Invoice
+                        </button>
+
+                        <button 
+                            onClick={() => setRechargeModalOpen(true)}
+                            className="bg-[#00b2fe] hover:bg-[#009bdf] text-white px-5 py-2.5 rounded-xl text-sm font-black flex items-center justify-center gap-2 transition-all shadow-xl hover:shadow-2xl hover:-translate-y-0.5 shrink-0 border border-white/20"
+                        >
+                            <ArrowUpRight className="w-4 h-4" />
+                            Recharge Wallet
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -413,6 +524,102 @@ const WalletLedgerTab = () => {
                                         className="w-full bg-[#0066FF] text-white px-4 py-3 rounded-xl font-black text-sm transition-colors hover:bg-[#0052cc] flex items-center justify-center gap-2"
                                     >
                                         {payOnlineLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+                                        Proceed to Pay
+                                    </button>
+                                </div>
+                            )}
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Recharge Modal */}
+            {rechargeModalOpen && (
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
+                        <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                            <h3 className="text-xl font-black text-[#0B1E43]">Recharge Wallet</h3>
+                            <button onClick={() => setRechargeModalOpen(false)} className="text-slate-400 hover:text-slate-600">
+                                <XCircle className="w-6 h-6" />
+                            </button>
+                        </div>
+
+                        <form onSubmit={handleRechargeBank} className="p-6">
+                            <div className="mb-6">
+                                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                                    Recharge Amount (₹)
+                                </label>
+                                <input
+                                    type="number"
+                                    required
+                                    min="1"
+                                    value={rechargeAmount}
+                                    onChange={(e) => setRechargeAmount(e.target.value)}
+                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-lg font-black text-slate-800 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all"
+                                    placeholder="Enter amount"
+                                />
+                            </div>
+
+                            {!showRechargeOnlineBreakdown ? (
+                                <>
+                                    <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-6">
+                                        <p className="text-xs font-bold text-slate-600 mb-2">Please transfer the amount to:</p>
+                                        <h4 className="font-black text-slate-800 text-lg mb-2">BNB WORLDWIDE PVT LTD</h4>
+                                        <div className="space-y-1 text-sm font-bold text-slate-600">
+                                            <p>Bank: AXIS BANK</p>
+                                            <p>A/C: 925020028362256</p>
+                                            <p>IFSC: UTIB0001147</p>
+                                            <p>Branch: JANAK PURI B BLOCK</p>
+                                            <p>SWIFT: AXISINBB207</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="mb-6">
+                                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                                            Attach Payment Screenshot (Mandatory for Pay Bank)
+                                        </label>
+                                        <input 
+                                            type="file"
+                                            accept="image/*,.pdf"
+                                            onChange={(e) => setRechargeProofFile(e.target.files[0])}
+                                            className="block w-full text-sm text-slate-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-black file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 border border-slate-200 rounded-xl cursor-pointer"
+                                        />
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowRechargeOnlineBreakdown(true)}
+                                            className="w-full bg-[#0066FF] text-white px-4 py-3 rounded-xl font-black text-sm transition-colors hover:bg-[#0052cc]"
+                                        >
+                                            Pay Card / UPI
+                                        </button>
+                                        <button
+                                            type="submit"
+                                            disabled={rechargeSubmitting}
+                                            className="w-full bg-amber-600 text-white px-4 py-3 rounded-xl font-black text-sm transition-colors hover:bg-amber-700 flex items-center justify-center gap-2"
+                                        >
+                                            {rechargeSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
+                                            Pay Bank
+                                        </button>
+                                    </div>
+                                </>
+                            ) : (
+                                <div className="grid grid-cols-2 gap-3 mt-4">
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowRechargeOnlineBreakdown(false)}
+                                        className="w-full bg-slate-100 text-slate-700 px-4 py-3 rounded-xl font-black text-sm transition-colors hover:bg-slate-200"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={handleRechargeOnline}
+                                        disabled={rechargeOnlineLoading}
+                                        className="w-full bg-[#0066FF] text-white px-4 py-3 rounded-xl font-black text-sm transition-colors hover:bg-[#0052cc] flex items-center justify-center gap-2"
+                                    >
+                                        {rechargeOnlineLoading && <Loader2 className="w-4 h-4 animate-spin" />}
                                         Proceed to Pay
                                     </button>
                                 </div>
