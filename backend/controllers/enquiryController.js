@@ -106,19 +106,7 @@ exports.createEnquiry = async (req, res) => {
             loggedInUser = guestUser;
         }
 
-        // Check customer enquiry limits if it's a customer
-        if (loggedInUser && loggedInUser.role !== 'admin' && loggedInUser.role !== 'rm') {
-            const hasActivePlan = loggedInUser.activePlan && loggedInUser.planEndDate && new Date(loggedInUser.planEndDate) > new Date();
-
-            if (!hasActivePlan) {
-                const count = await Enquiry.countDocuments({ client: validatedClientId });
-                if (count >= 5) {
-                    return res.status(403).json({
-                        message: 'You have reached the limit of 5 free enquiries. Please upgrade your plan to continue.'
-                    });
-                }
-            }
-        }
+        // Customer enquiry creation is unlimited, so no limit check here.
 
         // Auto-correct isBooking if the client is a vendor (helps when they created it as a guest)
         let finalIsBooking = isBooking || false;

@@ -223,7 +223,7 @@ const SearchResults = () => {
       setSuccess(true);
     } catch (err) {
       console.error(err);
-      setError("Failed to broadcast enquiry. Please try again.");
+      setError(err.response?.data?.message || err.message || "Failed to broadcast enquiry. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -356,7 +356,7 @@ const SearchResults = () => {
       setIsGuestModalOpen(false);
     } catch (err) {
       console.error(err);
-      setError("An error occurred while submitting your request.");
+      setError(err.response?.data?.message || err.message || "An error occurred while submitting your request.");
     } finally {
       setLoading(false);
     }
@@ -438,7 +438,7 @@ const SearchResults = () => {
         })
         .catch(err => {
           console.error(err);
-          setError("Failed to broadcast enquiry.");
+          setError(err.response?.data?.message || err.message || "Failed to broadcast enquiry.");
         })
         .finally(() => setLoading(false));
     }
@@ -954,7 +954,7 @@ const SearchResults = () => {
                     })
                     .catch(err => {
                       console.error(err);
-                      setError("Failed to broadcast enquiry.");
+                      setError(err.response?.data?.message || err.message || "Failed to broadcast enquiry.");
                     })
                     .finally(() => setLoading(false));
                 }
@@ -1265,7 +1265,7 @@ const SearchResults = () => {
             setIsGuestModalOpen(false);
           } catch (err) {
             console.error('Error submitting RM enquiry:', err);
-            setError("An error occurred while submitting your request.");
+            setError(err.response?.data?.message || err.message || "An error occurred while submitting your request.");
           }
         }}
       />
