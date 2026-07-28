@@ -68,12 +68,30 @@ export const EnquiryProvider = ({ children }) => {
     }
   };
 
-  const createEnquiry = async (payload) => {
+  const createEnquiry = async (payload, maxRetries = 3) => {
     try {
       setSubmissionStatus('submitting');
       setLoading(true);
       setError(null);
-      const res = await api.post('/enquiries', payload);
+
+      let res;
+      let attempt = 0;
+      while (attempt < maxRetries) {
+        try {
+          res = await api.post('/enquiries', payload);
+          break; // Success, exit loop
+        } catch (err) {
+          attempt++;
+          // If max retries reached OR it's a 4xx client error (except timeout 408), throw immediately
+          if (attempt >= maxRetries || (err.response && err.response.status < 500 && err.response.status !== 408)) {
+            throw err;
+          }
+          console.warn(`Retry attempt ${attempt} for createEnquiry...`);
+          // Wait before retrying (1s, 2s, etc)
+          await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+        }
+      }
+
       setSubmissionStatus('success');
       return res.data;
     } catch (err) {

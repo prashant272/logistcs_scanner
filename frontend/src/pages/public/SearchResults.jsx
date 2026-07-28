@@ -214,9 +214,9 @@ const SearchResults = () => {
       const isRM = adminRole === 'admin' || adminRole === 'RM';
 
       if (isRM || (user && (user.role === 'admin' || user.role === 'rm' || user.role === 'RM'))) {
-          setPendingEnquiryPayload(broadcastPayload);
-          setRmModalOpen(true);
-          return;
+        setPendingEnquiryPayload(broadcastPayload);
+        setRmModalOpen(true);
+        return;
       }
 
       await createEnquiry(broadcastPayload);
@@ -336,20 +336,20 @@ const SearchResults = () => {
         const adminRole = sessionStorage.getItem('adminRole') || localStorage.getItem('adminRole');
         const isRM = adminRole === 'admin' || adminRole === 'RM';
         if (isRM || (user && (user.role === 'admin' || user.role === 'rm' || user.role === 'RM'))) {
-            setPendingEnquiryPayload(primaryPayload);
-            setRmModalOpen(true);
-            return;
+          setPendingEnquiryPayload(primaryPayload);
+          setRmModalOpen(true);
+          return;
         }
         await createEnquiry(primaryPayload);
       } else {
-          const adminRole = sessionStorage.getItem('adminRole') || localStorage.getItem('adminRole');
-          const isRM = adminRole === 'admin' || adminRole === 'RM';
-          if (isRM || (user && (user.role === 'admin' || user.role === 'rm' || user.role === 'RM'))) {
-              setPendingEnquiryPayload(primaryPayload);
-              setRmModalOpen(true);
-              return;
-          }
-          await createEnquiry(primaryPayload);
+        const adminRole = sessionStorage.getItem('adminRole') || localStorage.getItem('adminRole');
+        const isRM = adminRole === 'admin' || adminRole === 'RM';
+        if (isRM || (user && (user.role === 'admin' || user.role === 'rm' || user.role === 'RM'))) {
+          setPendingEnquiryPayload(primaryPayload);
+          setRmModalOpen(true);
+          return;
+        }
+        await createEnquiry(primaryPayload);
       }
 
       setSuccess(true);
@@ -421,14 +421,14 @@ const SearchResults = () => {
         clientCreditRequired,
         ...guestInfo
       };
-      
+
       const adminRole = sessionStorage.getItem('adminRole') || localStorage.getItem('adminRole');
       const isRM = adminRole === 'admin' || adminRole === 'RM';
       if (isRM || (user && (user.role === 'admin' || user.role === 'rm' || user.role === 'RM'))) {
-          setPendingEnquiryPayload(broadcastPayload);
-          setRmModalOpen(true);
-          setLoading(false);
-          return;
+        setPendingEnquiryPayload(broadcastPayload);
+        setRmModalOpen(true);
+        setLoading(false);
+        return;
       }
 
       createEnquiry(broadcastPayload)
@@ -1254,20 +1254,20 @@ const SearchResults = () => {
         </div>
       )}
 
-      <RMEnquiryModal 
-          isOpen={rmModalOpen} 
-          onClose={() => setRmModalOpen(false)} 
-          onSubmit={async (options) => {
-              setRmModalOpen(false);
-              try {
-                  await createEnquiry({ ...pendingEnquiryPayload, ...options });
-                  setSuccess(true);
-                  setIsGuestModalOpen(false);
-              } catch (err) {
-                  console.error('Error submitting RM enquiry:', err);
-                  setError("An error occurred while submitting your request.");
-              }
-          }} 
+      <RMEnquiryModal
+        isOpen={rmModalOpen}
+        onClose={() => setRmModalOpen(false)}
+        onSubmit={async (options) => {
+          setRmModalOpen(false);
+          try {
+            await createEnquiry({ ...pendingEnquiryPayload, ...options });
+            setSuccess(true);
+            setIsGuestModalOpen(false);
+          } catch (err) {
+            console.error('Error submitting RM enquiry:', err);
+            setError("An error occurred while submitting your request.");
+          }
+        }}
       />
     </div>
   );
