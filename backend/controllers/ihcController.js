@@ -101,9 +101,12 @@ exports.getAvailableViaPorts = async (req, res) => {
         // Strip out parentheses (e.g. "Delhi (DEL)" -> "Delhi") to match database keys
         const cleanDestination = destination.replace(/\s*\(.*?\)\s*/g, '').trim();
 
+        const escapeRegExp = (string) => string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const cleanDestinationEscaped = escapeRegExp(cleanDestination);
+
         // Find all distinct viaPorts that have an IHC price to the given destination
         const viaPorts = await IhcPricing.distinct('viaPort', { 
-            destination: new RegExp(`^${cleanDestination}$`, 'i') 
+            destination: new RegExp(`^${cleanDestinationEscaped}$`, 'i') 
         });
 
         res.status(200).json({ data: viaPorts });

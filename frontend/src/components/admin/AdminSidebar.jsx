@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import {
     LayoutDashboard, User, Truck, DollarSign, PlusCircle, MapPin,
     Percent, FileText, UserPlus, Users, FileSpreadsheet, Globe,
-    TrendingUp, AlertCircle, Settings, ChevronDown, ChevronRight, LogOut, CreditCard
+    TrendingUp, AlertCircle, Settings, ChevronDown, ChevronRight, LogOut, CreditCard, ShieldAlert
 } from 'lucide-react';
 
 const AdminSidebar = ({ isSidebarOpen, logout }) => {
@@ -97,9 +97,10 @@ const AdminSidebar = ({ isSidebarOpen, logout }) => {
             ]
         },
         {
-            category: 'CMS Settings',
+            category: 'System Settings',
             items: [
-                { name: 'CMS Settings', path: '/admin/cms-settings', icon: <Settings size={16} /> }
+                { name: 'CMS Settings', path: '/admin/cms-settings', icon: <Settings size={16} /> },
+                { name: 'Role Management', path: '/admin/role-update', icon: <ShieldAlert size={16} /> }
             ]
         },
         {

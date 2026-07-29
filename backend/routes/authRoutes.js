@@ -137,13 +137,35 @@ router.get('/public-vendors-locations', async (req, res) => {
     try {
         const vendors = await User.find({ role: 'vendor' }, 'country city').lean();
         
+        const formatName = (str) => {
+            if (!str) return '';
+            str = str.trim();
+            if (str === str.toUpperCase() && str.length <= 3) return str; // Keep USA, UAE, UK
+            return str.split(' ').map(word => word ? word.charAt(0).toUpperCase() + word.slice(1).toLowerCase() : '').join(' ');
+        };
+
+        const cityNormalization = {
+            'bangalore': 'Bengaluru',
+            'bangaluru': 'Bengaluru',
+            'bengaluru': 'Bengaluru',
+        };
+
+        const isInvalidCity = (str) => {
+            // Filter out numbers like "0", "400055"
+            return /^\d+$/.test(str.trim());
+        };
+
         const locations = {};
         vendors.forEach(v => {
             if (v.country) {
-                const c = v.country;
+                const c = formatName(v.country);
                 if (!locations[c]) locations[c] = new Set();
-                if (v.city) {
-                    locations[c].add(v.city);
+                if (v.city && !isInvalidCity(v.city)) {
+                    let cty = formatName(v.city);
+                    if (cityNormalization[cty.toLowerCase()]) {
+                        cty = cityNormalization[cty.toLowerCase()];
+                    }
+                    locations[c].add(cty);
                 }
             }
         });
@@ -165,11 +187,24 @@ router.get('/public-vendors-search', async (req, res) => {
         const { lsid, country, city } = req.query;
         let query = { role: 'vendor' };
         
+        const escapeRegExp = (string) => string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         if (country) {
-            query.country = new RegExp('^' + country + '$', 'i');
+            query.country = new RegExp('^' + escapeRegExp(country) + '$', 'i');
         }
         if (city) {
-            query.city = new RegExp('^' + city + '$', 'i');
+            const cleanCity = city.trim().toLowerCase();
+            const cityAliases = {
+                'bangalore': ['bangalore', 'bangaluru', 'bengaluru'],
+                'bangaluru': ['bangalore', 'bangaluru', 'bengaluru'],
+                'bengaluru': ['bangalore', 'bangaluru', 'bengaluru']
+            };
+            
+            if (cityAliases[cleanCity]) {
+                const aliasRegexStr = cityAliases[cleanCity].map(c => `^${escapeRegExp(c)}$`).join('|');
+                query.city = new RegExp(aliasRegexStr, 'i');
+            } else {
+                query.city = new RegExp('^' + escapeRegExp(city) + '$', 'i');
+            }
         }
 
         const vendors = await User.find(query)

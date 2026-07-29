@@ -1088,3 +1088,55 @@ exports.updateRechargeRequestStatus = async (req, res) => {
         res.status(500).json({ message: 'Server error', error: error.message });
     }
 };
+
+// @desc    Get user by email for role update
+// @route   GET /api/admin/user-role/:email
+// @access  Private Admin
+exports.getUserByEmailForRole = async (req, res) => {
+    try {
+        const { email } = req.params;
+        const user = await User.findOne({ email: { $regex: new RegExp(`^${email}$`, 'i') } })
+            .select('name email role company');
+
+        if (!user) {
+            return res.status(404).json({ message: 'User not found with this email' });
+        }
+
+        res.json(user);
+    } catch (error) {
+        console.error('Error fetching user by email:', error);
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
+
+// @desc    Update user role
+// @route   PUT /api/admin/user-role
+// @access  Private Admin
+exports.updateUserRole = async (req, res) => {
+    try {
+        const { email, newRole } = req.body;
+        
+        if (!email || !newRole) {
+            return res.status(400).json({ message: 'Email and new role are required' });
+        }
+
+        const validRoles = ['customer', 'vendor', 'guest', 'admin'];
+        if (!validRoles.includes(newRole)) {
+            return res.status(400).json({ message: 'Invalid role specified' });
+        }
+
+        const user = await User.findOne({ email: { $regex: new RegExp(`^${email}$`, 'i') } });
+        
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        user.role = newRole;
+        await user.save();
+
+        res.json({ message: 'User role updated successfully', user: { name: user.name, email: user.email, role: user.role } });
+    } catch (error) {
+        console.error('Error updating user role:', error);
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};

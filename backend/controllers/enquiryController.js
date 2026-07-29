@@ -246,9 +246,8 @@ exports.getVendorEnquiries = async (req, res) => {
 
         const isPaidPlan = hasActivePlan && currentUser.activePlan && currentUser.activePlan.price > 0;
 
-        if (type === 'b2b' && !isPaidPlan) {
-            return res.status(403).json({ message: 'Your current plan is not access b2b enquiry please upgrade your plan to see b2b enquiry' });
-        }
+        // Allowing type=b2b to return totalCount so sidebar badges work for free vendors
+        // Frontend VendorEnquiriesTab already blocks the UI for free vendors
 
         const isBookingFilter = req.query.isBooking === 'true';
         let query = {};
@@ -428,26 +427,33 @@ exports.getVendorEnquiries = async (req, res) => {
 
 
         const totalCount = await Enquiry.countDocuments(query);
-        const enquiries = await Enquiry.find(query)
-            .populate({
-                path: 'client',
-                select: 'name email phone company role activePlan planEndDate',
-                populate: { path: 'activePlan' }
-            })
-            .populate({
-                path: 'vendor',
-                select: 'name email phone company role activePlan planEndDate',
-                populate: { path: 'activePlan' }
-            })
-            .populate({
-                path: 'responses.vendor',
-                select: 'name email phone company role activePlan planEndDate',
-                populate: { path: 'activePlan' }
-            })
-            .sort({ createdAt: -1 })
-            .skip(skip)
-            .limit(limit)
-            .lean();
+        let enquiries = [];
+
+        if (type === 'b2b' && !isAdmin && !isPaidPlan) {
+            // SECURE: Free vendors only get the count for the sidebar badge, no actual data
+            enquiries = [];
+        } else {
+            enquiries = await Enquiry.find(query)
+                .populate({
+                    path: 'client',
+                    select: 'name email phone company role activePlan planEndDate',
+                    populate: { path: 'activePlan' }
+                })
+                .populate({
+                    path: 'vendor',
+                    select: 'name email phone company role activePlan planEndDate',
+                    populate: { path: 'activePlan' }
+                })
+                .populate({
+                    path: 'responses.vendor',
+                    select: 'name email phone company role activePlan planEndDate',
+                    populate: { path: 'activePlan' }
+                })
+                .sort({ createdAt: -1 })
+                .skip(skip)
+                .limit(limit)
+                .lean();
+        }
 
         let results = enquiries.map(enq => {
             const enqObj = enq;

@@ -41,8 +41,9 @@ const normalizeLocationInput = async (countryInput, cityInput) => {
         normalizedCountry = 'India';
     }
     
-    if (normalizedCity.toLowerCase() === 'banglore' || normalizedCity.toLowerCase() === 'bengaluru' || normalizedCity.toLowerCase() === 'bangalore') {
-        normalizedCity = 'Bangalore';
+    const bengaluruAliases = ['banglore', 'bengaluru', 'bangalore', 'bangaluru'];
+    if (bengaluruAliases.includes(normalizedCity.toLowerCase())) {
+        normalizedCity = 'Bengaluru';
     }
 
     // Dynamic fuzzy mapping
@@ -51,17 +52,17 @@ const normalizeLocationInput = async (countryInput, cityInput) => {
         if (normalizedCountry && normalizedCountry !== 'India') {
             const existingCountries = await User.distinct('country', { role: 'vendor' });
             for (let c of existingCountries) {
-                if (c && getSimilarity(normalizedCountry, c) >= 0.8) {
+                if (c && getSimilarity(normalizedCountry, c) >= 0.65) {
                     normalizedCountry = toTitleCase(c);
                     break;
                 }
             }
         }
 
-        if (normalizedCity && normalizedCity !== 'Bangalore') {
+        if (normalizedCity && normalizedCity !== 'Bengaluru') {
             const existingCities = await User.distinct('city', { role: 'vendor' });
             for (let ct of existingCities) {
-                if (ct && getSimilarity(normalizedCity, ct) >= 0.8) {
+                if (ct && getSimilarity(normalizedCity, ct) >= 0.65) {
                     normalizedCity = toTitleCase(ct);
                     break;
                 }

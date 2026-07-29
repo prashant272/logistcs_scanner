@@ -132,6 +132,7 @@ const AdminInvoiceRequests = lazy(() => import('./pages/admin/AdminInvoiceReques
 const AdminRechargeRequests = lazy(() => import('./pages/admin/AdminRechargeRequests'));
 const DelhiverySettings = lazy(() => import('./pages/admin/DelhiverySettings'));
 const AdminPtlBookings = lazy(() => import('./pages/admin/AdminPtlBookings'));
+const AdminRoleUpdate = lazy(() => import('./pages/admin/AdminRoleUpdate'));
 const PtlBookingsTab = lazy(() => import('./components/common/PtlBookingsTab'));
 const DelhiveryCalculator = lazy(() => import('./pages/public/DelhiveryCalculator'));
 const DelhiveryCreateOrder = lazy(() => import('./pages/public/DelhiveryCreateOrder'));
@@ -227,6 +228,7 @@ function App() {
               
               {/* Other sections */}
               <Route path="complaints" element={<AdminComplaints />} />
+              <Route path="role-update" element={<AdminRoleUpdate />} />
               <Route path="cms-settings" element={<div className="p-6 bg-white rounded-2xl shadow-sm text-slate-800"><h2 className="text-xl font-bold mb-4">CMS Settings</h2><p className="text-slate-500">Content Management System settings.</p></div>} />
               
               {/* PTL Delivery */}

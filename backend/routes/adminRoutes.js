@@ -27,7 +27,9 @@ const {
     updateVendorCreditDays,
     verifyVendorDocuments,
     getRechargeRequests,
-    updateRechargeRequestStatus
+    updateRechargeRequestStatus,
+    getUserByEmailForRole,
+    updateUserRole
 } = require("../controllers/adminController");
 const auth = require("../middleware/authMiddleware");
 
@@ -48,6 +50,10 @@ router.put("/vendors/:id/credit", auth, updateVendorCreditDays);
 router.put("/vendors/:id/enquiry-limit", auth, updateVendorEnquiryLimit);
 router.put("/vendors/:id/plan", auth, updateVendorPlan);
 router.put("/vendors/:id", auth, updateVendorDetails);
+
+// User Role Update
+router.get("/user-role/:email", auth, getUserByEmailForRole);
+router.put("/user-role", auth, updateUserRole);
 
 // Recharge Requests
 router.get("/recharge-requests", auth, getRechargeRequests);

@@ -68,7 +68,7 @@ const VendorNotificationPopup = () => {
     const handleDismiss = async (shouldNavigate = false) => {
         const notif = popupNotif;
         setPopupNotif(null); // Hide immediately for better UX
-        
+
         // Mark as read in backend if it has an ID
         if (notif && notif._id) {
             try {
@@ -87,7 +87,7 @@ const VendorNotificationPopup = () => {
             else if (finalLink.includes('/vendor/enquiries?type=my')) finalLink = '/vendor/my-enquiries';
             else if (finalLink.includes('/vendor/bookings?type=direct')) finalLink = '/vendor/direct-booking';
             else if (finalLink.includes('/vendor/bookings?type=my')) finalLink = '/vendor/my-bookings';
-            
+
             navigate(finalLink);
         }
     };
@@ -105,13 +105,13 @@ const VendorNotificationPopup = () => {
                     {popupNotif.message}
                 </p>
                 <div className="flex items-center gap-4">
-                    <button 
+                    <button
                         onClick={() => handleDismiss(false)}
                         className="flex-1 px-6 py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-black rounded-xl uppercase tracking-wider text-xs transition-colors cursor-pointer"
                     >
                         Ignore
                     </button>
-                    <button 
+                    <button
                         onClick={() => handleDismiss(true)}
                         className="flex-1 px-6 py-3.5 bg-gradient-to-r from-[#0066FF] to-[#00b2fe] hover:opacity-90 text-white font-black rounded-xl shadow-lg shadow-[#0066FF]/30 uppercase tracking-wider text-xs transition-all cursor-pointer"
                     >

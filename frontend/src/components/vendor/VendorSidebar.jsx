@@ -1,5 +1,7 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import axios from 'axios';
+import useSWR from 'swr';
 import { 
     Truck, Landmark, FileText, MessageSquare, 
     Calendar, DollarSign, Wallet, FileSpreadsheet, 
@@ -11,10 +13,51 @@ const VendorSidebar = ({ isSidebarOpen, logout, user }) => {
 
     const isPending = user && user.role !== 'admin' && user.verificationStatus !== 'Approved' && user.verificationStatus !== 'Pre Approved';
 
+    const fetchEnquiryCount = async (type) => {
+        const token = localStorage.getItem('userToken');
+        if (!token) return 0;
+        try {
+            const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/enquiries/vendor?type=${type}&limit=1`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            return res.data.totalCount || 0;
+        } catch (e) {
+            return 0;
+        }
+    };
+
+    const { data: myCount = 0 } = useSWR('myCount', () => fetchEnquiryCount('my'), { refreshInterval: 60000 });
+    const { data: directCount = 0 } = useSWR('directCount', () => fetchEnquiryCount('direct'), { refreshInterval: 60000 });
+    const { data: b2bCount = 0 } = useSWR('b2bCount', () => fetchEnquiryCount('b2b'), { refreshInterval: 60000 });
+
+    const getUnseenCount = (name, currentTotal) => {
+        const userId = user?._id || user?.id || 'unknown';
+        const lastSeen = parseInt(localStorage.getItem(`lastSeenCount_${userId}_${name}`) || '0', 10);
+        return Math.max(0, currentTotal - lastSeen);
+    };
+
+    const unseenCounts = {
+        'My Enquiries': getUnseenCount('My Enquiries', myCount),
+        'Direct Enquiries': getUnseenCount('Direct Enquiries', directCount),
+        'B2B Enquiries': getUnseenCount('B2B Enquiries', b2bCount)
+    };
+
     const handleNavClick = (e, item) => {
         if (isPending && item.name !== 'View Profile' && item.name !== 'Dashboard') {
             e.preventDefault();
             alert('Please upload required document and if your profile is approved then these tabs will be enabled.');
+            return;
+        }
+        
+        if (item.name === 'My Enquiries' || item.name === 'Direct Enquiries' || item.name === 'B2B Enquiries') {
+            const userId = user?._id || user?.id || 'unknown';
+            if (item.name === 'My Enquiries') {
+                localStorage.setItem(`lastSeenCount_${userId}_My Enquiries`, myCount);
+            } else if (item.name === 'Direct Enquiries') {
+                localStorage.setItem(`lastSeenCount_${userId}_Direct Enquiries`, directCount);
+            } else if (item.name === 'B2B Enquiries') {
+                localStorage.setItem(`lastSeenCount_${userId}_B2B Enquiries`, b2bCount);
+            }
         }
     };
 
@@ -138,7 +181,16 @@ const VendorSidebar = ({ isSidebarOpen, logout, user }) => {
                                                     <span className={`transition-transform duration-200 group-hover:scale-105 text-white`}>
                                                         {item.icon}
                                                     </span>
-                                                    <span className={`tracking-wide transition-opacity duration-200 ${!isSidebarOpen ? 'md:hidden' : ''}`}>{item.name}</span>
+                                                    <span className={`tracking-wide transition-opacity duration-200 flex-1 ${!isSidebarOpen ? 'md:hidden' : ''}`}>{item.name}</span>
+                                                    {isSidebarOpen && unseenCounts[item.name] > 0 && (
+                                                        <span className="flex items-center gap-1 bg-rose-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-sm">
+                                                            <MessageSquare size={10} />
+                                                            {unseenCounts[item.name]}
+                                                        </span>
+                                                    )}
+                                                    {!isSidebarOpen && unseenCounts[item.name] > 0 && (
+                                                        <span className="absolute top-1 right-2 w-2 h-2 bg-rose-500 rounded-full" />
+                                                    )}
                                                 </Link>
                                             );
                                         })}

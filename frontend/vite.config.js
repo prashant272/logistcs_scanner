@@ -9,10 +9,10 @@ export default defineConfig({
     transformer: 'lightningcss',
     lightningcss: {
       targets: {
-        chrome: 80 << 16,
-        safari: 14 << 16,
-        firefox: 80 << 16,
-        edge: 80 << 16
+        chrome: 64 << 16,
+        safari: 12 << 16,
+        firefox: 64 << 16,
+        edge: 79 << 16
       }
     }
   },
