@@ -107,7 +107,11 @@ const AdminEnquiriesTab = () => {
         setEditingEnq(enq._id);
         setEditFormData({ 
             status: enq.status || 'Pending',
-            price: enq.price || ''
+            price: enq.price || '',
+            fromLocation: enq.fromLocation || '',
+            toLocation: enq.toLocation || '',
+            type: enq.type || '',
+            commodity: enq.commodity || ''
         });
     };
 
@@ -260,11 +264,58 @@ const AdminEnquiriesTab = () => {
                                                 </div>
                                             </div>
                                         </td>
-                                        <td className="p-4 align-top">
-                                            <div className="text-xs font-bold text-slate-700">
-                                                <span className="text-[#0066FF]">{enq.fromLocation}</span> <span className="text-slate-400 mx-1">→</span> <span className="text-emerald-600">{enq.toLocation}</span>
-                                            </div>
-                                            <p className="text-[10px] font-bold text-slate-500 mt-1">Cargo: {enq.type?.toUpperCase()} | Comm: {enq.commodity || 'N/A'}</p>
+                                        {/* Cargo Info */}
+                                        <td className="p-4">
+                                            {editingEnq === enq._id ? (
+                                                <div className="flex flex-col gap-2 w-64">
+                                                    <div className="flex gap-2">
+                                                        <input 
+                                                            type="text" 
+                                                            value={editFormData.fromLocation}
+                                                            onChange={(e) => setEditFormData({...editFormData, fromLocation: e.target.value})}
+                                                            className="w-full text-xs font-bold border-2 border-slate-200 focus:border-blue-500 rounded-lg px-2 py-1.5 outline-none transition-colors"
+                                                            placeholder="From Port"
+                                                        />
+                                                        <span className="text-slate-300 self-center">→</span>
+                                                        <input 
+                                                            type="text" 
+                                                            value={editFormData.toLocation}
+                                                            onChange={(e) => setEditFormData({...editFormData, toLocation: e.target.value})}
+                                                            className="w-full text-xs font-bold border-2 border-slate-200 focus:border-blue-500 rounded-lg px-2 py-1.5 outline-none transition-colors"
+                                                            placeholder="To Port"
+                                                        />
+                                                    </div>
+                                                    <div className="flex gap-2">
+                                                        <input 
+                                                            type="text" 
+                                                            value={editFormData.type}
+                                                            onChange={(e) => setEditFormData({...editFormData, type: e.target.value})}
+                                                            className="w-1/2 text-[11px] font-black border-2 border-slate-200 focus:border-blue-500 rounded-lg px-2 py-1.5 outline-none transition-colors uppercase"
+                                                            placeholder="Cargo Type"
+                                                        />
+                                                        <input 
+                                                            type="text" 
+                                                            value={editFormData.commodity}
+                                                            onChange={(e) => setEditFormData({...editFormData, commodity: e.target.value})}
+                                                            className="w-1/2 text-[11px] font-bold border-2 border-slate-200 focus:border-blue-500 rounded-lg px-2 py-1.5 outline-none transition-colors"
+                                                            placeholder="Commodity"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <>
+                                                    <div className="font-bold text-slate-800 text-sm flex items-center gap-2 group-hover:text-blue-600 transition-colors">
+                                                        {enq.fromLocation} <span className="text-slate-300">→</span> {enq.toLocation}
+                                                    </div>
+                                                    <div className="text-xs font-black mt-1.5 flex items-center gap-2 flex-wrap">
+                                                        <span className="bg-blue-600 text-white px-2 py-0.5 rounded shadow-sm">Cargo: {enq.type?.toUpperCase()}</span>
+                                                        <span className="bg-slate-700 text-white px-2 py-0.5 rounded shadow-sm">Comm: {enq.commodity || 'N/A'}</span>
+                                                        {enq.weightRange && (
+                                                            <span className="bg-amber-500 text-white px-2 py-0.5 rounded shadow-sm">Weight: {enq.weightRange}</span>
+                                                        )}
+                                                    </div>
+                                                </>
+                                            )}
                                         </td>
                                         <td className="p-4 align-top">
                                             {editingEnq === enq._id ? (
