@@ -685,7 +685,7 @@ exports.getEnquiries = async (req, res) => {
             .sort({ createdAt: -1 })
             .skip(skip)
             .limit(limit)
-            .populate('client', 'name email company phone')
+            .populate('client', 'name email company phone role')
             .populate('vendor', 'name email company phone')
             .populate('responses.vendor', 'name email company phone');
 

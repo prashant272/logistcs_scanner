@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import axios from 'axios';
-import { Search, Loader2, Trash2, Edit, AlertCircle, CheckCircle, FileText, ChevronLeft, ChevronRight, Save, X, Globe, UserCheck, Send, Clock, Calendar } from 'lucide-react';
+import { Search, Loader2, Trash2, Edit, AlertCircle, CheckCircle, FileText, ChevronLeft, ChevronRight, Save, X, Globe, UserCheck, Send, Clock, Calendar, Building2 } from 'lucide-react';
 
 const AdminEnquiriesTab = () => {
     const [enquiries, setEnquiries] = useState([]);
@@ -236,10 +236,17 @@ const AdminEnquiriesTab = () => {
                                                 <div>
                                                     <div className="mb-2">
                                                         {enq.isDirect ? (
-                                                            <div className="inline-flex items-center gap-1.5 bg-blue-50/80 border border-blue-200 text-blue-700 px-2.5 py-1 rounded-lg">
-                                                                <Globe size={12} />
-                                                                <span className="text-[10px] font-black uppercase tracking-widest">Marketplace Broadcast</span>
-                                                            </div>
+                                                            (enq.client && enq.client.role === 'vendor') ? (
+                                                                <div className="inline-flex items-center gap-1.5 bg-indigo-50/80 border border-indigo-200 text-indigo-700 px-2.5 py-1 rounded-lg">
+                                                                    <Building2 size={12} />
+                                                                    <span className="text-[10px] font-black uppercase tracking-widest">B2B Enquiry</span>
+                                                                </div>
+                                                            ) : (
+                                                                <div className="inline-flex items-center gap-1.5 bg-blue-50/80 border border-blue-200 text-blue-700 px-2.5 py-1 rounded-lg">
+                                                                    <Globe size={12} />
+                                                                    <span className="text-[10px] font-black uppercase tracking-widest">Direct Enquiry</span>
+                                                                </div>
+                                                            )
                                                         ) : (
                                                             <div className="inline-flex items-center gap-1.5 bg-purple-50/80 border border-purple-200 text-purple-700 px-2.5 py-1 rounded-lg">
                                                                 <UserCheck size={12} />

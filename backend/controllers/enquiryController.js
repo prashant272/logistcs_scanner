@@ -273,13 +273,30 @@ exports.getVendorEnquiries = async (req, res) => {
                     };
                 } else if (type === 'direct') {
                     const customerIds = await User.find({ role: 'customer' }).distinct('_id');
+
+                    const directOrConditions = [
+                        { client: { $in: customerIds } },
+                        { client: null },
+                        { type: 'land', client: { $ne: req.user.id } } // Includes 'land' enquiries created by vendors
+                    ];
+
+                    // Free plan vendors get B2B enquiries that are > 3 hours old and not accepted by anyone
+                    if (!isPaidPlan) {
+                        const vendorIds = await User.find({ role: 'vendor' }).distinct('_id');
+                        const threeHoursAgo = new Date(Date.now() - 3 * 60 * 60 * 1000);
+
+                        directOrConditions.push({
+                            client: { $in: vendorIds, $ne: req.user.id },
+                            type: { $ne: 'land' },
+                            createdAt: { $lte: threeHoursAgo },
+                            responses: { $not: { $elemMatch: { status: { $in: ['Accepted', 'Quoted'] } } } },
+                            status: { $ne: 'Accepted' }
+                        });
+                    }
+
                     query = {
                         isDirect: true,
-                        $or: [
-                            { client: { $in: customerIds } },
-                            { client: null },
-                            { type: 'land', client: { $ne: req.user.id } } // Includes 'land' enquiries created by vendors
-                        ]
+                        $or: directOrConditions
                     };
                 } else if (type === 'b2b') {
                     const vendorIds = await User.find({ role: 'vendor' }).distinct('_id');
