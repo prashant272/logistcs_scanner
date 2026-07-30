@@ -47,7 +47,7 @@ exports.createInvoicePaymentOrder = async (req, res) => {
             keyId: keyId,
             baseAmount: baseAmount,
             gatewayCharge: gatewayCharge,
-            gstOnGateway: gstOnGateway,
+            gstOnGateway: gstAmount,
             finalAmount: finalAmount
         });
     } catch (error) {
