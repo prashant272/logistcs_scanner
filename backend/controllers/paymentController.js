@@ -78,28 +78,42 @@ exports.verifyInvoicePayment = async (req, res) => {
             return res.status(400).json({ message: 'Payment verification failed: Signature mismatch' });
         }
 
-        // If verification successful, update the transaction/invoice as Paid.
-        // We assume the user has submitted the invoice and there is a FinanceApplication or Transaction to update.
-        // We will just update the Transaction record as "Paid" or "Approved" to reflect repayment.
-        const FinanceApplication = require('../models/FinanceApplication');
-        const invoice = await FinanceApplication.findById(invoiceId);
+        const InvoiceRequest = require('../models/InvoiceRequest');
+        const invoice = await InvoiceRequest.findById(invoiceId).populate('vendor');
         
         if (invoice) {
-            invoice.adminStatus = 'Approved'; 
-            invoice.isFeePaid = true;
+            invoice.status = 'Cleared';
             await invoice.save();
-        }
-
-        if (transactionId) {
-            const txn = await Transaction.findById(transactionId);
-            if (txn) {
-                txn.status = 'Paid';
-                await txn.save();
+            
+            // Calculate total to refund to wallet
+            const totalPaid = (invoice.approvedAmount || invoice.amount) + invoice.penaltyAmount + (invoice.processingFee || 0);
+            
+            const User = require('../models/User');
+            const user = await User.findById(invoice.vendor._id);
+            
+            user.walletBalance = (user.walletBalance || 0) + totalPaid;
+            // Increase credit score by 5 (capped at 100) on successful repayment
+            user.creditScore = Math.min(100, (user.creditScore || 100) + 5);
+            await user.save();
+            
+            const WalletTransaction = require('../models/WalletTransaction');
+            await WalletTransaction.create({
+                vendor: user._id,
+                amount: totalPaid,
+                type: 'Credit',
+                description: `Invoice Repayment Cleared (Base: ₹${invoice.approvedAmount}, Fee: ₹${invoice.processingFee || 0}, Penalty: ₹${invoice.penaltyAmount})`,
+                referenceId: invoice._id,
+                balanceAfter: user.walletBalance
+            });
+            
+            const { sendNotification } = require('../utils/notificationService');
+            if (sendNotification) {
+                await sendNotification(user._id, `Your online repayment for invoice ${invoice.lsId} has been verified and cleared! Credit score +5.`, 'success', '/vendor/upload-invoice');
             }
         }
 
         res.json({
-            message: 'Payment verified successfully. Invoice marked as Paid.'
+            message: 'Payment verified successfully. Invoice marked as Cleared.'
         });
     } catch (error) {
         console.error('Invoice Payment Verification Error:', error.message);
