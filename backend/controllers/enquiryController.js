@@ -197,8 +197,13 @@ exports.createEnquiry = async (req, res) => {
             await exports.triggerVendorBroadcast(enquiry._id);
         } else if (scheduledTime) {
             // RM explicitly chose to schedule
-            enquiry.scheduledBroadcastTime = new Date(scheduledTime);
-            await enquiry.save();
+            const sTime = new Date(scheduledTime);
+            enquiry.scheduledBroadcastTime = sTime;
+            // Also update createdAt to match scheduled time so it appears fresh when it broadcasts
+            await Enquiry.updateOne(
+                { _id: enquiry._id },
+                { $set: { scheduledBroadcastTime: sTime, createdAt: sTime } }
+            );
         } else {
             // Default global settings behavior
             const Setting = require('../models/Setting');
@@ -333,7 +338,7 @@ exports.getVendorEnquiries = async (req, res) => {
         // Apply Search Filter
         if (req.query.search) {
             const searchRegex = new RegExp(req.query.search, 'i');
-            query.$or = [
+            const searchOr = [
                 { fromLocation: searchRegex },
                 { toLocation: searchRegex },
                 { commodity: searchRegex },
@@ -341,6 +346,15 @@ exports.getVendorEnquiries = async (req, res) => {
                 { guestName: searchRegex },
                 { guestCompany: searchRegex }
             ];
+            
+            if (query.$or) {
+                query.$and = query.$and || [];
+                query.$and.push({ $or: query.$or });
+                query.$and.push({ $or: searchOr });
+                delete query.$or;
+            } else {
+                query.$or = searchOr;
+            }
         }
 
         // Apply Mode Filter
@@ -424,7 +438,25 @@ exports.getVendorEnquiries = async (req, res) => {
         const limit = parseInt(req.query.limit) || 10;
         const skip = (page - 1) * limit;
 
-
+        // Hide future scheduled enquiries from vendors
+        if (!isAdmin) {
+            const scheduleCondition = {
+                $or: [
+                    { scheduledBroadcastTime: null },
+                    { scheduledBroadcastTime: { $exists: false } },
+                    { scheduledBroadcastTime: { $lte: new Date() } }
+                ]
+            };
+            if (query.$or) {
+                query.$and = query.$and || [];
+                query.$and.push({ $or: query.$or });
+                query.$and.push(scheduleCondition);
+                delete query.$or;
+            } else {
+                query.$and = query.$and || [];
+                query.$and.push(scheduleCondition);
+            }
+        }
 
         const totalCount = await Enquiry.countDocuments(query);
         let enquiries = [];
@@ -818,6 +850,18 @@ exports.getVendorStats = async (req, res) => {
                 }
             }
 
+            // Hide future scheduled enquiries from vendors
+            if (!isAdmin) {
+                query.$and = query.$and || [];
+                query.$and.push({
+                    $or: [
+                        { scheduledBroadcastTime: null },
+                        { scheduledBroadcastTime: { $exists: false } },
+                        { scheduledBroadcastTime: { $lte: new Date() } }
+                    ]
+                });
+            }
+
             // Date filter moved to individual pipeline stages to separate 'Total' (createdAt) and 'Accepted' (action date).
             return query;
         };
@@ -1201,9 +1245,12 @@ exports.scheduleEnquiry = async (req, res) => {
             return res.status(400).json({ message: 'Already broadcasted' });
         }
 
-        enquiry.scheduledBroadcastTime = new Date(scheduledTime);
-        await enquiry.save();
-        res.json({ message: 'Broadcast scheduled successfully', scheduledTime: enquiry.scheduledBroadcastTime });
+        const sTime = new Date(scheduledTime);
+        await Enquiry.updateOne(
+            { _id: enquiry._id },
+            { $set: { scheduledBroadcastTime: sTime, createdAt: sTime } }
+        );
+        res.json({ message: 'Broadcast scheduled successfully', scheduledTime: sTime });
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
     }
