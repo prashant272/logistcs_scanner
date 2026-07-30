@@ -581,7 +581,7 @@ const PricingPlans = () => {
                                                 <tbody className="divide-y divide-slate-350 text-slate-700 font-semibold">
                                                     <tr className="border-b border-slate-350">
                                                         <td className="p-2 bg-slate-50/80 border-r border-slate-350 font-extrabold text-slate-500">Alternate Name</td>
-                                                        <td className="p-2">{plan.name} pricing</td>
+                                                        <td className="p-2">{plan.alternateName || `${plan.name} pricing`}</td>
                                                     </tr>
                                                     <tr className="border-b border-slate-350">
                                                         <td className="p-2 bg-slate-50/80 border-r border-slate-350 font-extrabold text-slate-500">Enquiry acceptence Limit</td>
@@ -594,27 +594,27 @@ const PricingPlans = () => {
                                                     </tr>
                                                     <tr className="border-b border-slate-350">
                                                         <td className="p-2 bg-slate-50/80 border-r border-slate-350 font-extrabold text-slate-500">Act as a White Label Site</td>
-                                                        <td className="p-2">{plan.price > 1000 ? 'Yes' : 'No'}</td>
+                                                        <td className="p-2">{plan.actAsWhiteLabelSite || (plan.price > 1000 ? 'Yes' : 'No')}</td>
                                                     </tr>
                                                     <tr className="border-b border-slate-350">
                                                         <td className="p-2 bg-slate-50/80 border-r border-slate-350 font-extrabold text-slate-500">Vendor Profile Listing</td>
-                                                        <td className="p-2">{plan.price > 0 ? '✓' : '✕'}</td>
+                                                        <td className="p-2">{plan.vendorProfileListing || '✓'}</td>
                                                     </tr>
                                                     <tr className="border-b border-slate-350">
                                                         <td className="p-2 bg-slate-50/80 border-r border-slate-350 font-extrabold text-slate-500">Worldwide Visibility</td>
-                                                        <td className="p-2">{plan.price > 0 ? '✓' : 'Limited'}</td>
+                                                        <td className="p-2">{plan.worldwideVisibility || '✓'}</td>
                                                     </tr>
                                                     <tr className="border-b border-slate-350">
                                                         <td className="p-2 bg-slate-50/80 border-r border-slate-350 font-extrabold text-slate-500">Direct Number of enquiries</td>
-                                                        <td className="p-2">{plan.price > 0 ? 'Unlimited' : 'Only 5 accepted'}</td>
+                                                        <td className="p-2">{plan.directEnquiries || 'Unlimited'}</td>
                                                     </tr>
                                                     <tr className="border-b border-slate-350">
                                                         <td className="p-2 bg-slate-50/80 border-r border-slate-350 font-extrabold text-slate-500">Dedicated Account Manager</td>
-                                                        <td className="p-2">{plan.price > 5000 ? '✓' : '✕'}</td>
+                                                        <td className="p-2">{plan.dedicatedAccountManager || '✓'}</td>
                                                     </tr>
-                                                    <tr className="border-b border-slate-350">
+                                                    <tr>
                                                         <td className="p-2 bg-slate-50/80 border-r border-slate-350 font-extrabold text-slate-500">Support</td>
-                                                        <td className="p-2">{plan.price > 0 ? 'Premium 24/7' : 'Standard'}</td>
+                                                        <td className="p-2">{plan.supportType || (plan.price > 2000 ? 'Premium 24/7' : 'Standard')}</td>
                                                     </tr>
 
                                                     {/* Render dynamic key-value rows parsed from description */}

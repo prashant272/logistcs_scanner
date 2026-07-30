@@ -48,6 +48,34 @@ const planSchema = new mongoose.Schema({
         enum: ['All', 'Land'],
         default: 'All'
     },
+    alternateName: {
+        type: String,
+        default: ''
+    },
+    actAsWhiteLabelSite: {
+        type: String,
+        default: 'No'
+    },
+    vendorProfileListing: {
+        type: String,
+        default: '✓'
+    },
+    worldwideVisibility: {
+        type: String,
+        default: '✓'
+    },
+    directEnquiries: {
+        type: String,
+        default: 'Unlimited'
+    },
+    dedicatedAccountManager: {
+        type: String,
+        default: '✓'
+    },
+    supportType: {
+        type: String,
+        default: 'Premium 24/7'
+    },
     description: {
         type: String,
         default: ''

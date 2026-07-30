@@ -27,6 +27,15 @@ const PlanManagement = () => {
   const [serviceType, setServiceType] = useState('All');
   const [countries, setCountries] = useState([]);
   
+  // Dynamic feature fields
+  const [alternateName, setAlternateName] = useState('');
+  const [actAsWhiteLabelSite, setActAsWhiteLabelSite] = useState('No');
+  const [vendorProfileListing, setVendorProfileListing] = useState('✓');
+  const [worldwideVisibility, setWorldwideVisibility] = useState('✓');
+  const [directEnquiries, setDirectEnquiries] = useState('Unlimited');
+  const [dedicatedAccountManager, setDedicatedAccountManager] = useState('✓');
+  const [supportType, setSupportType] = useState('Premium 24/7');
+  
   const editorRef = useRef(null);
 
   useEffect(() => {
@@ -67,6 +76,15 @@ const PlanManagement = () => {
     setUserType(plan.userType || 'customer');
     setServiceType(plan.serviceType || 'All');
     setCountries(plan.country ? plan.country.split(',').map(c => c.trim()) : []);
+    
+    setAlternateName(plan.alternateName || '');
+    setActAsWhiteLabelSite(plan.actAsWhiteLabelSite || 'No');
+    setVendorProfileListing(plan.vendorProfileListing || '✓');
+    setWorldwideVisibility(plan.worldwideVisibility || '✓');
+    setDirectEnquiries(plan.directEnquiries || 'Unlimited');
+    setDedicatedAccountManager(plan.dedicatedAccountManager || '✓');
+    setSupportType(plan.supportType || 'Premium 24/7');
+    
     if (editorRef.current) {
       editorRef.current.innerHTML = plan.description || '';
     }
@@ -86,6 +104,15 @@ const PlanManagement = () => {
     setUserType('customer');
     setServiceType('All');
     setCountries([]);
+    
+    setAlternateName('');
+    setActAsWhiteLabelSite('No');
+    setVendorProfileListing('✓');
+    setWorldwideVisibility('✓');
+    setDirectEnquiries('Unlimited');
+    setDedicatedAccountManager('✓');
+    setSupportType('Premium 24/7');
+    
     if (editorRef.current) {
       editorRef.current.innerHTML = '';
     }
@@ -123,6 +150,13 @@ const PlanManagement = () => {
         userType,
         serviceType,
         country: countries.join(', '),
+        alternateName,
+        actAsWhiteLabelSite,
+        vendorProfileListing,
+        worldwideVisibility,
+        directEnquiries,
+        dedicatedAccountManager,
+        supportType,
         description: descriptionHtml
       };
 
@@ -365,6 +399,100 @@ const PlanManagement = () => {
                   <option value="All">All Services</option>
                   <option value="Land">Land Only</option>
                 </select>
+              </div>
+            </div>
+
+            {/* Dynamic Features Rows */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div className="group">
+                <label className="block text-xs font-bold !text-slate-900 mb-1">
+                  Alternate Name
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. PREMIUM plan + GST Applicable pricing"
+                  value={alternateName}
+                  onChange={(e) => setAlternateName(e.target.value)}
+                  className="w-full bg-[#f4f7fc] border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-800 focus:outline-none focus:bg-white focus:border-[#00b2fe] transition-all"
+                />
+              </div>
+              <div className="group">
+                <label className="block text-xs font-bold !text-slate-900 mb-1">
+                  Act as a White Label Site
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Yes / No"
+                  value={actAsWhiteLabelSite}
+                  onChange={(e) => setActAsWhiteLabelSite(e.target.value)}
+                  className="w-full bg-[#f4f7fc] border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-800 focus:outline-none focus:bg-white focus:border-[#00b2fe] transition-all"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div className="group">
+                <label className="block text-xs font-bold !text-slate-900 mb-1">
+                  Vendor Profile Listing
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. ✓"
+                  value={vendorProfileListing}
+                  onChange={(e) => setVendorProfileListing(e.target.value)}
+                  className="w-full bg-[#f4f7fc] border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-800 focus:outline-none focus:bg-white focus:border-[#00b2fe] transition-all"
+                />
+              </div>
+              <div className="group">
+                <label className="block text-xs font-bold !text-slate-900 mb-1">
+                  Worldwide Visibility
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. ✓"
+                  value={worldwideVisibility}
+                  onChange={(e) => setWorldwideVisibility(e.target.value)}
+                  className="w-full bg-[#f4f7fc] border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-800 focus:outline-none focus:bg-white focus:border-[#00b2fe] transition-all"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              <div className="group">
+                <label className="block text-xs font-bold !text-slate-900 mb-1">
+                  Direct Number of Enquiries
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Unlimited"
+                  value={directEnquiries}
+                  onChange={(e) => setDirectEnquiries(e.target.value)}
+                  className="w-full bg-[#f4f7fc] border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-800 focus:outline-none focus:bg-white focus:border-[#00b2fe] transition-all"
+                />
+              </div>
+              <div className="group">
+                <label className="block text-xs font-bold !text-slate-900 mb-1">
+                  Dedicated Account Manager
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. ✓"
+                  value={dedicatedAccountManager}
+                  onChange={(e) => setDedicatedAccountManager(e.target.value)}
+                  className="w-full bg-[#f4f7fc] border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-800 focus:outline-none focus:bg-white focus:border-[#00b2fe] transition-all"
+                />
+              </div>
+              <div className="group">
+                <label className="block text-xs font-bold !text-slate-900 mb-1">
+                  Support Type
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Premium 24/7"
+                  value={supportType}
+                  onChange={(e) => setSupportType(e.target.value)}
+                  className="w-full bg-[#f4f7fc] border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-800 focus:outline-none focus:bg-white focus:border-[#00b2fe] transition-all"
+                />
               </div>
             </div>
 
