@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { 
   Phone, Mail, Search, MapPin, Building2, Ship, Plane, 
-  Truck, Warehouse, Package, Coins, CheckCircle2, Clock, User 
+  Truck, Warehouse, Package, Coins, CheckCircle2, Clock, User, X, Hash 
 } from 'lucide-react';
 import { useEnquiries } from '../../services/EnquiryService';
 
@@ -13,6 +13,19 @@ const CustomerEnquiriesTab = ({ title, type }) => {
     fetchClientEnquiries
   } = useEnquiries();
 
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterType, setFilterType] = useState('all');
+  const [selectedVendor, setSelectedVendor] = useState(null);
+
+  const getLSID = (id) => {
+    if (!id) return 'N/A';
+    let hash = 0;
+    const str = id.toString();
+    for (let i = 0; i < str.length; i++) {
+        hash = (hash * 31 + str.charCodeAt(i)) % 900000;
+    }
+    return 1000000000 + Math.abs(hash);
+  };
   const [searchQuery, setSearchQuery] = useState('');
   const [searchInput, setSearchInput] = useState('');
   const [selectedFilter, setSelectedFilter] = useState('all');
@@ -191,7 +204,7 @@ const CustomerEnquiriesTab = ({ title, type }) => {
                       <div className="space-y-2">
                         <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Carrier Details</span>
                         <div className="text-xs space-y-1.5 font-bold">
-                          <div className="text-slate-800 font-black">{enq.vendor ? (enq.vendor.company || enq.vendor.name) : 'N/A'}</div>
+                          <div className="text-slate-800 font-black cursor-pointer hover:text-[#0066FF]" onClick={() => setSelectedVendor(enq.vendor)}>{enq.vendor ? (enq.vendor.company || enq.vendor.name) : 'N/A'}</div>
                           {enq.vendor && (
                             <>
                               <div className="flex items-center gap-2 text-slate-600">
@@ -438,9 +451,12 @@ const CustomerEnquiriesTab = ({ title, type }) => {
                           <div className="space-y-2">
                             {enq.responses.map((resp, idx) => (
                               <div key={idx} className="flex flex-wrap items-center justify-between gap-4 text-xs font-black bg-blue-50/50 px-4 py-3 rounded-xl border border-blue-100/70">
-                                <div className="flex items-center gap-2">
+                                <div 
+                                    className="flex items-center gap-2 cursor-pointer hover:bg-blue-100 p-1 rounded transition-colors"
+                                    onClick={() => setSelectedVendor(resp.vendor)}
+                                >
                                   <User size={14} className="text-[#0066FF]" />
-                                  <span className="text-[#0B1E43]">{resp.vendor?.company || resp.vendor?.name || 'Vendor'}</span>
+                                  <span className="text-[#0B1E43] underline decoration-blue-200 underline-offset-4">{resp.vendor?.company || resp.vendor?.name || 'Vendor'}</span>
                                 </div>
                                 <div className="flex items-center gap-2 text-emerald-600">
                                   <Coins size={14} />
@@ -487,6 +503,74 @@ const CustomerEnquiriesTab = ({ title, type }) => {
               </button>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Vendor Details Modal */}
+      {selectedVendor && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden relative animate-in fade-in zoom-in duration-200">
+            <div className="absolute top-4 right-4 z-10">
+              <button 
+                onClick={() => setSelectedVendor(null)}
+                className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 transition-colors"
+              >
+                <X size={16} />
+              </button>
+            </div>
+            
+            <div className="p-8">
+              <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mb-6 border border-blue-100">
+                <Building2 size={32} className="text-[#0066FF]" />
+              </div>
+              
+              <h3 className="text-2xl font-black text-slate-900 mb-1">
+                {selectedVendor.company || selectedVendor.name || 'Vendor Details'}
+              </h3>
+              {selectedVendor.name && selectedVendor.company && (
+                <p className="text-sm font-bold text-slate-500 mb-6">Contact: {selectedVendor.name}</p>
+              )}
+              
+              <div className="space-y-4 bg-slate-50 p-5 rounded-2xl border border-slate-100">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-blue-100/50 flex items-center justify-center text-blue-600">
+                    <Hash size={14} />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-black uppercase text-slate-400 tracking-wider">LS ID</p>
+                    <p className="text-sm font-bold text-slate-800">LS-{getLSID(selectedVendor._id)}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-emerald-100/50 flex items-center justify-center text-emerald-600">
+                    <Phone size={14} />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Mobile Number</p>
+                    <p className="text-sm font-bold text-slate-800">{selectedVendor.phone || 'N/A'}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-purple-100/50 flex items-center justify-center text-purple-600">
+                    <Mail size={14} />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Email Address</p>
+                    <p className="text-sm font-bold text-slate-800 break-all">{selectedVendor.email || 'N/A'}</p>
+                  </div>
+                </div>
+              </div>
+              
+              <button 
+                onClick={() => setSelectedVendor(null)}
+                className="w-full mt-6 bg-slate-900 hover:bg-slate-800 text-white font-black py-3.5 rounded-xl transition-colors uppercase text-xs tracking-wider"
+              >
+                Close
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
