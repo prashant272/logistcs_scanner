@@ -432,8 +432,8 @@ const PricingPlans = () => {
                 <button
                     onClick={() => setActiveTab('regular')}
                     className={`pb-2 px-4 text-sm font-black uppercase tracking-wider border-b-2 transition-colors ${activeTab === 'regular'
-                            ? 'border-[#0066FF] text-[#0066FF]'
-                            : 'border-transparent text-slate-400 hover:text-slate-600'
+                        ? 'border-[#0066FF] text-[#0066FF]'
+                        : 'border-transparent text-slate-400 hover:text-slate-600'
                         }`}
                 >
                     Regular Plans
@@ -441,8 +441,8 @@ const PricingPlans = () => {
                 <button
                     onClick={() => setActiveTab('topup')}
                     className={`pb-2 px-4 text-sm font-black uppercase tracking-wider border-b-2 transition-colors ${activeTab === 'topup'
-                            ? 'border-purple-600 text-purple-600'
-                            : 'border-transparent text-slate-400 hover:text-slate-600'
+                        ? 'border-purple-600 text-purple-600'
+                        : 'border-transparent text-slate-400 hover:text-slate-600'
                         }`}
                 >
                     Top-up Plans
@@ -470,8 +470,8 @@ const PricingPlans = () => {
                                 <div
                                     key={plan._id}
                                     className={`bg-white rounded-3xl border flex flex-col justify-between relative transition-all duration-300 w-full lg:w-80 shrink-0 ${isCurrent
-                                            ? 'border-slate-300 bg-slate-50/20 shadow-md scale-95 opacity-90'
-                                            : 'border-[#0066FF] shadow-[0_20px_50px_rgba(0,102,255,0.12)] scale-100 lg:scale-105 z-10 hover:scale-[1.07]'
+                                        ? 'border-slate-300 bg-slate-50/20 shadow-md scale-95 opacity-90'
+                                        : 'border-[#0066FF] shadow-[0_20px_50px_rgba(0,102,255,0.12)] scale-100 lg:scale-105 z-10 hover:scale-[1.07]'
                                         }`}
                                     style={{ minHeight: '620px' }}
                                 >
@@ -550,10 +550,10 @@ const PricingPlans = () => {
                                             disabled={isCurrent || upgradingId === plan._id || plan.price === 0}
                                             onClick={() => handleUpgrade(plan._id)}
                                             className={`w-full flex justify-center items-center py-3.5 rounded-2xl text-xs font-black uppercase tracking-wider transition-all duration-300 cursor-pointer ${isCurrent
-                                                    ? 'bg-slate-450 text-slate-700 cursor-default border border-slate-300'
-                                                    : plan.price === 0
-                                                        ? 'bg-slate-200 text-slate-500 cursor-default'
-                                                        : 'bg-[#0066FF] hover:bg-[#0052cc] text-white shadow-md shadow-[#0066FF]/10 active:scale-98 disabled:opacity-75'
+                                                ? 'bg-slate-450 text-slate-700 cursor-default border border-slate-300'
+                                                : plan.price === 0
+                                                    ? 'bg-slate-200 text-slate-500 cursor-default'
+                                                    : 'bg-[#0066FF] hover:bg-[#0052cc] text-white shadow-md shadow-[#0066FF]/10 active:scale-98 disabled:opacity-75'
                                                 }`}
                                         >
                                             {upgradingId === plan._id ? (

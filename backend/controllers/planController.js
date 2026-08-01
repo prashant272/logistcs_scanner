@@ -12,12 +12,17 @@ exports.getPlans = async (req, res) => {
         if (userType) query.userType = userType;
         if (country) {
             let countryRegexes = [
-                { country: { $regex: new RegExp(`\\b${country}\\b`, 'i') } },
-                { country: { $regex: /Others/i } },
-                { country: { $regex: /Worldwide/i } }
+                { country: { $regex: new RegExp(`\\b${country}\\b`, 'i') } }
             ];
 
             const cLower = country.toLowerCase();
+            
+            // Only show 'Worldwide' and 'Others' plans if the user is NOT from India
+            if (cLower !== 'india' && cLower !== 'in') {
+                countryRegexes.push({ country: { $regex: /Others/i } });
+                countryRegexes.push({ country: { $regex: /Worldwide/i } });
+            }
+
             if (cLower === 'united states' || cLower === 'usa' || cLower === 'us') {
                 countryRegexes.push({ country: { $regex: /\bunited states\b/i } });
                 countryRegexes.push({ country: { $regex: /\busa\b/i } });
