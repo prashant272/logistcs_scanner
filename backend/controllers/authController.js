@@ -449,7 +449,7 @@ exports.updateUserProfile = async (req, res) => {
 
         const fieldsToUpdate = [
             'firstName', 'lastName', 'phone', 'company', 'address',
-            'profilePhoto', 'uploadedDocument', 'country', 'city', 'state', 'pincode',
+            'profilePhoto', 'uploadedDocument', 'uploadedCertificate', 'uploadedInvoice', 'country', 'city', 'state', 'pincode',
             'website', 'alternativeEmail', 'alternativeNumber', 'dateOfIncorporation',
             'companyAge', 'directorsNames', 'directorsCount', 'lastYearTurnover',
             'companyProfile', 'serviceIn', 'services', 'deductionPercentage', 'gst', 'serviceLocations'

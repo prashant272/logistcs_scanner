@@ -30,16 +30,17 @@ const upload = multer({
     }),
     limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
     fileFilter: function (req, file, cb) {
-        const filetypes = /jpeg|jpg|png|webp/;
-        const mimetypes = /image\/jpeg|image\/png|image\/webp/;
+        const filetypes = /jpeg|jpg|png|webp|avif/;
+        const mimetypes = /image\/jpeg|image\/png|image\/webp|image\/avif/;
 
         const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
         const mimetype = mimetypes.test(file.mimetype);
 
-        if (mimetype && extname) {
+        if (extname) {
             return cb(null, true);
         } else {
-            cb(new Error('Error: Images Only (jpeg, jpg, png, webp)!'));
+            console.error('Upload rejected. Original Name:', file.originalname, 'MIME Type:', file.mimetype);
+            cb(new Error('Error: Images Only (jpeg, jpg, png, webp, avif)!'));
         }
     }
 });
@@ -60,16 +61,17 @@ const uploadDoc = multer({
     }),
     limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit for docs
     fileFilter: function (req, file, cb) {
-        const filetypes = /jpeg|jpg|png|webp|pdf|doc|docx|txt|xls|xlsx/;
-        const mimetypes = /image\/jpeg|image\/png|image\/webp|application\/pdf|application\/msword|application\/vnd.openxmlformats-officedocument.wordprocessingml.document|text\/plain|application\/vnd.ms-excel|application\/vnd.openxmlformats-officedocument.spreadsheetml.sheet/;
+        const filetypes = /jpeg|jpg|png|webp|avif|pdf|doc|docx|txt|xls|xlsx/;
+        const mimetypes = /image\/jpeg|image\/png|image\/webp|image\/avif|application\/pdf|application\/msword|application\/vnd.openxmlformats-officedocument.wordprocessingml.document|text\/plain|application\/vnd.ms-excel|application\/vnd.openxmlformats-officedocument.spreadsheetml.sheet/;
 
         const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
         const mimetype = mimetypes.test(file.mimetype);
 
-        if (mimetype && extname) {
+        if (extname) {
             return cb(null, true);
         } else {
-            cb(new Error('Error: Allowed formats: jpeg, jpg, png, webp, pdf, doc, docx, txt, xls, xlsx!'));
+            console.error('Upload rejected. Original Name:', file.originalname, 'MIME Type:', file.mimetype);
+            cb(new Error('Error: Allowed formats: jpeg, jpg, png, webp, avif, pdf, doc, docx, txt, xls, xlsx!'));
         }
     }
 });

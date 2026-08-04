@@ -17,6 +17,8 @@ const VendorProfileTab = ({ user: propUser }) => {
     address: user?.address || '',
     profilePhoto: user?.profilePhoto || '',
     uploadedDocument: user?.uploadedDocument || '',
+    uploadedCertificate: user?.uploadedCertificate || '',
+    uploadedInvoice: user?.uploadedInvoice || '',
     country: user?.country || '',
     city: user?.city || '',
     state: user?.state || '',
@@ -44,7 +46,9 @@ const VendorProfileTab = ({ user: propUser }) => {
 
   const [uploading, setUploading] = useState({
     profilePhoto: false,
-    uploadedDocument: false
+    uploadedDocument: false,
+    uploadedCertificate: false,
+    uploadedInvoice: false
   });
 
   const [saved, setSaved] = useState(false);
@@ -80,6 +84,11 @@ const VendorProfileTab = ({ user: propUser }) => {
     } finally {
       setUploading(prev => ({ ...prev, [field]: false }));
     }
+  };
+
+  const handleDocumentDelete = (field) => {
+    if (!window.confirm(`Are you sure you want to delete this document?`)) return;
+    setFormData(prev => ({ ...prev, [field]: '' }));
   };
 
   const handleServiceChange = (serviceName) => {
@@ -218,7 +227,7 @@ const VendorProfileTab = ({ user: propUser }) => {
                     )}
                     <input 
                       type="file" 
-                      accept="image/*" 
+                      accept="image/jpeg,image/png,image/webp,image/avif" 
                       onChange={(e) => handleFileUpload(e, 'profilePhoto')}
                       className="hidden" 
                       disabled={uploading.profilePhoto}
@@ -251,23 +260,75 @@ const VendorProfileTab = ({ user: propUser }) => {
                     )}
                     <input 
                       type="file" 
-                      accept=".pdf,.doc,.docx,.jpg,.png,.webp,.txt"
+                      accept=".pdf,.doc,.docx,.jpg,.png,.webp,.avif,.txt"
                       onChange={(e) => handleFileUpload(e, 'uploadedDocument')}
                       className="hidden" 
                       disabled={uploading.uploadedDocument}
                     />
                   </label>
                   {formData.uploadedDocument ? (
-                    <a 
-                      href={formData.uploadedDocument} 
-                      target="_blank" 
-                      rel="noreferrer"
-                      className="block text-[11px] text-[#0066FF] font-bold underline truncate max-w-[220px]"
-                    >
-                      View uploaded file
-                    </a>
+                    <div className="flex items-center gap-3">
+                      <a 
+                        href={formData.uploadedDocument} 
+                        target="_blank" 
+                        rel="noreferrer"
+                        className="block text-[11px] text-[#0066FF] font-bold underline truncate max-w-[220px]"
+                      >
+                        View uploaded document
+                      </a>
+                    </div>
                   ) : (
                     <p className="text-[11px] text-slate-500 font-medium">Supported: PDF, Word, Images (Max 10MB)</p>
+                  )}
+                </div>
+              </div>
+              <div className="flex items-start gap-4 p-4 rounded-2xl bg-blue-50/50 border border-blue-100">
+                <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shrink-0 shadow-sm">
+                  <ShieldCheck className="w-4 h-4 text-blue-600" />
+                </div>
+                <div className="space-y-2 flex-1">
+                  <div>
+                    <h4 className="text-xs font-bold text-slate-800">Company Certificate</h4>
+                    <p className="text-[10px] text-slate-500">Upload official certificate</p>
+                  </div>
+                  {formData.uploadedCertificate ? (
+                    <div className="flex items-center gap-3">
+                      <a 
+                        href={formData.uploadedCertificate} 
+                        target="_blank" 
+                        rel="noreferrer"
+                        className="block text-[11px] text-blue-600 font-bold underline truncate max-w-[220px]"
+                      >
+                        View uploaded certificate
+                      </a>
+                    </div>
+                  ) : (
+                    <p className="text-[11px] text-slate-500 font-medium italic">No certificate uploaded yet.</p>
+                  )}
+                </div>
+              </div>
+              <div className="flex items-start gap-4 p-4 rounded-2xl bg-purple-50/50 border border-purple-100">
+                <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shrink-0 shadow-sm">
+                  <FileText className="w-4 h-4 text-purple-600" />
+                </div>
+                <div className="space-y-2 flex-1">
+                  <div>
+                    <h4 className="text-xs font-bold text-slate-800">Company Invoice</h4>
+                    <p className="text-[10px] text-slate-500">Upload official invoice</p>
+                  </div>
+                  {formData.uploadedInvoice ? (
+                    <div className="flex items-center gap-3">
+                      <a 
+                        href={formData.uploadedInvoice} 
+                        target="_blank" 
+                        rel="noreferrer"
+                        className="block text-[11px] text-purple-600 font-bold underline truncate max-w-[220px]"
+                      >
+                        View uploaded invoice
+                      </a>
+                    </div>
+                  ) : (
+                    <p className="text-[11px] text-slate-500 font-medium italic">No invoice uploaded yet.</p>
                   )}
                 </div>
               </div>
@@ -712,7 +773,7 @@ const VendorProfileTab = ({ user: propUser }) => {
 
           <button 
             type="submit" 
-            disabled={saving || uploading.profilePhoto || uploading.uploadedDocument}
+            disabled={saving || uploading.profilePhoto || uploading.uploadedDocument || uploading.uploadedCertificate || uploading.uploadedInvoice}
             className="bg-[#0066FF] hover:bg-[#0052cc] text-white text-xs font-extrabold px-8 py-4 rounded-xl transition-all shadow-md shadow-[#0066FF]/10 cursor-pointer uppercase tracking-wider flex items-center gap-2"
           >
             {saving ? (

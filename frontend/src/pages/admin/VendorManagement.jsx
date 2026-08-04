@@ -304,8 +304,8 @@ const VendorManagement = () => {
     }
   };
 
-  // Handle Certificate Upload on behalf of the Vendor
-  const handleCertificateUpload = async (e, vendorId) => {
+  // Handle Document Upload on behalf of the Vendor
+  const handleDocumentUpload = async (e, vendorId, docType) => {
     const file = e.target.files[0];
     if (!file) return;
 
@@ -327,25 +327,56 @@ const VendorManagement = () => {
       const uploadedUrl = uploadRes.data.url;
 
       // 2. Associate the document with the vendor profile in backend
-      // We will perform a profile update using vendor's impersonated scope or admin-level vendor update
-      // For simplicity, update directly or impersonate to save
       const impersonateRes = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/admin/impersonate/${vendorId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const vendorToken = impersonateRes.data.token;
 
-      await axios.put(`${import.meta.env.VITE_API_BASE_URL}/auth/profile`, {
-        uploadedDocument: uploadedUrl
-      }, {
+      const payload = {};
+      if (docType === 'certificate') payload.uploadedCertificate = uploadedUrl;
+      else if (docType === 'invoice') payload.uploadedInvoice = uploadedUrl;
+      else if (docType === 'document') payload.uploadedDocument = uploadedUrl;
+
+      await axios.put(`${import.meta.env.VITE_API_BASE_URL}/auth/profile`, payload, {
         headers: { Authorization: `Bearer ${vendorToken}` }
       });
 
       // Update local state
-      setVendors(prev => prev.map(v => v._id === vendorId ? { ...v, uploadedDocument: uploadedUrl } : v));
-      alert('Certificate uploaded successfully!');
+      setVendors(prev => prev.map(v => v._id === vendorId ? { ...v, ...payload } : v));
+      alert(`${docType === 'certificate' ? 'Certificate' : 'Invoice'} uploaded successfully!`);
     } catch (err) {
-      console.error('Certificate upload failed:', err);
-      alert('Failed to upload certificate');
+      console.error(`${docType} upload failed:`, err);
+      alert(`Failed to upload ${docType}`);
+    } finally {
+      setUploadingVendorId(null);
+    }
+  };
+
+  const handleDocumentDelete = async (vendorId, docType) => {
+    if (!window.confirm(`Are you sure you want to delete this ${docType}?`)) return;
+    try {
+      setUploadingVendorId(vendorId);
+      const token = sessionStorage.getItem('adminToken');
+      
+      const impersonateRes = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/admin/impersonate/${vendorId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const vendorToken = impersonateRes.data.token;
+
+      const payload = {};
+      if (docType === 'certificate') payload.uploadedCertificate = '';
+      else if (docType === 'invoice') payload.uploadedInvoice = '';
+      else if (docType === 'document') payload.uploadedDocument = '';
+
+      await axios.put(`${import.meta.env.VITE_API_BASE_URL}/auth/profile`, payload, {
+        headers: { Authorization: `Bearer ${vendorToken}` }
+      });
+
+      setVendors(prev => prev.map(v => v._id === vendorId ? { ...v, ...payload } : v));
+      alert(`${docType} deleted successfully!`);
+    } catch (err) {
+      console.error(`${docType} delete failed:`, err);
+      alert(`Failed to delete ${docType}`);
     } finally {
       setUploadingVendorId(null);
     }
@@ -668,7 +699,7 @@ const VendorManagement = () => {
                   <th className="p-4">Document</th>
                   <th className="p-4 text-center">Status</th>
                   <th className="p-4 text-center">Assign RM</th>
-                  <th className="p-4 text-center">Upload Certificate</th>
+                  <th className="p-4 text-center">Upload Docs</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-xs font-bold">
@@ -798,19 +829,21 @@ const VendorManagement = () => {
                         </div>
                       </td>
                       {/* Document Viewer */}
-                      <td className="p-4">
-                        {vendor.uploadedDocument ? (
-                          <a
-                            href={vendor.uploadedDocument}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-[#0066FF] hover:underline flex items-center gap-1 uppercase text-[10px] font-black tracking-wider"
-                          >
-                            View Doc <ExternalLink size={12} />
-                          </a>
-                        ) : (
-                          <span className="text-slate-400 italic font-medium">No Document</span>
-                        )}
+                      <td className="p-4 text-center">
+                        <div className="flex flex-col items-center gap-3">
+                          {vendor.uploadedDocument ? (
+                            <a
+                              href={vendor.uploadedDocument}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-[10px] font-black uppercase text-[#0066FF] hover:underline flex items-center gap-1"
+                            >
+                              View Doc <ExternalLink size={12} />
+                            </a>
+                          ) : (
+                            <span className="text-xs text-slate-400 font-medium italic">No Document</span>
+                          )}
+                        </div>
                         <button
                           onClick={() => openVerifyModal(vendor)}
                           className="mt-2 px-2.5 py-1 w-full rounded-lg text-[9px] font-black uppercase tracking-wider cursor-pointer border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 transition-all"
@@ -873,19 +906,76 @@ const VendorManagement = () => {
                           ))}
                         </select>
                       </td>
-                      {/* Upload Certificate column */}
+                      {/* Upload Docs column */}
                       <td className="p-4 text-center">
-                        <label className="cursor-pointer bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200/80 text-[10px] font-black px-3 py-1.5 rounded-lg inline-flex items-center gap-1.5 shadow-sm transition-all">
-                          <Upload size={12} />
-                          {uploadingVendorId === vendor._id ? 'Uploading...' : 'Upload'}
-                          <input
-                            type="file"
-                            className="hidden"
-                            accept=".pdf,image/*"
-                            onChange={(e) => handleCertificateUpload(e, vendor._id)}
-                            disabled={uploadingVendorId === vendor._id}
-                          />
-                        </label>
+                        <div className="flex flex-col gap-2 items-center">
+                          <div className="flex items-center gap-2">
+                            <label className="cursor-pointer bg-blue-50 hover:bg-blue-100 text-blue-600 border border-blue-200/80 text-[10px] font-black px-2 py-1 rounded-lg inline-flex items-center gap-1.5 shadow-sm transition-all whitespace-nowrap">
+                              <Upload size={10} />
+                              {uploadingVendorId === vendor._id ? 'Uploading...' : 'Upload Doc'}
+                              <input
+                                type="file"
+                                className="hidden"
+                                accept=".pdf,image/jpeg,image/png,image/webp,image/avif"
+                                onChange={(e) => handleDocumentUpload(e, vendor._id, 'document')}
+                                disabled={uploadingVendorId === vendor._id}
+                              />
+                            </label>
+                            {vendor.uploadedDocument && (
+                              <div className="flex items-center gap-1">
+                                <button onClick={() => handleDocumentDelete(vendor._id, 'document')} className="text-red-500 hover:text-red-700 ml-1">
+                                  <X size={10} />
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <label className="cursor-pointer bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200/80 text-[10px] font-black px-2 py-1 rounded-lg inline-flex items-center gap-1.5 shadow-sm transition-all whitespace-nowrap">
+                              <Upload size={10} />
+                              {uploadingVendorId === vendor._id ? 'Uploading...' : 'Upload Cert'}
+                              <input
+                                type="file"
+                                className="hidden"
+                                accept=".pdf,image/jpeg,image/png,image/webp,image/avif"
+                                onChange={(e) => handleDocumentUpload(e, vendor._id, 'certificate')}
+                                disabled={uploadingVendorId === vendor._id}
+                              />
+                            </label>
+                            {vendor.uploadedCertificate && (
+                              <div className="flex items-center gap-1">
+                                <a href={vendor.uploadedCertificate} target="_blank" rel="noopener noreferrer" className="text-[9px] font-bold text-[#0066FF] hover:underline">
+                                  View
+                                </a>
+                                <button onClick={() => handleDocumentDelete(vendor._id, 'certificate')} className="text-red-500 hover:text-red-700 ml-1">
+                                  <X size={10} />
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <label className="cursor-pointer bg-purple-50 hover:bg-purple-100 text-purple-600 border border-purple-200/80 text-[10px] font-black px-2 py-1 rounded-lg inline-flex items-center gap-1.5 shadow-sm transition-all whitespace-nowrap">
+                              <Upload size={10} />
+                              {uploadingVendorId === vendor._id ? 'Uploading...' : 'Upload Inv'}
+                              <input
+                                type="file"
+                                className="hidden"
+                                accept=".pdf,image/jpeg,image/png,image/webp,image/avif"
+                                onChange={(e) => handleDocumentUpload(e, vendor._id, 'invoice')}
+                                disabled={uploadingVendorId === vendor._id}
+                              />
+                            </label>
+                            {vendor.uploadedInvoice && (
+                              <div className="flex items-center gap-1">
+                                <a href={vendor.uploadedInvoice} target="_blank" rel="noopener noreferrer" className="text-[9px] font-bold text-purple-600 hover:underline">
+                                  View
+                                </a>
+                                <button onClick={() => handleDocumentDelete(vendor._id, 'invoice')} className="text-red-500 hover:text-red-700 ml-1">
+                                  <X size={10} />
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
                       </td>
                     </tr>
                   );

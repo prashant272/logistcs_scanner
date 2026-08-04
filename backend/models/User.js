@@ -59,6 +59,14 @@ const userSchema = new mongoose.Schema({
         type: String,
         default: ''
     },
+    uploadedCertificate: {
+        type: String,
+        default: ''
+    },
+    uploadedInvoice: {
+        type: String,
+        default: ''
+    },
     country: {
         type: String,
         default: ''
