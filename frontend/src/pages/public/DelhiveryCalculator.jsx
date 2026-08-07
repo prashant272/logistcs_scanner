@@ -91,9 +91,20 @@ const DelhiveryCalculator = ({ isDashboard = false }) => {
             const imgData = canvas.toDataURL('image/png');
             const pdf = new jsPDF('p', 'mm', 'a4');
             const pdfWidth = pdf.internal.pageSize.getWidth();
-            const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+            const pageHeight = pdf.internal.pageSize.getHeight();
             
-            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+            let imgWidth = pdfWidth;
+            let imgHeight = (canvas.height * pdfWidth) / canvas.width;
+            
+            if (imgHeight > pageHeight) {
+                const ratio = pageHeight / imgHeight;
+                imgHeight = pageHeight;
+                imgWidth = imgWidth * ratio;
+            }
+            
+            const xOffset = (pdfWidth - imgWidth) / 2;
+            
+            pdf.addImage(imgData, 'PNG', xOffset, 0, imgWidth, imgHeight);
             pdf.save(`Freight-Quotation-${Date.now()}.pdf`);
         } catch (error) {
             console.error("Error generating PDF", error);
@@ -749,6 +760,8 @@ const DelhiveryCalculator = ({ isDashboard = false }) => {
                     destData={destData?.data?.pincode_serviceability_data?.[0]}
                     shipmentAmount={shipmentAmount}
                     user={user}
+                    freightMode={freightMode}
+                    dimensionUnit={dimensionUnit}
                 />
             )}
 
