@@ -211,6 +211,8 @@ const delhiveryService = {
     // 5. Track Shipment
     async trackShipment(lrn) {
         const token = await this.getToken();
+        const DelhiveryConfig = require('../models/DelhiveryConfig');
+        const ManualTracking = require('../models/ManualTracking');
         const config = await DelhiveryConfig.findOne();
         const baseUrl = getBaseUrl(config.is_production);
 
@@ -220,6 +222,14 @@ const delhiveryService = {
                     'Authorization': `Bearer ${token}`
                 }
             });
+            
+            // Check for manual tracking override
+            const manualOverride = await ManualTracking.findOne({ lr_number: lrn });
+            if (manualOverride) {
+                response.data.manual_location = manualOverride.custom_location;
+            }
+
+            console.log("📦 DELHIVERY TRACK RESPONSE:", JSON.stringify(response.data, null, 2));
             return response.data;
         } catch (error) {
             console.error('Delhivery Track Error:', error.response?.data || error.message);

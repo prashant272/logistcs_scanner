@@ -133,6 +133,7 @@ const AdminRechargeRequests = lazy(() => import('./pages/admin/AdminRechargeRequ
 const DelhiverySettings = lazy(() => import('./pages/admin/DelhiverySettings'));
 const AdminPtlBookings = lazy(() => import('./pages/admin/AdminPtlBookings'));
 const AdminRoleUpdate = lazy(() => import('./pages/admin/AdminRoleUpdate'));
+const ManualTracking = lazy(() => import('./pages/admin/ManualTracking'));
 const PtlBookingsTab = lazy(() => import('./components/common/PtlBookingsTab'));
 const DelhiveryCalculator = lazy(() => import('./pages/public/DelhiveryCalculator'));
 const DelhiveryCreateOrder = lazy(() => import('./pages/public/DelhiveryCreateOrder'));
@@ -233,6 +234,7 @@ function App() {
               
               {/* PTL Delivery */}
               <Route path="delhivery-settings" element={<DelhiverySettings />} />
+              <Route path="manual-tracking" element={<ManualTracking />} />
               <Route path="ptl-bookings" element={<AdminPtlBookings />} />
               <Route path="ptl-calculator" element={<DelhiveryCalculator isDashboard={true} />} />
               <Route path="ptl-calculator/order" element={<DelhiveryCreateOrder isDashboard={true} />} />

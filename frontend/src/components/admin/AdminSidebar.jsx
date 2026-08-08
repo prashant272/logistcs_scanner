@@ -33,7 +33,8 @@ const AdminSidebar = ({ isSidebarOpen, logout }) => {
         {
             category: 'Quick Actions',
             items: [
-                { name: 'Live Price', path: '/admin/search-price', icon: <DollarSign size={16} /> }
+                { name: 'Live Price', path: '/admin/search-price', icon: <DollarSign size={16} /> },
+                { name: 'Manual Tracking', path: '/admin/manual-tracking', icon: <MapPin size={16} /> }
             ]
         },
         {

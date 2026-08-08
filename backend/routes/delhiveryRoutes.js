@@ -12,6 +12,9 @@ const upload = multer({ storage: multer.memoryStorage() });
 router.get('/admin/config', delhiveryController.getAdminConfig);
 router.post('/admin/config', delhiveryController.updateAdminConfig);
 router.get('/admin/bookings', delhiveryController.getAllPtlBookings);
+router.post('/admin/manual-tracking', delhiveryController.addManualTracking);
+router.delete('/admin/manual-tracking/:lrn', delhiveryController.removeManualTracking);
+router.get('/admin/manual-tracking', delhiveryController.getAllManualTracking);
 
 // --- User/Vendor Routes ---
 router.post('/estimate', authMiddleware.optional, delhiveryController.estimatePrice);

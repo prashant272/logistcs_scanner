@@ -1,8 +1,54 @@
 const delhiveryService = require('../services/delhiveryService');
 const DelhiveryConfig = require('../models/DelhiveryConfig');
 const PtlBooking = require('../models/PtlBooking');
+const ManualTracking = require('../models/ManualTracking');
 const User = require('../models/User');
 const bcrypt = require('bcryptjs');
+
+// --- Manual Tracking Endpoints ---
+exports.getAllManualTracking = async (req, res) => {
+    try {
+        const trackers = await ManualTracking.find().sort({ createdAt: -1 });
+        res.status(200).json(trackers);
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching manual tracking', error: error.message });
+    }
+};
+
+exports.addManualTracking = async (req, res) => {
+    try {
+        const { lr_number, custom_location } = req.body;
+        if (!lr_number || !custom_location) {
+            return res.status(400).json({ message: 'LR Number and Custom Location are required' });
+        }
+        
+        let tracker = await ManualTracking.findOne({ lr_number });
+        if (tracker) {
+            tracker.custom_location = custom_location;
+            tracker.added_by = req.user?.id || 'Admin';
+            await tracker.save();
+        } else {
+            tracker = await ManualTracking.create({
+                lr_number,
+                custom_location,
+                added_by: req.user?.id || 'Admin'
+            });
+        }
+        res.status(200).json({ message: 'Manual tracking location saved', tracker });
+    } catch (error) {
+        res.status(500).json({ message: 'Error saving manual tracking', error: error.message });
+    }
+};
+
+exports.removeManualTracking = async (req, res) => {
+    try {
+        const { lrn } = req.params;
+        await ManualTracking.findOneAndDelete({ lr_number: lrn });
+        res.status(200).json({ message: 'Manual tracking location removed' });
+    } catch (error) {
+        res.status(500).json({ message: 'Error removing manual tracking', error: error.message });
+    }
+};
 
 // --- Admin Endpoints ---
 
