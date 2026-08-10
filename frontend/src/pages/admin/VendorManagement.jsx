@@ -6,6 +6,22 @@ import {
   Search, ExternalLink, LogIn, CheckCircle2, AlertCircle, Upload, RefreshCw, Plus, X, Loader2, Activity, Edit, Download, ChevronDown
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
+import { COUNTRIES } from '../../utils/countries';
+
+const getCountryFromPhone = (phone) => {
+  if (!phone) return '';
+  const p = phone.replace(/\s+/g, '');
+  // Sort countries by code length descending to match longest code first (e.g. +1-264 before +1)
+  const sortedCountries = [...COUNTRIES].sort((a, b) => b.code.length - a.code.length);
+  for (const country of sortedCountries) {
+    // Remove dashes from country code for comparison
+    const code = country.code.replace(/-/g, '');
+    if (p.startsWith(code)) {
+      return country.name;
+    }
+  }
+  return '';
+};
 
 const VendorManagement = () => {
   const [vendors, setVendors] = useState([]);
@@ -357,7 +373,7 @@ const VendorManagement = () => {
     try {
       setUploadingVendorId(vendorId);
       const token = sessionStorage.getItem('adminToken');
-      
+
       const impersonateRes = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/admin/impersonate/${vendorId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -474,7 +490,7 @@ const VendorManagement = () => {
       company: vendor.company || '',
       email: vendor.email || '',
       phone: vendor.phone || '',
-      country: vendor.country || 'India',
+      country: vendor.country || getCountryFromPhone(vendor.phone) || '',
       services: vendor.services || []
     });
     setShowEditModal(true);
@@ -537,7 +553,7 @@ const VendorManagement = () => {
         "Last Name": v.lastName || v.name?.split(' ').slice(1).join(' ') || 'N/A',
         "Email": v.email || 'N/A',
         "Organization": v.company || 'N/A',
-        "Country": v.country || 'India',
+        "Country": v.country || getCountryFromPhone(v.phone) || '',
         "Mobile": v.phone || 'N/A',
         "Services": v.services && v.services.length > 0 ? v.services.join(', ') : 'None',
         "Status": v.verificationStatus || 'Pending',
@@ -770,7 +786,7 @@ const VendorManagement = () => {
                           <span>{vendor.company || 'Not Specified'}</span>
                         </div>
                       </td>
-                      <td className="p-4 text-slate-700">{vendor.country || 'India'}</td>
+                      <td className="p-4 text-slate-700">{vendor.country || getCountryFromPhone(vendor.phone) || ''}</td>
                       <td className="p-4 text-slate-700">{vendor.phone || 'N/A'}</td>
                       <td className="p-4 text-slate-450 font-medium">
                         {vendor.createdAt ? new Date(vendor.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A'}
@@ -857,8 +873,8 @@ const VendorManagement = () => {
                           <button
                             onClick={() => handleSetStatus(vendor._id, 'Approved')}
                             className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider cursor-pointer border transition-all ${(vendor.verificationStatus === 'Approved' || (vendor.isVerified && !vendor.verificationStatus))
-                                ? 'bg-green-500 text-white border-green-500 shadow-sm shadow-green-500/10'
-                                : 'bg-green-50 text-green-650 border-green-100 hover:bg-green-100/50'
+                              ? 'bg-green-500 text-white border-green-500 shadow-sm shadow-green-500/10'
+                              : 'bg-green-50 text-green-650 border-green-100 hover:bg-green-100/50'
                               }`}
                           >
                             Approve
@@ -866,8 +882,8 @@ const VendorManagement = () => {
                           <button
                             onClick={() => handleSetStatus(vendor._id, 'Pending')}
                             className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider cursor-pointer border transition-all ${(vendor.verificationStatus === 'Pending' || (!vendor.isVerified && !vendor.verificationStatus))
-                                ? 'bg-amber-500 text-white border-amber-500 shadow-sm shadow-amber-500/10'
-                                : 'bg-amber-50 text-amber-600 border-amber-100 hover:bg-amber-100/50'
+                              ? 'bg-amber-500 text-white border-amber-500 shadow-sm shadow-amber-500/10'
+                              : 'bg-amber-50 text-amber-600 border-amber-100 hover:bg-amber-100/50'
                               }`}
                           >
                             Pending
@@ -875,8 +891,8 @@ const VendorManagement = () => {
                           <button
                             onClick={() => handleSetStatus(vendor._id, 'Pre Approved')}
                             className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider cursor-pointer border transition-all ${(vendor.verificationStatus === 'Pre Approved')
-                                ? 'bg-purple-500 text-white border-purple-500 shadow-sm shadow-purple-500/10'
-                                : 'bg-purple-50 text-purple-600 border-purple-100 hover:bg-purple-100/50'
+                              ? 'bg-purple-500 text-white border-purple-500 shadow-sm shadow-purple-500/10'
+                              : 'bg-purple-50 text-purple-600 border-purple-100 hover:bg-purple-100/50'
                               }`}
                           >
                             Pre Approve
@@ -884,8 +900,8 @@ const VendorManagement = () => {
                           <button
                             onClick={() => handleSetStatus(vendor._id, 'Declined')}
                             className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider cursor-pointer border transition-all ${vendor.verificationStatus === 'Declined'
-                                ? 'bg-red-500 text-white border-red-500 shadow-sm shadow-red-500/10'
-                                : 'bg-red-50 text-red-650 border-red-100 hover:bg-red-100/50'
+                              ? 'bg-red-500 text-white border-red-500 shadow-sm shadow-red-500/10'
+                              : 'bg-red-50 text-red-650 border-red-100 hover:bg-red-100/50'
                               }`}
                           >
                             Decline
@@ -1322,8 +1338,8 @@ const VendorManagement = () => {
                 <div className="flex flex-wrap gap-2">
                   {['Air', 'Sea', 'Land', 'Warehouse', 'CHA'].map(service => (
                     <label key={service} className="flex items-center gap-2 text-sm font-bold text-slate-700 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg cursor-pointer hover:bg-slate-100">
-                      <input 
-                        type="checkbox" 
+                      <input
+                        type="checkbox"
                         className="w-4 h-4 accent-[#0066FF]"
                         checked={editFormData.services?.includes(service)}
                         onChange={(e) => {
