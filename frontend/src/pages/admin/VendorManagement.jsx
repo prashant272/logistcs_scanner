@@ -474,7 +474,7 @@ const VendorManagement = () => {
       company: vendor.company || '',
       email: vendor.email || '',
       phone: vendor.phone || '',
-      country: vendor.country || 'India',
+      country: vendor.country || '',
       services: vendor.services || []
     });
     setShowEditModal(true);
@@ -537,7 +537,7 @@ const VendorManagement = () => {
         "Last Name": v.lastName || v.name?.split(' ').slice(1).join(' ') || 'N/A',
         "Email": v.email || 'N/A',
         "Organization": v.company || 'N/A',
-        "Country": v.country || 'India',
+        "Country": v.country || '',
         "Mobile": v.phone || 'N/A',
         "Services": v.services && v.services.length > 0 ? v.services.join(', ') : 'None',
         "Status": v.verificationStatus || 'Pending',
@@ -770,7 +770,7 @@ const VendorManagement = () => {
                           <span>{vendor.company || 'Not Specified'}</span>
                         </div>
                       </td>
-                      <td className="p-4 text-slate-700">{vendor.country || 'India'}</td>
+                      <td className="p-4 text-slate-700">{vendor.country || ''}</td>
                       <td className="p-4 text-slate-700">{vendor.phone || 'N/A'}</td>
                       <td className="p-4 text-slate-450 font-medium">
                         {vendor.createdAt ? new Date(vendor.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A'}
