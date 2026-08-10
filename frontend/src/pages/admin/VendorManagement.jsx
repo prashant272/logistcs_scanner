@@ -537,7 +537,7 @@ const VendorManagement = () => {
         "Last Name": v.lastName || v.name?.split(' ').slice(1).join(' ') || 'N/A',
         "Email": v.email || 'N/A',
         "Organization": v.company || 'N/A',
-        "Country": v.country || 'N/A',
+        "Country": v.country || 'India',
         "Mobile": v.phone || 'N/A',
         "Services": v.services && v.services.length > 0 ? v.services.join(', ') : 'None',
         "Status": v.verificationStatus || 'Pending',
