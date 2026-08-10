@@ -598,21 +598,41 @@ const DelhiveryCalculator = ({ isDashboard = false }) => {
                                         <div className="space-y-4 mb-8 border-t border-gray-100 pt-6 flex-1">
                                             <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Price Breakdown</h4>
                                             
-                                            <div className="flex justify-between items-center">
-                                                <span className="text-gray-600 font-semibold">Base Freight</span>
-                                                <span className="font-bold text-gray-900">
-                                                    ₹{(rateResult.finalPrice - (rateResult.breakup?.price_breakup?.insurance_rov || 0) - (rateResult.breakup?.price_breakup?.gst || 0)).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                                </span>
-                                            </div>
-                                            
-                                            {(rateResult.breakup?.price_breakup?.insurance_rov > 0) && (
-                                                <div className="flex justify-between items-center">
-                                                    <span className="text-gray-600 font-semibold">Insurance</span>
-                                                    <span className="font-bold text-gray-900">
-                                                        ₹{rateResult.breakup.price_breakup.insurance_rov.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                                    </span>
-                                                </div>
-                                            )}
+                                            {(() => {
+                                                const actualInsurance = rateResult.breakup?.price_breakup?.insurance_rov || 0;
+                                                const gst = rateResult.breakup?.price_breakup?.gst || 0;
+                                                const finalPrice = rateResult.finalPrice || 0;
+                                                const baseFreight = finalPrice - actualInsurance - gst;
+                                                
+                                                // If owner's risk, adjust insurance into freight
+                                                const displayFreight = insurance === 'owner' ? baseFreight + actualInsurance : baseFreight;
+                                                
+                                                return (
+                                                    <>
+                                                        <div className="flex justify-between items-center">
+                                                            <span className="text-gray-600 font-semibold">Base Freight</span>
+                                                            <span className="font-bold text-gray-900">
+                                                                ₹{displayFreight.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                            </span>
+                                                        </div>
+                                                        
+                                                        {(insurance === 'delhivery' && actualInsurance > 0) && (
+                                                            <div className="flex justify-between items-center">
+                                                                <span className="text-gray-600 font-semibold">Insurance</span>
+                                                                <span className="font-bold text-gray-900">
+                                                                    ₹{actualInsurance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                                </span>
+                                                            </div>
+                                                        )}
+
+                                                        {insurance === 'owner' && (
+                                                            <div className="text-[11px] text-red-500 font-medium bg-red-50 p-2 rounded-lg border border-red-100 mt-2">
+                                                                Note: You have not selected insurance service, hence the shipment is at your own risk.
+                                                            </div>
+                                                        )}
+                                                    </>
+                                                );
+                                            })()}
 
                                             <div className="flex justify-between items-center">
                                                 <span className="text-gray-600 font-semibold">GST ({rateResult.breakup?.price_breakup?.gst_percent || 18}%)</span>
@@ -762,6 +782,7 @@ const DelhiveryCalculator = ({ isDashboard = false }) => {
                     user={user}
                     freightMode={freightMode}
                     dimensionUnit={dimensionUnit}
+                    insurance={insurance}
                 />
             )}
 

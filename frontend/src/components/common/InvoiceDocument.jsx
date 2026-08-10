@@ -1,7 +1,7 @@
 import React from 'react';
 import { Calendar, CalendarClock, MapPin, Package, Truck, CreditCard, Scale, IndianRupee, Clock, AlertCircle, FileText, Phone, Mail, Globe } from 'lucide-react';
 
-const InvoiceDocument = React.forwardRef(({ rateResult, boxes, totalWeight, originPin, destPin, originData, destData, shipmentAmount, user, freightMode, dimensionUnit }, ref) => {
+const InvoiceDocument = React.forwardRef(({ rateResult, boxes, totalWeight, originPin, destPin, originData, destData, shipmentAmount, user, freightMode, dimensionUnit, insurance }, ref) => {
 
     // Generate dates
     const dateOptions = { day: '2-digit', month: 'short', year: 'numeric' };
@@ -208,18 +208,32 @@ const InvoiceDocument = React.forwardRef(({ rateResult, boxes, totalWeight, orig
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr>
-                                    <td style={{ padding: '16px', borderBottom: '1px dashed #cbd5e1', fontWeight: '600', color: '#475569' }}>Base Freight (Inclusive of Charges)</td>
-                                    <td style={{ padding: '16px', borderBottom: '1px dashed #cbd5e1', fontWeight: '800', color: '#0f172a', textAlign: 'right' }}>₹{(rateResult?.finalPrice - (rateResult?.breakup?.price_breakup?.insurance_rov || 0) - (rateResult?.breakup?.price_breakup?.gst || 0)).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                                </tr>
-                                <tr>
-                                    <td style={{ padding: '16px', borderBottom: '1px dashed #cbd5e1', fontWeight: '600', color: '#475569' }}>Insurance</td>
-                                    <td style={{ padding: '16px', borderBottom: '1px dashed #cbd5e1', fontWeight: '800', color: '#0f172a', textAlign: 'right' }}>₹{(rateResult?.breakup?.price_breakup?.insurance_rov || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                                </tr>
-                                <tr>
-                                    <td style={{ padding: '16px', borderBottom: '1px solid #cbd5e1', fontWeight: '600', color: '#475569' }}>GST ({rateResult?.breakup?.price_breakup?.gst_percent || 18}%)</td>
-                                    <td style={{ padding: '16px', borderBottom: '1px solid #cbd5e1', fontWeight: '800', color: '#0f172a', textAlign: 'right' }}>₹{(rateResult?.breakup?.price_breakup?.gst || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                                </tr>
+                                {(() => {
+                                    const actualInsurance = rateResult?.breakup?.price_breakup?.insurance_rov || 0;
+                                    const gst = rateResult?.breakup?.price_breakup?.gst || 0;
+                                    const finalPrice = rateResult?.finalPrice || 0;
+                                    const baseFreight = finalPrice - actualInsurance - gst;
+                                    const displayFreight = insurance === 'owner' ? baseFreight + actualInsurance : baseFreight;
+
+                                    return (
+                                        <>
+                                            <tr>
+                                                <td style={{ padding: '16px', borderBottom: '1px dashed #cbd5e1', fontWeight: '600', color: '#475569' }}>Base Freight (Inclusive of Charges)</td>
+                                                <td style={{ padding: '16px', borderBottom: '1px dashed #cbd5e1', fontWeight: '800', color: '#0f172a', textAlign: 'right' }}>₹{displayFreight.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                            </tr>
+                                            {(insurance === 'delhivery' && actualInsurance > 0) && (
+                                                <tr>
+                                                    <td style={{ padding: '16px', borderBottom: '1px dashed #cbd5e1', fontWeight: '600', color: '#475569' }}>Insurance</td>
+                                                    <td style={{ padding: '16px', borderBottom: '1px dashed #cbd5e1', fontWeight: '800', color: '#0f172a', textAlign: 'right' }}>₹{actualInsurance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                                </tr>
+                                            )}
+                                            <tr>
+                                                <td style={{ padding: '16px', borderBottom: '1px solid #cbd5e1', fontWeight: '600', color: '#475569' }}>GST ({rateResult?.breakup?.price_breakup?.gst_percent || 18}%)</td>
+                                                <td style={{ padding: '16px', borderBottom: '1px solid #cbd5e1', fontWeight: '800', color: '#0f172a', textAlign: 'right' }}>₹{gst.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                            </tr>
+                                        </>
+                                    );
+                                })()}
                                 <tr>
                                     <td style={{ padding: '20px 16px', fontWeight: '900', color: '#475569', fontSize: '15px', backgroundColor: '#f0f5ff', textTransform: 'uppercase' }}>Total Payable</td>
                                     <td style={{ padding: '20px 16px', fontWeight: '900', color: '#0055FF', fontSize: '20px', textAlign: 'right', backgroundColor: '#f0f5ff' }}>₹{(rateResult?.finalPrice || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
@@ -237,6 +251,11 @@ const InvoiceDocument = React.forwardRef(({ rateResult, boxes, totalWeight, orig
                                 The quoted rates are based on the dimensions, weight, and invoice value provided by the customer.<br />
                                 Any variation in these details at the time of shipment may lead to a revision of the applicable charges.
                             </p>
+                            {insurance === 'owner' && (
+                                <p style={{ margin: '8px 0 0 0', lineHeight: '1.6', fontWeight: '600', fontSize: '12px', color: '#dc2626' }}>
+                                    Note: You have not selected insurance service, hence the shipment is at your own risk.
+                                </p>
+                            )}
                         </div>
                     </div>
 

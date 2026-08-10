@@ -1167,6 +1167,13 @@ const triggerVendorBroadcast = async (enquiryId) => {
                     const hasActivePlan = vendorUser.activePlan && vendorUser.planEndDate && new Date(vendorUser.planEndDate) > new Date();
                     const isPaidPlan = hasActivePlan && vendorUser.activePlan.price > 0;
 
+                    // Match "China", "(CNxxx)" port codes, or common Chinese port cities
+                    const chinaRegex = /china|\(CN[A-Z]{3}\)|shenzhen|shanghai|ningbo|qingdao|guangzhou|xiamen|dalian|tianjin/i;
+                    const isChinaEnquiry = chinaRegex.test(fromLocation) || chinaRegex.test(toLocation);
+                    
+                    const isChinaVendor = (vendorUser.country && /china/i.test(vendorUser.country)) || (vendorUser.serviceLocations && vendorUser.serviceLocations.some(loc => chinaRegex.test(loc)));
+                    const isFreeChinaVendor = !isPaidPlan && isChinaEnquiry && isChinaVendor;
+
                     if (isPaidPlan) {
                         if (vendorUser.email) {
                             sendEnquiryToVendorAlert(vendorUser.email, {
@@ -1192,6 +1199,20 @@ const triggerVendorBroadcast = async (enquiryId) => {
                                 pickupCity: fromLocation,
                                 destinationCity: toLocation
                             }).catch(err => console.error('Error sending broadcast SMS to paid vendor:', err));
+                        }
+                    } else if (isFreeChinaVendor) {
+                        if (vendorUser.phone) {
+                            const vendorName = vendorUser.company || vendorUser.name || 'Vendor';
+                            console.log(`[CHINA VENDOR WHATSAPP] Sending WhatsApp to free China vendor: ${vendorName} (${vendorUser.email}) - Phone: ${vendorUser.phone}`);
+                            sendNewEnquiryVendorWhatsApp(vendorUser.phone, {
+                                cargoType: sanitizedType,
+                                pickupCity: fromLocation,
+                                destinationCity: toLocation
+                            }, vendorName, vendorUser.country || '')
+                                .then(() => console.log(`[CHINA VENDOR WHATSAPP] Successfully sent to ${vendorName}`))
+                                .catch(err => console.error(`[CHINA VENDOR WHATSAPP] Error sending to ${vendorName}:`, err));
+                        } else {
+                            console.log(`[CHINA VENDOR WHATSAPP] Skipped free China vendor (No phone number): ${vendorUser.company || vendorUser.name}`);
                         }
                     }
                 });
