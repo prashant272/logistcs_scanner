@@ -1028,7 +1028,11 @@ const VendorManagement = () => {
               </div>
               <div>
                 <label className="block text-xs font-bold text-slate-600 mb-1">Phone Number *</label>
-                <input required type="tel" value={addFormData.phone} onChange={e => setAddFormData({ ...addFormData, phone: e.target.value })} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-500" placeholder="Enter phone" />
+                <input required type="tel" value={addFormData.phone} onChange={e => {
+                  const newPhone = e.target.value;
+                  const inferredCountry = getCountryFromPhone(newPhone);
+                  setAddFormData({ ...addFormData, phone: newPhone, country: inferredCountry || addFormData.country });
+                }} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-500" placeholder="Enter phone" />
               </div>
               <div>
                 <label className="block text-xs font-bold text-slate-600 mb-1">Password</label>
@@ -1316,7 +1320,11 @@ const VendorManagement = () => {
                 <input
                   type="text"
                   value={editFormData.phone}
-                  onChange={(e) => setEditFormData({ ...editFormData, phone: e.target.value })}
+                  onChange={(e) => {
+                    const newPhone = e.target.value;
+                    const inferredCountry = getCountryFromPhone(newPhone);
+                    setEditFormData({ ...editFormData, phone: newPhone, country: inferredCountry || editFormData.country });
+                  }}
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-700 focus:outline-none focus:border-[#0066FF] focus:ring-1 focus:ring-[#0066FF] transition-all"
                   placeholder="+91..."
                 />
