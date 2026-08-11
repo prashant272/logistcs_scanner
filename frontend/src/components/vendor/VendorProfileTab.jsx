@@ -3,6 +3,27 @@ import { User, ShieldCheck, Upload, FileText, Image as ImageIcon, Loader2, Info,
 import { useAuth } from '../../context/AuthContext';
 import axios from 'axios';
 import CountrySelect from '../common/CountrySelect';
+import { COUNTRIES } from '../../utils/countries';
+
+const getCountryFromPhone = (phone) => {
+  if (!phone) return '';
+  const p = phone.replace(/\D/g, ''); // digits only
+  const pWithPlus = phone.replace(/\s+/g, ''); // remove spaces
+  
+  // if no country code and is 10 digits, default to India
+  if (!pWithPlus.startsWith('+') && p.length === 10) {
+    return 'India';
+  }
+  
+  const sortedCountries = [...COUNTRIES].sort((a, b) => b.code.length - a.code.length);
+  for (const country of sortedCountries) {
+    const code = country.code.replace(/-/g, '');
+    if (pWithPlus.startsWith(code)) {
+      return country.name;
+    }
+  }
+  return '';
+};
 
 const VendorProfileTab = ({ user: propUser }) => {
   const { user: authUser, updateProfile } = useAuth();
@@ -376,7 +397,15 @@ const VendorProfileTab = ({ user: propUser }) => {
               <input 
                 type="text" 
                 value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                onChange={(e) => {
+                  const newPhone = e.target.value;
+                  const inferredCountry = getCountryFromPhone(newPhone);
+                  setFormData({ 
+                    ...formData, 
+                    phone: newPhone,
+                    country: inferredCountry || formData.country
+                  });
+                }}
                 className="w-full bg-[#f8fafc] border border-slate-200 rounded-xl px-4 py-3 text-xs text-slate-800 focus:outline-none focus:bg-white focus:border-[#0066FF] focus:ring-4 focus:ring-[#0066FF]/5 transition-all font-semibold"
               />
             </div>

@@ -10,13 +10,19 @@ import { COUNTRIES } from '../../utils/countries';
 
 const getCountryFromPhone = (phone) => {
   if (!phone) return '';
-  const p = phone.replace(/\s+/g, '');
+  const p = phone.replace(/\D/g, ''); // digits only
+  const pWithPlus = phone.replace(/\s+/g, ''); // remove spaces
+  
+  if (!pWithPlus.startsWith('+') && p.length === 10) {
+    return 'India';
+  }
+  
   // Sort countries by code length descending to match longest code first (e.g. +1-264 before +1)
   const sortedCountries = [...COUNTRIES].sort((a, b) => b.code.length - a.code.length);
   for (const country of sortedCountries) {
     // Remove dashes from country code for comparison
     const code = country.code.replace(/-/g, '');
-    if (p.startsWith(code)) {
+    if (pWithPlus.startsWith(code)) {
       return country.name;
     }
   }
