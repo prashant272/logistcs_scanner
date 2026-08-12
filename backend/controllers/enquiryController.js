@@ -513,14 +513,26 @@ exports.getVendorEnquiries = async (req, res) => {
                 inquiryLimit += (currentUser.topupEnquiryLimit || 0);
             }
 
-            const startOfMonth = new Date();
-            startOfMonth.setDate(1);
-            startOfMonth.setHours(0, 0, 0, 0);
+            const isPaidPlan = hasActivePlan && currentUser.activePlan && currentUser.activePlan.price > 0;
+
+            let limitStartDate = new Date();
+            if (!isPaidPlan) {
+                // Free Plan: Yearly limit starting from August 1st
+                if (limitStartDate.getMonth() < 7) {
+                    limitStartDate.setFullYear(limitStartDate.getFullYear() - 1);
+                }
+                limitStartDate.setMonth(7, 1);
+                limitStartDate.setHours(0, 0, 0, 0);
+            } else {
+                // Paid Plan: Monthly limit
+                limitStartDate.setDate(1);
+                limitStartDate.setHours(0, 0, 0, 0);
+            }
 
             const acceptedCount = await Enquiry.countDocuments({
                 $or: [
-                    { vendor: req.user.id, status: { $in: ['Accepted', 'Quoted'] }, updatedAt: { $gte: startOfMonth }, 'responses.vendor': { $ne: req.user.id } },
-                    { responses: { $elemMatch: { vendor: req.user.id, status: { $in: ['Accepted', 'Quoted'] }, createdAt: { $gte: startOfMonth } } } }
+                    { vendor: req.user.id, status: { $in: ['Accepted', 'Quoted'] }, updatedAt: { $gte: limitStartDate }, 'responses.vendor': { $ne: req.user.id } },
+                    { responses: { $elemMatch: { vendor: req.user.id, status: { $in: ['Accepted', 'Quoted'] }, createdAt: { $gte: limitStartDate } } } }
                 ]
             });
 
@@ -584,6 +596,8 @@ exports.updateEnquiryStatus = async (req, res) => {
             const vendorUser = await User.findById(req.user.id).populate('activePlan');
             const hasActivePlan = vendorUser && vendorUser.activePlan && vendorUser.planEndDate && new Date(vendorUser.planEndDate) > new Date();
 
+            const isPaidPlan = hasActivePlan && vendorUser.activePlan.price > 0;
+
             let inquiryLimit = 5;
             if (hasActivePlan && vendorUser.activePlan && vendorUser.activePlan.inquiryLimit) {
                 inquiryLimit = vendorUser.activePlan.inquiryLimit;
@@ -594,9 +608,19 @@ exports.updateEnquiryStatus = async (req, res) => {
                 inquiryLimit += (vendorUser.topupEnquiryLimit || 0);
             }
 
-            const startOfMonth = new Date();
-            startOfMonth.setDate(1);
-            startOfMonth.setHours(0, 0, 0, 0);
+            let limitStartDate = new Date();
+            if (!isPaidPlan) {
+                // Free Plan: Yearly limit starting from August 1st
+                if (limitStartDate.getMonth() < 7) {
+                    limitStartDate.setFullYear(limitStartDate.getFullYear() - 1);
+                }
+                limitStartDate.setMonth(7, 1);
+                limitStartDate.setHours(0, 0, 0, 0);
+            } else {
+                // Paid Plan: Monthly limit
+                limitStartDate.setDate(1);
+                limitStartDate.setHours(0, 0, 0, 0);
+            }
 
             let alreadyRespondedThis = false;
             if (enquiry.vendor && enquiry.vendor.toString() === req.user.id && ['Accepted', 'Quoted'].includes(enquiry.status)) {
@@ -609,14 +633,15 @@ exports.updateEnquiryStatus = async (req, res) => {
                 const vendorObjectId = new mongoose.Types.ObjectId(req.user.id);
                 const acceptedCount = await Enquiry.countDocuments({
                     $or: [
-                        { vendor: vendorObjectId, status: { $in: ['Accepted', 'Quoted'] }, updatedAt: { $gte: startOfMonth }, 'responses.vendor': { $ne: vendorObjectId } },
-                        { responses: { $elemMatch: { vendor: vendorObjectId, status: { $in: ['Accepted', 'Quoted'] }, createdAt: { $gte: startOfMonth } } } }
+                        { vendor: vendorObjectId, status: { $in: ['Accepted', 'Quoted'] }, updatedAt: { $gte: limitStartDate }, 'responses.vendor': { $ne: vendorObjectId } },
+                        { responses: { $elemMatch: { vendor: vendorObjectId, status: { $in: ['Accepted', 'Quoted'] }, createdAt: { $gte: limitStartDate } } } }
                     ]
                 });
 
                 if (acceptedCount >= inquiryLimit) {
+                    const period = !isPaidPlan ? 'year' : 'month';
                     return res.status(403).json({
-                        message: `Monthly limit reached. You can only accept/quote ${inquiryLimit} enquiries per month on your current plan. Please upgrade your plan.`
+                        message: `${period === 'year' ? 'Yearly' : 'Monthly'} limit reached. You can only accept/quote ${inquiryLimit} enquiries per ${period} on your current plan. Please upgrade your plan.`
                     });
                 }
             }

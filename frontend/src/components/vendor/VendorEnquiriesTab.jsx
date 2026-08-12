@@ -140,7 +140,7 @@ const VendorEnquiriesTab = ({ title, type }) => {
     } catch (err) {
       console.error('Error updating status:', err);
       const message = err.response?.data?.message || 'Error updating status';
-      if (err.response?.status === 403 && message.includes('Monthly limit reached')) {
+      if (err.response?.status === 403 && message.includes('limit reached')) {
         setLimitError(message);
       } else {
         alert(message);
@@ -1050,7 +1050,9 @@ const VendorEnquiriesTab = ({ title, type }) => {
               <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto text-red-500 mb-2">
                 <AlertTriangle size={32} />
               </div>
-              <h3 className="text-xl font-black text-[#0B1E43] tracking-tight">Monthly Limit Exceeded</h3>
+              <h3 className="text-xl font-black text-[#0B1E43] tracking-tight">
+                {limitError.includes('Yearly') ? 'Yearly Limit Exceeded' : 'Monthly Limit Exceeded'}
+              </h3>
               <p className="text-sm font-semibold text-slate-500 leading-relaxed">
                 {limitError}
               </p>
