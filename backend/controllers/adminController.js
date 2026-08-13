@@ -371,14 +371,14 @@ exports.getGuestHistory = async (req, res) => {
 // @access  Private
 exports.impersonateVendor = async (req, res) => {
     try {
-        const vendor = await User.findById(req.params.vendorId);
-        if (!vendor || vendor.role !== 'vendor') {
-            return res.status(404).json({ message: 'Vendor not found' });
+        const userToImpersonate = await User.findById(req.params.vendorId);
+        if (!userToImpersonate || (userToImpersonate.role !== 'vendor' && userToImpersonate.role !== 'customer')) {
+            return res.status(404).json({ message: 'User not found or cannot be impersonated' });
         }
 
-        // Generate userToken for this vendor with impersonated flag
-        const token = jwt.sign({ id: vendor._id, impersonated: true }, process.env.JWT_SECRET, { expiresIn: '30d' });
-        res.json({ token, user: vendor });
+        // Generate userToken for this user with impersonated flag
+        const token = jwt.sign({ id: userToImpersonate._id, impersonated: true }, process.env.JWT_SECRET, { expiresIn: '30d' });
+        res.json({ token, user: userToImpersonate });
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
     }

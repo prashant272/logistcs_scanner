@@ -3,7 +3,7 @@ import axios from 'axios';
 import useInfiniteScroll from '../../hooks/useInfiniteScroll';
 import { 
   User, Users, Mail, Phone, MapPin, Building, Calendar, Search, 
-  ArrowRight, FileText, CheckCircle2, XCircle, ArrowLeft, RefreshCw, Globe, Plus, X, Loader2, Wallet
+  ArrowRight, FileText, CheckCircle2, XCircle, ArrowLeft, RefreshCw, Globe, Plus, X, Loader2, Wallet, LogIn
 } from 'lucide-react';
 
 const CustomerManagement = () => {
@@ -184,6 +184,27 @@ const CustomerManagement = () => {
     setWalletAmount('');
     setWalletAction('Credit');
     setWalletModalOpen(true);
+  };
+
+  // Impersonate / Login as Customer
+  const handleLoginAsCustomer = async (customerId) => {
+    try {
+      const token = sessionStorage.getItem('adminToken');
+      const config = {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      };
+      const { data } = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/admin/impersonate/${customerId}`, config);
+
+      // Save customer's token into userToken
+      localStorage.setItem('userToken', data.token);
+      // Open customer dashboard in the same tab
+      window.location.href = '/customer';
+    } catch (err) {
+      console.error('Impersonation failed:', err);
+      alert(err.response?.data?.message || 'Failed to login as customer');
+    }
   };
 
   const handleWalletSubmit = async (e) => {
@@ -520,6 +541,13 @@ const CustomerManagement = () => {
                         ₹{c.walletBalance?.toLocaleString('en-IN') || '0'}
                       </td>
                       <td className="p-5 text-right flex items-center justify-end gap-3">
+                        <button 
+                          onClick={() => handleLoginAsCustomer(c._id)} 
+                          className="text-purple-600 font-black text-[10px] uppercase tracking-wider hover:underline inline-flex items-center gap-1 cursor-pointer"
+                          title="Login directly as this customer"
+                        >
+                          <LogIn size={12} /> Login
+                        </button>
                         <button 
                           onClick={() => handleManageWallet(c)} 
                           className="text-emerald-600 font-black text-[10px] uppercase tracking-wider hover:underline inline-flex items-center gap-1 cursor-pointer"

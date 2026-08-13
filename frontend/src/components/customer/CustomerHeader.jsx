@@ -76,6 +76,19 @@ const CustomerHeader = ({ isSidebarOpen, setSidebarOpen, user, logout }) => {
                     </div>
                 </div>
 
+                {/* Revert as Admin Button (If Admin Token exists) */}
+                {sessionStorage.getItem('adminToken') && (
+                    <button
+                        onClick={() => {
+                            localStorage.removeItem('userToken');
+                            window.location.href = '/admin/customers';
+                        }}
+                        className="flex items-center gap-1.5 bg-amber-100 text-amber-700 hover:bg-amber-200 text-[11px] font-bold px-4 py-2.5 rounded-xl transition-all shadow-sm cursor-pointer uppercase tracking-wider"
+                    >
+                        Revert as Admin
+                    </button>
+                )}
+
                 {/* Logout button */}
                 <button 
                     onClick={logout}

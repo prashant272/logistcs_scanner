@@ -334,23 +334,23 @@ const sendVendorStatusUpdateEmail = async (vendorEmail, vendorName, isApproved) 
             <p style="margin: 0; font-size: 16px;"><strong>Current Status:</strong> <span style="color: ${isApproved ? '#16a34a' : '#dc2626'}; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;">${status}</span></p>
         </div>
         ${isApproved
-        ? '<p style="color: #475569;">You can now log in to your dashboard and manage your pricing, bookings, and enquiries!</p>'
-        : '<p style="color: #475569;">If you have any questions or require further assistance, please contact our support team.</p>'
-    }
+            ? '<p style="color: #475569;">You can now log in to your dashboard and manage your pricing, bookings, and enquiries!</p>'
+            : '<p style="color: #475569;">If you have any questions or require further assistance, please contact our support team.</p>'
+        }
     `;
     return await sendEmail({ to: vendorEmail, subject, html });
 };
 
 const sendEnquiryToVendorAlert = async (vendorEmail, enquiryDetails) => {
     const subject = 'New Enquiry Received - Logistics Scanner';
-    
+
     // Format location strings
     const pickupStr = enquiryDetails.pickupCountry && enquiryDetails.pickupCountry !== 'Any' ? `${enquiryDetails.pickupCity}, ${enquiryDetails.pickupCountry}` : enquiryDetails.pickupCity;
     const destStr = enquiryDetails.destinationCountry && enquiryDetails.destinationCountry !== 'Any' ? `${enquiryDetails.destinationCity}, ${enquiryDetails.destinationCountry}` : enquiryDetails.destinationCity;
     const volumeStr = enquiryDetails.volume && enquiryDetails.volume !== 'N/A' ? `${enquiryDetails.volume} cbm` : '';
     const weightStr = enquiryDetails.weight && enquiryDetails.weight !== 'N/A' ? `${enquiryDetails.weight} kg` : '';
     const weightVolStr = [weightStr, volumeStr].filter(Boolean).join(' / ') || 'N/A';
-    
+
     const formattedCargoType = enquiryDetails.cargoType ? `${enquiryDetails.cargoType.toUpperCase()} Freight` : 'N/A';
 
     const html = `
@@ -412,17 +412,81 @@ const sendGuestAccountCreatedEmail = async (customerEmail, customerName, generat
 const sendAdminCreatedUserEmail = async (email, name, password, role) => {
     const subject = `Your ${role.charAt(0).toUpperCase() + role.slice(1)} Account has been Created - Logistics Scanner`;
     const html = `
-        <h2 style="color: #0B1E43; margin-top: 0;">Welcome to Logistics Scanner, ${name || 'User'}!</h2>
-        <p style="color: #475569;">An administrator has created a <strong style="color: #00b2fe;">${role}</strong> account for you on our platform.</p>
-        <div style="background-color: #f8fafc; padding: 20px; border-radius: 12px; margin: 20px 0; border: 1px solid #e2e8f0;">
-            <p style="margin-top: 0; font-weight: 700; color: #0B1E43;">Here are your login details:</p>
-            <ul style="list-style-type: none; padding: 0; margin: 0; color: #334155;">
-                <li style="margin-bottom: 10px;"><strong style="color: #0B1E43; width: 100px; display: inline-block;">Email:</strong> ${email}</li>
-                <li><strong style="color: #0B1E43; width: 100px; display: inline-block;">Password:</strong> <code style="background: #e2e8f0; padding: 4px 8px; border-radius: 4px; color: #0f172a; font-weight: bold;">${password}</code></li>
-            </ul>
+        <div style="font-family: Arial, sans-serif; max-width: 650px; margin: 0 auto; color: #333; line-height: 1.7; border: 1px solid #e0e0e0; background-color: #ffffff;">
+            <!-- Header Logo -->
+            <div style="text-align: center; padding: 30px 0 20px 0;">
+                <h1 style="color: #333; font-size: 32px; margin: 0; letter-spacing: 1px;">LOGI<span style="color: #00a0e3;">STICS</span></h1>
+                <p style="color: #00a0e3; font-size: 16px; margin: 0; letter-spacing: 6px;">S C A N N E R</p>
+            </div>
+
+            <!-- Banner / Headline -->
+            <div style="padding: 20px 45px;">
+                <h2 style="color: #0b1e43; font-size: 36px; margin: 0 0 20px 0; line-height: 1.3;">
+                    Your Company Is Now<br/>Listed in the <span style="color: #005bb5;">Global<br/>Logistics Directory</span>
+                </h2>
+                <div style="width: 50px; height: 4px; background-color: #005bb5; margin-bottom: 30px;"></div>
+
+                <!-- Greeting & Intro -->
+                <p style="font-weight: bold; margin-bottom: 12px; font-size: 18px;">Dear Sir/Madam,</p>
+                <p style="margin-top: 0; color: #444; font-size: 18px;">We have identified your company as a logistics service provider and created a basic listing using publicly available business information.</p>
+
+                <!-- Features List -->
+                <table style="width: 100%; margin: 30px 0;" border="0" cellpadding="0" cellspacing="0">
+                    <tr>
+                        <td style="width: 50px; vertical-align: top; padding-bottom: 25px;">
+                            <div style="background-color: #005bb5; color: white; width: 32px; height: 32px; border-radius: 50%; text-align: center; line-height: 32px; font-size: 18px;">🌐</div>
+                        </td>
+                        <td style="vertical-align: top; padding-bottom: 25px; color: #444; font-size: 18px; padding-top: 5px;">
+                            Your company is now part of the <br/><strong style="color: #005bb5;">Global Logistics Directory</strong>.
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="width: 50px; vertical-align: top;">
+                            <div style="border: 2px solid #005bb5; color: #005bb5; width: 28px; height: 28px; border-radius: 50%; text-align: center; line-height: 28px; font-size: 18px; font-weight: bold;">✓</div>
+                        </td>
+                        <td style="vertical-align: top; color: #444; font-size: 18px; padding-top: 3px;">
+                            Review your profile, update your details<br/>and explore <strong style="color: #005bb5;">LogisticsScanner</strong>.
+                        </td>
+                    </tr>
+                </table>
+
+                <!-- Credentials Box -->
+                <div style="background-color: #f4f9fd; border: 1px solid #d4e6f1; border-radius: 12px; padding: 30px; margin: 35px 0;">
+                    <div style="display: flex; align-items: center; border-bottom: 1px solid #d4e6f1; padding-bottom: 18px; margin-bottom: 18px;">
+                        <div style="background-color: #005bb5; color: white; width: 40px; height: 40px; border-radius: 50%; text-align: center; line-height: 40px; margin-right: 18px; font-size: 22px;">👤</div>
+                        <h3 style="color: #005bb5; margin: 0; font-size: 24px;">Access Your Profile</h3>
+                    </div>
+                    
+                    <table style="width: 100%;" border="0" cellpadding="10" cellspacing="0">
+                        <tr>
+                            <td style="width: 35px; color: #005bb5; font-size: 20px;">✉️</td>
+                            <td style="width: 120px; color: #333; font-size: 18px;">Email</td>
+                            <td style="width: 25px; font-size: 18px;">:</td>
+                            <td style="color: #333; font-size: 18px;"><strong>${email}</strong></td>
+                        </tr>
+                        <tr>
+                            <td style="color: #005bb5; font-size: 20px;">🔒</td>
+                            <td style="color: #333; font-size: 18px;">Password</td>
+                            <td style="font-size: 18px;">:</td>
+                            <td style="font-size: 18px;"><strong>${password}</strong> &nbsp; <span style="color: #005bb5; font-size: 15px;">(Use for first login)</span></td>
+                        </tr>
+                        <tr>
+                            <td style="color: #005bb5; font-size: 20px;">🌐</td>
+                            <td style="color: #333; font-size: 18px;">Login URL</td>
+                            <td style="font-size: 18px;">:</td>
+                            <td style="font-size: 18px;"><a href="${process.env.VITE_APP_URL || 'https://logisticsscanner.com'}/login" style="color: #005bb5; text-decoration: none; font-weight: bold;">www.logisticsscanner.com/login</a></td>
+                        </tr>
+                    </table>
+                </div>
+
+                <!-- Call to Action -->
+                <p style="text-align: center; color: #333; margin-bottom: 25px; font-size: 18px;">Review your listing and make the most of global business opportunities.</p>
+                <div style="text-align: center; margin-bottom: 45px;">
+                    <a href="${process.env.VITE_APP_URL || 'https://logisticsscanner.com'}/login" style="background-color: #005bb5; color: white; padding: 16px 40px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block; font-size: 20px;">Review Your Listing →</a>
+                </div>
+            </div>
         </div>
-        <p style="color: #475569; font-weight: 600; text-align: center;">You can use these credentials to log in to your dashboard. We highly recommend changing your password after your first login.</p>
-    `;
+        `;
     return await sendEmail({ to: email, subject, html });
 };
 
@@ -437,7 +501,7 @@ const sendNewEnquiryVendorSMS = async (mobile, vendorName, enquiryDetails) => {
         }
 
         const cargoType = enquiryDetails.cargoType ? enquiryDetails.cargoType.toUpperCase() + ' Freight' : 'NA';
-        
+
         // DLT Alphanumeric allows letters, numbers, and spaces. NO special characters like / ( ) , - 
         const dateObj = new Date();
         const dateStr = `${dateObj.getDate()} ${dateObj.toLocaleString('default', { month: 'short' })} ${dateObj.getFullYear()}`; // e.g. "16 Jul 2026"
@@ -445,7 +509,7 @@ const sendNewEnquiryVendorSMS = async (mobile, vendorName, enquiryDetails) => {
         const trunc = (str, len = 29) => {
             if (!str) return 'NA';
             // KEEP ONLY Alphanumeric and Spaces. Remove all commas, brackets, slashes, etc.
-            const cleanStr = String(str).replace(/[^A-Za-z0-9\s]/g, '').replace(/\s+/g, ' ').trim(); 
+            const cleanStr = String(str).replace(/[^A-Za-z0-9\s]/g, '').replace(/\s+/g, ' ').trim();
             return cleanStr.length > len ? cleanStr.substring(0, len) : cleanStr;
         };
 
