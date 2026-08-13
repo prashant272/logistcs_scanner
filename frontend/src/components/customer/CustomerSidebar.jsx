@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
-    Truck, FileText, MessageSquare, AlertTriangle, LogOut, Search, User
+    Truck, FileText, MessageSquare, AlertTriangle, LogOut, Search, User, Wallet
 } from 'lucide-react';
 
 const CustomerSidebar = ({ isSidebarOpen, logout }) => {
@@ -14,6 +14,7 @@ const CustomerSidebar = ({ isSidebarOpen, logout }) => {
         { name: 'Direct Enquiry', path: '/customer/direct-enquiry', icon: <MessageSquare size={18} /> },
         { name: 'My Enquiry', path: '/customer/my-enquiry', icon: <FileText size={18} /> },
         { name: 'PTL Bookings', path: '/customer/ptl-bookings', icon: <Truck size={18} /> },
+        { name: 'My Wallet', path: '/customer/wallet', icon: <Wallet size={18} /> },
         { name: 'Complaint', path: '/customer/complaint', icon: <AlertTriangle size={18} /> },
          { name: 'My Profile', path: '/customer/profile', icon: <User size={18} /> }
     ];

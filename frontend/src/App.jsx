@@ -85,6 +85,7 @@ const DownloadApp = lazy(() => import('./pages/public/DownloadApp'));
 
 const CustomerDashboard = lazy(() => import('./pages/customer/CustomerDashboard'));
 const CustomerEnquiriesTab = lazy(() => import('./components/customer/CustomerEnquiriesTab'));
+const CustomerWallet = lazy(() => import('./pages/customer/CustomerWallet'));
 const CustomerComplaintsTab = lazy(() => import('./components/customer/CustomerComplaintsTab'));
 const CustomerProfileTab = lazy(() => import('./components/customer/CustomerProfileTab'));
 
@@ -248,6 +249,7 @@ function App() {
               <Route path="direct-enquiry" element={<CustomerEnquiriesTab title="Direct Enquiry" type="direct" />} />
               <Route path="my-enquiry" element={<CustomerEnquiriesTab title="My Enquiry" type="my" />} />
               <Route path="ptl-bookings" element={<PtlBookingsTab />} />
+              <Route path="wallet" element={<CustomerWallet />} />
               <Route path="ptl-calculator" element={<DelhiveryCalculator isDashboard={true} />} />
               <Route path="ptl-calculator/order" element={<DelhiveryCreateOrder isDashboard={true} />} />
               <Route path="complaint" element={<CustomerComplaintsTab />} />

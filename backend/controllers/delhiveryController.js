@@ -206,6 +206,20 @@ exports.createPtlBooking = async (req, res) => {
             const dbUser = await User.findById(currentUser.id);
             if (dbUser) {
                 currentUser = { id: dbUser._id, role: dbUser.role };
+                
+                if (dbUser.role === 'customer') {
+                    const requiredAmount = total_amount || finalPrice || basePrice || 0;
+                    if ((dbUser.walletBalance || 0) < requiredAmount) {
+                        return res.status(400).json({ 
+                            success: false, 
+                            message: 'Insufficient wallet balance. Please add money to your wallet to continue.', 
+                            requiredAmount, 
+                            currentBalance: dbUser.walletBalance || 0,
+                            insufficientWallet: true
+                        });
+                    }
+                    req.dbUser = dbUser;
+                }
             }
         }
 
@@ -473,6 +487,21 @@ exports.createPtlBooking = async (req, res) => {
         }
 
         await booking.save();
+
+        if (req.dbUser && req.dbUser.role === 'customer') {
+            const requiredAmount = total_amount || finalPrice || basePrice || 0;
+            req.dbUser.walletBalance = (req.dbUser.walletBalance || 0) - requiredAmount;
+            await req.dbUser.save();
+            
+            const WalletTransaction = require('../models/WalletTransaction');
+            await WalletTransaction.create({
+                vendor: req.dbUser._id,
+                type: 'Debit',
+                amount: requiredAmount,
+                description: `PTL Booking Deduction (Delhivery)`,
+                balanceAfter: req.dbUser.walletBalance
+            });
+        }
 
         res.status(201).json({
             success: true,

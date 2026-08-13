@@ -1089,6 +1089,47 @@ exports.updateRechargeRequestStatus = async (req, res) => {
     }
 };
 
+exports.updateUserWallet = async (req, res) => {
+    try {
+        const { amount, action, description } = req.body;
+        const user = await User.findById(req.params.id);
+
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        const parsedAmount = parseFloat(amount);
+        if (isNaN(parsedAmount) || parsedAmount <= 0) {
+            return res.status(400).json({ message: 'Invalid amount' });
+        }
+
+        if (action === 'Credit') {
+            user.walletBalance = (user.walletBalance || 0) + parsedAmount;
+        } else if (action === 'Debit') {
+            if ((user.walletBalance || 0) < parsedAmount) {
+                return res.status(400).json({ message: 'Insufficient balance to deduct' });
+            }
+            user.walletBalance = (user.walletBalance || 0) - parsedAmount;
+        } else {
+            return res.status(400).json({ message: 'Invalid action. Must be Credit or Debit' });
+        }
+
+        await user.save();
+
+        await WalletTransaction.create({
+            vendor: user._id, // vendor field acts as generic user field in this schema
+            type: action,
+            amount: parsedAmount,
+            description: description || `Admin Manual ${action}`,
+            balanceAfter: user.walletBalance
+        });
+
+        res.json({ message: `Wallet ${action} successful`, balance: user.walletBalance });
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
+
 // @desc    Get user by email for role update
 // @route   GET /api/admin/user-role/:email
 // @access  Private Admin

@@ -234,7 +234,16 @@ const DelhiveryCreateOrder = ({ isDashboard = false }) => {
                 }, 3000);
             }
         } catch (err) {
-            setError(err.response?.data?.message || 'Failed to create order');
+            if (err.response?.data?.insufficientWallet) {
+                setError(
+                    <span>
+                        {err.response.data.message} <br/>
+                        <a href="/customer/wallet" className="text-blue-600 underline font-bold mt-2 inline-block">Go to My Wallet</a>
+                    </span>
+                );
+            } else {
+                setError(err.response?.data?.message || 'Failed to create order');
+            }
         } finally {
             setIsSubmitting(false);
         }

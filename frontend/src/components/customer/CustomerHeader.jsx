@@ -1,7 +1,31 @@
-import React from 'react';
-import { Menu, Bell, LogOut } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Menu, Bell, LogOut, Wallet } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
 const CustomerHeader = ({ isSidebarOpen, setSidebarOpen, user, logout }) => {
+    const navigate = useNavigate();
+    const [balance, setBalance] = useState(0);
+
+    const fetchBalance = async () => {
+        try {
+            const token = localStorage.getItem('userToken');
+            if (!token) return;
+            const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/finance/wallet/ledger`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setBalance(res.data.balance);
+        } catch (err) {
+            console.error('Failed to fetch balance in header', err);
+        }
+    };
+
+    useEffect(() => {
+        fetchBalance();
+        window.addEventListener('walletUpdated', fetchBalance);
+        return () => window.removeEventListener('walletUpdated', fetchBalance);
+    }, []);
+
     return (
         <header className="relative bg-white border-b border-slate-100 h-20 flex items-center justify-between px-6 md:px-8 z-50 shrink-0">
             {/* Left: Sidebar Toggle and Dashboard Title */}
@@ -20,6 +44,15 @@ const CustomerHeader = ({ isSidebarOpen, setSidebarOpen, user, logout }) => {
 
             {/* Right: Actions */}
             <div className="flex items-center gap-4 md:gap-5">
+                {/* Wallet Balance */}
+                <button 
+                    onClick={() => navigate('/customer/wallet')}
+                    className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-emerald-50 text-emerald-600 rounded-xl hover:bg-emerald-100 transition-colors border border-emerald-100/50"
+                >
+                    <Wallet size={16} />
+                    <span className="font-bold text-sm tracking-tight">₹{Number(balance || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
+                </button>
+
                 {/* Notification Bell */}
                 <button className="relative p-2.5 bg-[#f4f7fc] hover:bg-slate-100 rounded-xl text-slate-600 transition-all border border-transparent hover:border-slate-200/50 cursor-pointer">
                     <Bell size={16} />

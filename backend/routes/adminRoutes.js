@@ -29,7 +29,8 @@ const {
     getRechargeRequests,
     updateRechargeRequestStatus,
     getUserByEmailForRole,
-    updateUserRole
+    updateUserRole,
+    updateUserWallet
 } = require("../controllers/adminController");
 const auth = require("../middleware/authMiddleware");
 
@@ -58,6 +59,9 @@ router.put("/user-role", auth, updateUserRole);
 // Recharge Requests
 router.get("/recharge-requests", auth, getRechargeRequests);
 router.put("/recharge-requests/:id", auth, updateRechargeRequestStatus);
+
+// Wallet Management
+router.post("/user/:id/wallet", auth, updateUserWallet);
 
 // Admin pricing management routes
 router.get("/pricing/:vendorId", auth, adminGetVendorPricing);

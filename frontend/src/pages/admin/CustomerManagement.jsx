@@ -3,7 +3,7 @@ import axios from 'axios';
 import useInfiniteScroll from '../../hooks/useInfiniteScroll';
 import { 
   User, Users, Mail, Phone, MapPin, Building, Calendar, Search, 
-  ArrowRight, FileText, CheckCircle2, XCircle, ArrowLeft, RefreshCw, Globe, Plus, X, Loader2
+  ArrowRight, FileText, CheckCircle2, XCircle, ArrowLeft, RefreshCw, Globe, Plus, X, Loader2, Wallet
 } from 'lucide-react';
 
 const CustomerManagement = () => {
@@ -24,6 +24,13 @@ const CustomerManagement = () => {
   const [addFormData, setAddFormData] = useState({
     name: '', email: '', password: '', phone: '', company: ''
   });
+
+  // Wallet Modal State
+  const [walletModalOpen, setWalletModalOpen] = useState(false);
+  const [walletUser, setWalletUser] = useState(null);
+  const [walletAmount, setWalletAmount] = useState('');
+  const [walletAction, setWalletAction] = useState('Credit');
+  const [walletSubmitting, setWalletSubmitting] = useState(false);
   
   // Selected user history state
   const [selectedUser, setSelectedUser] = useState(null); // { type: 'customer'|'guest', id: string, name: string, email: string }
@@ -169,6 +176,34 @@ const CustomerManagement = () => {
       alert(err.response?.data?.message || 'Failed to create customer');
     } finally {
       setAddingCustomer(false);
+    }
+  };
+
+  const handleManageWallet = (user) => {
+    setWalletUser(user);
+    setWalletAmount('');
+    setWalletAction('Credit');
+    setWalletModalOpen(true);
+  };
+
+  const handleWalletSubmit = async (e) => {
+    e.preventDefault();
+    if (!walletAmount || walletAmount <= 0) return alert('Enter a valid amount');
+    try {
+      setWalletSubmitting(true);
+      const token = sessionStorage.getItem('adminToken');
+      await axios.post(`${import.meta.env.VITE_API_BASE_URL}/admin/user/${walletUser._id}/wallet`, {
+        amount: walletAmount,
+        action: walletAction
+      }, { headers: { Authorization: `Bearer ${token}` } });
+      
+      alert(`Wallet ${walletAction} successful!`);
+      setWalletModalOpen(false);
+      handleRefresh(); 
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to update wallet');
+    } finally {
+      setWalletSubmitting(false);
     }
   };
 
@@ -350,7 +385,7 @@ const CustomerManagement = () => {
                   {loadingMore && (
                     <div className="flex justify-center items-center py-6 text-slate-400">
                       <RefreshCw size={20} className="animate-spin mr-2" />
-                      <span className="font-semibold text-xs">Loading more customers...</span>
+                      <span className="font-semibold text-xs">Loading more...</span>
                     </div>
                   )}
                 </div>
@@ -455,7 +490,7 @@ const CustomerManagement = () => {
                     <th className="p-5">Mobile Number</th>
                     <th className="p-5">Country</th>
                     <th className="p-5">Organization Name</th>
-                    <th className="p-5">Signup Date</th>
+                    <th className="p-5">Wallet Balance</th>
                     <th className="p-5 text-right">Actions</th>
                   </tr>
                 </thead>
@@ -464,10 +499,9 @@ const CustomerManagement = () => {
                     <tr 
                       key={c._id} 
                       ref={index === filteredCustomers.length - 1 ? lastCustomerElementRef : null}
-                      className="hover:bg-slate-50/50 transition-colors cursor-pointer group"
-                      onClick={() => fetchHistory({ ...c, type: 'customer', id: c._id })}
+                      className="hover:bg-slate-50/50 transition-colors group"
                     >
-                      <td className="p-5 font-black text-[#0B1E43] group-hover:text-[#0066FF] transition-colors">{c.name || 'N/A'}</td>
+                      <td className="p-5 font-black text-[#0B1E43] cursor-pointer" onClick={() => fetchHistory({ ...c, type: 'customer', id: c._id })}>{c.name || 'N/A'}</td>
                       <td className="p-5 text-slate-500 font-medium">{c.email}</td>
                       <td className="p-5 text-slate-700">{c.phone || 'N/A'}</td>
                       <td className="p-5">
@@ -482,17 +516,21 @@ const CustomerManagement = () => {
                           <span>{c.company || 'Not Specified'}</span>
                         </div>
                       </td>
-                      <td className="p-5 text-slate-450 font-medium">
-                        <div className="flex items-center gap-1.5">
-                          <Calendar size={13} className="text-slate-400" />
-                          <span>
-                            {c.createdAt ? new Date(c.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A'}
-                          </span>
-                        </div>
+                      <td className="p-5 font-black text-[#0B1E43]">
+                        ₹{c.walletBalance?.toLocaleString('en-IN') || '0'}
                       </td>
-                      <td className="p-5 text-right">
-                        <button className="text-[#0066FF] font-black text-[10px] uppercase tracking-wider group-hover:underline inline-flex items-center gap-1 cursor-pointer">
-                          View History <ArrowRight size={12} />
+                      <td className="p-5 text-right flex items-center justify-end gap-3">
+                        <button 
+                          onClick={() => handleManageWallet(c)} 
+                          className="text-emerald-600 font-black text-[10px] uppercase tracking-wider hover:underline inline-flex items-center gap-1 cursor-pointer"
+                        >
+                          <Wallet size={12} /> Wallet
+                        </button>
+                        <button 
+                          onClick={() => fetchHistory({ ...c, type: 'customer', id: c._id })}
+                          className="text-[#0066FF] font-black text-[10px] uppercase tracking-wider hover:underline inline-flex items-center gap-1 cursor-pointer"
+                        >
+                          History <ArrowRight size={12} />
                         </button>
                       </td>
                     </tr>
@@ -600,6 +638,46 @@ const CustomerManagement = () => {
                 <button type="submit" disabled={addingCustomer} className="px-4 py-2 text-sm font-bold text-white bg-blue-600 rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center gap-2">
                   {addingCustomer ? <Loader2 size={16} className="animate-spin" /> : <User size={16} />} 
                   {addingCustomer ? 'Creating...' : 'Create Customer'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Wallet Management Modal */}
+      {walletModalOpen && walletUser && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
+            <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+              <h2 className="text-lg font-black text-slate-800">Manage Wallet - {walletUser.name}</h2>
+              <button onClick={() => setWalletModalOpen(false)} className="text-slate-400 hover:text-rose-500 transition-colors">
+                <X size={20} />
+              </button>
+            </div>
+            <form onSubmit={handleWalletSubmit} className="p-5 space-y-4">
+              <div className="bg-blue-50 p-4 rounded-xl flex items-center justify-between mb-4">
+                  <span className="font-bold text-slate-700 text-sm">Current Balance:</span>
+                  <span className="font-black text-blue-700 text-lg">₹{walletUser.walletBalance?.toLocaleString('en-IN') || '0'}</span>
+              </div>
+              
+              <div>
+                <label className="block text-xs font-bold text-slate-600 mb-1">Action *</label>
+                <select value={walletAction} onChange={e => setWalletAction(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-500 font-bold">
+                    <option value="Credit">Credit (Add Money)</option>
+                    <option value="Debit">Debit (Deduct Money)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-600 mb-1">Amount (₹) *</label>
+                <input required type="number" min="1" value={walletAmount} onChange={e => setWalletAmount(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-500" placeholder="Enter amount" />
+              </div>
+              
+              <div className="flex gap-3 pt-2">
+                <button type="button" onClick={() => setWalletModalOpen(false)} className="flex-1 px-4 py-2 text-sm font-bold text-slate-600 bg-slate-100 rounded-lg hover:bg-slate-200">Cancel</button>
+                <button type="submit" disabled={walletSubmitting} className="flex-1 px-4 py-2 text-sm font-bold text-white bg-[#0066FF] rounded-lg hover:bg-blue-600 disabled:opacity-50">
+                  {walletSubmitting ? 'Processing...' : 'Submit'}
                 </button>
               </div>
             </form>

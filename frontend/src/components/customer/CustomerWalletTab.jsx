@@ -605,44 +605,23 @@ const WalletLedgerTab = () => {
                                     </div>
                                 </>
                             ) : (
-                                <div className="space-y-4">
-                                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
-                                        <div className="flex justify-between text-sm font-bold text-slate-600">
-                                            <span>Recharge Amount</span>
-                                            <span>₹{Number(rechargeAmount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
-                                        </div>
-                                        <div className="flex justify-between text-sm font-bold text-slate-600">
-                                            <span>Gateway Charge (2%)</span>
-                                            <span>₹{(Number(rechargeAmount || 0) * 0.02).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
-                                        </div>
-                                        <div className="flex justify-between text-sm font-bold text-slate-600">
-                                            <span>GST on Gateway Charge (18%)</span>
-                                            <span>₹{(Number(rechargeAmount || 0) * 0.02 * 0.18).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
-                                        </div>
-                                        <div className="pt-2 border-t border-slate-200 flex justify-between text-base font-black text-[#0B1E43]">
-                                            <span>Total Payable</span>
-                                            <span>₹{(Number(rechargeAmount || 0) + (Number(rechargeAmount || 0) * 0.02) + (Number(rechargeAmount || 0) * 0.02 * 0.18)).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
-                                        </div>
-                                    </div>
-                                    
-                                    <div className="grid grid-cols-2 gap-3 mt-4">
-                                        <button
-                                            type="button"
-                                            onClick={() => setShowRechargeOnlineBreakdown(false)}
-                                            className="w-full bg-slate-100 text-slate-700 px-4 py-3 rounded-xl font-black text-sm transition-colors hover:bg-slate-200"
-                                        >
-                                            Cancel
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={handleRechargeOnline}
-                                            disabled={rechargeOnlineLoading}
-                                            className="w-full bg-[#0066FF] text-white px-4 py-3 rounded-xl font-black text-sm transition-colors hover:bg-[#0052cc] flex items-center justify-center gap-2"
-                                        >
-                                            {rechargeOnlineLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-                                            Proceed to Pay
-                                        </button>
-                                    </div>
+                                <div className="grid grid-cols-2 gap-3 mt-4">
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowRechargeOnlineBreakdown(false)}
+                                        className="w-full bg-slate-100 text-slate-700 px-4 py-3 rounded-xl font-black text-sm transition-colors hover:bg-slate-200"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={handleRechargeOnline}
+                                        disabled={rechargeOnlineLoading}
+                                        className="w-full bg-[#0066FF] text-white px-4 py-3 rounded-xl font-black text-sm transition-colors hover:bg-[#0052cc] flex items-center justify-center gap-2"
+                                    >
+                                        {rechargeOnlineLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+                                        Proceed to Pay
+                                    </button>
                                 </div>
                             )}
                         </form>
