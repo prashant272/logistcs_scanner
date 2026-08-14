@@ -125,6 +125,29 @@ exports.createEnquiry = async (req, res) => {
         const finalFromLocation = fromLocation || req.body.location || req.body.city || 'Not Specified';
         const finalToLocation = toLocation || req.body.location || req.body.city || 'Not Specified';
 
+        // Prevent Duplicate Enquiry Submission (Double click prevention within 5 seconds)
+        const fiveSecondsAgo = new Date(Date.now() - 5000);
+        const duplicateCheckQuery = {
+            fromLocation: finalFromLocation,
+            toLocation: finalToLocation,
+            type: sanitizedType,
+            createdAt: { $gte: fiveSecondsAgo }
+        };
+        
+        if (guestEmail) {
+            duplicateCheckQuery.guestEmail = guestEmail;
+        } else if (validatedClientId) {
+            duplicateCheckQuery.client = validatedClientId;
+        }
+
+        const recentDuplicate = await Enquiry.findOne(duplicateCheckQuery);
+        if (recentDuplicate) {
+            return res.status(409).json({ 
+                message: 'Duplicate enquiry detected. Please wait a few seconds before submitting again.',
+                enquiry: recentDuplicate
+            });
+        }
+
         const enquiry = await Enquiry.create({
             client: validatedClientId,
             vendor: validatedVendorId,

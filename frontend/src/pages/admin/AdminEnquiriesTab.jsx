@@ -258,7 +258,11 @@ const AdminEnquiriesTab = () => {
                                                             </div>
                                                         )}
                                                     </div>
-                                                    <p className="text-sm font-black text-slate-800">{enq.guestName || enq.client?.name || 'Unknown'}</p>
+                                                    <p className="text-sm font-black text-slate-800">
+                                                        {(enq.guestName === 'Guest' && enq.guestCompany) 
+                                                            ? enq.guestCompany 
+                                                            : (enq.guestName || enq.client?.name || 'Unknown')}
+                                                    </p>
                                                     <p className="text-[10px] font-bold text-slate-500">{enq.guestEmail || enq.client?.email}</p>
                                                     <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mt-1">{new Date(enq.createdAt).toLocaleDateString()}</p>
                                                 </div>
