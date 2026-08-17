@@ -296,7 +296,8 @@ exports.getVendorEnquiries = async (req, res) => {
                 if (type === 'my') {
                     query = {
                         vendor: req.user.id,
-                        isDirect: false
+                        isDirect: false,
+                        isBroadcasted: true
                     };
                 } else if (type === 'direct') {
                     const customerIds = await User.find({ role: 'customer' }).distinct('_id');
@@ -323,12 +324,14 @@ exports.getVendorEnquiries = async (req, res) => {
 
                     query = {
                         isDirect: true,
+                        isBroadcasted: true,
                         $or: directOrConditions
                     };
                 } else if (type === 'b2b') {
                     const vendorIds = await User.find({ role: 'vendor' }).distinct('_id');
                     query = {
                         isDirect: true,
+                        isBroadcasted: true,
                         client: { $in: vendorIds, $ne: req.user.id }
                     };
                 }
@@ -355,6 +358,8 @@ exports.getVendorEnquiries = async (req, res) => {
             if (currentUser.services && currentUser.services.length > 0) {
                 const mappedServices = currentUser.services.map(s => s.toLowerCase().trim());
                 query.type = { $in: mappedServices };
+            } else {
+                query._id = null; // Hide all marketplace enquiries if no services selected
             }
         }
 
@@ -874,12 +879,15 @@ exports.getVendorStats = async (req, res) => {
             let query = {};
             if (!isAdmin) {
                 if (isBookingFilter) {
+                    // Vendor acting as client (B2B). They should see their own created bookings immediately.
                     query = { client: new mongoose.Types.ObjectId(req.user.id), isBooking: true, isDirect: type === 'direct' };
                 } else {
                     if (type === 'my') {
-                        query = { vendor: new mongoose.Types.ObjectId(req.user.id), isDirect: false };
+                        // Enquiries targeted specifically to this vendor. Only visible if broadcasted.
+                        query = { vendor: new mongoose.Types.ObjectId(req.user.id), isDirect: false, isBroadcasted: true };
                     } else {
-                        query = { isDirect: true, client: { $ne: new mongoose.Types.ObjectId(req.user.id) } };
+                        // Marketplace enquiries. Only visible if broadcasted.
+                        query = { isDirect: true, client: { $ne: new mongoose.Types.ObjectId(req.user.id) }, isBroadcasted: true };
                     }
                 }
             } else {
@@ -895,6 +903,8 @@ exports.getVendorStats = async (req, res) => {
                 if (currentUser.services && currentUser.services.length > 0) {
                     const mappedServices = currentUser.services.map(s => s.toLowerCase().trim());
                     query.type = { $in: mappedServices };
+                } else {
+                    query._id = null; // Hide all marketplace enquiries if no services selected
                 }
             }
 
@@ -1204,11 +1214,13 @@ const triggerVendorBroadcast = async (enquiryId) => {
 
                 vendors.forEach(vendorUser => {
                     // Filter by service type
-                    if (vendorUser.services && vendorUser.services.length > 0) {
-                        const mappedServices = vendorUser.services.map(s => s.toLowerCase().trim());
-                        if (!mappedServices.includes(sanitizedType)) {
-                            return; // skip this vendor if their services do not match the enquiry type
-                        }
+                    if (!vendorUser.services || vendorUser.services.length === 0) {
+                        return; // skip this vendor if they haven't selected any service type
+                    }
+                    
+                    const mappedServices = vendorUser.services.map(s => s.toLowerCase().trim());
+                    if (!mappedServices.includes(sanitizedType)) {
+                        return; // skip this vendor if their services do not match the enquiry type
                     }
 
                     // Check if vendor has an active paid plan
