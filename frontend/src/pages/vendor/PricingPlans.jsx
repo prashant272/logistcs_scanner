@@ -172,7 +172,7 @@ const PricingPlans = () => {
                     _id: 'free_tier_static_id',
                     name: 'FREE',
                     price: 0,
-                    duration: 'Monthly',
+                    duration: 'Yearly',
                     inquiryLimit: 5,
                     userType: user.role,
                     status: 'Active',
@@ -409,13 +409,13 @@ const PricingPlans = () => {
                     <div className="bg-slate-50/70 p-3 rounded-2xl border border-slate-100/50">
                         <span className="text-[8px] font-black text-slate-400 uppercase tracking-wider block">Billing Cycle</span>
                         <span className="font-extrabold text-slate-800 text-sm mt-0.5 block capitalize">
-                            {user?.activePlan?.duration || 'Monthly'}
+                            {user?.activePlan?.duration || 'Yearly'}
                         </span>
                     </div>
                     <div className="bg-slate-50/70 p-3 rounded-2xl border border-slate-100/50">
                         <span className="text-[8px] font-black text-slate-400 uppercase tracking-wider block">Enquiry Limit</span>
                         <span className="font-extrabold text-slate-800 text-xs mt-0.5 block">
-                            {user?.activePlan?.inquiryLimit ? `${user.activePlan.inquiryLimit + (user?.topupEnquiryLimit || 0)} Enquiries Per month` : '5 Enquiries /monthly'}
+                            {user?.activePlan?.inquiryLimit && user?.activePlan?.price > 0 ? `${user.activePlan.inquiryLimit + (user?.topupEnquiryLimit || 0)} Enquiries Per month` : '5 Enquiries Annually'}
                         </span>
                     </div>
                     <div className="bg-slate-50/70 p-3 rounded-2xl border border-slate-100/50">
