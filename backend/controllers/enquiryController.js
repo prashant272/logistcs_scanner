@@ -1290,7 +1290,7 @@ exports.triggerVendorBroadcast = triggerVendorBroadcast;
 
 exports.broadcastEnquiry = async (req, res) => {
     try {
-        if (req.user && req.user.id !== 'ad0000000000000000000000' && req.user.role !== 'admin') {
+        if (req.user && req.user.id !== 'ad0000000000000000000000' && req.user.role !== 'admin' && req.user.role !== 'rm') {
             return res.status(403).json({ message: 'Unauthorized' });
         }
         const { id } = req.params;
@@ -1312,7 +1312,7 @@ exports.broadcastEnquiry = async (req, res) => {
 
 exports.scheduleEnquiry = async (req, res) => {
     try {
-        if (req.user && req.user.id !== 'ad0000000000000000000000' && req.user.role !== 'admin') {
+        if (req.user && req.user.id !== 'ad0000000000000000000000' && req.user.role !== 'admin' && req.user.role !== 'rm') {
             return res.status(403).json({ message: 'Unauthorized' });
         }
         const { id } = req.params;
