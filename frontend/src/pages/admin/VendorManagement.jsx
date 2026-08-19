@@ -43,6 +43,7 @@ const VendorManagement = () => {
   const [plans, setPlans] = useState([]);
   const [assigningRmId, setAssigningRmId] = useState(null);
   const [updatingPlanId, setUpdatingPlanId] = useState(null);
+  const [updatingLimitId, setUpdatingLimitId] = useState(null);
 
   const toggleService = (s) => setServiceFilter(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s]);
 
@@ -524,17 +525,21 @@ const VendorManagement = () => {
   };
 
   const handleUpdateLimit = async (vendorId, limit) => {
+    // Optimistic UI Update for instant feedback
+    setVendors(prev => prev.map(v => v._id === vendorId ? { ...v, topupEnquiryLimit: Number(limit) } : v));
+    setUpdatingLimitId(vendorId);
+
     try {
       const token = sessionStorage.getItem('adminToken');
       const config = { headers: { Authorization: `Bearer ${token}` } };
       await axios.put(`${import.meta.env.VITE_API_BASE_URL}/admin/vendors/${vendorId}/enquiry-limit`, { limit }, config);
-      alert('Limit updated successfully!');
-
-      // Update local state
-      setVendors(prev => prev.map(v => v._id === vendorId ? { ...v, topupEnquiryLimit: Number(limit) } : v));
     } catch (err) {
       console.error('Update limit failed:', err);
-      alert('Failed to update limit');
+      // Refresh to revert optimistic update on failure
+      fetchVendors(page, true);
+      alert('Failed to update limit. Please try again.');
+    } finally {
+      setUpdatingLimitId(null);
     }
   };
 
@@ -827,13 +832,19 @@ const VendorManagement = () => {
                           <input
                             type="number"
                             defaultValue={totalLimit}
-                            className="w-16 bg-white border border-slate-200 rounded p-1 text-[10px] text-center font-bold focus:outline-none focus:border-[#0066FF]"
+                            disabled={updatingLimitId === vendor._id}
+                            className={`w-16 bg-white border border-slate-200 rounded p-1 text-[10px] text-center font-bold focus:outline-none focus:border-[#0066FF] ${updatingLimitId === vendor._id ? 'opacity-50 cursor-wait' : ''}`}
                             onBlur={(e) => {
                               const newVal = parseInt(e.target.value);
                               if (newVal !== totalLimit && !isNaN(newVal)) {
                                 // Calculate extra needed to reach the new total
                                 const newExtra = newVal - baseLimit;
                                 handleUpdateLimit(vendor._id, newExtra);
+                              }
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.target.blur();
                               }
                             }}
                           />
