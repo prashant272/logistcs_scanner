@@ -317,6 +317,9 @@ const AdminEnquiriesTab = () => {
                                                         {enq.weightRange && (
                                                             <span className="bg-amber-500 text-white px-2 py-0.5 rounded shadow-sm">Weight: {enq.weightRange}</span>
                                                         )}
+                                                        {enq.shipmentDate && (
+                                                            <span className="bg-emerald-600 text-white px-2 py-0.5 rounded shadow-sm">Shipment: {new Date(enq.shipmentDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+                                                        )}
                                                     </div>
                                                 </>
                                             )}

@@ -410,7 +410,9 @@ const CustomerEnquiriesTab = ({ title, type }) => {
 
                       <div className="bg-white border border-slate-100/90 rounded-2xl py-2 px-4 shadow-sm text-center min-w-[100px]">
                         <div className="text-[10px] text-slate-400 font-black tracking-wider uppercase">Target Delivery</div>
-                        <div className="text-xs font-black text-slate-800 mt-0.5">{getTargetDate(enq.createdAt, enq.deliverySpeed)}</div>
+                        <div className="text-xs font-black text-slate-800 mt-0.5">
+                            {enq.shipmentDate ? formatDate(enq.shipmentDate) : getTargetDate(enq.createdAt, enq.deliverySpeed)}
+                        </div>
                       </div>
                     </div>
                   </div>

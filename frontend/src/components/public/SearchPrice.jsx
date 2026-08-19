@@ -371,7 +371,8 @@ const SearchPrice = ({ isDashboard = false }) => {
                         airCategory,
                         airAirline,
                         handlingType,
-                        additionalServices
+                        additionalServices,
+                        shipmentDate: date
                     }
                 }
             });
@@ -417,7 +418,8 @@ const SearchPrice = ({ isDashboard = false }) => {
                         airCategory,
                         airAirline,
                         handlingType,
-                        additionalServices
+                        additionalServices,
+                        shipmentDate: date
                     }
                 }
             });
@@ -465,7 +467,8 @@ const SearchPrice = ({ isDashboard = false }) => {
             vendor: matchedRate ? matchedRate.vendor._id : null,
             isDirect: matchedRate ? false : true,
             chaServiceType: activeTab === 'cha' ? chaType : undefined,
-            chaCargoType: activeTab === 'cha' ? chaCargoType : undefined
+            chaCargoType: activeTab === 'cha' ? chaCargoType : undefined,
+            shipmentDate: date
         };
 
         const adminRole = sessionStorage.getItem('adminRole') || localStorage.getItem('adminRole');
@@ -543,7 +546,8 @@ const SearchPrice = ({ isDashboard = false }) => {
             width,
             height,
             unit,
-            quantity
+            quantity,
+            shipmentDate: date
         };
 
         try {

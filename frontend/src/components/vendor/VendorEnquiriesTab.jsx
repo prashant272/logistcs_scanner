@@ -537,7 +537,9 @@ const VendorEnquiriesTab = ({ title, type }) => {
                     {/* Date of Shipment / Target Delivery */}
                     <div className="bg-white border border-slate-200/80 rounded-lg px-3 py-1.5 text-center min-w-[100px] shadow-sm">
                       <div className="text-[9px] text-slate-600 font-black uppercase tracking-wider font-mono">Date of Shipment</div>
-                      <div className="text-[10px] font-black text-slate-800 mt-0.5">{getTargetDate(enq.createdAt, enq.deliverySpeed)}</div>
+                      <div className="text-[10px] font-black text-slate-800 mt-0.5">
+                        {enq.shipmentDate ? formatDate(enq.shipmentDate) : getTargetDate(enq.createdAt, enq.deliverySpeed)}
+                      </div>
                     </div>
                   </div>
                 </div>

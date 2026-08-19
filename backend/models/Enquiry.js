@@ -164,6 +164,11 @@ const enquirySchema = new mongoose.Schema({
         trim: true,
         default: ''
     },
+    shipmentDate: {
+        type: String,
+        trim: true,
+        default: ''
+    },
     price: {
         type: Number,
         default: null

@@ -43,8 +43,11 @@ exports.createEnquiry = async (req, res) => {
             guestCompany,
             commodity,
             message,
-            attachment
+            attachment,
+            shipmentDate
         } = req.body;
+
+        console.log("== CREATE ENQUIRY PAYLOAD ==", req.body);
 
         // Check for optional token
         let clientId = null;
@@ -175,6 +178,7 @@ exports.createEnquiry = async (req, res) => {
             handlingType,
             additionalServices,
             deliverySpeed,
+            shipmentDate,
             price,
             targetPrice: targetPrice || null,
             isDirect: isDirect || false,
