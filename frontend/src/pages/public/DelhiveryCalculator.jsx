@@ -82,6 +82,11 @@ const DelhiveryCalculator = ({ isDashboard = false }) => {
 
     const invoiceRef = useRef(null);
     const [isDownloading, setIsDownloading] = useState(false);
+    // Custom Quote States
+    const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
+    const [markupAmount, setMarkupAmount] = useState('');
+    const [markupWithGst, setMarkupWithGst] = useState(false);
+    const [customRateResult, setCustomRateResult] = useState(null);
 
     const handleDownloadInvoice = async () => {
         if (!invoiceRef.current) return;
@@ -111,7 +116,40 @@ const DelhiveryCalculator = ({ isDashboard = false }) => {
             alert("Failed to generate PDF. Please try again.");
         } finally {
             setIsDownloading(false);
+            setCustomRateResult(null); // Reset after download
         }
+    };
+
+    const handleGenerateCustomInvoice = () => {
+        if (!rateResult) return;
+        
+        let markup = parseFloat(markupAmount) || 0;
+        let finalMarkup = markup;
+        
+        if (markup > 0 && markupWithGst) {
+            finalMarkup = markup + (markup * 0.18);
+        }
+        
+        if (finalMarkup > 0) {
+            const newRate = JSON.parse(JSON.stringify(rateResult));
+            newRate.finalPrice += finalMarkup;
+            newRate.basePrice += finalMarkup;
+            if (newRate.breakup) {
+                newRate.breakup.total += finalMarkup;
+                if (newRate.breakup.price_breakup) {
+                    newRate.breakup.price_breakup.base_freight_charge += finalMarkup;
+                }
+            }
+            setCustomRateResult(newRate);
+        } else {
+            setCustomRateResult(null);
+        }
+        
+        setIsDownloadModalOpen(false);
+        
+        setTimeout(() => {
+            handleDownloadInvoice();
+        }, 300);
     };
 
     const checkPin = async (pin, setStatus, setLoading) => {
@@ -184,7 +222,8 @@ const DelhiveryCalculator = ({ isDashboard = false }) => {
                 cod_amount: paymentMode === 'COD' ? shipmentAmount : 0,
                 shipment_value: shipmentAmount,
                 freight_mode: freightMode,
-                rov_insurance: insurance === 'delhivery'
+                rov_insurance: insurance === 'delhivery',
+                fm_pickup: dropOff === 'no'
             }, {
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -679,7 +718,13 @@ const DelhiveryCalculator = ({ isDashboard = false }) => {
                                             </button>
 
                                             <button
-                                                onClick={handleDownloadInvoice}
+                                                onClick={() => {
+                                                    if (user?.role === 'vendor') {
+                                                        setIsDownloadModalOpen(true);
+                                                    } else {
+                                                        handleDownloadInvoice();
+                                                    }
+                                                }}
                                                 disabled={isDownloading}
                                                 className="w-full bg-blue-50 text-blue-700 border-2 border-blue-200 hover:bg-blue-100 hover:border-blue-300 py-3 rounded-xl font-bold text-md transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
                                             >
@@ -743,9 +788,9 @@ const DelhiveryCalculator = ({ isDashboard = false }) => {
                                             </div>
                                         </div>
 
-                                        <div className="bg-green-50 border border-green-100 rounded-xl p-3 text-center flex flex-col items-center justify-center gap-2">
-                                            <span className="text-[10px] font-black text-green-600 uppercase tracking-wider">Average Market Rate</span>
-                                            <span className="text-sm font-black text-green-700 bg-green-100 px-3 py-1 rounded-lg">
+                                        <div className="bg-green-50/80 border border-green-100 rounded-xl p-4 text-center">
+                                            <div className="text-[10px] font-black text-green-700 uppercase tracking-widest mb-1.5">Average Market Rate</div>
+                                            <span className="inline-block bg-green-100 text-green-800 font-black px-4 py-1.5 rounded-lg text-sm shadow-sm">
                                                 ₹{Math.round(rateResult.finalPrice * 1.1125).toLocaleString('en-IN')} - ₹{Math.round(rateResult.finalPrice * 1.13).toLocaleString('en-IN')}
                                             </span>
                                         </div>
@@ -771,7 +816,7 @@ const DelhiveryCalculator = ({ isDashboard = false }) => {
             {rateResult && (
                 <InvoiceDocument
                     ref={invoiceRef}
-                    rateResult={rateResult}
+                    rateResult={customRateResult || rateResult}
                     boxes={boxes}
                     totalWeight={totalWeight}
                     originPin={originPin}
@@ -784,6 +829,58 @@ const DelhiveryCalculator = ({ isDashboard = false }) => {
                     dimensionUnit={dimensionUnit}
                     insurance={insurance}
                 />
+            )}
+
+            {/* Custom Download Modal for Vendors */}
+            {isDownloadModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-fadeIn">
+                    <div className="bg-white rounded-3xl w-full max-w-sm shadow-[0_24px_60px_rgba(11,30,67,0.15)] border border-slate-100 overflow-hidden flex flex-col animate-scaleUp">
+                        <div className="flex justify-between items-center p-6 border-b border-slate-100 bg-slate-50/50">
+                            <div>
+                                <h3 className="text-base font-black text-[#0B1E43] tracking-tight">Download Quotation</h3>
+                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">Add your markup fees</p>
+                            </div>
+                            <button
+                                onClick={() => setIsDownloadModalOpen(false)}
+                                className="text-slate-400 hover:text-slate-600 cursor-pointer bg-white rounded-full p-1.5 shadow-sm border border-slate-100"
+                            >
+                                <X size={18} />
+                            </button>
+                        </div>
+                        <div className="p-6 space-y-5">
+                            <div className="space-y-1">
+                                <label className="block text-[10px] font-black text-slate-900 uppercase tracking-wider">
+                                    Markup Amount (₹)
+                                </label>
+                                <input
+                                    type="number"
+                                    min="0"
+                                    placeholder="Enter extra amount..."
+                                    value={markupAmount}
+                                    onChange={(e) => setMarkupAmount(e.target.value)}
+                                    className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-slate-900 focus:outline-none focus:border-[#0066FF] transition-all"
+                                />
+                            </div>
+                            
+                            <label className="flex items-center gap-3 p-3 rounded-xl border border-slate-200 hover:bg-slate-50 cursor-pointer transition-all">
+                                <input 
+                                    type="checkbox" 
+                                    checked={markupWithGst}
+                                    onChange={(e) => setMarkupWithGst(e.target.checked)}
+                                    className="w-4 h-4 rounded text-[#0066FF] focus:ring-[#0066FF]"
+                                />
+                                <span className="text-sm font-bold text-slate-700">Add 18% GST on Markup</span>
+                            </label>
+
+                            <button
+                                onClick={handleGenerateCustomInvoice}
+                                className="w-full bg-[#0066FF] hover:bg-[#0052cc] text-white py-3 rounded-xl font-bold transition-all shadow-md flex items-center justify-center gap-2"
+                            >
+                                <Download size={18} /> Generate PDF
+                            </button>
+                        </div>
+                    </div>
+                </div>
             )}
 
             {/* Broadcast Inquiry Modal */}

@@ -97,7 +97,7 @@ exports.getAllPtlBookings = async (req, res) => {
 
 exports.estimatePrice = async (req, res) => {
     try {
-        const { weight_g, dimensions, source_pin, consignee_pin, payment_mode, cod_amount, shipment_value, freight_mode, rov_insurance } = req.body;
+        const { weight_g, dimensions, source_pin, consignee_pin, payment_mode, cod_amount, shipment_value, freight_mode, rov_insurance, fm_pickup } = req.body;
         
         // Parse dimensions from string '10x10x10,20x20x20' to array of objects or strings depending on what Delhivery expects. 
         // Commonly they expect list of objects: [{length: 10, breadth: 10, height: 10}] or just list of strings.
@@ -120,6 +120,7 @@ exports.estimatePrice = async (req, res) => {
             payment_mode: payment_mode.toLowerCase() === 'cod' ? 'cod' : 'prepaid',
             freight_mode: freight_mode || 'fod',
             rov_insurance: rov_insurance !== undefined ? rov_insurance : false,
+            fm_pickup: fm_pickup !== undefined ? fm_pickup : true,
             inv_amount: shipment_value ? parseFloat(shipment_value) : (cod_amount ? parseFloat(cod_amount) : 1000) // invoice amount is mandatory for insurance
         };
         
@@ -134,7 +135,7 @@ exports.estimatePrice = async (req, res) => {
             return res.status(400).json({ message: 'Delhivery calculation failed', details: delhiveryResponse });
         }
 
-        const basePrice = delhiveryResponse.finalPrice; // Delhivery's total is our base
+        let basePrice = delhiveryResponse.finalPrice; // Delhivery's total is our base
 
         // 2. Apply Markup
         const config = await DelhiveryConfig.findOne();
