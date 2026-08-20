@@ -13,7 +13,7 @@ const generateToken = (id) => {
 // Register User
 exports.registerUser = async (req, res) => {
     try {
-        const { name, email, password, phone, address, role, company } = req.body;
+        const { name, email, password, phone, address, role, company, vendorTypes } = req.body;
 
         if (!name || !email || !password || !phone) {
             return res.status(400).json({ message: 'Please fill in all fields' });
@@ -40,6 +40,9 @@ exports.registerUser = async (req, res) => {
             userExists.phone = phone;
             userExists.address = address;
             userExists.role = role || 'customer';
+            if (role === 'vendor' && vendorTypes) {
+                userExists.vendorTypes = vendorTypes;
+            }
             userExists.company = company || '';
             userExists.otp = otp;
             userExists.otpExpires = otpExpires;
@@ -62,7 +65,7 @@ exports.registerUser = async (req, res) => {
         }
 
         // Create user
-        const user = await User.create({
+        const userData = {
             name,
             email,
             password: hashedPassword,
@@ -73,7 +76,13 @@ exports.registerUser = async (req, res) => {
             otp,
             otpExpires,
             isVerified: false
-        });
+        };
+        
+        if (role === 'vendor' && vendorTypes) {
+            userData.vendorTypes = vendorTypes;
+        }
+
+        const user = await User.create(userData);
 
         if (user) {
             // Trigger OTP dispatch (SMS if India, always Email)

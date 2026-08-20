@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import useSWR from 'swr';
 import { useAuth } from '../../context/AuthContext';
+import { Navigate } from 'react-router-dom';
 import EnquiryCardSection from './EnquiryCardSection';
 import BookingSection from './BookingSection';
 import FinanceSection from './FinanceSection';
@@ -91,6 +92,13 @@ const VendorDashboardMain = () => {
         vendorStatsFetcher,
         { refreshInterval: 30000, revalidateOnFocus: true }
     );
+
+    const vendorTypes = user?.vendorTypes || ['Freight forwarder'];
+    const isOnlyPtlFranchise = vendorTypes.length === 1 && vendorTypes.includes('PTL Franchise partner');
+
+    if (isOnlyPtlFranchise) {
+        return <Navigate to="/vendor/ptl-calculator" replace />;
+    }
 
     const vendorStatus = stats?.status || user?.verificationStatus || (user?.isVerified ? 'Approved' : 'Pending');
     const financeApp = stats?.financeApp || null;

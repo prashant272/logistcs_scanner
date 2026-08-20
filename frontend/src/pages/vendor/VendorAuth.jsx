@@ -32,7 +32,8 @@ const VendorAuth = () => {
         password: '',
         confirmPassword: '',
         country: '',
-        state: ''
+        state: '',
+        vendorTypes: ['Freight forwarder']
     });
 
     const [showPassword, setShowPassword] = useState(false);
@@ -85,7 +86,8 @@ const VendorAuth = () => {
                     company: formData.company,
                     password: formData.password,
                     address: `${formData.state}, ${formData.country}`,
-                    role: 'vendor'
+                    role: 'vendor',
+                    vendorTypes: formData.vendorTypes
                 });
                 if (result.success) {
                     if (result.needsVerification) {
@@ -769,6 +771,31 @@ const VendorAuth = () => {
                                                         className="block flex-grow px-4 py-2.5 border border-slate-200 rounded-xl bg-white !text-slate-900 font-medium focus:outline-none focus:border-[#00b2fe] focus:ring-2 focus:ring-[#00b2fe]/10 transition-all placeholder:text-slate-400 text-sm"
                                                         placeholder="Phone number"
                                                     />
+                                                </div>
+                                            </div>
+
+                                            {/* Vendor Services */}
+                                            <div className="group col-span-1 md:col-span-2">
+                                                <label className="block text-xs font-bold !text-slate-900 mb-3">
+                                                    Select Vendor Services <span className="text-red-500">*</span>
+                                                </label>
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                    {['Freight forwarder', 'CHA', 'Transporter', 'PTL Franchise partner'].map((service) => (
+                                                        <label key={service} className="flex items-center gap-2 cursor-pointer bg-slate-50 border border-slate-200 rounded-xl p-3 hover:bg-slate-100 transition-colors">
+                                                            <input
+                                                                type="checkbox"
+                                                                className="w-4 h-4 rounded text-[#0066FF] focus:ring-[#0066FF] cursor-pointer"
+                                                                checked={formData.vendorTypes.includes(service)}
+                                                                onChange={(e) => {
+                                                                    const updatedTypes = e.target.checked
+                                                                        ? [...formData.vendorTypes, service]
+                                                                        : formData.vendorTypes.filter(t => t !== service);
+                                                                    setFormData({ ...formData, vendorTypes: updatedTypes.length > 0 ? updatedTypes : ['Freight forwarder'] });
+                                                                }}
+                                                            />
+                                                            <span className="text-sm font-semibold !text-slate-700">{service}</span>
+                                                        </label>
+                                                    ))}
                                                 </div>
                                             </div>
 

@@ -12,6 +12,9 @@ const VendorDashboard = () => {
     const [isSidebarOpen, setSidebarOpen] = useState(window.innerWidth >= 768);
     const [searchQuery, setSearchQuery] = useState('');
 
+    const vendorTypes = user?.vendorTypes || ['Freight forwarder'];
+    const isOnlyPtlFranchise = vendorTypes.length === 1 && vendorTypes.includes('PTL Franchise partner');
+
     const handleLogout = () => {
         navigate('/', { replace: true });
         setTimeout(() => {
@@ -54,8 +57,12 @@ const VendorDashboard = () => {
                     <Outlet />
                 </main>
 
-                <VendorNotificationPopup />
-                <PreApprovedPopup />
+                {!isOnlyPtlFranchise && (
+                    <>
+                        <VendorNotificationPopup />
+                        <PreApprovedPopup />
+                    </>
+                )}
             </div>
         </div>
     );

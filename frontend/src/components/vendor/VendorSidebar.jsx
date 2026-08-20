@@ -72,22 +72,26 @@ const VendorSidebar = ({ isSidebarOpen, logout, user }) => {
         }));
     };
 
+    const vendorTypes = user?.vendorTypes || ['Freight forwarder'];
+    const isOnlyPtlFranchise = vendorTypes.length === 1 && vendorTypes.includes('PTL Franchise partner');
+
     // Sidebar navigation items with routes
-    const navItems = [
-        { type: 'link', name: 'Dashboard', path: '/vendor/dashboard', icon: <Landmark size={18} /> },
-        { type: 'link', name: 'Live Price', path: '/vendor/search-price', icon: <Search size={18} /> },
+    const allNavItems = [
+        { type: 'link', name: 'Dashboard', path: '/vendor/dashboard', icon: <Landmark size={18} />, hideForPtl: true },
+        { type: 'link', name: 'Live Price', path: '/vendor/search-price', icon: <Search size={18} />, hideForPtl: true },
         { 
             type: 'group', 
             label: 'Booking',
             items: [
-                { name: 'My Bookings', path: '/vendor/my-bookings', icon: <Calendar size={18} /> },
+                { name: 'My Bookings', path: '/vendor/my-bookings', icon: <Calendar size={18} />, hideForPtl: true },
                 { name: 'PTL Bookings', path: '/vendor/ptl-bookings', icon: <Truck size={18} /> },
-                { name: 'Direct Booking', path: '/vendor/direct-booking', icon: <Truck size={18} /> }
+                { name: 'Direct Booking', path: '/vendor/direct-booking', icon: <Truck size={18} />, hideForPtl: true }
             ]
         },
         { 
             type: 'group', 
             label: 'Enquiry',
+            hideForPtl: true,
             items: [
                 { name: 'My Enquiries', path: '/vendor/my-enquiries', icon: <FileText size={18} /> },
                 { name: 'Direct Enquiries', path: '/vendor/direct-enquiries', icon: <MessageSquare size={18} /> },
@@ -98,6 +102,7 @@ const VendorSidebar = ({ isSidebarOpen, logout, user }) => {
             type: 'group', 
             label: 'Avail 30 Day Credit',
             isSpecial: true,
+            hideForPtl: true,
             items: [
                 { name: 'Apply Now', path: '/vendor/finance', icon: <Wallet size={18} /> },
                 { name: 'Apply List & Status', path: '/vendor/finance-list', icon: <FileSpreadsheet size={18} /> },
@@ -108,6 +113,7 @@ const VendorSidebar = ({ isSidebarOpen, logout, user }) => {
         { 
             type: 'group', 
             label: 'My Pricing',
+            hideForPtl: true,
             items: [
                 { name: 'My Pricing', path: '/vendor/my-pricing', icon: <DollarSign size={18} /> },
                 { name: 'Bulk Import', path: '/vendor/bulk-import', icon: <FileSpreadsheet size={18} /> }
@@ -117,12 +123,23 @@ const VendorSidebar = ({ isSidebarOpen, logout, user }) => {
             type: 'group', 
             label: 'Profile & Rating',
             items: [
-                { name: 'Contact Vendor List', path: '/vendor/contact-vendor-list', icon: <MessageSquare size={18} /> },
-                { name: 'Complaint', path: '/vendor/complaint', icon: <AlertCircle size={18} /> },
+                { name: 'Contact Vendor List', path: '/vendor/contact-vendor-list', icon: <MessageSquare size={18} />, hideForPtl: true },
+                { name: 'Complaint', path: '/vendor/complaint', icon: <AlertCircle size={18} />, hideForPtl: true },
                 { name: 'View Profile', path: '/vendor/view-profile', icon: <User size={18} /> }
             ]
-        }
+        },
+        // We add PTL Calculator specifically if they are PTL Franchise
+        ...(isOnlyPtlFranchise ? [{ type: 'link', name: 'Start PTL Booking', path: '/vendor/ptl-calculator', icon: <Truck size={18} /> }] : [])
     ];
+
+    const navItems = isOnlyPtlFranchise 
+        ? allNavItems.filter(group => !group.hideForPtl).map(group => {
+            if (group.type === 'group' && group.items) {
+                return { ...group, items: group.items.filter(item => !item.hideForPtl) };
+            }
+            return group;
+          }).filter(group => group.type === 'link' || (group.type === 'group' && group.items.length > 0))
+        : allNavItems;
 
     return (
         <aside className={`bg-gradient-to-b from-[#0B1E43] via-[#081633] to-[#050f24] text-white transition-all duration-300 flex flex-col shrink-0 h-screen fixed left-0 top-0 overflow-y-auto z-40 border-r border-white/5 ${isSidebarOpen ? 'translate-x-0 w-64' : '-translate-x-full md:translate-x-0 md:w-20'}`}>

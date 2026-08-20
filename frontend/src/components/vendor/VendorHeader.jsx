@@ -6,6 +6,9 @@ import NotificationBell from '../common/NotificationBell';
 const VendorHeader = ({ isSidebarOpen, setSidebarOpen, user, logout, searchQuery, setSearchQuery }) => {
     const navigate = useNavigate();
 
+    const vendorTypes = user?.vendorTypes || ['Freight forwarder'];
+    const isOnlyPtlFranchise = vendorTypes.length === 1 && vendorTypes.includes('PTL Franchise partner');
+
     return (
         <header className="relative bg-white border-b border-slate-100 h-20 flex items-center justify-between px-6 md:px-8 z-50 shrink-0">
             {/* Left: Sidebar Toggle and Dashboard Title */}
@@ -26,7 +29,7 @@ const VendorHeader = ({ isSidebarOpen, setSidebarOpen, user, logout, searchQuery
 
 
                 {/* Notification Bell */}
-                <NotificationBell align="left" />
+                {!isOnlyPtlFranchise && <NotificationBell align="left" />}
 
                 {/* Available Wallet Balance */}
                 {user?.role === 'vendor' && (

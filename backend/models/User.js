@@ -31,6 +31,11 @@ const userSchema = new mongoose.Schema({
         enum: ['customer', 'vendor'],
         default: 'customer'
     },
+    vendorTypes: {
+        type: [String],
+        enum: ['Freight forwarder', 'CHA', 'Transporter', 'PTL Franchise partner'],
+        default: ['Freight forwarder']
+    },
     company: {
         type: String,
         default: ''

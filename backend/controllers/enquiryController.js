@@ -136,7 +136,7 @@ exports.createEnquiry = async (req, res) => {
             type: sanitizedType,
             createdAt: { $gte: fiveSecondsAgo }
         };
-        
+
         if (guestEmail) {
             duplicateCheckQuery.guestEmail = guestEmail;
         } else if (validatedClientId) {
@@ -145,7 +145,7 @@ exports.createEnquiry = async (req, res) => {
 
         const recentDuplicate = await Enquiry.findOne(duplicateCheckQuery);
         if (recentDuplicate) {
-            return res.status(409).json({ 
+            return res.status(409).json({
                 message: 'Duplicate enquiry detected. Please wait a few seconds before submitting again.',
                 enquiry: recentDuplicate
             });
@@ -378,7 +378,7 @@ exports.getVendorEnquiries = async (req, res) => {
                 { guestName: searchRegex },
                 { guestCompany: searchRegex }
             ];
-            
+
             if (query.$or) {
                 query.$and = query.$and || [];
                 query.$and.push({ $or: query.$or });
@@ -1221,7 +1221,7 @@ const triggerVendorBroadcast = async (enquiryId) => {
                     if (!vendorUser.services || vendorUser.services.length === 0) {
                         return; // skip this vendor if they haven't selected any service type
                     }
-                    
+
                     const mappedServices = vendorUser.services.map(s => s.toLowerCase().trim());
                     if (!mappedServices.includes(sanitizedType)) {
                         return; // skip this vendor if their services do not match the enquiry type
@@ -1234,7 +1234,7 @@ const triggerVendorBroadcast = async (enquiryId) => {
                     // Match "China", "(CNxxx)" port codes, or common Chinese port cities
                     const chinaRegex = /china|\(CN[A-Z]{3}\)|shenzhen|shanghai|ningbo|qingdao|guangzhou|xiamen|dalian|tianjin/i;
                     const isChinaEnquiry = chinaRegex.test(fromLocation) || chinaRegex.test(toLocation);
-                    
+
                     const isChinaVendor = (vendorUser.country && /china/i.test(vendorUser.country)) || (vendorUser.serviceLocations && vendorUser.serviceLocations.some(loc => chinaRegex.test(loc)));
                     const isFreeChinaVendor = !isPaidPlan && isChinaEnquiry && isChinaVendor;
 

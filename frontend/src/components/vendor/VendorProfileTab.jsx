@@ -55,6 +55,7 @@ const VendorProfileTab = ({ user: propUser }) => {
     companyProfile: user?.companyProfile || '',
     serviceIn: user?.serviceIn || 'Both', // 'B2B', 'B2C', 'Both'
     services: user?.services || [], // ['Air', 'Sea', 'Land', 'Warehouse', 'CHA']
+    vendorTypes: user?.vendorTypes || ['Freight forwarder'],
     deductionPercentage: user?.deductionPercentage || 0.00,
     gst: user?.gst || '',
     pan: user?.pan || '',
@@ -705,6 +706,35 @@ const VendorProfileTab = ({ user: propUser }) => {
                   );
                 })}
               </div>
+            </div>
+
+            {/* Vendor Types */}
+            <div className="p-5 bg-white border border-slate-200 rounded-2xl space-y-4">
+              <label className="block text-xs font-bold text-[#0B1E43] uppercase tracking-wider">Vendor Roles</label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {['Freight forwarder', 'CHA', 'Transporter', 'PTL Franchise partner'].map((type) => {
+                  const isChecked = formData.vendorTypes.includes(type);
+                  return (
+                    <label 
+                      key={type} 
+                      className={`flex items-center gap-2 p-2.5 rounded-xl border text-xs font-bold cursor-default transition-all ${
+                        isChecked 
+                          ? 'bg-blue-50/70 border-[#0066FF]/35 text-[#0066FF]' 
+                          : 'bg-[#f8fafc] border-slate-200 text-slate-400 opacity-70'
+                      }`}
+                    >
+                      <input 
+                        type="checkbox"
+                        checked={isChecked}
+                        disabled
+                        className="rounded border-slate-300 text-[#0066FF] focus:ring-[#0066FF] w-3.5 h-3.5 cursor-default opacity-50"
+                      />
+                      <span>{type}</span>
+                    </label>
+                  );
+                })}
+              </div>
+              <p className="text-[10px] text-slate-400 mt-1">Vendor roles are assigned during registration. Contact admin to update.</p>
             </div>
 
             {/* Deduction percentage */}

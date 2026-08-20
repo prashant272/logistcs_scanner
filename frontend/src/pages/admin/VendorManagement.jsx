@@ -498,7 +498,8 @@ const VendorManagement = () => {
       email: vendor.email || '',
       phone: vendor.phone || '',
       country: vendor.country || getCountryFromPhone(vendor.phone) || '',
-      services: vendor.services || []
+      services: vendor.services || [],
+      vendorTypes: vendor.vendorTypes || []
     });
     setShowEditModal(true);
   };
@@ -1293,8 +1294,8 @@ const VendorManagement = () => {
       {/* Edit Vendor Modal */}
       {showEditModal && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl border border-slate-200">
-            <div className="bg-[#f8fafc] p-6 border-b border-slate-100 flex justify-between items-center">
+          <div className="bg-white rounded-3xl w-full max-w-md max-h-[80vh] flex flex-col overflow-hidden shadow-2xl border border-slate-200">
+            <div className="bg-[#f8fafc] p-6 border-b border-slate-100 flex justify-between items-center shrink-0">
               <div>
                 <h3 className="text-xl font-black text-[#0B1E43]">Edit Vendor Details</h3>
                 <p className="text-xs text-slate-500 font-bold mt-1">Update vendor's profile information</p>
@@ -1307,7 +1308,7 @@ const VendorManagement = () => {
               </button>
             </div>
 
-            <form onSubmit={handleEditVendor} className="p-6 space-y-4">
+            <form onSubmit={handleEditVendor} className="p-6 space-y-4 overflow-y-auto">
               <div>
                 <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">Company Name</label>
                 <input
@@ -1375,6 +1376,28 @@ const VendorManagement = () => {
                         }}
                       />
                       {service}
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">Vendor Types</label>
+                <div className="flex flex-wrap gap-2">
+                  {['Freight forwarder', 'CHA', 'Transporter', 'PTL Franchise partner'].map(type => (
+                    <label key={type} className="flex items-center gap-2 text-sm font-bold text-slate-700 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg cursor-pointer hover:bg-slate-100">
+                      <input
+                        type="checkbox"
+                        className="w-4 h-4 accent-[#0066FF]"
+                        checked={editFormData.vendorTypes?.includes(type)}
+                        onChange={(e) => {
+                          const updatedTypes = e.target.checked
+                            ? [...(editFormData.vendorTypes || []), type]
+                            : (editFormData.vendorTypes || []).filter(t => t !== type);
+                          setEditFormData({ ...editFormData, vendorTypes: updatedTypes });
+                        }}
+                      />
+                      {type}
                     </label>
                   ))}
                 </div>
