@@ -731,6 +731,7 @@ const VendorPricingTab = () => {
                         <option value="Open Body Truck">Open Body Truck</option>
                         <option value="Closed Container">Closed Container</option>
                         <option value="Flatbed Trailer">Flatbed Trailer</option>
+                        <option value="Refrigerated Truck">Refrigerated Truck</option>
                       </select>
                     </div>
                   </div>

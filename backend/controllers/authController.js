@@ -77,7 +77,7 @@ exports.registerUser = async (req, res) => {
             otpExpires,
             isVerified: false
         };
-        
+
         if (role === 'vendor' && vendorTypes) {
             userData.vendorTypes = vendorTypes;
         }
@@ -266,7 +266,7 @@ exports.loginUser = async (req, res) => {
             }
 
             user.lastActive = new Date();
-            
+
             let detectedSource = source === 'app' ? 'app' : 'web';
             if (detectedSource === 'web' && req.headers['user-agent']) {
                 const ua = req.headers['user-agent'].toLowerCase();
@@ -275,7 +275,7 @@ exports.loginUser = async (req, res) => {
                 }
             }
             user.lastLoginSource = detectedSource;
-            
+
             await user.save();
 
             res.json({
@@ -316,7 +316,7 @@ exports.getUserProfile = async (req, res) => {
         let user = await User.findById(req.user.id).select('-password').populate('activePlan').populate('assignedRM').populate('parentCompany', 'company gst pan');
         if (user && !req.user.impersonated) {
             user.lastActive = new Date();
-            
+
             // Check for Pre Approved 4-day expiry
             if (user.verificationStatus === 'Pre Approved' && user.preApprovedAt) {
                 const diffTime = Math.abs(new Date() - new Date(user.preApprovedAt));
@@ -474,7 +474,7 @@ exports.updateUserProfile = async (req, res) => {
         if (req.body.country || req.body.city) {
             const { normalizeLocationInput } = require('../utils/locationNormalizer');
             const normalized = await normalizeLocationInput(
-                req.body.country !== undefined ? req.body.country : user.country, 
+                req.body.country !== undefined ? req.body.country : user.country,
                 req.body.city !== undefined ? req.body.city : user.city
             );
             if (req.body.country !== undefined) user.country = normalized.country;
@@ -488,7 +488,7 @@ exports.updateUserProfile = async (req, res) => {
         await user.save();
 
         const updatedUser = await User.findById(user.id).select('-password').populate('assignedRM');
-        
+
         res.json({
             ...updatedUser.toObject(),
             token: generateToken(user.id)
@@ -508,7 +508,7 @@ exports.deleteUserAccount = async (req, res) => {
         }
         const user = await User.findById(req.user.id);
         if (!user) return res.status(404).json({ message: 'User not found' });
-        
+
         await User.findByIdAndDelete(req.user.id);
         res.json({ message: 'Account deleted successfully' });
     } catch (error) {

@@ -61,10 +61,62 @@ const VendorProfileTab = ({ user: propUser }) => {
     pan: user?.pan || '',
     serviceLocations: user?.serviceLocations || [],
     takesCreditDays: user?.takesCreditDays || 0,
-    givesCreditDays: user?.givesCreditDays || 0
+    givesCreditDays: user?.givesCreditDays || 0,
+    establishedYear: user?.establishedYear || '',
+    employeesCount: user?.employeesCount || '',
+    branchesCount: user?.branchesCount || 0,
+    onTimeDeliveryRate: user?.onTimeDeliveryRate || 0,
+    responseTime: user?.responseTime || '',
+    aboutText: user?.aboutText || '',
+    industriesServed: user?.industriesServed || [],
+    portsCovered: user?.portsCovered || [],
+    whyChooseUs: user?.whyChooseUs || [],
+    faqs: user?.faqs || []
   });
 
   const [newLocation, setNewLocation] = useState('');
+
+  const [newIndustry, setNewIndustry] = useState('');
+  const [newPort, setNewPort] = useState('');
+  const [newWhyChooseUs, setNewWhyChooseUs] = useState('');
+  const [newFaq, setNewFaq] = useState({ question: '', answer: '' });
+
+  const handleAddArrayItem = (e, field, value, setter) => {
+    e.preventDefault();
+    const val = value.trim();
+    if (val && !formData[field].includes(val)) {
+      setFormData(prev => ({ ...prev, [field]: [...prev[field], val] }));
+      setter('');
+    }
+  };
+
+  const handleRemoveArrayItem = (field, index) => {
+    setFormData(prev => {
+      const arr = [...prev[field]];
+      arr.splice(index, 1);
+      return { ...prev, [field]: arr };
+    });
+  };
+
+  const handleAddFaq = (e) => {
+    e.preventDefault();
+    if (newFaq.question.trim() && newFaq.answer.trim()) {
+      setFormData(prev => ({
+        ...prev,
+        faqs: [...prev.faqs, { ...newFaq }]
+      }));
+      setNewFaq({ question: '', answer: '' });
+    }
+  };
+
+  const handleRemoveFaq = (index) => {
+    setFormData(prev => {
+      const faqs = [...prev.faqs];
+      faqs.splice(index, 1);
+      return { ...prev, faqs };
+    });
+  };
+
 
   const [uploading, setUploading] = useState({
     profilePhoto: false,

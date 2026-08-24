@@ -417,6 +417,7 @@ const PartnerStrip = () => {
                                             <option value="Open">Open Body Truck</option>
                                             <option value="Container">Closed Container</option>
                                             <option value="Trailer">Flatbed Trailer</option>
+                                            <option value="Refrigerated">Refrigerated Truck</option>
                                         </select>
                                     </div>
                                 </div>
