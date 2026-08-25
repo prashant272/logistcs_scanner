@@ -359,11 +359,32 @@ exports.getVendorEnquiries = async (req, res) => {
             }
 
             // Filter by service types if specified
+            const acceptedCondition = { responses: { $elemMatch: { vendor: req.user.id, status: { $in: ['Accepted', 'Quoted'] } } } };
+            const serviceConditions = [acceptedCondition];
+            
             if (currentUser.services && currentUser.services.length > 0) {
                 const mappedServices = currentUser.services.map(s => s.toLowerCase().trim());
-                query.type = { $in: mappedServices };
+                serviceConditions.push({ type: { $in: mappedServices } });
+            }
+
+            if (currentUser.unselectedServicesHistory && currentUser.unselectedServicesHistory.length > 0) {
+                currentUser.unselectedServicesHistory.forEach(history => {
+                    if (history.service) {
+                        serviceConditions.push({
+                            type: history.service.toLowerCase().trim(),
+                            createdAt: { $lt: history.unselectedAt }
+                        });
+                    }
+                });
+            }
+            
+            if (query.$or) {
+                query.$and = query.$and || [];
+                query.$and.push({ $or: query.$or });
+                query.$and.push({ $or: serviceConditions });
+                delete query.$or;
             } else {
-                query._id = null; // Hide all marketplace enquiries if no services selected
+                query.$or = serviceConditions;
             }
         }
 
@@ -904,11 +925,33 @@ exports.getVendorStats = async (req, res) => {
                 } else if (currentUser.createdAt) {
                     query.createdAt = { $gte: currentUser.createdAt };
                 }
+                
+                const acceptedCondition = { responses: { $elemMatch: { vendor: req.user.id, status: { $in: ['Accepted', 'Quoted'] } } } };
+                const serviceConditions = [acceptedCondition];
+                
                 if (currentUser.services && currentUser.services.length > 0) {
                     const mappedServices = currentUser.services.map(s => s.toLowerCase().trim());
-                    query.type = { $in: mappedServices };
+                    serviceConditions.push({ type: { $in: mappedServices } });
+                }
+
+                if (currentUser.unselectedServicesHistory && currentUser.unselectedServicesHistory.length > 0) {
+                    currentUser.unselectedServicesHistory.forEach(history => {
+                        if (history.service) {
+                            serviceConditions.push({
+                                type: history.service.toLowerCase().trim(),
+                                createdAt: { $lt: history.unselectedAt }
+                            });
+                        }
+                    });
+                }
+                
+                if (query.$or) {
+                    query.$and = query.$and || [];
+                    query.$and.push({ $or: query.$or });
+                    query.$and.push({ $or: serviceConditions });
+                    delete query.$or;
                 } else {
-                    query._id = null; // Hide all marketplace enquiries if no services selected
+                    query.$or = serviceConditions;
                 }
             }
 

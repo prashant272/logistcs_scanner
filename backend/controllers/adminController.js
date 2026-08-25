@@ -934,7 +934,13 @@ exports.updateVendorDetails = async (req, res) => {
             const removed = oldServices.filter(s => !newServices.includes(s));
             let sMsg = [];
             if (added.length) sMsg.push(`Added [${added.join(', ')}]`);
-            if (removed.length) sMsg.push(`Removed [${removed.join(', ')}]`);
+            if (removed.length) {
+                sMsg.push(`Removed [${removed.join(', ')}]`);
+                vendor.unselectedServicesHistory = vendor.unselectedServicesHistory || [];
+                removed.forEach(s => {
+                    vendor.unselectedServicesHistory.push({ service: s, unselectedAt: new Date() });
+                });
+            }
             changes.push(`Services (${sMsg.join(' | ')})`);
             vendor.services = services;
         }

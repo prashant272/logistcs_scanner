@@ -92,7 +92,7 @@ const broadcastVendorNotification = async (message, type = 'info', link = null, 
         if (filterType) {
             const lowerFilter = filterType.toLowerCase();
             eligibleVendors = vendors.filter(v => {
-                if (!v.services || v.services.length === 0) return true; // Default to send if no services selected
+                if (!v.services || v.services.length === 0) return false; // Do not send if no services selected
                 const mapped = v.services.map(s => s.toLowerCase().trim());
                 return mapped.includes(lowerFilter);
             });

@@ -470,9 +470,43 @@ exports.updateUserProfile = async (req, res) => {
             'companyProfile', 'serviceIn', 'services', 'deductionPercentage', 'gst', 'serviceLocations'
         ];
 
+        let changes = [];
+
         fieldsToUpdate.forEach(field => {
             if (req.body[field] !== undefined) {
-                user[field] = req.body[field];
+                // If it's an array (like services, vendorTypes)
+                if (Array.isArray(req.body[field])) {
+                    const oldArr = user[field] || [];
+                    const newArr = req.body[field] || [];
+                    if (JSON.stringify(oldArr) !== JSON.stringify(newArr)) {
+                        const added = newArr.filter(x => !oldArr.includes(x));
+                        const removed = oldArr.filter(x => !newArr.includes(x));
+                        let msg = [];
+                        if (added.length) {
+                            msg.push(`Added [${added.join(', ')}]`);
+                        }
+                        if (removed.length) {
+                            msg.push(`Removed [${removed.join(', ')}]`);
+                            if (field === 'services') {
+                                user.unselectedServicesHistory = user.unselectedServicesHistory || [];
+                                removed.forEach(s => {
+                                    user.unselectedServicesHistory.push({ service: s, unselectedAt: new Date() });
+                                });
+                            }
+                        }
+                        changes.push(`${field} (${msg.join(' | ')})`);
+                        user[field] = req.body[field];
+                    }
+                } else if (user[field] !== req.body[field]) {
+                    // Primitive
+                    // Avoid logging huge strings
+                    if (field !== 'profilePhoto' && field !== 'uploadedDocument' && field !== 'uploadedCertificate' && field !== 'uploadedInvoice' && field !== 'companyProfile') {
+                        changes.push(`${field}: ${user[field] || 'None'} -> ${req.body[field]}`);
+                    } else {
+                        changes.push(`${field} updated`);
+                    }
+                    user[field] = req.body[field];
+                }
             }
         });
 
@@ -483,19 +517,33 @@ exports.updateUserProfile = async (req, res) => {
                 req.body.country !== undefined ? req.body.country : user.country,
                 req.body.city !== undefined ? req.body.city : user.city
             );
-            if (req.body.country !== undefined) user.country = normalized.country;
-            if (req.body.city !== undefined) user.city = normalized.city;
+            if (req.body.country !== undefined && user.country !== normalized.country) {
+                // already logged in loop if it changed, but normalized might differ
+                user.country = normalized.country;
+            }
+            if (req.body.city !== undefined && user.city !== normalized.city) {
+                user.city = normalized.city;
+            }
         }
 
         // Always save the user instead of throwing 401
         if (req.body.firstName || req.body.lastName) {
-            user.name = `${req.body.firstName || user.firstName || ''} ${req.body.lastName || user.lastName || ''}`.trim();
+            const newName = `${req.body.firstName || user.firstName || ''} ${req.body.lastName || user.lastName || ''}`.trim();
+            if (user.name !== newName) {
+                user.name = newName;
+            }
         }
         await user.save();
 
-        if (user.role === 'vendor') {
-            const { logVendorActivity } = require('../utils/activityLogger');
-            await logVendorActivity(user._id, 'VENDOR_PROFILE_UPDATED', user._id, 'vendor', `Vendor updated their profile details`);
+        if (user.role === 'vendor' && changes.length > 0) {
+            const ActivityLog = require('../models/ActivityLog');
+            await ActivityLog.create({
+                vendorId: user._id,
+                action: 'VENDOR_PROFILE_UPDATED',
+                performedBy: user._id,
+                performedByRole: 'vendor',
+                details: `Vendor updated their profile details. Changes: ${changes.join(', ')}`
+            });
         }
 
         const updatedUser = await User.findById(user.id).select('-password').populate('assignedRM');

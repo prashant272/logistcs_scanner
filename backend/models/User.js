@@ -153,6 +153,10 @@ const userSchema = new mongoose.Schema({
         type: [String],
         default: []
     },
+    unselectedServicesHistory: [{
+        service: String,
+        unselectedAt: Date
+    }],
     deductionPercentage: {
         type: Number,
         default: 0.00
