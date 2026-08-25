@@ -13,7 +13,7 @@ const activitySchema = new mongoose.Schema({
     performerModel: {
         type: String,
         required: true,
-        enum: ['Admin', 'RM']
+        enum: ['Admin', 'RM', 'User']
     },
     vendorId: {
         type: mongoose.Schema.Types.ObjectId,

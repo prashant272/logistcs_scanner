@@ -47,10 +47,17 @@ const VendorManagement = () => {
 
   const toggleService = (s) => setServiceFilter(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s]);
 
-  // Activity Modal State
+  // Activity Modal State (Vendor Enquiries History)
   const [activityModalOpen, setActivityModalOpen] = useState(false);
   const [activityData, setActivityData] = useState(null);
   const [loadingActivity, setLoadingActivity] = useState(false);
+
+  // System Log Modal State (Vendor Profile/Admin Action History)
+  const [systemLogModalOpen, setSystemLogModalOpen] = useState(false);
+  const [systemLogData, setSystemLogData] = useState(null);
+  const [loadingSystemLog, setLoadingSystemLog] = useState(false);
+  const [systemLogVendorName, setSystemLogVendorName] = useState('');
+
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -214,6 +221,26 @@ const VendorManagement = () => {
       setActivityModalOpen(false);
     } finally {
       setLoadingActivity(false);
+    }
+  };
+
+  const handleViewSystemLog = async (vendor) => {
+    setLoadingSystemLog(true);
+    setSystemLogData(null);
+    setSystemLogVendorName(vendor.company || vendor.name);
+    setSystemLogModalOpen(true);
+    try {
+      const token = sessionStorage.getItem('adminToken');
+      const { data } = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/admin/vendors/${vendor._id}/activity`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setSystemLogData(data);
+    } catch (err) {
+      console.error('Error fetching system log:', err);
+      alert('Failed to fetch system log');
+      setSystemLogModalOpen(false);
+    } finally {
+      setLoadingSystemLog(false);
     }
   };
 
@@ -710,6 +737,7 @@ const VendorManagement = () => {
                 <tr>
                   <th className="p-4 text-center">Dashboard</th>
                   <th className="p-4 text-center">Activity</th>
+                  <th className="p-4 text-center">Audit Log</th>
                   <th className="p-4 text-center">Edit</th>
                   <th className="p-4 text-center">Credit</th>
                   <th className="p-4">First Name</th>
@@ -760,6 +788,17 @@ const VendorManagement = () => {
                           title="View Vendor Activity"
                         >
                           <Activity size={14} />
+                        </button>
+                      </td>
+                      <td className="p-4 text-center">
+                        <button
+                          onClick={() => handleViewSystemLog(vendor)}
+                          className="bg-purple-100 hover:bg-purple-200 text-purple-700 text-[10px] font-black p-1.5 rounded-lg flex items-center gap-1.5 mx-auto cursor-pointer transition-colors"
+                          title="View Audit Log"
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
                         </button>
                       </td>
                       <td className="p-4 text-center">
@@ -1541,6 +1580,77 @@ const VendorManagement = () => {
                     </button>
                   </div>
                 </form>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+      {/* System Log Modal */}
+      {systemLogModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#0B1E43]/40 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
+            <div className="flex justify-between items-center p-6 border-b border-slate-100 bg-gradient-to-r from-purple-50/50 to-white">
+              <div>
+                <h3 className="text-xl font-extrabold text-[#0B1E43] flex items-center gap-2">
+                  <svg className="text-purple-600 w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  Vendor Audit Log
+                </h3>
+                <p className="text-xs text-slate-500 font-bold mt-1">
+                  {systemLogVendorName}
+                </p>
+              </div>
+              <button
+                onClick={() => setSystemLogModalOpen(false)}
+                className="p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-colors cursor-pointer"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className="p-6 overflow-y-auto flex-1 bg-slate-50/30">
+              {loadingSystemLog ? (
+                <div className="flex flex-col items-center justify-center py-20">
+                  <div className="w-10 h-10 border-4 border-slate-200 border-t-purple-600 rounded-full animate-spin"></div>
+                  <p className="text-sm font-bold text-slate-500 mt-4">Loading audit logs...</p>
+                </div>
+              ) : !systemLogData || systemLogData.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-20 text-center">
+                  <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mb-4">
+                    <AlertCircle className="text-slate-400" size={32} />
+                  </div>
+                  <h4 className="text-lg font-black text-slate-700">No logs found</h4>
+                  <p className="text-sm text-slate-500 mt-1 max-w-sm">
+                    No system activity has been recorded for this vendor yet.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {systemLogData.map((log) => (
+                    <div key={log._id} className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex flex-col gap-2">
+                      <div className="flex justify-between items-start">
+                        <span className="px-2.5 py-1 bg-purple-100 text-purple-700 text-[10px] font-black uppercase tracking-wider rounded-lg">
+                          {log.action}
+                        </span>
+                        <span className="text-xs font-bold text-slate-400">
+                          {new Date(log.createdAt).toLocaleString()}
+                        </span>
+                      </div>
+                      <p className="text-sm font-semibold text-slate-700 mt-1">{log.details}</p>
+                      <div className="flex items-center gap-2 mt-2">
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${log.performedByRole === 'admin' ? 'bg-blue-100 text-blue-700' : log.performedByRole === 'vendor' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}>
+                          {log.performedByRole}
+                        </span>
+                        {log.performedBy && (
+                          <span className="text-xs text-slate-500 font-medium">
+                            {log.performedBy.name} ({log.performedBy.email})
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
               )}
             </div>
           </div>

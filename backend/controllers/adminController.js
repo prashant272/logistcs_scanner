@@ -781,6 +781,12 @@ exports.adminAddUser = async (req, res) => {
             // We don't fail the registration if email fails, but we might want to log it
         }
 
+        // Log activity if it's a vendor
+        if (role === 'vendor') {
+            const { logVendorActivity } = require('../utils/activityLogger');
+            await logVendorActivity(user._id, 'VENDOR_CREATED_BY_ADMIN', req.user ? req.user.id : null, 'admin', `Admin created vendor profile`);
+        }
+
         res.status(201).json({ message: 'User added successfully', user });
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
@@ -904,14 +910,58 @@ exports.updateVendorDetails = async (req, res) => {
             return res.status(404).json({ message: 'Vendor not found' });
         }
 
-        if (company) vendor.company = company;
-        if (email) vendor.email = email;
-        if (phone) vendor.phone = phone;
-        if (country) vendor.country = country;
-        if (services) vendor.services = services;
-        if (vendorTypes) vendor.vendorTypes = vendorTypes;
+        let changes = [];
+        if (company && vendor.company !== company) {
+            changes.push(`Company: ${vendor.company || 'None'} -> ${company}`);
+            vendor.company = company;
+        }
+        if (email && vendor.email !== email) {
+            changes.push(`Email: ${vendor.email || 'None'} -> ${email}`);
+            vendor.email = email;
+        }
+        if (phone && vendor.phone !== phone) {
+            changes.push(`Phone: ${vendor.phone || 'None'} -> ${phone}`);
+            vendor.phone = phone;
+        }
+        if (country && vendor.country !== country) {
+            changes.push(`Country: ${vendor.country || 'None'} -> ${country}`);
+            vendor.country = country;
+        }
+        if (services && JSON.stringify(vendor.services) !== JSON.stringify(services)) {
+            const oldServices = vendor.services || [];
+            const newServices = services || [];
+            const added = newServices.filter(s => !oldServices.includes(s));
+            const removed = oldServices.filter(s => !newServices.includes(s));
+            let sMsg = [];
+            if (added.length) sMsg.push(`Added [${added.join(', ')}]`);
+            if (removed.length) sMsg.push(`Removed [${removed.join(', ')}]`);
+            changes.push(`Services (${sMsg.join(' | ')})`);
+            vendor.services = services;
+        }
+        if (vendorTypes && JSON.stringify(vendor.vendorTypes) !== JSON.stringify(vendorTypes)) {
+            const oldTypes = vendor.vendorTypes || [];
+            const newTypes = vendorTypes || [];
+            const added = newTypes.filter(t => !oldTypes.includes(t));
+            const removed = oldTypes.filter(t => !newTypes.includes(t));
+            let tMsg = [];
+            if (added.length) tMsg.push(`Added [${added.join(', ')}]`);
+            if (removed.length) tMsg.push(`Removed [${removed.join(', ')}]`);
+            changes.push(`Vendor Types (${tMsg.join(' | ')})`);
+            vendor.vendorTypes = vendorTypes;
+        }
 
         await vendor.save();
+
+        if (changes.length > 0) {
+            const ActivityLog = require('../models/ActivityLog');
+            await ActivityLog.create({
+                vendorId: vendor._id,
+                action: 'ADMIN_UPDATED_DETAILS',
+                performedBy: req.user ? req.user.id : null,
+                performedByRole: 'admin',
+                details: `Admin updated vendor details. Changes: ${changes.join(', ')}`
+            });
+        }
 
         const updatedVendor = await User.findById(vendorId).populate('activePlan').select('-password');
         res.json({ message: 'Vendor details updated successfully', vendor: updatedVendor });
@@ -1182,3 +1232,20 @@ exports.updateUserRole = async (req, res) => {
         res.status(500).json({ message: 'Server error', error: error.message });
     }
 };
+
+// @desc    Get activity logs for a vendor
+// @route   GET /api/admin/vendors/:id/activity
+// @access  Private (Admin)
+exports.getVendorActivity = async (req, res) => {
+    try {
+        const ActivityLog = require('../models/ActivityLog');
+        const logs = await ActivityLog.find({ vendorId: req.params.id })
+            .populate('performedBy', 'name email role')
+            .sort({ createdAt: -1 });
+        res.json(logs);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+

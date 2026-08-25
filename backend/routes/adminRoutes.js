@@ -30,7 +30,8 @@ const {
     updateRechargeRequestStatus,
     getUserByEmailForRole,
     updateUserRole,
-    updateUserWallet
+    updateUserWallet,
+    getVendorActivity
 } = require("../controllers/adminController");
 const auth = require("../middleware/authMiddleware");
 
@@ -42,6 +43,7 @@ router.get("/customers", auth, getCustomers);
 router.get("/guests", auth, getGuests);
 router.get("/customer-history/:id", auth, getCustomerHistory);
 router.get("/vendor-history/:id", auth, getVendorHistory);
+router.get("/vendors/:id/activity", auth, getVendorActivity);
 router.put("/vendor-history/:vendorId/unaccept/:enquiryId", auth, adminUnacceptEnquiry);
 router.get("/guest-history", auth, getGuestHistory);
 router.get("/impersonate/:vendorId", auth, impersonateVendor);

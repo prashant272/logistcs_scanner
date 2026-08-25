@@ -4,7 +4,10 @@ const logActivity = async (actionType, req, vendorId, details = {}) => {
     try {
         if (!req.user) return; // Cannot log without user
         
-        const performerModel = req.user.role === 'RM' ? 'RM' : 'Admin';
+        let performerModel = 'Admin';
+        if (req.user.role === 'RM') performerModel = 'RM';
+        else if (req.user.role === 'vendor' || req.user.role === 'customer') performerModel = 'User';
+
         const performedBy = req.user.id;
 
         const activity = new Activity({

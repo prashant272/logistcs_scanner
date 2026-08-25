@@ -94,6 +94,12 @@ exports.registerUser = async (req, res) => {
                 role: user.role
             });
 
+            // Log activity if it's a vendor
+            if (user.role === 'vendor') {
+                const { logVendorActivity } = require('../utils/activityLogger');
+                await logVendorActivity(user._id, 'VENDOR_REGISTERED', user._id, 'vendor', `Vendor registered their account`);
+            }
+
             res.status(201).json({
                 message: 'Registration successful. Please verify the OTP sent to your email/mobile.',
                 email: user.email,
@@ -486,6 +492,11 @@ exports.updateUserProfile = async (req, res) => {
             user.name = `${req.body.firstName || user.firstName || ''} ${req.body.lastName || user.lastName || ''}`.trim();
         }
         await user.save();
+
+        if (user.role === 'vendor') {
+            const { logVendorActivity } = require('../utils/activityLogger');
+            await logVendorActivity(user._id, 'VENDOR_PROFILE_UPDATED', user._id, 'vendor', `Vendor updated their profile details`);
+        }
 
         const updatedUser = await User.findById(user.id).select('-password').populate('assignedRM');
 
