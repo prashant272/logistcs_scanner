@@ -5,6 +5,7 @@ import VendorSidebar from '../../components/vendor/VendorSidebar';
 import VendorHeader from '../../components/vendor/VendorHeader';
 import VendorNotificationPopup from '../../components/vendor/VendorNotificationPopup';
 import PreApprovedPopup from '../../components/vendor/PreApprovedPopup';
+import FreeVendorRMPopup from '../../components/vendor/FreeVendorRMPopup';
 
 const VendorDashboard = () => {
     const { user, logout } = useAuth();
@@ -61,6 +62,7 @@ const VendorDashboard = () => {
                     <>
                         <VendorNotificationPopup />
                         <PreApprovedPopup />
+                        <FreeVendorRMPopup user={user} />
                     </>
                 )}
             </div>

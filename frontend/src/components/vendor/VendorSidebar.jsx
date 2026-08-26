@@ -5,7 +5,7 @@ import useSWR from 'swr';
 import { 
     Truck, Landmark, FileText, MessageSquare, 
     Calendar, DollarSign, Wallet, FileSpreadsheet, 
-    User, LogOut, Search, AlertCircle, Building2, ChevronDown
+    User, LogOut, Search, AlertCircle, Building2, ChevronDown, Bell
 } from 'lucide-react';
 
 const VendorSidebar = ({ isSidebarOpen, logout, user }) => {
@@ -78,6 +78,7 @@ const VendorSidebar = ({ isSidebarOpen, logout, user }) => {
     // Sidebar navigation items with routes
     const allNavItems = [
         { type: 'link', name: 'Dashboard', path: '/vendor/dashboard', icon: <Landmark size={18} />, hideForPtl: true },
+        { type: 'link', name: 'Updates', path: '/vendor/updates', icon: <Bell size={18} />, hideForPtl: false },
         { type: 'link', name: 'Live Price', path: '/vendor/search-price', icon: <Search size={18} />, hideForPtl: true },
         { 
             type: 'group', 

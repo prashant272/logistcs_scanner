@@ -107,11 +107,13 @@ const UploadInvoiceTab = lazy(() => import('./components/vendor/UploadInvoiceTab
 const VendorCreditInvoicesTab = lazy(() => import('./components/vendor/VendorCreditInvoicesTab'));
 const WalletLedgerTab = lazy(() => import('./components/vendor/WalletLedgerTab'));
 const VendorContactListTab = lazy(() => import('./components/vendor/VendorContactListTab'));
+const VendorUpdates = lazy(() => import('./pages/vendor/Updates'));
 
 // Lazy loaded admin pages
 const AdminLogin = lazy(() => import('./pages/admin/AdminLogin'));
 const RMLogin = lazy(() => import('./pages/admin/RMLogin'));
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
+const SystemUpdates = lazy(() => import('./pages/admin/SystemUpdates'));
 const RMActivity = lazy(() => import('./pages/admin/RMActivity'));
 const AdminDashboardMain = lazy(() => import('./components/admin/AdminDashboardMain'));
 const MenuManagement = lazy(() => import('./pages/admin/MenuManagement'));
@@ -231,6 +233,7 @@ function App() {
               {/* Other sections */}
               <Route path="complaints" element={<AdminComplaints />} />
               <Route path="role-update" element={<AdminRoleUpdate />} />
+              <Route path="vendor-updates" element={<SystemUpdates />} />
               <Route path="cms-settings" element={<div className="p-6 bg-white rounded-2xl shadow-sm text-slate-800"><h2 className="text-xl font-bold mb-4">CMS Settings</h2><p className="text-slate-500">Content Management System settings.</p></div>} />
               
               {/* PTL Delivery */}
@@ -280,6 +283,7 @@ function App() {
               <Route path="view-profile" element={<VendorProfileTab />} />
               <Route path="upgrade" element={<PricingPlans />} />
               <Route path="contact-vendor-list" element={<VendorContactListTab />} />
+              <Route path="updates" element={<VendorUpdates />} />
               <Route path="complaint" element={<VendorComplaintsTab />} />
             </Route>
 

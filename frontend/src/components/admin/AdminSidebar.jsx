@@ -46,7 +46,8 @@ const AdminSidebar = ({ isSidebarOpen, logout }) => {
         {
             category: 'Manage Users',
             items: [
-                { name: 'Manage Vendor', path: '/admin/vendors', icon: <Truck size={16} /> }
+                { name: 'Manage Vendor', path: '/admin/vendors', icon: <Truck size={16} /> },
+                { name: 'Vendor Updates', path: '/admin/vendor-updates', icon: <AlertCircle size={16} /> }
             ]
         },
         {

@@ -178,8 +178,13 @@ const CustomerEnquiriesTab = ({ title, type }) => {
                         </div>
                         <div>
                           <span className="text-[10px] font-black text-amber-600 uppercase tracking-widest block">Shipment Booking</span>
-                          <h4 className="text-sm font-extrabold text-slate-800 leading-tight">
+                          <h4 className="text-sm font-extrabold text-slate-800 leading-tight flex items-center gap-2">
                             {enq.vendor ? (enq.vendor.company || enq.vendor.name) : 'Pending Carrier Assignment'}
+                            {enq.vendor?.activePlan?.price > 0 && (
+                              <span className="bg-emerald-100 text-emerald-700 text-[10px] font-black uppercase px-2 py-0.5 rounded-full flex items-center gap-1">
+                                <CheckCircle2 size={10} /> Verified
+                              </span>
+                            )}
                           </h4>
                         </div>
                       </div>
@@ -204,7 +209,14 @@ const CustomerEnquiriesTab = ({ title, type }) => {
                       <div className="space-y-2">
                         <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Carrier Details</span>
                         <div className="text-xs space-y-1.5 font-bold">
-                          <div className="text-slate-800 font-black cursor-pointer hover:text-[#0066FF]" onClick={() => setSelectedVendor(enq.vendor)}>{enq.vendor ? (enq.vendor.company || enq.vendor.name) : 'N/A'}</div>
+                          <div className="text-slate-800 font-black flex items-center gap-2 cursor-pointer hover:text-[#0066FF]" onClick={() => setSelectedVendor(enq.vendor)}>
+                            {enq.vendor ? (enq.vendor.company || enq.vendor.name) : 'N/A'}
+                            {enq.vendor?.activePlan?.price > 0 && (
+                              <span className="bg-emerald-100 text-emerald-700 text-[9px] font-black uppercase px-1.5 py-0.5 rounded-full flex items-center gap-1">
+                                <CheckCircle2 size={9} /> Verified
+                              </span>
+                            )}
+                          </div>
                           {enq.vendor && (
                             <>
                               <div className="flex items-center gap-2 text-slate-600">
@@ -293,8 +305,13 @@ const CustomerEnquiriesTab = ({ title, type }) => {
                       </div>
 
                       <div className="space-y-1.5">
-                        <h4 className="text-base font-black text-[#0B1E43] tracking-tight">
+                        <h4 className="text-base font-black text-[#0B1E43] tracking-tight flex items-center gap-2">
                           {enq.vendor ? (enq.vendor.company || enq.vendor.name) : 'Broadcasted Lead'}
+                          {enq.vendor?.activePlan?.price > 0 && (
+                            <span className="bg-emerald-100 text-emerald-700 text-[10px] font-black uppercase px-2 py-0.5 rounded-full flex items-center gap-1">
+                              <CheckCircle2 size={10} /> Verified
+                            </span>
+                          )}
                         </h4>
 
                         {enq.vendor && (
@@ -451,7 +468,9 @@ const CustomerEnquiriesTab = ({ title, type }) => {
                         <div className="w-full">
                           <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-2 block">Received Quotes ({enq.responses.length})</span>
                           <div className="space-y-2">
-                            {enq.responses.map((resp, idx) => (
+                            {enq.responses.map((resp, idx) => {
+                              console.log("VENDOR DATA:", resp.vendor);
+                              return (
                               <div key={idx} className="flex flex-wrap items-center justify-between gap-4 text-xs font-black bg-blue-50/50 px-4 py-3 rounded-xl border border-blue-100/70">
                                 <div 
                                     className="flex items-center gap-2 cursor-pointer hover:bg-blue-100 p-1 rounded transition-colors"
@@ -459,13 +478,19 @@ const CustomerEnquiriesTab = ({ title, type }) => {
                                 >
                                   <User size={14} className="text-[#0066FF]" />
                                   <span className="text-[#0B1E43] underline decoration-blue-200 underline-offset-4">{resp.vendor?.company || resp.vendor?.name || 'Vendor'}</span>
+                                  {resp.vendor?.activePlan?.price > 0 && (
+                                    <span className="bg-emerald-100 text-emerald-700 text-[9px] font-black uppercase px-1.5 py-0.5 rounded-full flex items-center gap-1 ml-1">
+                                      <CheckCircle2 size={10} /> Verified
+                                    </span>
+                                  )}
                                 </div>
                                 <div className="flex items-center gap-2 text-emerald-600">
                                   <Coins size={14} />
                                   <span>{resp.quoteDetails?.allInCurrency || '₹'} {resp.price?.toLocaleString() || resp.quoteDetails?.allInCharges}</span>
                                 </div>
                               </div>
-                            ))}
+                              );
+                            })}
                           </div>
                         </div>
                       ) : (
@@ -526,8 +551,13 @@ const CustomerEnquiriesTab = ({ title, type }) => {
                 <Building2 size={32} className="text-[#0066FF]" />
               </div>
               
-              <h3 className="text-2xl font-black text-slate-900 mb-1">
+              <h3 className="text-2xl font-black text-slate-900 mb-1 flex items-center gap-2">
                 {selectedVendor.company || selectedVendor.name || 'Vendor Details'}
+                {selectedVendor.activePlan?.price > 0 && (
+                  <span className="bg-emerald-100 text-emerald-700 text-xs font-black uppercase px-2 py-1 rounded-full flex items-center gap-1">
+                    <CheckCircle2 size={12} /> Verified
+                  </span>
+                )}
               </h3>
               {selectedVendor.name && selectedVendor.company && (
                 <p className="text-sm font-bold text-slate-500 mb-6">Contact: {selectedVendor.name}</p>
