@@ -2,6 +2,7 @@ const Admin = require('../models/Admin');
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 const logActivity = require('../utils/activityLogger');
+const ActivityLog = require('../models/ActivityLog');
 
 // Generate JWT
 const generateToken = (id) => {
@@ -783,8 +784,13 @@ exports.adminAddUser = async (req, res) => {
 
         // Log activity if it's a vendor
         if (role === 'vendor') {
-            const { logVendorActivity } = require('../utils/activityLogger');
-            await logVendorActivity(user._id, 'VENDOR_CREATED_BY_ADMIN', req.user ? req.user.id : null, 'admin', `Admin created vendor profile`);
+            await ActivityLog.create({
+                vendorId: user._id,
+                action: 'Vendor Created',
+                performedBy: req.user ? req.user.id : null,
+                performedByRole: 'admin',
+                details: 'Admin created vendor profile'
+            });
         }
 
         res.status(201).json({ message: 'User added successfully', user });
@@ -959,7 +965,6 @@ exports.updateVendorDetails = async (req, res) => {
         await vendor.save();
 
         if (changes.length > 0) {
-            const ActivityLog = require('../models/ActivityLog');
             await ActivityLog.create({
                 vendorId: vendor._id,
                 action: 'ADMIN_UPDATED_DETAILS',
@@ -1244,7 +1249,6 @@ exports.updateUserRole = async (req, res) => {
 // @access  Private (Admin)
 exports.getVendorActivity = async (req, res) => {
     try {
-        const ActivityLog = require('../models/ActivityLog');
         const logs = await ActivityLog.find({ vendorId: req.params.id })
             .populate('performedBy', 'name email role')
             .sort({ createdAt: -1 });

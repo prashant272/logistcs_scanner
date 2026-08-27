@@ -466,7 +466,7 @@ const CustomerEnquiriesTab = ({ title, type }) => {
                     <div className="flex flex-col items-end gap-3 w-full sm:w-auto">
                       {type === 'direct' && enq.responses && enq.responses.length > 0 ? (
                         <div className="w-full">
-                          <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-2 block">Received Quotes ({enq.responses.length})</span>
+                          <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-2 block">Acceptance Received ({enq.responses.length})</span>
                           <div className="space-y-2">
                             {enq.responses.map((resp, idx) => {
                               console.log("VENDOR DATA:", resp.vendor);

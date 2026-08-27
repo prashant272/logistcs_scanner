@@ -1,7 +1,9 @@
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
+const ActivityLog = require('../models/ActivityLog');
 const { handleSignupNotification, sendSMS, sendWhatsAppOTP, sendEmail, sendVendorWelcomeEmail, sendVendorRegistrationAdminAlert } = require('../services/notificationService');
+const { normalizeLocationInput } = require('../utils/locationNormalizer');
 
 // Generate JWT
 const generateToken = (id) => {
@@ -96,8 +98,13 @@ exports.registerUser = async (req, res) => {
 
             // Log activity if it's a vendor
             if (user.role === 'vendor') {
-                const { logVendorActivity } = require('../utils/activityLogger');
-                await logVendorActivity(user._id, 'VENDOR_REGISTERED', user._id, 'vendor', `Vendor registered their account`);
+                await ActivityLog.create({
+                    vendorId: user._id,
+                    action: 'Vendor Registered',
+                    performedBy: user._id,
+                    performedByRole: 'vendor',
+                    details: 'Vendor registered their account'
+                });
             }
 
             res.status(201).json({
@@ -512,7 +519,6 @@ exports.updateUserProfile = async (req, res) => {
 
         // Normalize country and city if provided
         if (req.body.country || req.body.city) {
-            const { normalizeLocationInput } = require('../utils/locationNormalizer');
             const normalized = await normalizeLocationInput(
                 req.body.country !== undefined ? req.body.country : user.country,
                 req.body.city !== undefined ? req.body.city : user.city
@@ -536,7 +542,6 @@ exports.updateUserProfile = async (req, res) => {
         await user.save();
 
         if (user.role === 'vendor' && changes.length > 0) {
-            const ActivityLog = require('../models/ActivityLog');
             await ActivityLog.create({
                 vendorId: user._id,
                 action: 'VENDOR_PROFILE_UPDATED',

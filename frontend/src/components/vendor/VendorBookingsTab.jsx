@@ -331,11 +331,11 @@ const VendorBookingsTab = ({ title = 'Bookings', type = 'my' }) => {
                       {/* Price and status badges */}
                       <div className="flex flex-col lg:items-end gap-2 pt-1">
                         {type === 'direct' && isInitiator ? (
-                          <div className="text-left lg:text-right">
-                            <span className="text-[8px] text-slate-400 uppercase font-black tracking-wider block">Quotes Received</span>
-                            <span className="text-xs font-black text-[#0066FF] bg-blue-50 border border-blue-100 px-2 py-0.5 rounded-lg">
-                              {quotesCount} Quotes
-                            </span>
+                          <div className="bg-white border border-slate-100/90 rounded-2xl py-2 px-4 shadow-sm text-center min-w-[80px]">
+                            <span className="text-[8px] text-slate-400 uppercase font-black tracking-wider block">Acceptance Received</span>
+                              <span className="font-extrabold text-[#0B1E43] mt-0.5 block">
+                                {quotesCount} Acceptances
+                              </span>
                           </div>
                         ) : type === 'direct' ? (
                           <div className="text-left lg:text-right space-y-1 bg-slate-50 border border-slate-100/50 p-2.5 rounded-xl">
@@ -457,11 +457,11 @@ const VendorBookingsTab = ({ title = 'Bookings', type = 'my' }) => {
                   {/* Actions row for Bookings initiated by me (to view quotes) */}
                   {isInitiator && (
                     <div className="border-t border-slate-50 pt-4 flex justify-end items-center gap-3 pl-2">
-                      <button
+                      <button 
                         onClick={() => setSelectedBookingForQuotes(bkg)}
-                        className="bg-[#0066FF] hover:bg-[#0052cc] text-white text-[10px] font-black px-5 py-2.5 rounded-xl shadow-sm transition-all cursor-pointer uppercase tracking-wider flex items-center gap-1.5"
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-[#0066FF] hover:bg-blue-600 text-white rounded-xl font-bold text-xs shadow-sm transition-all shadow-blue-500/20"
                       >
-                        <Eye size={12} /> View Quotes ({quotesCount})
+                        <Eye size={12} /> View Acceptance ({quotesCount})
                       </button>
                     </div>
                   )}
@@ -479,11 +479,11 @@ const VendorBookingsTab = ({ title = 'Bookings', type = 'my' }) => {
           <div className="bg-white rounded-3xl w-full max-w-xl shadow-[0_24px_60px_rgba(11,30,67,0.15)] border border-slate-150 overflow-hidden flex flex-col max-h-[85vh] animate-scaleUp">
             {/* Header */}
             <div className="flex justify-between items-center p-6 border-b border-slate-100 bg-slate-50/50">
-              <div>
-                <h3 className="text-base font-black text-[#0B1E43] tracking-tight">Quotes Received</h3>
-                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mt-0.5">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-base font-black text-[#0B1E43] tracking-tight">Acceptance Received</h3>
+                <div className="text-[10px] text-slate-500 font-bold bg-slate-100 px-3 py-1.5 rounded-full">
                   BKG-{selectedBookingForQuotes._id.slice(-6).toUpperCase()} | {selectedBookingForQuotes.fromLocation} ↔ {selectedBookingForQuotes.toLocation}
-                </p>
+                </div>
               </div>
               <button
                 onClick={() => setSelectedBookingForQuotes(null)}
@@ -494,10 +494,10 @@ const VendorBookingsTab = ({ title = 'Bookings', type = 'my' }) => {
             </div>
 
             {/* List */}
-            <div className="p-6 overflow-y-auto space-y-4 flex-1">
+            <div className="space-y-4">
               {!selectedBookingForQuotes.responses || selectedBookingForQuotes.responses.filter(resp => resp.vendor?._id !== userId && resp.vendor !== userId).length === 0 ? (
-                <div className="text-center py-12 text-xs font-bold text-slate-400 uppercase tracking-widest border border-dashed border-slate-200 rounded-2xl">
-                  No quotes received yet
+                <div className="text-center py-10 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                  <p className="text-xs font-bold text-slate-500">No acceptance received yet</p>
                 </div>
               ) : (
                 selectedBookingForQuotes.responses
