@@ -7,7 +7,7 @@ const FreeVendorRMPopup = ({ user }) => {
     useEffect(() => {
         // Check if the vendor is a "free" vendor
         // Assuming a free vendor means no active plan or plan name contains "free"
-        const isFree = !user?.activePlan || (user?.activePlan?.name && user.activePlan.name.toLowerCase().includes('free'));
+        const isFree = !user?.activePlan || (user?.activePlan?.name && (user.activePlan.name.toLowerCase().includes('free') || user.activePlan.name.toLowerCase() === 'vendor lite'));
         
         // Show popup if they are free
         if (isFree) {

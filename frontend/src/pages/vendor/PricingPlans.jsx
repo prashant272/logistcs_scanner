@@ -43,7 +43,7 @@ const PricingPlans = () => {
         return { currency: sym, amount: plan.price, text: `${sym}${plan.price.toLocaleString(locale)}` };
     };
 
-    const getCouponFinalDisplay = (coupon, plan) => {
+    const getCouponFinalDisplay = (coupon) => {
         const sym = isOutsideIndia ? '$' : '₹';
         const locale = isOutsideIndia ? 'en-US' : 'en-IN';
         return { currency: sym, amount: coupon.finalPrice, text: `${sym}${coupon.finalPrice.toLocaleString(locale)}` };
@@ -92,42 +92,6 @@ const PricingPlans = () => {
         }
     };
 
-    // Parse HTML description into key-value pairs
-    const parseDescriptionToRows = (descriptionHtml) => {
-        if (!descriptionHtml) return [];
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = descriptionHtml;
-        const rows = [];
-
-        const items = tempDiv.querySelectorAll('li, p, div, tr');
-        if (items.length > 0) {
-            items.forEach(item => {
-                const text = item.textContent.trim();
-                if (text && text.includes(':')) {
-                    const parts = text.split(':');
-                    const key = parts[0].trim();
-                    const value = parts.slice(1).join(':').trim();
-                    if (key && value) {
-                        rows.push({ key, value });
-                    }
-                }
-            });
-        } else {
-            const text = tempDiv.textContent || '';
-            const lines = text.split('\n');
-            lines.forEach(line => {
-                if (line.trim() && line.includes(':')) {
-                    const parts = line.split(':');
-                    const key = parts[0].trim();
-                    const value = parts.slice(1).join(':').trim();
-                    if (key && value) {
-                        rows.push({ key, value });
-                    }
-                }
-            });
-        }
-        return rows;
-    };
 
     useEffect(() => {
         if (user) {
@@ -459,12 +423,10 @@ const PricingPlans = () => {
                         </p>
                     </div>
                 ) : (
-                    <div className="flex flex-col lg:flex-row items-stretch justify-center gap-8 pt-6 overflow-x-auto pb-4 lg:overflow-x-visible">
+                    <div className="flex flex-col lg:flex-row items-stretch justify-start gap-8 pt-6 overflow-x-auto pb-4 px-2 custom-scrollbar">
                         {regularPlans.map((plan) => {
                             const isCurrent = plan._id === 'free_tier_static_id' ? !activePlanId : activePlanId === plan._id;
 
-                            // Parse description HTML into dynamic comparison rows
-                            const parsedRows = parseDescriptionToRows(plan.description);
 
                             return (
                                 <div
@@ -568,81 +530,20 @@ const PricingPlans = () => {
                                         </button>
                                     </div>
 
-                                    {/* Comparison Table */}
-                                    <div className="flex-1 p-4 bg-slate-50/20 flex flex-col justify-between rounded-b-3xl">
-                                        <div className="border border-slate-350 rounded-xl overflow-hidden bg-white shadow-sm">
-                                            <table className="w-full text-[10px] text-left border-collapse table-fixed">
-                                                <thead>
-                                                    <tr className="bg-slate-100 border-b border-slate-350 font-black text-slate-800 uppercase tracking-wider text-[9px]">
-                                                        <th className="p-2 border-r border-slate-350 w-1/2">Features / Plans</th>
-                                                        <th className="p-2 w-1/2">{plan.name} {plan.price > 0 ? '(Paid)' : ''}</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody className="divide-y divide-slate-350 text-slate-700 font-semibold">
-                                                    <tr className="border-b border-slate-350">
-                                                        <td className="p-2 bg-slate-50/80 border-r border-slate-350 font-extrabold text-slate-500">Alternate Name</td>
-                                                        <td className="p-2">{plan.alternateName || `${plan.name} pricing`}</td>
-                                                    </tr>
-                                                    <tr className="border-b border-slate-350">
-                                                        <td className="p-2 bg-slate-50/80 border-r border-slate-350 font-extrabold text-slate-500">Enquiry acceptence Limit</td>
-                                                        <td className="p-2">
-                                                            {plan.price === 0
-                                                                ? '5 Enquiries (Direct + My combined)'
-                                                                : `${plan.inquiryLimit} Enquiries`
-                                                            }
-                                                        </td>
-                                                    </tr>
-                                                    <tr className="border-b border-slate-350">
-                                                        <td className="p-2 bg-slate-50/80 border-r border-slate-350 font-extrabold text-slate-500">Act as a White Label Site</td>
-                                                        <td className="p-2">{plan.actAsWhiteLabelSite || (plan.price > 1000 ? 'Yes' : 'No')}</td>
-                                                    </tr>
-                                                    <tr className="border-b border-slate-350">
-                                                        <td className="p-2 bg-slate-50/80 border-r border-slate-350 font-extrabold text-slate-500">Vendor Profile Listing</td>
-                                                        <td className="p-2">{plan.vendorProfileListing || '✓'}</td>
-                                                    </tr>
-                                                    <tr className="border-b border-slate-350">
-                                                        <td className="p-2 bg-slate-50/80 border-r border-slate-350 font-extrabold text-slate-500">Worldwide Visibility</td>
-                                                        <td className="p-2">{plan.worldwideVisibility || '✓'}</td>
-                                                    </tr>
-                                                    <tr className="border-b border-slate-350">
-                                                        <td className="p-2 bg-slate-50/80 border-r border-slate-350 font-extrabold text-slate-500">Direct Number of enquiries</td>
-                                                        <td className="p-2">{plan.directEnquiries || 'Unlimited'}</td>
-                                                    </tr>
-                                                    <tr className="border-b border-slate-350">
-                                                        <td className="p-2 bg-slate-50/80 border-r border-slate-350 font-extrabold text-slate-500">Dedicated Account Manager</td>
-                                                        <td className="p-2">{plan.dedicatedAccountManager || '✓'}</td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td className="p-2 bg-slate-50/80 border-r border-slate-350 font-extrabold text-slate-500">Support</td>
-                                                        <td className="p-2">{plan.supportType || (plan.price > 2000 ? 'Premium 24/7' : 'Standard')}</td>
-                                                    </tr>
-
-                                                    {/* Render dynamic key-value rows parsed from description */}
-                                                    {parsedRows.map((row, idx) => {
-                                                        // Avoid duplicating static keys
-                                                        const isStaticKey = ['alternate name', 'monthly price', 'enquiry limit', 'act as a white label site', 'vendor profile listing', 'worldwide visibility', 'direct enquiries', 'dedicated account manager', 'support'].includes(row.key.toLowerCase());
-                                                        if (isStaticKey) return null;
-                                                        return (
-                                                            <tr key={idx} className="border-b border-slate-350">
-                                                                <td className="p-2 bg-slate-50/80 border-r border-slate-350 font-extrabold text-slate-500">{row.key}</td>
-                                                                <td className="p-2">{row.value}</td>
-                                                            </tr>
-                                                        );
-                                                    })}
-                                                </tbody>
-                                            </table>
-                                        </div>
-
-                                        {/* Fallback description render if no key-values parsed */}
-                                        {plan.description && parsedRows.length === 0 && (
-                                            <div className="mt-4 pt-4 border-t border-slate-200 text-[10px] text-slate-500 font-semibold">
-                                                <span className="text-[9px] uppercase font-black tracking-widest text-slate-400 block mb-2">Additional Specifications</span>
-                                                <div
-                                                    className="space-y-1.5 text-slate-600 pricing-plan-description"
-                                                    dangerouslySetInnerHTML={{ __html: plan.description }}
-                                                />
-                                            </div>
-                                        )}
+                                    {/* Direct Backend Features Render */}
+                                    <div className="flex-1 p-4 bg-slate-50/20 flex flex-col rounded-b-3xl mt-4">
+                                        <div 
+                                            className="w-full text-[11px] text-slate-700 font-medium 
+                                            [&_table]:w-full [&_table]:border-collapse [&_table]:border [&_table]:border-slate-200 [&_table]:rounded-xl [&_table]:overflow-hidden [&_table]:bg-white [&_table]:shadow-sm
+                                            [&_th]:p-2 [&_th]:bg-slate-100 [&_th]:text-[10px] [&_th]:font-black [&_th]:text-slate-800 [&_th]:uppercase [&_th]:tracking-wider [&_th]:border-b [&_th]:border-slate-200 [&_th]:text-left
+                                            [&_td]:p-2 [&_td]:border-b [&_td]:border-slate-200 [&_td]:align-top
+                                            [&_tr:last-child_td]:border-b-0
+                                            [&_td:first-child]:bg-slate-50/60 [&_td:first-child]:font-extrabold [&_td:first-child]:text-slate-500 [&_td:first-child]:border-r [&_td:first-child]:border-slate-200 [&_td:first-child]:w-1/2
+                                            [&_ul]:space-y-2 [&_ul]:my-2
+                                            [&_li]:flex [&_li]:items-start [&_li]:gap-2
+                                            [&_p]:mb-2 [&_p]:leading-relaxed"
+                                            dangerouslySetInnerHTML={{ __html: plan.description || '<p class="text-center text-slate-400 italic py-4">No specific details provided.</p>' }}
+                                        />
                                     </div>
                                 </div>
                             );
@@ -678,21 +579,21 @@ const PricingPlans = () => {
                                             <span className="font-black text-purple-700">+{plan.inquiryLimit} Enquiries</span>
                                         </div>
                                         <div className="flex justify-between items-center text-xs">
-                                            <span className="font-bold text-slate-500">Validity</span>
+                        <span className="font-bold text-slate-500">Validity</span>
                                             <span className="font-black text-slate-700">{plan.duration}</span>
                                         </div>
                                     </div>
                                     <button
                                         type="button"
-                                        disabled={upgradingId === plan._id || !user?.activePlan?.price || user.activePlan.price <= 0}
+                                        disabled={upgradingId === plan._id || !user?.activePlan?.price || user.activePlan.price <= 0 || (user.activePlan.name && user.activePlan.name.toLowerCase() === 'vendor lite')}
                                         onClick={() => handleUpgrade(plan._id)}
                                         className="w-full flex justify-center items-center py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-300 cursor-pointer bg-purple-600 hover:bg-purple-700 text-white shadow-md shadow-purple-600/20 disabled:opacity-50 disabled:cursor-not-allowed"
-                                        title={(!user?.activePlan?.price || user.activePlan.price <= 0) ? 'You must be on a paid Premium Plan to buy a Top-up' : ''}
+                                        title={(!user?.activePlan?.price || user.activePlan.price <= 0 || (user.activePlan.name && user.activePlan.name.toLowerCase() === 'vendor lite')) ? 'You must be on a paid Premium Plan to buy a Top-up' : ''}
                                     >
                                         {upgradingId === plan._id ? (
                                             <Loader2 className="w-4 h-4 animate-spin" />
                                         ) : (
-                                            (!user?.activePlan?.price || user.activePlan.price <= 0) ? 'Requires Paid Plan' : 'Buy Top-up'
+                                            (!user?.activePlan?.price || user.activePlan.price <= 0 || (user.activePlan.name && user.activePlan.name.toLowerCase() === 'vendor lite')) ? 'Requires Paid Plan' : 'Buy Top-up'
                                         )}
                                     </button>
                                 </div>

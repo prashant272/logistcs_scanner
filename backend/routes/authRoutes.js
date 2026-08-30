@@ -226,7 +226,7 @@ router.get('/public-vendors-search', async (req, res) => {
             ...v,
             lsid: getLSID(v._id),
             organizationName: v.company || v.name || 'N/A',
-            isVerified: v.activePlan && v.activePlan.price > 0
+            isVerified: v.activePlan && v.activePlan.price > 0 && (!v.activePlan.name || v.activePlan.name.toLowerCase() !== 'vendor lite'),
         }));
 
         if (lsid) {
@@ -297,7 +297,7 @@ router.get('/public-vendors-search/:id/details', async (req, res) => {
             return 1000000000 + Math.abs(hash);
         };
 
-        const isVerified = targetVendor.activePlan && targetVendor.activePlan.price > 0;
+        const isVerified = targetVendor.activePlan && targetVendor.activePlan.price > 0 && (!targetVendor.activePlan.name || targetVendor.activePlan.name.toLowerCase() !== 'vendor lite');
 
         // Calculate Complaints Stats
         const Complaint = require('../models/Complaint');

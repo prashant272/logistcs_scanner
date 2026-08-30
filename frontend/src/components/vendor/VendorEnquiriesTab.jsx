@@ -46,9 +46,16 @@ const VendorEnquiriesTab = ({ title, type }) => {
   const location = useLocation();
   const { user } = useAuth();
   
-  const isPaidVendor = user && user.activePlan && user.activePlan.price > 0;
+  const isVendorLite = user && user.activePlan && user.activePlan.name && user.activePlan.name.toLowerCase() === 'vendor lite';
+  const isPaidVendor = user && user.activePlan && user.activePlan.price > 0 && !isVendorLite;
+  
+  let b2bErrorMessage = 'This feature is only for paid vendors. Please upgrade your plan to see these enquiries.';
+  if (isVendorLite) {
+    b2bErrorMessage = 'This feature is exclusively for Premium Paid plans and is not included in your Vendor Lite plan. Please upgrade to access B2B enquiries.';
+  }
+
   const displayError = (type === 'b2b' && !isPaidVendor) 
-    ? 'This features is only for paid vendor please upgrade your plan to see these enquiry' 
+    ? b2bErrorMessage 
     : error;
 
   const [page, setPage] = useState(1);

@@ -183,13 +183,18 @@ const VendorPublicProfile = () => {
     }
 
     // Determine verification badge
-    const isVerified = vendor.isVerified;
+    const isVendorProfileLite = vendor.activePlan?.name && vendor.activePlan.name.toLowerCase() === 'vendor lite';
+    const isVerified = vendor.isVerified && !isVendorProfileLite;
 
-    const renderContactDetail = (value) => {
+    const renderContactDetail = (value, isName = false) => {
         if (!value) return 'N/A';
         if (user?.role === 'admin' || user?._id === vendor?._id) return value;
         if (user?.role === 'vendor' || user?.role === 'vendor-sub') {
-            if (user?.activePlan && user.activePlan.price > 0) return value;
+            const isVendorLite = user?.activePlan?.name && user.activePlan.name.toLowerCase() === 'vendor lite';
+            if (user?.activePlan && user.activePlan.price > 0 && !isVendorLite) {
+                if (isName) return value.charAt(0) + '***';
+                return value;
+            }
             return <span className="text-[10px] text-amber-600 font-bold bg-amber-50 px-2 py-0.5 rounded">Please upgrade your plan to see these details</span>;
         }
         return <span className="text-[10px] text-slate-500 font-bold bg-slate-100 px-2 py-0.5 rounded">This is only for vendors</span>;

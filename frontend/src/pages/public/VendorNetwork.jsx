@@ -266,7 +266,7 @@ const VendorNetwork = () => {
                                             <td className="py-4 px-6 text-[#0B1E43] font-bold">
                                                 <div className="flex items-center gap-2">
                                                     <span>{vendor.organizationName}</span>
-                                                    {vendor.activePlan && vendor.activePlan.price > 0 && (
+                                                    {vendor.activePlan && vendor.activePlan.price > 0 && vendor.activePlan.name?.toLowerCase() !== 'vendor lite' && (
                                                         <>
                                                             <span className="bg-emerald-500 text-white text-[9px] px-2 py-0.5 rounded-full font-black uppercase shadow-sm whitespace-nowrap">
                                                                 Verified

@@ -132,7 +132,7 @@ exports.upgradeUserPlan = async (req, res) => {
             
             // Populate activePlan if it's just an ID
             const activePlanDoc = await Plan.findById(user.activePlan);
-            if (!activePlanDoc || activePlanDoc.price <= 0) {
+            if (!activePlanDoc || activePlanDoc.price <= 0 || (activePlanDoc.name && activePlanDoc.name.toLowerCase() === 'vendor lite')) {
                 return res.status(400).json({ message: 'You can only purchase a top-up if you are on a paid premium plan.' });
             }
         }
@@ -207,7 +207,7 @@ exports.createRazorpayOrder = async (req, res) => {
                     return res.status(400).json({ message: 'You must have an active regular plan to purchase a top-up.' });
                 }
                 const activePlanDoc = await Plan.findById(user.activePlan);
-                if (!activePlanDoc || activePlanDoc.price <= 0) {
+                if (!activePlanDoc || activePlanDoc.price <= 0 || (activePlanDoc.name && activePlanDoc.name.toLowerCase() === 'vendor lite')) {
                     return res.status(400).json({ message: 'You can only purchase a top-up if you are on a paid premium plan.' });
                 }
             }
@@ -317,7 +317,7 @@ exports.verifyRazorpayPayment = async (req, res) => {
             }
             
             const activePlanDoc = await Plan.findById(user.activePlan);
-            if (!activePlanDoc || activePlanDoc.price <= 0) {
+            if (!activePlanDoc || activePlanDoc.price <= 0 || (activePlanDoc.name && activePlanDoc.name.toLowerCase() === 'vendor lite')) {
                 return res.status(400).json({ message: 'You can only purchase a top-up if you are on a paid premium plan.' });
             }
         }

@@ -276,7 +276,7 @@ exports.getVendorEnquiries = async (req, res) => {
             return res.status(400).json({ message: 'Valid enquiry type ("my", "direct" or "b2b") is required' });
         }
 
-        const isPaidPlan = hasActivePlan && currentUser.activePlan && currentUser.activePlan.price > 0;
+        const isPaidPlan = hasActivePlan && currentUser.activePlan && currentUser.activePlan.price > 0 && (!currentUser.activePlan.name || currentUser.activePlan.name.toLowerCase() !== 'vendor lite');
 
         // Allowing type=b2b to return totalCount so sidebar badges work for free vendors
         // Frontend VendorEnquiriesTab already blocks the UI for free vendors
@@ -566,7 +566,7 @@ exports.getVendorEnquiries = async (req, res) => {
                 inquiryLimit += (currentUser.topupEnquiryLimit || 0);
             }
 
-            const isPaidPlan = hasActivePlan && currentUser.activePlan && currentUser.activePlan.price > 0;
+            const isPaidPlan = hasActivePlan && currentUser.activePlan && currentUser.activePlan.price > 0 && (!currentUser.activePlan.name || currentUser.activePlan.name.toLowerCase() !== 'vendor lite');
 
             let limitStartDate = new Date();
             if (!isPaidPlan) {
@@ -649,7 +649,7 @@ exports.updateEnquiryStatus = async (req, res) => {
             const vendorUser = await User.findById(req.user.id).populate('activePlan');
             const hasActivePlan = vendorUser && vendorUser.activePlan && vendorUser.planEndDate && new Date(vendorUser.planEndDate) > new Date();
 
-            const isPaidPlan = hasActivePlan && vendorUser.activePlan.price > 0;
+            const isPaidPlan = hasActivePlan && vendorUser.activePlan.price > 0 && (!vendorUser.activePlan.name || vendorUser.activePlan.name.toLowerCase() !== 'vendor lite');
 
             let inquiryLimit = 5;
             if (hasActivePlan && vendorUser.activePlan && vendorUser.activePlan.inquiryLimit) {
@@ -1228,7 +1228,7 @@ const triggerVendorBroadcast = async (enquiryId) => {
 
                         // Check if vendor has an active paid plan for SMS
                         const hasActivePlan = vendorUser.activePlan && vendorUser.planEndDate && new Date(vendorUser.planEndDate) > new Date();
-                        const isPaidPlan = hasActivePlan && vendorUser.activePlan.price > 0;
+                        const isPaidPlan = hasActivePlan && vendorUser.activePlan.price > 0 && (!vendorUser.activePlan.name || vendorUser.activePlan.name.toLowerCase() !== 'vendor lite');
                         if (isPaidPlan) {
                             const { sendNewEnquiryVendorSMS } = require('../services/notificationService');
                             sendNewEnquiryVendorSMS(vendorUser.phone, vendorName, {
@@ -1272,7 +1272,7 @@ const triggerVendorBroadcast = async (enquiryId) => {
 
                     // Check if vendor has an active paid plan
                     const hasActivePlan = vendorUser.activePlan && vendorUser.planEndDate && new Date(vendorUser.planEndDate) > new Date();
-                    const isPaidPlan = hasActivePlan && vendorUser.activePlan.price > 0;
+                    const isPaidPlan = hasActivePlan && vendorUser.activePlan.price > 0 && (!vendorUser.activePlan.name || vendorUser.activePlan.name.toLowerCase() !== 'vendor lite');
 
                     // Match "China", "(CNxxx)" port codes, or common Chinese port cities
                     const chinaRegex = /china|\(CN[A-Z]{3}\)|shenzhen|shanghai|ningbo|qingdao|guangzhou|xiamen|dalian|tianjin/i;
