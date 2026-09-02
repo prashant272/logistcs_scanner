@@ -2,6 +2,7 @@ const RM = require('../models/RM');
 const User = require('../models/User');
 const bcrypt = require('bcryptjs');
 const logActivity = require('../utils/activityLogger');
+const ActivityLog = require('../models/ActivityLog');
 
 // @desc    Create a new Relationship Manager
 // @route   POST /api/rm
@@ -120,18 +121,41 @@ exports.assignRM = async (req, res) => {
             return res.status(404).json({ message: 'Vendor not found' });
         }
 
+        let oldRMName = 'None';
+        if (vendor.assignedRM) {
+            const oldRM = await RM.findById(vendor.assignedRM);
+            if (oldRM) oldRMName = oldRM.name;
+        }
+
+        let newRMName = 'None';
         // rmId can be null to unassign
         if (rmId) {
             const rm = await RM.findById(rmId);
             if (!rm) {
                 return res.status(404).json({ message: 'RM not found' });
             }
+            newRMName = rm.name;
         }
 
-        vendor.assignedRM = rmId || null;
-        await vendor.save();
+        if (vendor.assignedRM?.toString() !== rmId) {
+            vendor.assignedRM = rmId || null;
+            await vendor.save();
 
-        await logActivity('ASSIGN_RM', req, vendorId, { rmId });
+            let performerRole = 'system';
+            if (req.user && req.user.id === 'ad0000000000000000000000') {
+                performerRole = 'admin';
+            }
+
+            await ActivityLog.create({
+                vendorId: vendor._id,
+                action: 'ADMIN_ASSIGNED_RM',
+                performedBy: req.user ? req.user.id : null,
+                performedByRole: performerRole,
+                details: `RM Assignment changed from ${oldRMName} to ${newRMName}`
+            });
+
+            await logActivity('ASSIGN_RM', req, vendorId, { rmId });
+        }
 
         res.status(200).json({ message: 'RM assigned successfully', vendor });
     } catch (error) {
