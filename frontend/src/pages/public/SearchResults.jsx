@@ -759,11 +759,25 @@ const SearchResults = () => {
                             </div>
                           )}
                         </div>
-
-                        {/* Beautiful Note Panel */}
-                        <div className="bg-blue-50 border border-blue-150 rounded-xl p-3 text-[10px] text-slate-700 font-bold leading-relaxed flex items-start gap-2 shadow-[inset_0_2px_4px_rgba(0,0,0,0.005)]">
-                          <span className="bg-blue-600 text-white text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider shrink-0 mt-0.5">Note</span>
-                          <span>Local and other charges (if applicable) will be at actual basis as per the shipping lines norms. {rate.message && <span className="font-bold text-slate-800">| {rate.message}</span>}</span>
+                        <div className="space-y-2">
+                          {/* Expired Badge */}
+                          {rate.validUntil && new Date(rate.validUntil).setHours(0, 0, 0, 0) < new Date().setHours(0, 0, 0, 0) && (
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                              <div className="bg-red-50 border border-red-200 rounded-xl p-2 text-[10px] text-red-700 font-bold leading-relaxed flex items-center gap-2 w-max shadow-sm">
+                                <span className="bg-red-600 text-white text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider shrink-0">Expired</span>
+                                <span>This rate expired on {new Date(rate.validUntil).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+                              </div>
+                              <div className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-800 font-extrabold shadow-sm w-max">
+                                Please connect with vendor for current price.
+                              </div>
+                            </div>
+                          )}
+                          
+                          {/* Beautiful Note Panel */}
+                          <div className="bg-blue-50 border border-blue-150 rounded-xl p-3 text-[10px] text-slate-700 font-bold leading-relaxed flex items-start gap-2 shadow-[inset_0_2px_4px_rgba(0,0,0,0.005)]">
+                            <span className="bg-blue-600 text-white text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider shrink-0 mt-0.5">Note</span>
+                            <span>Local and other charges (if applicable) will be at actual basis as per the shipping lines norms. {rate.message && <span className="font-bold text-slate-800">| {rate.message}</span>}</span>
+                          </div>
                         </div>
                       </div>
 

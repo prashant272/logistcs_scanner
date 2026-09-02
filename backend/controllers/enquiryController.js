@@ -320,9 +320,7 @@ exports.getVendorEnquiries = async (req, res) => {
                         directOrConditions.push({
                             client: { $in: vendorIds, $ne: req.user.id },
                             type: { $ne: 'land' },
-                            createdAt: { $lte: threeHoursAgo },
-                            responses: { $not: { $elemMatch: { status: { $in: ['Accepted', 'Quoted'] } } } },
-                            status: { $ne: 'Accepted' }
+                            createdAt: { $lte: threeHoursAgo }
                         });
                     }
 
