@@ -238,7 +238,7 @@ const AdminEnquiriesTab = () => {
                                                     <FileText size={14} className="text-slate-500" />
                                                 </div>
                                                 <div>
-                                                    <div className="mb-2">
+                                                    <div className="mb-2 flex items-center gap-2">
                                                         {enq.isDirect ? (
                                                             (enq.client && enq.client.role === 'vendor') ? (
                                                                 <div className="inline-flex items-center gap-1.5 bg-indigo-50/80 border border-indigo-200 text-indigo-700 px-2.5 py-1 rounded-lg">
@@ -255,6 +255,11 @@ const AdminEnquiriesTab = () => {
                                                             <div className="inline-flex items-center gap-1.5 bg-purple-50/80 border border-purple-200 text-purple-700 px-2.5 py-1 rounded-lg">
                                                                 <UserCheck size={12} />
                                                                 <span className="text-[10px] font-black uppercase tracking-widest truncate max-w-[200px]" title={enq.vendor?.name}>Targeted: {enq.vendor?.name || 'Unknown Vendor'}</span>
+                                                            </div>
+                                                        )}
+                                                        {enq.source && (
+                                                            <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border ${enq.source === 'app' ? 'bg-fuchsia-50/80 border-fuchsia-200 text-fuchsia-700' : 'bg-cyan-50/80 border-cyan-200 text-cyan-700'}`}>
+                                                                <span className="text-[10px] font-black uppercase tracking-widest">{enq.source === 'app' ? '📱 App' : '🌐 Web'}</span>
                                                             </div>
                                                         )}
                                                     </div>

@@ -143,6 +143,29 @@ exports.createEnquiry = async (req, res) => {
             duplicateCheckQuery.client = validatedClientId;
         }
 
+        let detectedSource = 'web';
+        if (req.body.source && req.body.source.toLowerCase() === 'app') {
+            detectedSource = 'app';
+        }
+
+        if (req.headers['user-agent']) {
+            const ua = req.headers['user-agent'].toLowerCase();
+            if (ua.includes('dart') || ua.includes('okhttp') || ua.includes('dalvik') || ua.includes('expo') || ua.includes('cfnetwork') || ua.includes('postman') || ua.includes('capacitor')) {
+                detectedSource = 'app';
+            }
+        }
+
+        const originStr = (req.headers.origin || req.headers.referer || '').toLowerCase();
+        if (originStr) {
+            if (originStr.includes('localhost') || originStr.includes('127.0.0.1') || originStr.includes('capacitor') || originStr.includes('ionic') || originStr.includes('file://')) {
+                detectedSource = 'app';
+            }
+        } else {
+            if (!req.body.source || req.body.source.toLowerCase() !== 'web') {
+                detectedSource = 'app';
+            }
+        }
+
         const recentDuplicate = await Enquiry.findOne(duplicateCheckQuery);
         if (recentDuplicate) {
             return res.status(409).json({
@@ -192,7 +215,8 @@ exports.createEnquiry = async (req, res) => {
             commodity: commodity || '',
             message: message || '',
             attachment: attachment || '',
-            status: 'Pending'
+            status: 'Pending',
+            source: detectedSource
         });
 
         // Notifications

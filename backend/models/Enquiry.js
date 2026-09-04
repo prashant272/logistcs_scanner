@@ -214,6 +214,11 @@ const enquirySchema = new mongoose.Schema({
     createdAt: {
         type: Date,
         default: Date.now
+    },
+    source: {
+        type: String,
+        enum: ['web', 'app'],
+        default: 'web'
     }
 }, { timestamps: true });
 

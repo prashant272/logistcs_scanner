@@ -512,6 +512,7 @@ const CustomerManagement = () => {
                     <th className="p-5">Country</th>
                     <th className="p-5">Organization Name</th>
                     <th className="p-5">Wallet Balance</th>
+                    <th className="p-5">Login Source</th>
                     <th className="p-5 text-right">Actions</th>
                   </tr>
                 </thead>
@@ -539,6 +540,14 @@ const CustomerManagement = () => {
                       </td>
                       <td className="p-5 font-black text-[#0B1E43]">
                         ₹{c.walletBalance?.toLocaleString('en-IN') || '0'}
+                      </td>
+                      <td className="p-5 text-slate-450 font-medium">
+                        <div className="flex flex-col gap-1">
+                          <span>{c.lastActive ? new Date(c.lastActive).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: true }) : 'N/A'}</span>
+                          <span className={`w-fit px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-widest ${c.lastLoginSource === 'web' ? 'bg-blue-100 text-blue-600' : 'bg-purple-100 text-purple-600'}`}>
+                            {c.lastLoginSource === 'web' ? '🌐 Web' : '📱 App'}
+                          </span>
+                        </div>
                       </td>
                       <td className="p-5 text-right flex items-center justify-end gap-3">
                         <button 

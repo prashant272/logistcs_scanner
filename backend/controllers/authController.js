@@ -155,6 +155,13 @@ exports.verifyOTP = async (req, res) => {
                 detectedSource = 'app';
             }
         }
+        
+        // As per request: if it's a customer and not explicitly from web, default to app
+        if (user.role === 'customer') {
+            if (source !== 'web' && !req.headers.origin && !req.headers.referer) {
+                detectedSource = 'app';
+            }
+        }
         user.lastLoginSource = detectedSource;
         await user.save();
 
@@ -284,6 +291,13 @@ exports.loginUser = async (req, res) => {
             if (detectedSource === 'web' && req.headers['user-agent']) {
                 const ua = req.headers['user-agent'].toLowerCase();
                 if (ua.includes('dart') || ua.includes('okhttp') || ua.includes('dalvik') || ua.includes('expo') || ua.includes('cfnetwork')) {
+                    detectedSource = 'app';
+                }
+            }
+            
+            // As per request: if it's a customer and not explicitly from web, default to app
+            if (user.role === 'customer') {
+                if (source !== 'web' && !req.headers.origin && !req.headers.referer) {
                     detectedSource = 'app';
                 }
             }
