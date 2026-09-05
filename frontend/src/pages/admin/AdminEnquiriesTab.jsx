@@ -9,10 +9,10 @@ const AdminEnquiriesTab = () => {
     const [hasMore, setHasMore] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [debouncedSearch, setDebouncedSearch] = useState('');
-    
+
     const [editingEnq, setEditingEnq] = useState(null);
     const [editFormData, setEditFormData] = useState({ status: '', price: '' });
-    
+
     // Broadcast scheduling state
     const [scheduleModal, setScheduleModal] = useState({ isOpen: false, enqId: null, date: '' });
 
@@ -91,7 +91,7 @@ const AdminEnquiriesTab = () => {
 
     const handleDelete = async (id) => {
         if (!window.confirm('Are you sure you want to delete this enquiry? This action cannot be undone.')) return;
-        
+
         try {
             const token = sessionStorage.getItem('adminToken');
             await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/admin/enquiries/${id}`, {
@@ -105,7 +105,7 @@ const AdminEnquiriesTab = () => {
 
     const handleEditClick = (enq) => {
         setEditingEnq(enq._id);
-        setEditFormData({ 
+        setEditFormData({
             status: enq.status || 'Pending',
             price: enq.price || '',
             fromLocation: enq.fromLocation || '',
@@ -164,7 +164,7 @@ const AdminEnquiriesTab = () => {
     };
 
     const getStatusBadge = (status) => {
-        switch(status) {
+        switch (status) {
             case 'Accepted': return <span className="bg-emerald-100 text-emerald-700 px-2 py-1 rounded-md text-[10px] font-bold">Accepted</span>;
             case 'Declined': return <span className="bg-red-100 text-red-700 px-2 py-1 rounded-md text-[10px] font-bold">Declined</span>;
             case 'Completed': return <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-md text-[10px] font-bold">Completed</span>;
@@ -195,7 +195,7 @@ const AdminEnquiriesTab = () => {
                     <span className="text-xs font-black uppercase tracking-wider text-slate-600">
                         Stop Enquiries (Manual)
                     </span>
-                    <button 
+                    <button
                         onClick={toggleHoldSetting}
                         className={`w-12 h-6 rounded-full transition-colors relative ${holdEnquiries ? 'bg-[#0066FF]' : 'bg-slate-300'}`}
                     >
@@ -227,185 +227,185 @@ const AdminEnquiriesTab = () => {
                                 enquiries.map((enq, index) => {
                                     const isLast = index === enquiries.length - 1;
                                     return (
-                                    <tr 
-                                        key={enq._id} 
-                                        ref={isLast ? lastEnquiryElementRef : null}
-                                        className="hover:bg-blue-50/30 transition-colors"
-                                    >
-                                        <td className="p-4 align-top">
-                                            <div className="flex items-start gap-3">
-                                                <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center shrink-0">
-                                                    <FileText size={14} className="text-slate-500" />
-                                                </div>
-                                                <div>
-                                                    <div className="mb-2 flex items-center gap-2">
-                                                        {enq.isDirect ? (
-                                                            (enq.client && enq.client.role === 'vendor') ? (
-                                                                <div className="inline-flex items-center gap-1.5 bg-indigo-50/80 border border-indigo-200 text-indigo-700 px-2.5 py-1 rounded-lg">
-                                                                    <Building2 size={12} />
-                                                                    <span className="text-[10px] font-black uppercase tracking-widest">B2B Enquiry</span>
-                                                                </div>
+                                        <tr
+                                            key={enq._id}
+                                            ref={isLast ? lastEnquiryElementRef : null}
+                                            className="hover:bg-blue-50/30 transition-colors"
+                                        >
+                                            <td className="p-4 align-top">
+                                                <div className="flex items-start gap-3">
+                                                    <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center shrink-0">
+                                                        <FileText size={14} className="text-slate-500" />
+                                                    </div>
+                                                    <div>
+                                                        <div className="mb-2 flex items-center gap-2">
+                                                            {enq.isDirect ? (
+                                                                (enq.client && enq.client.role === 'vendor') ? (
+                                                                    <div className="inline-flex items-center gap-1.5 bg-indigo-50/80 border border-indigo-200 text-indigo-700 px-2.5 py-1 rounded-lg">
+                                                                        <Building2 size={12} />
+                                                                        <span className="text-[10px] font-black uppercase tracking-widest">B2B Enquiry</span>
+                                                                    </div>
+                                                                ) : (
+                                                                    <div className="inline-flex items-center gap-1.5 bg-blue-50/80 border border-blue-200 text-blue-700 px-2.5 py-1 rounded-lg">
+                                                                        <Globe size={12} />
+                                                                        <span className="text-[10px] font-black uppercase tracking-widest">Direct Enquiry</span>
+                                                                    </div>
+                                                                )
                                                             ) : (
-                                                                <div className="inline-flex items-center gap-1.5 bg-blue-50/80 border border-blue-200 text-blue-700 px-2.5 py-1 rounded-lg">
-                                                                    <Globe size={12} />
-                                                                    <span className="text-[10px] font-black uppercase tracking-widest">Direct Enquiry</span>
+                                                                <div className="inline-flex items-center gap-1.5 bg-purple-50/80 border border-purple-200 text-purple-700 px-2.5 py-1 rounded-lg">
+                                                                    <UserCheck size={12} />
+                                                                    <span className="text-[10px] font-black uppercase tracking-widest truncate max-w-[200px]" title={enq.vendor?.name}>Targeted: {enq.vendor?.name || 'Unknown Vendor'}</span>
                                                                 </div>
-                                                            )
-                                                        ) : (
-                                                            <div className="inline-flex items-center gap-1.5 bg-purple-50/80 border border-purple-200 text-purple-700 px-2.5 py-1 rounded-lg">
-                                                                <UserCheck size={12} />
-                                                                <span className="text-[10px] font-black uppercase tracking-widest truncate max-w-[200px]" title={enq.vendor?.name}>Targeted: {enq.vendor?.name || 'Unknown Vendor'}</span>
-                                                            </div>
-                                                        )}
-                                                        {enq.source && (
-                                                            <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border ${enq.source === 'app' ? 'bg-fuchsia-50/80 border-fuchsia-200 text-fuchsia-700' : 'bg-cyan-50/80 border-cyan-200 text-cyan-700'}`}>
-                                                                <span className="text-[10px] font-black uppercase tracking-widest">{enq.source === 'app' ? '📱 App' : '🌐 Web'}</span>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                    <p className="text-sm font-black text-slate-800">
-                                                        {(enq.guestName === 'Guest' && enq.guestCompany) 
-                                                            ? enq.guestCompany 
-                                                            : (enq.guestName || enq.client?.name || 'Unknown')}
-                                                    </p>
-                                                    <p className="text-[10px] font-bold text-slate-500">{enq.guestEmail || enq.client?.email}</p>
-                                                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mt-1">{new Date(enq.createdAt).toLocaleDateString()}</p>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        {/* Cargo Info */}
-                                        <td className="p-4">
-                                            {editingEnq === enq._id ? (
-                                                <div className="flex flex-col gap-2 w-64">
-                                                    <div className="flex gap-2">
-                                                        <input 
-                                                            type="text" 
-                                                            value={editFormData.fromLocation}
-                                                            onChange={(e) => setEditFormData({...editFormData, fromLocation: e.target.value})}
-                                                            className="w-full text-xs font-bold border-2 border-slate-200 focus:border-blue-500 rounded-lg px-2 py-1.5 outline-none transition-colors"
-                                                            placeholder="From Port"
-                                                        />
-                                                        <span className="text-slate-300 self-center">→</span>
-                                                        <input 
-                                                            type="text" 
-                                                            value={editFormData.toLocation}
-                                                            onChange={(e) => setEditFormData({...editFormData, toLocation: e.target.value})}
-                                                            className="w-full text-xs font-bold border-2 border-slate-200 focus:border-blue-500 rounded-lg px-2 py-1.5 outline-none transition-colors"
-                                                            placeholder="To Port"
-                                                        />
-                                                    </div>
-                                                    <div className="flex gap-2">
-                                                        <input 
-                                                            type="text" 
-                                                            value={editFormData.type}
-                                                            onChange={(e) => setEditFormData({...editFormData, type: e.target.value})}
-                                                            className="w-1/2 text-[11px] font-black border-2 border-slate-200 focus:border-blue-500 rounded-lg px-2 py-1.5 outline-none transition-colors uppercase"
-                                                            placeholder="Cargo Type"
-                                                        />
-                                                        <input 
-                                                            type="text" 
-                                                            value={editFormData.commodity}
-                                                            onChange={(e) => setEditFormData({...editFormData, commodity: e.target.value})}
-                                                            className="w-1/2 text-[11px] font-bold border-2 border-slate-200 focus:border-blue-500 rounded-lg px-2 py-1.5 outline-none transition-colors"
-                                                            placeholder="Commodity"
-                                                        />
-                                                    </div>
-                                                </div>
-                                            ) : (
-                                                <>
-                                                    <div className="font-bold text-slate-800 text-sm flex items-center gap-2 group-hover:text-blue-600 transition-colors">
-                                                        {enq.fromLocation} <span className="text-slate-300">→</span> {enq.toLocation}
-                                                    </div>
-                                                    <div className="text-xs font-black mt-1.5 flex items-center gap-2 flex-wrap">
-                                                        <span className="bg-blue-600 text-white px-2 py-0.5 rounded shadow-sm">Cargo: {enq.type?.toUpperCase()}</span>
-                                                        <span className="bg-slate-700 text-white px-2 py-0.5 rounded shadow-sm">Comm: {enq.commodity || 'N/A'}</span>
-                                                        {enq.weightRange && (
-                                                            <span className="bg-amber-500 text-white px-2 py-0.5 rounded shadow-sm">Weight: {enq.weightRange}</span>
-                                                        )}
-                                                        {enq.shipmentDate && (
-                                                            <span className="bg-emerald-600 text-white px-2 py-0.5 rounded shadow-sm">Shipment: {new Date(enq.shipmentDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
-                                                        )}
-                                                    </div>
-                                                </>
-                                            )}
-                                        </td>
-                                        <td className="p-4 align-top">
-                                            {editingEnq === enq._id ? (
-                                                <div className="space-y-2">
-                                                    <select 
-                                                        value={editFormData.status} 
-                                                        onChange={(e) => setEditFormData({...editFormData, status: e.target.value})}
-                                                        className="w-full text-xs font-bold p-1.5 border border-slate-200 rounded-md outline-none"
-                                                    >
-                                                        <option value="Pending">Pending</option>
-                                                        <option value="Accepted">Accepted</option>
-                                                        <option value="Declined">Declined</option>
-                                                        <option value="Completed">Completed</option>
-                                                    </select>
-                                                    <input 
-                                                        type="number"
-                                                        placeholder="Price"
-                                                        value={editFormData.price}
-                                                        onChange={(e) => setEditFormData({...editFormData, price: e.target.value})}
-                                                        className="w-full text-xs font-bold p-1.5 border border-slate-200 rounded-md outline-none"
-                                                    />
-                                                </div>
-                                            ) : (
-                                                <div>
-                                                    {getStatusBadge(enq.status)}
-                                                    {enq.price && <p className="text-xs font-black text-slate-700 mt-1.5">$ {enq.price}</p>}
-                                                    {enq.responses && enq.responses.filter(r => r.status === 'Accepted').length > 0 && (
-                                                        <div className="mt-2 text-[10px] bg-slate-50 p-1.5 rounded-lg border border-slate-100">
-                                                            <p className="font-bold text-slate-500 mb-1">Accepted by:</p>
-                                                            {enq.responses.filter(r => r.status === 'Accepted').map((r, idx) => (
-                                                                <p key={idx} className="font-black text-emerald-600 truncate max-w-[150px]" title={r.vendor?.name || 'Unknown Vendor'}>
-                                                                    {r.vendor?.name || 'Unknown Vendor'}
-                                                                </p>
-                                                            ))}
+                                                            )}
+                                                            {enq.source && (
+                                                                <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border ${enq.source === 'app' ? 'bg-fuchsia-50/80 border-fuchsia-200 text-fuchsia-700' : 'bg-cyan-50/80 border-cyan-200 text-cyan-700'}`}>
+                                                                    <span className="text-[10px] font-black uppercase tracking-widest">{enq.source === 'app' ? '📱 App' : '🌐 Web'}</span>
+                                                                </div>
+                                                            )}
                                                         </div>
-                                                    
-                                                    )}
-                                                    
-                                                    {/* Broadcast Status */}
-                                                    <div className="mt-3">
-                                                        {enq.isBroadcasted ? (
-                                                            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md border border-emerald-100">
-                                                                <CheckCircle size={10} /> Broadcasted
-                                                            </span>
-                                                        ) : enq.scheduledBroadcastTime ? (
-                                                            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded-md border border-blue-100">
-                                                                <Clock size={10} /> Scheduled: {new Date(enq.scheduledBroadcastTime).toLocaleString()}
-                                                            </span>
-                                                        ) : (
-                                                            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-1 rounded-md border border-amber-100">
-                                                                <AlertCircle size={10} /> Pending Broadcast
-                                                            </span>
-                                                        )}
+                                                        <p className="text-sm font-black text-slate-800">
+                                                            {(enq.guestName === 'Guest' && enq.guestCompany)
+                                                                ? enq.guestCompany
+                                                                : (enq.guestName || enq.client?.name || 'Unknown')}
+                                                        </p>
+                                                        <p className="text-[10px] font-bold text-slate-500">{enq.guestEmail || enq.client?.email}</p>
+                                                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mt-1">{new Date(enq.createdAt).toLocaleDateString()}</p>
                                                     </div>
                                                 </div>
-                                            )}
-                                        </td>
-                                        <td className="p-4 align-top text-right space-x-2">
-                                            {editingEnq === enq._id ? (
-                                                <>
-                                                    <button onClick={() => handleSaveEdit(enq._id)} className="inline-flex p-1.5 bg-emerald-100 hover:bg-emerald-200 text-emerald-600 rounded-lg transition-colors" title="Save"><Save size={14} /></button>
-                                                    <button onClick={() => setEditingEnq(null)} className="inline-flex p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg transition-colors" title="Cancel"><X size={14} /></button>
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <button onClick={() => handleEditClick(enq)} className="inline-flex p-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg transition-colors" title="Edit"><Edit size={14} /></button>
-                                                    <button onClick={() => handleDelete(enq._id)} className="inline-flex p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg transition-colors" title="Delete"><Trash2 size={14} /></button>
-                                                    
-                                                    {!enq.isBroadcasted && !enq.scheduledBroadcastTime && (
-                                                        <>
-                                                            <button onClick={() => handleBroadcastNow(enq._id)} className="inline-flex p-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-600 rounded-lg transition-colors ml-2" title="Send to Vendors Now"><Send size={14} /></button>
-                                                            <button onClick={() => setScheduleModal({ isOpen: true, enqId: enq._id, date: enq.scheduledBroadcastTime ? new Date(new Date(enq.scheduledBroadcastTime).getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0,16) : '' })} className="inline-flex p-1.5 bg-amber-50 hover:bg-amber-100 text-amber-600 rounded-lg transition-colors" title="Schedule Broadcast"><Clock size={14} /></button>
-                                                        </>
-                                                    )}
-                                                </>
-                                            )}
-                                        </td>
-                                    </tr>
+                                            </td>
+                                            {/* Cargo Info */}
+                                            <td className="p-4">
+                                                {editingEnq === enq._id ? (
+                                                    <div className="flex flex-col gap-2 w-64">
+                                                        <div className="flex gap-2">
+                                                            <input
+                                                                type="text"
+                                                                value={editFormData.fromLocation}
+                                                                onChange={(e) => setEditFormData({ ...editFormData, fromLocation: e.target.value })}
+                                                                className="w-full text-xs font-bold border-2 border-slate-200 focus:border-blue-500 rounded-lg px-2 py-1.5 outline-none transition-colors"
+                                                                placeholder="From Port"
+                                                            />
+                                                            <span className="text-slate-300 self-center">→</span>
+                                                            <input
+                                                                type="text"
+                                                                value={editFormData.toLocation}
+                                                                onChange={(e) => setEditFormData({ ...editFormData, toLocation: e.target.value })}
+                                                                className="w-full text-xs font-bold border-2 border-slate-200 focus:border-blue-500 rounded-lg px-2 py-1.5 outline-none transition-colors"
+                                                                placeholder="To Port"
+                                                            />
+                                                        </div>
+                                                        <div className="flex gap-2">
+                                                            <input
+                                                                type="text"
+                                                                value={editFormData.type}
+                                                                onChange={(e) => setEditFormData({ ...editFormData, type: e.target.value })}
+                                                                className="w-1/2 text-[11px] font-black border-2 border-slate-200 focus:border-blue-500 rounded-lg px-2 py-1.5 outline-none transition-colors uppercase"
+                                                                placeholder="Cargo Type"
+                                                            />
+                                                            <input
+                                                                type="text"
+                                                                value={editFormData.commodity}
+                                                                onChange={(e) => setEditFormData({ ...editFormData, commodity: e.target.value })}
+                                                                className="w-1/2 text-[11px] font-bold border-2 border-slate-200 focus:border-blue-500 rounded-lg px-2 py-1.5 outline-none transition-colors"
+                                                                placeholder="Commodity"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <>
+                                                        <div className="font-bold text-slate-800 text-sm flex items-center gap-2 group-hover:text-blue-600 transition-colors">
+                                                            {enq.fromLocation} <span className="text-slate-300">→</span> {enq.toLocation}
+                                                        </div>
+                                                        <div className="text-xs font-black mt-1.5 flex items-center gap-2 flex-wrap">
+                                                            <span className="bg-blue-600 text-white px-2 py-0.5 rounded shadow-sm">Cargo: {enq.type?.toUpperCase()}</span>
+                                                            <span className="bg-slate-700 text-white px-2 py-0.5 rounded shadow-sm">Comm: {enq.commodity || 'N/A'}</span>
+                                                            {enq.weightRange && (
+                                                                <span className="bg-amber-500 text-white px-2 py-0.5 rounded shadow-sm">Weight: {enq.weightRange}</span>
+                                                            )}
+                                                            {enq.shipmentDate && (
+                                                                <span className="bg-emerald-600 text-white px-2 py-0.5 rounded shadow-sm">Shipment: {new Date(enq.shipmentDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+                                                            )}
+                                                        </div>
+                                                    </>
+                                                )}
+                                            </td>
+                                            <td className="p-4 align-top">
+                                                {editingEnq === enq._id ? (
+                                                    <div className="space-y-2">
+                                                        <select
+                                                            value={editFormData.status}
+                                                            onChange={(e) => setEditFormData({ ...editFormData, status: e.target.value })}
+                                                            className="w-full text-xs font-bold p-1.5 border border-slate-200 rounded-md outline-none"
+                                                        >
+                                                            <option value="Pending">Pending</option>
+                                                            <option value="Accepted">Accepted</option>
+                                                            <option value="Declined">Declined</option>
+                                                            <option value="Completed">Completed</option>
+                                                        </select>
+                                                        <input
+                                                            type="number"
+                                                            placeholder="Price"
+                                                            value={editFormData.price}
+                                                            onChange={(e) => setEditFormData({ ...editFormData, price: e.target.value })}
+                                                            className="w-full text-xs font-bold p-1.5 border border-slate-200 rounded-md outline-none"
+                                                        />
+                                                    </div>
+                                                ) : (
+                                                    <div>
+                                                        {getStatusBadge(enq.status)}
+                                                        {enq.price && <p className="text-xs font-black text-slate-700 mt-1.5">$ {enq.price}</p>}
+                                                        {enq.responses && enq.responses.filter(r => r.status === 'Accepted').length > 0 && (
+                                                            <div className="mt-2 text-[10px] bg-slate-50 p-1.5 rounded-lg border border-slate-100">
+                                                                <p className="font-bold text-slate-500 mb-1">Accepted by:</p>
+                                                                {enq.responses.filter(r => r.status === 'Accepted').map((r, idx) => (
+                                                                    <p key={idx} className="font-black text-emerald-600 truncate max-w-[150px]" title={r.vendor?.name || 'Unknown Vendor'}>
+                                                                        {r.vendor?.name || 'Unknown Vendor'}
+                                                                    </p>
+                                                                ))}
+                                                            </div>
+
+                                                        )}
+
+                                                        {/* Broadcast Status */}
+                                                        <div className="mt-3">
+                                                            {enq.isBroadcasted ? (
+                                                                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md border border-emerald-100">
+                                                                    <CheckCircle size={10} /> Broadcasted
+                                                                </span>
+                                                            ) : enq.scheduledBroadcastTime ? (
+                                                                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded-md border border-blue-100">
+                                                                    <Clock size={10} /> Scheduled: {new Date(enq.scheduledBroadcastTime).toLocaleString()}
+                                                                </span>
+                                                            ) : (
+                                                                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-1 rounded-md border border-amber-100">
+                                                                    <AlertCircle size={10} /> Pending Broadcast
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </td>
+                                            <td className="p-4 align-top text-right space-x-2">
+                                                {editingEnq === enq._id ? (
+                                                    <>
+                                                        <button onClick={() => handleSaveEdit(enq._id)} className="inline-flex p-1.5 bg-emerald-100 hover:bg-emerald-200 text-emerald-600 rounded-lg transition-colors" title="Save"><Save size={14} /></button>
+                                                        <button onClick={() => setEditingEnq(null)} className="inline-flex p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg transition-colors" title="Cancel"><X size={14} /></button>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <button onClick={() => handleEditClick(enq)} className="inline-flex p-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg transition-colors" title="Edit"><Edit size={14} /></button>
+                                                        <button onClick={() => handleDelete(enq._id)} className="inline-flex p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg transition-colors" title="Delete"><Trash2 size={14} /></button>
+
+                                                        {!enq.isBroadcasted && !enq.scheduledBroadcastTime && (
+                                                            <>
+                                                                <button onClick={() => handleBroadcastNow(enq._id)} className="inline-flex p-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-600 rounded-lg transition-colors ml-2" title="Send to Vendors Now"><Send size={14} /></button>
+                                                                <button onClick={() => setScheduleModal({ isOpen: true, enqId: enq._id, date: enq.scheduledBroadcastTime ? new Date(new Date(enq.scheduledBroadcastTime).getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16) : '' })} className="inline-flex p-1.5 bg-amber-50 hover:bg-amber-100 text-amber-600 rounded-lg transition-colors" title="Schedule Broadcast"><Clock size={14} /></button>
+                                                            </>
+                                                        )}
+                                                    </>
+                                                )}
+                                            </td>
+                                        </tr>
                                     );
                                 })
                             )}
@@ -437,11 +437,11 @@ const AdminEnquiriesTab = () => {
                         </div>
                         <div className="p-5">
                             <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-2">Select Date & Time</label>
-                            <input 
-                                type="datetime-local" 
+                            <input
+                                type="datetime-local"
                                 value={scheduleModal.date}
                                 onClick={(e) => {
-                                    try { e.target.showPicker(); } catch (err) {} 
+                                    try { e.target.showPicker(); } catch (err) { }
                                 }}
                                 onChange={(e) => setScheduleModal({ ...scheduleModal, date: e.target.value })}
                                 className="w-full p-3 border-2 border-slate-100 rounded-xl outline-none focus:border-blue-500 transition-colors text-sm font-bold text-slate-700 cursor-pointer"
@@ -452,13 +452,13 @@ const AdminEnquiriesTab = () => {
                             </p>
                         </div>
                         <div className="p-4 border-t border-slate-100 bg-slate-50/50 flex justify-end gap-3">
-                            <button 
+                            <button
                                 onClick={() => setScheduleModal({ isOpen: false, enqId: null, date: '' })}
                                 className="px-4 py-2 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-200 transition-colors"
                             >
                                 Cancel
                             </button>
-                            <button 
+                            <button
                                 onClick={handleScheduleSubmit}
                                 className="px-6 py-2 rounded-xl text-sm font-black text-white bg-[#0066FF] hover:bg-blue-700 shadow-lg shadow-blue-500/30 transition-all active:scale-95 flex items-center gap-2"
                             >

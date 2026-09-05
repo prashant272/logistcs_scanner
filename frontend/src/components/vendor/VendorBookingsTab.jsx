@@ -295,7 +295,7 @@ const VendorBookingsTab = ({ title = 'Bookings', type = 'my' }) => {
                               <Building2 size={13} className="text-slate-400" />
                               <span>{displayPartner.company || displayPartner.name || 'Customer'}</span>
                               {displayPartner.role === 'vendor' ? (
-                                displayPartner.activePlan && typeof displayPartner.activePlan === 'object' && displayPartner.activePlan.price > 0 && displayPartner.planEndDate && new Date(displayPartner.planEndDate) > new Date() ? (
+                                displayPartner.activePlan && typeof displayPartner.activePlan === 'object' && displayPartner.activePlan.price > 0 && displayPartner.activePlan.name?.toLowerCase() !== 'vendor lite' && displayPartner.planEndDate && new Date(displayPartner.planEndDate) > new Date() ? (
                                   <span className="bg-emerald-100 text-emerald-800 text-[8px] font-black px-2 py-0.5 rounded-md border border-emerald-200 uppercase tracking-wider">
                                     Verified Vendor
                                   </span>
@@ -514,9 +514,17 @@ const VendorBookingsTab = ({ title = 'Bookings', type = 'my' }) => {
                           }`}
                       >
                         <div className="space-y-1">
-                          <h4 className="text-xs font-black text-slate-800 uppercase tracking-tight">
-                            {resp.vendor?.company || resp.vendor?.name || 'Unknown Vendor'}
-                          </h4>
+                          <div className="flex items-center gap-2">
+                            <h4 className="text-xs font-black text-slate-800 uppercase tracking-tight">
+                              {resp.vendor?.company || resp.vendor?.name || 'Unknown Vendor'}
+                            </h4>
+                            {resp.vendor?.activePlan && resp.vendor.activePlan.price > 0 && resp.vendor.activePlan.name?.toLowerCase() !== 'vendor lite' && (
+                              <div title={resp.vendor.activePlan.name} className="inline-flex items-center gap-1 bg-emerald-50/80 border border-emerald-200 text-emerald-700 px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider shadow-sm">
+                                <CheckCircle2 size={10} />
+                                Verified Vendor
+                              </div>
+                            )}
+                          </div>
                           <div className="text-[10px] text-slate-500 font-bold space-y-0.5">
                             <div>Phone: {resp.vendor?.phone || 'N/A'}</div>
                             <div>Email: {resp.vendor?.email || 'N/A'}</div>
