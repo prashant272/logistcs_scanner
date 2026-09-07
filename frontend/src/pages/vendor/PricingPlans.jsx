@@ -120,7 +120,8 @@ const PricingPlans = () => {
                 fetchedPlans = fetchedPlans.filter(plan => {
                     const type = plan.serviceType || 'All';
                     if (isOnlyLand) {
-                        return type === 'Land'; // Land vendor sees ONLY Land plans
+                        const isVendorLite = plan.name && plan.name.toLowerCase() === 'vendor lite';
+                        return type === 'Land' || isVendorLite; // Land vendor sees ONLY Land plans + Vendor Lite
                     } else {
                         return type === 'All';  // Other vendors see ONLY All plans
                     }

@@ -588,7 +588,7 @@ exports.getVendorEnquiries = async (req, res) => {
                 inquiryLimit += (currentUser.topupEnquiryLimit || 0);
             }
 
-            const isPaidPlan = hasActivePlan && currentUser.activePlan && currentUser.activePlan.price > 0 && (!currentUser.activePlan.name || currentUser.activePlan.name.toLowerCase() !== 'vendor lite');
+            const isPaidPlan = hasActivePlan && currentUser.activePlan && currentUser.activePlan.price > 0;
 
             let limitStartDate = new Date();
             if (!isPaidPlan) {
@@ -671,7 +671,7 @@ exports.updateEnquiryStatus = async (req, res) => {
             const vendorUser = await User.findById(req.user.id).populate('activePlan');
             const hasActivePlan = vendorUser && vendorUser.activePlan && vendorUser.planEndDate && new Date(vendorUser.planEndDate) > new Date();
 
-            const isPaidPlan = hasActivePlan && vendorUser.activePlan.price > 0 && (!vendorUser.activePlan.name || vendorUser.activePlan.name.toLowerCase() !== 'vendor lite');
+            const isPaidPlan = hasActivePlan && vendorUser.activePlan.price > 0;
 
             let inquiryLimit = 5;
             if (hasActivePlan && vendorUser.activePlan && vendorUser.activePlan.inquiryLimit) {
@@ -927,7 +927,7 @@ exports.getVendorStats = async (req, res) => {
             if (!isAdmin) {
                 if (isBookingFilter) {
                     // Vendor acting as client (B2B). They should see their own created bookings immediately.
-                    query = { client: new mongoose.Types.ObjectId(req.user.id), isBooking: true, isDirect: type === 'direct' };
+                    query = { client: new mongoose.Types.ObjectId(req.user.id), isDirect: type === 'direct' };
                 } else {
                     if (type === 'my') {
                         // Enquiries targeted specifically to this vendor. Only visible if broadcasted.
