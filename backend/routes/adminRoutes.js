@@ -31,7 +31,9 @@ const {
     getUserByEmailForRole,
     updateUserRole,
     updateUserWallet,
-    getVendorActivity
+    getVendorActivity,
+    migrateUserEnquiries,
+    deleteUserAccount
 } = require("../controllers/adminController");
 const auth = require("../middleware/authMiddleware");
 
@@ -54,9 +56,11 @@ router.put("/vendors/:id/enquiry-limit", auth, updateVendorEnquiryLimit);
 router.put("/vendors/:id/plan", auth, updateVendorPlan);
 router.put("/vendors/:id", auth, updateVendorDetails);
 
-// User Role Update
+// User Role Update & Delete
 router.get("/user-role/:email", auth, getUserByEmailForRole);
 router.put("/user-role", auth, updateUserRole);
+router.delete("/user/:email", auth, deleteUserAccount);
+router.post("/user-enquiries/migrate", auth, migrateUserEnquiries);
 
 // Recharge Requests
 router.get("/recharge-requests", auth, getRechargeRequests);

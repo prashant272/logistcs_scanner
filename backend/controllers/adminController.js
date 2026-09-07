@@ -1,5 +1,6 @@
 const Admin = require('../models/Admin');
 const User = require('../models/User');
+const Enquiry = require('../models/Enquiry');
 const jwt = require('jsonwebtoken');
 const logActivity = require('../utils/activityLogger');
 const ActivityLog = require('../models/ActivityLog');
@@ -48,7 +49,7 @@ exports.getVendors = async (req, res) => {
         const serviceFilter = req.query.service || '';
 
         const query = { role: 'vendor' };
-        
+
         if (serviceFilter) {
             const servicesArray = serviceFilter.split(',').map(s => s.trim());
             if (servicesArray.includes('Only Land')) {
@@ -1218,7 +1219,7 @@ exports.getUserByEmailForRole = async (req, res) => {
 exports.updateUserRole = async (req, res) => {
     try {
         const { email, newRole } = req.body;
-        
+
         if (!email || !newRole) {
             return res.status(400).json({ message: 'Email and new role are required' });
         }
@@ -1229,7 +1230,7 @@ exports.updateUserRole = async (req, res) => {
         }
 
         const user = await User.findOne({ email: { $regex: new RegExp(`^${email}$`, 'i') } });
-        
+
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
@@ -1259,3 +1260,54 @@ exports.getVendorActivity = async (req, res) => {
     }
 };
 
+exports.migrateUserEnquiries = async (req, res) => {
+    try {
+        const { sourceEmail, targetEmail } = req.body;
+
+        if (!sourceEmail || !targetEmail) {
+            return res.status(400).json({ message: 'Source and target emails are required' });
+        }
+
+        const sourceUser = await User.findOne({ email: { $regex: new RegExp(`^${sourceEmail}$`, 'i') } });
+        const targetUser = await User.findOne({ email: { $regex: new RegExp(`^${targetEmail}$`, 'i') } });
+
+        if (!sourceUser) return res.status(404).json({ message: 'Source user not found' });
+        if (!targetUser) return res.status(404).json({ message: 'Target user not found' });
+
+        const result = await Enquiry.updateMany(
+            {
+                $or: [
+                    { client: sourceUser._id },
+                    { guestEmail: { $regex: new RegExp(`^${sourceEmail}$`, 'i') } }
+                ]
+            },
+            {
+                $set: {
+                    client: targetUser._id,
+                    guestEmail: targetUser.email
+                }
+            }
+        );
+
+        res.json({ message: 'Migration successful', modifiedCount: result.modifiedCount });
+    } catch (error) {
+        console.error('Migration error:', error);
+        res.status(500).json({ message: 'Server error during migration' });
+    }
+};
+
+exports.deleteUserAccount = async (req, res) => {
+    try {
+        const user = await User.findOne({ email: { $regex: new RegExp(`^${req.params.email}$`, 'i') } });
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        await User.findByIdAndDelete(user._id);
+
+        res.json({ message: 'User account deleted successfully' });
+    } catch (error) {
+        console.error('Delete user error:', error);
+        res.status(500).json({ message: 'Server error during user deletion' });
+    }
+};

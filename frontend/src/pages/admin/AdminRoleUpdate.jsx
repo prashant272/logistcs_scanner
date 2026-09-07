@@ -9,6 +9,12 @@ const AdminRoleUpdate = () => {
     const [newRole, setNewRole] = useState('');
     const [loading, setLoading] = useState(false);
     const [updating, setUpdating] = useState(false);
+    const [deleting, setDeleting] = useState(false);
+    
+    // Migration state
+    const [sourceMigrationEmail, setSourceMigrationEmail] = useState('');
+    const [targetMigrationEmail, setTargetMigrationEmail] = useState('');
+    const [migrating, setMigrating] = useState(false);
 
     const handleSearch = async (e) => {
         e.preventDefault();
@@ -60,6 +66,63 @@ const AdminRoleUpdate = () => {
             console.error('Failed to update role:', error);
             toast.error('Failed to update user role');
             setUpdating(false);
+        }
+    };
+
+    const handleDelete = async () => {
+        if (!window.confirm(`DANGER: Are you absolutely sure you want to delete ${user.email}? This will permanently remove their account.`)) {
+            return;
+        }
+
+        try {
+            setDeleting(true);
+            const token = sessionStorage.getItem('adminToken');
+            await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/admin/user/${encodeURIComponent(user.email)}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            
+            toast.success('User deleted successfully');
+            setUser(null);
+            setEmail('');
+            setDeleting(false);
+        } catch (error) {
+            console.error('Failed to delete user:', error);
+            toast.error('Failed to delete user');
+            setDeleting(false);
+        }
+    };
+
+    const handleMigrate = async () => {
+        if (!sourceMigrationEmail.trim()) return toast.error('Please enter a source email address');
+        if (!targetMigrationEmail.trim()) return toast.error('Please enter a target email address');
+        if (targetMigrationEmail.toLowerCase() === sourceMigrationEmail.toLowerCase()) return toast.error('Source and target emails cannot be the same');
+
+        if (!window.confirm(`Are you sure you want to migrate all enquiries from ${sourceMigrationEmail} to ${targetMigrationEmail}? This action cannot be undone.`)) {
+            return;
+        }
+
+        try {
+            setMigrating(true);
+            const token = sessionStorage.getItem('adminToken');
+            const res = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/admin/user-enquiries/migrate`, {
+                sourceEmail: sourceMigrationEmail,
+                targetEmail: targetMigrationEmail
+            }, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            
+            toast.success(`Successfully migrated ${res.data.modifiedCount} enquiries`);
+            setSourceMigrationEmail('');
+            setTargetMigrationEmail('');
+            setMigrating(false);
+        } catch (error) {
+            console.error('Migration failed:', error);
+            if (error.response && error.response.status === 404) {
+                toast.error(error.response.data.message || 'Target user not found');
+            } else {
+                toast.error('Failed to migrate enquiries');
+            }
+            setMigrating(false);
         }
     };
 
@@ -155,14 +218,69 @@ const AdminRoleUpdate = () => {
                                         {updating ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
                                         Update Role
                                     </button>
+
+                                    <button 
+                                        onClick={handleDelete}
+                                        disabled={deleting}
+                                        className="w-full h-10 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 rounded-xl font-bold flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                                        Delete User Account
+                                    </button>
                                 </div>
                                 <p className="text-xs font-medium text-slate-500 leading-relaxed pt-2">
                                     <span className="font-bold text-rose-500">Warning:</span> Changing a user's role will immediately alter their permissions and access to the platform. Ensure you have the right user.
                                 </p>
-                            </div>
                         </div>
                     </div>
+                    </div>
                 )}
+
+                {/* Data Migration Section (Separate) */}
+                <div className="bg-white rounded-3xl p-6 md:p-8 shadow-sm border border-slate-200/60 mt-8">
+                    <h3 className="font-black text-slate-800 tracking-wide text-lg flex items-center gap-2 mb-2">
+                        Migrate Data (Enquiries & Bookings)
+                    </h3>
+                    
+                    <p className="text-sm font-medium text-slate-500 leading-relaxed mb-6">
+                        Transfer all enquiries and bookings from one account to another (e.g., when a Customer upgrades to a Vendor account).
+                    </p>
+
+                    <div className="grid md:grid-cols-2 gap-6 items-end">
+                        <div className="space-y-2">
+                            <label className="text-sm font-bold text-slate-700 tracking-wide uppercase">Source Account Email</label>
+                            <input 
+                                type="email" 
+                                value={sourceMigrationEmail}
+                                onChange={(e) => setSourceMigrationEmail(e.target.value)}
+                                placeholder="Email to move data FROM" 
+                                className="w-full h-12 bg-slate-50 border border-slate-200 rounded-xl px-4 text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium placeholder:font-normal"
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-sm font-bold text-slate-700 tracking-wide uppercase">Target Account Email</label>
+                            <input 
+                                type="email" 
+                                value={targetMigrationEmail}
+                                onChange={(e) => setTargetMigrationEmail(e.target.value)}
+                                placeholder="Email to move data TO" 
+                                className="w-full h-12 bg-slate-50 border border-slate-200 rounded-xl px-4 text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium placeholder:font-normal"
+                            />
+                        </div>
+                    </div>
+                    
+                    <div className="mt-6">
+                        <button 
+                            onClick={handleMigrate}
+                            disabled={migrating || !targetMigrationEmail || !sourceMigrationEmail}
+                            className="h-12 px-8 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            {migrating ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
+                            Migrate All Data
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     );
