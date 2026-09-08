@@ -484,9 +484,35 @@ const CustomerEnquiriesTab = ({ title, type }) => {
                                     </span>
                                   )}
                                 </div>
-                                <div className="flex items-center gap-2 text-emerald-600">
-                                  <Coins size={14} />
-                                  <span>{resp.quoteDetails?.allInCurrency || '₹'} {resp.price?.toLocaleString() || resp.quoteDetails?.allInCharges}</span>
+                                <div className="flex items-center gap-4 text-emerald-600">
+                                  {resp.quoteDetails?.freightCharges ? (
+                                      <div className="flex flex-col items-end">
+                                          <span className="text-[9px] text-emerald-600/70 uppercase font-black">Freight Charges</span>
+                                          <span className="font-bold">{resp.quoteDetails.freightCurrency} {Number(resp.quoteDetails.freightCharges).toLocaleString()}</span>
+                                      </div>
+                                  ) : null}
+                                  {resp.quoteDetails?.otherCharges ? (
+                                      <div className={`flex flex-col items-end ${resp.quoteDetails?.freightCharges ? 'border-l border-emerald-200 pl-4' : ''}`}>
+                                          <span className="text-[9px] text-emerald-600/70 uppercase font-black">Other Charges</span>
+                                          <span className="font-bold">{resp.quoteDetails.otherCurrency} {Number(resp.quoteDetails.otherCharges).toLocaleString()}</span>
+                                      </div>
+                                  ) : null}
+                                  {resp.quoteDetails?.allInCharges ? (
+                                      <div className={`flex flex-col items-end ${(resp.quoteDetails?.freightCharges || resp.quoteDetails?.otherCharges) ? 'border-l border-emerald-200 pl-4' : ''}`}>
+                                          <span className="text-[9px] text-emerald-600/70 uppercase font-black">All-In Charges</span>
+                                          <div className="flex items-center gap-1 font-bold">
+                                            <span>{resp.quoteDetails.allInCurrency} {Number(resp.quoteDetails.allInCharges).toLocaleString()}</span>
+                                          </div>
+                                      </div>
+                                  ) : null}
+                                  {(!resp.quoteDetails || (!resp.quoteDetails.freightCharges && !resp.quoteDetails.otherCharges && !resp.quoteDetails.allInCharges)) && (
+                                      <div className="flex flex-col items-end">
+                                          <span className="text-[9px] text-emerald-600/70 uppercase font-black">Quote Amount</span>
+                                          <div className="flex items-center gap-1 font-bold">
+                                            <span>$ {resp.price ? resp.price.toLocaleString() : 'N/A'}</span>
+                                          </div>
+                                      </div>
+                                  )}
                                 </div>
                               </div>
                               );
@@ -496,9 +522,35 @@ const CustomerEnquiriesTab = ({ title, type }) => {
                       ) : (
                         <div className="flex items-center gap-3">
                           {hasQuote && (
-                            <div className="flex items-center gap-2 text-xs font-black text-emerald-600 bg-emerald-50 px-4 py-2.5 rounded-xl border border-emerald-100/70">
-                              <Coins size={14} />
-                              <span>Vendor Price Quote: ₹{enq.price?.toLocaleString()}</span>
+                            <div className="flex items-center gap-4 text-xs font-black text-emerald-600 bg-emerald-50 px-4 py-2.5 rounded-xl border border-emerald-100/70">
+                                {enq.quoteDetails?.freightCharges ? (
+                                    <div className="flex flex-col items-end">
+                                        <span className="text-[9px] text-emerald-600/70 uppercase font-black">Freight Charges</span>
+                                        <span>{enq.quoteDetails.freightCurrency} {Number(enq.quoteDetails.freightCharges).toLocaleString()}</span>
+                                    </div>
+                                ) : null}
+                                {enq.quoteDetails?.otherCharges ? (
+                                    <div className={`flex flex-col items-end ${enq.quoteDetails?.freightCharges ? 'border-l border-emerald-200 pl-4' : ''}`}>
+                                        <span className="text-[9px] text-emerald-600/70 uppercase font-black">Other Charges</span>
+                                        <span>{enq.quoteDetails.otherCurrency} {Number(enq.quoteDetails.otherCharges).toLocaleString()}</span>
+                                    </div>
+                                ) : null}
+                                {enq.quoteDetails?.allInCharges ? (
+                                    <div className={`flex flex-col items-end ${(enq.quoteDetails?.freightCharges || enq.quoteDetails?.otherCharges) ? 'border-l border-emerald-200 pl-4' : ''}`}>
+                                        <span className="text-[9px] text-emerald-600/70 uppercase font-black">All-In Charges</span>
+                                        <div className="flex items-center gap-1">
+                                          <span>{enq.quoteDetails.allInCurrency} {Number(enq.quoteDetails.allInCharges).toLocaleString()}</span>
+                                        </div>
+                                    </div>
+                                ) : null}
+                                {(!enq.quoteDetails || (!enq.quoteDetails.freightCharges && !enq.quoteDetails.otherCharges && !enq.quoteDetails.allInCharges)) && (
+                                    <div className="flex flex-col items-end">
+                                        <span className="text-[9px] text-emerald-600/70 uppercase font-black">Quote Amount</span>
+                                        <div className="flex items-center gap-1">
+                                          <span>₹ {enq.price ? enq.price.toLocaleString() : 'N/A'}</span>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                           )}
 

@@ -819,7 +819,29 @@ const VendorEnquiriesTab = ({ title, type }) => {
                     {/* Quote trigger button */}
                     {isAccepted && (
                       <button
-                        onClick={() => setActiveQuoteId(activeQuoteId === enq._id ? null : enq._id)}
+                        onClick={() => {
+                          if (activeQuoteId === enq._id) {
+                            setActiveQuoteId(null);
+                          } else {
+                            setActiveQuoteId(enq._id);
+                            if (quoteData) {
+                              setQuoteDetails({
+                                freightCharges: quoteData.freightCharges || '',
+                                freightCurrency: quoteData.freightCurrency || 'INR',
+                                otherCharges: quoteData.otherCharges || '',
+                                otherCurrency: quoteData.otherCurrency || 'INR',
+                                allInCharges: quoteData.allInCharges || '',
+                                allInCurrency: quoteData.allInCurrency || 'INR'
+                              });
+                            } else {
+                              setQuoteDetails({
+                                freightCharges: '', freightCurrency: 'INR',
+                                otherCharges: '', otherCurrency: 'INR',
+                                allInCharges: '', allInCurrency: 'INR'
+                              });
+                            }
+                          }
+                        }}
                         className="bg-amber-500 hover:bg-amber-600 text-white font-extrabold text-[10px] px-5 py-2 rounded-xl transition-all shadow-md shadow-amber-500/10 cursor-pointer uppercase tracking-wider"
                       >
                         {hasQuote ? 'Update Quote' : 'Quote'}

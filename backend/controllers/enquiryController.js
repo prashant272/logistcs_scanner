@@ -1349,6 +1349,7 @@ const triggerVendorBroadcast = async (enquiryId) => {
         }
 
         enquiry.isBroadcasted = true;
+        enquiry.createdAt = new Date(); // Update creation date to release date
         await enquiry.save();
     } catch (error) {
         console.error('Error triggering vendor broadcast:', error);

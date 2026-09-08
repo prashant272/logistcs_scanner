@@ -532,12 +532,38 @@ const VendorBookingsTab = ({ title = 'Bookings', type = 'my' }) => {
                         </div>
 
                         <div className="flex items-center gap-4 w-full md:w-auto justify-between md:justify-end">
-                          <div className="text-right">
-                            <span className="text-[8px] text-slate-400 uppercase font-black tracking-wider block">Quote Amount</span>
-                            <span className="text-sm font-black text-[#0066FF]">
-                              $ {resp.price ? resp.price.toLocaleString() : (resp.quoteDetails?.allInCharges ? Number(resp.quoteDetails.allInCharges).toLocaleString() : 'N/A')}
-                            </span>
-                          </div>
+                          {resp.quoteDetails?.freightCharges ? (
+                            <div className="text-right">
+                              <span className="text-[8px] text-slate-400 uppercase font-black tracking-wider block">Freight Charges</span>
+                              <span className="text-sm font-black text-[#0066FF]">
+                                {resp.quoteDetails.freightCurrency} {Number(resp.quoteDetails.freightCharges).toLocaleString()}
+                              </span>
+                            </div>
+                          ) : null}
+                          {resp.quoteDetails?.otherCharges ? (
+                            <div className="text-right">
+                              <span className="text-[8px] text-slate-400 uppercase font-black tracking-wider block">Other Charges</span>
+                              <span className="text-sm font-black text-[#0066FF]">
+                                {resp.quoteDetails.otherCurrency} {Number(resp.quoteDetails.otherCharges).toLocaleString()}
+                              </span>
+                            </div>
+                          ) : null}
+                          {resp.quoteDetails?.allInCharges ? (
+                            <div className="text-right">
+                              <span className="text-[8px] text-slate-400 uppercase font-black tracking-wider block">All-In Charges</span>
+                              <span className="text-sm font-black text-[#0066FF]">
+                                {resp.quoteDetails.allInCurrency} {Number(resp.quoteDetails.allInCharges).toLocaleString()}
+                              </span>
+                            </div>
+                          ) : null}
+                          {(!resp.quoteDetails || (!resp.quoteDetails.freightCharges && !resp.quoteDetails.otherCharges && !resp.quoteDetails.allInCharges)) && (
+                            <div className="text-right">
+                              <span className="text-[8px] text-slate-400 uppercase font-black tracking-wider block">Quote Amount</span>
+                              <span className="text-sm font-black text-[#0066FF]">
+                                $ {resp.price ? resp.price.toLocaleString() : 'N/A'}
+                              </span>
+                            </div>
+                          )}
 
                           {selectedBookingForQuotes.status !== 'Accepted' ? (
                             <button
