@@ -5,6 +5,28 @@ import {
   User, Users, Mail, Phone, MapPin, Building, Calendar, Search, 
   ArrowRight, FileText, CheckCircle2, XCircle, ArrowLeft, RefreshCw, Globe, Plus, X, Loader2, Wallet, LogIn
 } from 'lucide-react';
+import { COUNTRIES } from '../../utils/countries';
+
+const getCountryFromPhone = (phone) => {
+  if (!phone) return '';
+  const p = phone.replace(/\D/g, ''); // digits only
+  const pWithPlus = phone.replace(/\s+/g, ''); // remove spaces
+  
+  if (!pWithPlus.startsWith('+') && p.length === 10) {
+    return 'India';
+  }
+  
+  // Sort countries by code length descending to match longest code first (e.g. +1-264 before +1)
+  const sortedCountries = [...COUNTRIES].sort((a, b) => b.code.length - a.code.length);
+  for (const country of sortedCountries) {
+    // Remove dashes from country code for comparison
+    const code = country.code.replace(/-/g, '');
+    if (pWithPlus.startsWith(code)) {
+      return country.name;
+    }
+  }
+  return ''; // default if not matched
+};
 
 const CustomerManagement = () => {
   const [activeTab, setActiveTab] = useState('customers'); // 'customers' or 'guests'
@@ -529,7 +551,7 @@ const CustomerManagement = () => {
                       <td className="p-5">
                         <div className="flex items-center gap-1">
                           <Globe size={13} className="text-slate-400" />
-                          <span>{c.country || 'India'}</span>
+                          <span>{c.country || getCountryFromPhone(c.phone) || 'India'}</span>
                         </div>
                       </td>
                       <td className="p-5 text-[#0B1E43] font-black">
@@ -596,6 +618,7 @@ const CustomerManagement = () => {
                     <th className="p-5">Guest Name</th>
                     <th className="p-5">Email Address</th>
                     <th className="p-5">Mobile Number</th>
+                    <th className="p-5">Country</th>
                     <th className="p-5">Organization Name</th>
                     <th className="p-5">Last Activity</th>
                     <th className="p-5 text-right">Actions</th>
@@ -611,6 +634,12 @@ const CustomerManagement = () => {
                       <td className="p-5 font-black text-[#0B1E43] group-hover:text-[#0066FF] transition-colors">{g.name || 'N/A'}</td>
                       <td className="p-5 text-slate-500 font-medium">{g.email}</td>
                       <td className="p-5 text-slate-700">{g.phone || 'N/A'}</td>
+                      <td className="p-5">
+                        <div className="flex items-center gap-1">
+                          <Globe size={13} className="text-slate-400" />
+                          <span>{g.country || getCountryFromPhone(g.phone) || 'India'}</span>
+                        </div>
+                      </td>
                       <td className="p-5 text-[#0B1E43] font-black">
                         <div className="flex items-center gap-2">
                           <Building size={15} className="text-slate-400" />
