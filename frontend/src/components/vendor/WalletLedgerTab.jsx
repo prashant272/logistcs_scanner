@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { Wallet, ArrowDownRight, ArrowUpRight, Loader2, IndianRupee, Clock, History, CreditCard, XCircle, CheckCircle2 } from 'lucide-react';
+import { Wallet, ArrowDownRight, ArrowUpRight, Loader2, IndianRupee, Clock, History, CreditCard, XCircle, CheckCircle2, Zap, ShieldAlert, Award, AlertTriangle } from 'lucide-react';
 
 const WalletLedgerTab = () => {
     const [balance, setBalance] = useState(0);
     const [transactions, setTransactions] = useState([]);
+    const [creditStats, setCreditStats] = useState({ totalPendingDues: 0, totalPenalties: 0, creditScore: 100, pendingCount: 0, scoreAudit: [] });
+    const [scoreModalOpen, setScoreModalOpen] = useState(false);
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
 
@@ -118,11 +120,31 @@ const WalletLedgerTab = () => {
         try {
             setLoading(true);
             const token = localStorage.getItem('userToken');
-            const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/finance/wallet/ledger`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            setBalance(res.data?.balance || 0);
-            setTransactions(res.data?.transactions || []);
+            const [ledgerRes, statsRes] = await Promise.all([
+                axios.get(`${import.meta.env.VITE_API_BASE_URL}/finance/wallet/ledger`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                }),
+                axios.get(`${import.meta.env.VITE_API_BASE_URL}/finance/credit-stats`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                }).catch(() => ({ data: null }))
+            ]);
+            
+            setBalance(ledgerRes.data?.balance || 0);
+            setTransactions(ledgerRes.data?.transactions || []);
+
+            if (statsRes.data) {
+                setCreditStats({
+                    totalPendingDues: statsRes.data.totalPendingDues || 0,
+                    totalPenalties: statsRes.data.totalPenalties || 0,
+                    creditScore: statsRes.data.creditScore ?? 100,
+                    creditRating: statsRes.data.creditRating || 'Excellent',
+                    pendingCount: statsRes.data.pendingCount || 0,
+                    overdueCount: statsRes.data.overdueCount || 0,
+                    clearedCount: statsRes.data.clearedCount || 0,
+                    scoreAudit: statsRes.data.scoreAudit || [],
+                    pendingInvoices: statsRes.data.pendingInvoices || []
+                });
+            }
         } catch (error) {
             console.error('Error fetching ledger:', error);
         } finally {
@@ -267,25 +289,30 @@ const WalletLedgerTab = () => {
 
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
-            {/* Wallet Balance Card */}
-            <div className="bg-gradient-to-br from-[#0B1E43] to-[#1a3668] rounded-3xl p-8 text-white relative overflow-hidden shadow-xl">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
-                
-                <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+            {/* Top Credit System Summary Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {/* 1. Wallet Balance Card */}
+                <div className="bg-gradient-to-br from-[#0B1E43] to-[#1a3668] rounded-3xl p-6 text-white relative overflow-hidden shadow-xl flex flex-col justify-between">
+                    <div className="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
                     <div>
                         <div className="flex items-center gap-2 text-blue-200 mb-2">
-                            <Wallet size={20} />
-                            <span className="font-bold text-sm tracking-widest uppercase">Available Wallet Limit</span>
+                            <Wallet size={18} />
+                            <span className="font-bold text-xs tracking-widest uppercase">Available Wallet Limit</span>
                         </div>
-                        <div className="flex items-end gap-2">
+                        <div className="flex items-end gap-1.5 mt-2">
                             <IndianRupee className="w-6 h-6 mb-1 text-blue-300" />
-                            <h2 className="text-3xl md:text-4xl font-black tracking-tight">
+                            <h2 className="text-3xl font-black tracking-tight">
                                 {balance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                             </h2>
                         </div>
                     </div>
-                    
-                    <div className="flex flex-col sm:flex-row gap-3">
+                    <div className="flex gap-2 mt-6">
+                        <button 
+                            onClick={() => setRechargeModalOpen(true)}
+                            className="w-full bg-[#00b2fe] hover:bg-[#009bdf] text-white py-2.5 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 transition-all shadow-md"
+                        >
+                            <ArrowUpRight className="w-4 h-4" /> Recharge
+                        </button>
                         <button 
                             onClick={() => {
                                 const pendingInvoiceTxns = transactions.filter(t => t.type === 'Debit' && t.referenceId && (t.referenceId.status === 'Approved' || t.referenceId.status === 'Paid'));
@@ -293,25 +320,162 @@ const WalletLedgerTab = () => {
                                     setSelectedRepayInvoice(pendingInvoiceTxns[0].referenceId);
                                     setRepayModalOpen(true);
                                 } else {
-                                    alert('No pending invoices found to repay. New approved invoices will appear here.');
+                                    alert('No pending invoices found to repay.');
                                 }
                             }}
-                            className="bg-white hover:bg-slate-50 text-[#0B1E43] px-5 py-2.5 rounded-xl text-sm font-black flex items-center justify-center gap-2 transition-all shadow-xl hover:shadow-2xl hover:-translate-y-0.5 shrink-0"
+                            className="w-full bg-white/10 hover:bg-white/20 text-white py-2.5 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 transition-all border border-white/20"
                         >
-                            <CreditCard className="w-4 h-4" />
-                            Repay Invoice
-                        </button>
-
-                        <button 
-                            onClick={() => setRechargeModalOpen(true)}
-                            className="bg-[#00b2fe] hover:bg-[#009bdf] text-white px-5 py-2.5 rounded-xl text-sm font-black flex items-center justify-center gap-2 transition-all shadow-xl hover:shadow-2xl hover:-translate-y-0.5 shrink-0 border border-white/20"
-                        >
-                            <ArrowUpRight className="w-4 h-4" />
-                            Recharge Wallet
+                            <CreditCard className="w-4 h-4" /> Repay
                         </button>
                     </div>
                 </div>
+
+                {/* 2. Pending Invoice Dues Card */}
+                <div className="bg-gradient-to-br from-rose-900 to-slate-900 rounded-3xl p-6 text-white relative overflow-hidden shadow-xl flex flex-col justify-between border border-rose-500/20">
+                    <div>
+                        <div className="flex items-center justify-between text-rose-200 mb-2">
+                            <div className="flex items-center gap-2">
+                                <ShieldAlert size={18} className="text-rose-400" />
+                                <span className="font-bold text-xs tracking-widest uppercase">Pending Invoice Dues</span>
+                            </div>
+                            {creditStats.pendingCount > 0 && (
+                                <span className="bg-rose-500/30 text-rose-300 text-[10px] font-black px-2 py-0.5 rounded-full border border-rose-400/30">
+                                    {creditStats.pendingCount} Pending
+                                </span>
+                            )}
+                        </div>
+                        <div className="flex items-end gap-1.5 mt-2">
+                            <IndianRupee className="w-6 h-6 mb-1 text-rose-300" />
+                            <h2 className="text-3xl font-black tracking-tight text-rose-100">
+                                {creditStats.totalPendingDues.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                            </h2>
+                        </div>
+                    </div>
+                    <div className="mt-4 pt-4 border-t border-white/10 flex items-center justify-between text-xs font-semibold text-rose-200/80">
+                        <span>Penalties Accrued:</span>
+                        <span className="font-black text-rose-300 flex items-center">
+                            <IndianRupee className="w-3 h-3 mr-0.5" />
+                            {creditStats.totalPenalties.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                        </span>
+                    </div>
+                </div>
+
+                {/* 3. Credit Health & Auto-Deduct Status */}
+                <div 
+                    onClick={() => setScoreModalOpen(true)}
+                    className={`bg-gradient-to-br ${creditStats.creditScore < 40 ? 'from-rose-950 to-slate-900 border-rose-500/30' : creditStats.creditScore < 80 ? 'from-amber-950 to-slate-900 border-amber-500/30' : 'from-emerald-950 to-slate-900 border-emerald-500/30'} rounded-3xl p-6 text-white relative overflow-hidden shadow-xl flex flex-col justify-between border cursor-pointer hover:scale-[1.01] transition-all group`}
+                    title="Click to view detailed LS Score Audit & Summary"
+                >
+                    <div>
+                        <div className="flex items-center justify-between text-emerald-200 mb-2">
+                            <div className="flex items-center gap-2">
+                                <Award size={18} className={creditStats.creditScore < 40 ? 'text-rose-400' : creditStats.creditScore < 80 ? 'text-amber-400' : 'text-emerald-400'} />
+                                <span className="font-bold text-xs tracking-widest uppercase">LS SCORE</span>
+                            </div>
+                            <span className={`font-black text-xs px-2 py-0.5 rounded-full ${creditStats.creditScore < 40 ? 'bg-rose-500/20 text-rose-300' : creditStats.creditScore < 80 ? 'bg-amber-500/20 text-amber-300' : 'bg-emerald-500/20 text-emerald-300'}`}>
+                                {creditStats.creditScore}/100 ({creditStats.creditRating || 'Good'})
+                            </span>
+                        </div>
+                        <div className="w-full bg-slate-800 h-2.5 rounded-full mt-3 overflow-hidden p-0.5 border border-white/10">
+                            <div 
+                                className={`h-full rounded-full transition-all duration-1000 ${creditStats.creditScore < 40 ? 'bg-rose-500' : creditStats.creditScore < 80 ? 'bg-amber-400' : 'bg-gradient-to-r from-amber-400 to-emerald-400'}`}
+                                style={{ width: `${Math.min(100, Math.max(5, creditStats.creditScore))}%` }}
+                            ></div>
+                        </div>
+                    </div>
+                    <div className="mt-4 pt-3 border-t border-white/10 flex items-center justify-between text-xs font-bold text-slate-300">
+                        <span className="flex items-center gap-1.5">
+                            <Zap className="w-4 h-4 text-amber-400 shrink-0" />
+                            <span>Auto-Clear Active</span>
+                        </span>
+                        <span className="text-[10px] text-amber-300 underline font-black group-hover:translate-x-0.5 transition-transform">
+                            View Audit Summary &rarr;
+                        </span>
+                    </div>
+                </div>
             </div>
+
+            {/* Itemized Pending Dues & Penalties Breakdown */}
+            {creditStats.pendingInvoices && creditStats.pendingInvoices.length > 0 && (
+                <div className="bg-gradient-to-r from-rose-50 to-amber-50 rounded-2xl p-6 border border-rose-200 shadow-sm">
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-2 text-rose-900">
+                            <AlertTriangle className="w-5 h-5 text-rose-600" />
+                            <h3 className="text-lg font-black tracking-tight">Active Pending Invoices & Penalties Breakdown</h3>
+                        </div>
+                        <span className="text-xs font-bold text-rose-700 bg-rose-100 px-3 py-1 rounded-full border border-rose-200">
+                            {creditStats.pendingInvoices.length} Unpaid Repayment(s)
+                        </span>
+                    </div>
+
+                    <div className="overflow-x-auto rounded-xl border border-rose-200 bg-white">
+                        <table className="w-full text-left whitespace-nowrap">
+                            <thead>
+                                <tr className="bg-rose-100/60 border-b border-rose-200 text-rose-900 text-xs font-black uppercase">
+                                    <th className="px-4 py-3">Invoice LS ID</th>
+                                    <th className="px-4 py-3">Approved Base</th>
+                                    <th className="px-4 py-3">Processing Fee</th>
+                                    <th className="px-4 py-3 text-rose-600">Accrued Penalty</th>
+                                    <th className="px-4 py-3">Due Date / Status</th>
+                                    <th className="px-4 py-3 text-right">Total Payable</th>
+                                    <th className="px-4 py-3 text-center">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-rose-100 text-sm">
+                                {creditStats.pendingInvoices.map((inv) => (
+                                    <tr key={inv._id} className="hover:bg-rose-50/50">
+                                        <td className="px-4 py-3 font-black text-slate-800">
+                                            {inv.lsId}
+                                        </td>
+                                        <td className="px-4 py-3 font-bold text-slate-700">
+                                            ₹{(inv.approvedAmount || 0).toLocaleString('en-IN')}
+                                        </td>
+                                        <td className="px-4 py-3 font-bold text-slate-600">
+                                            ₹{(inv.processingFee || 0).toLocaleString('en-IN')}
+                                        </td>
+                                        <td className="px-4 py-3 font-black text-rose-600">
+                                            {inv.penaltyAmount > 0 ? (
+                                                <span className="inline-flex items-center gap-1 bg-rose-100 text-rose-700 px-2 py-0.5 rounded text-xs">
+                                                    + ₹{inv.penaltyAmount.toLocaleString('en-IN')}
+                                                </span>
+                                            ) : (
+                                                <span className="text-slate-400 text-xs font-normal">₹0</span>
+                                            )}
+                                        </td>
+                                        <td className="px-4 py-3">
+                                            {inv.isOverdue ? (
+                                                <span className="inline-flex items-center gap-1 text-xs font-black text-rose-700 bg-rose-100 px-2.5 py-1 rounded-md border border-rose-300">
+                                                    <Clock className="w-3 h-3" /> Overdue by {inv.daysOverdue} day(s)
+                                                </span>
+                                            ) : inv.timelineDate ? (
+                                                <span className="text-xs font-bold text-slate-600 flex items-center gap-1">
+                                                    <Clock className="w-3 h-3 text-slate-400" /> Due: {new Date(inv.timelineDate).toLocaleDateString()}
+                                                </span>
+                                            ) : (
+                                                <span className="text-xs font-bold text-slate-400">Standard</span>
+                                            )}
+                                        </td>
+                                        <td className="px-4 py-3 text-right font-black text-rose-900 text-base">
+                                            ₹{(inv.totalDue || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                        </td>
+                                        <td className="px-4 py-3 text-center">
+                                            <button
+                                                onClick={() => {
+                                                    setSelectedRepayInvoice(inv);
+                                                    setRepayModalOpen(true);
+                                                }}
+                                                className="bg-rose-600 hover:bg-rose-700 text-white text-xs font-black px-3 py-1.5 rounded-lg shadow-sm transition-all"
+                                            >
+                                                Repay Now
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            )}
 
             {success && (
                 <div className="bg-green-50 border border-green-200 text-green-700 px-6 py-4 rounded-xl flex items-center gap-3">
@@ -646,6 +810,90 @@ const WalletLedgerTab = () => {
                                 </div>
                             )}
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {/* LS Score Audit & Breakdown Modal */}
+            {scoreModalOpen && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+                    <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+                        <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-gradient-to-r from-slate-900 to-[#0B1E43] text-white">
+                            <div className="flex items-center gap-2.5">
+                                <Award className="w-6 h-6 text-amber-400 shrink-0" />
+                                <div>
+                                    <h3 className="text-lg font-black tracking-tight">LS Score Audit & Breakdown</h3>
+                                    <p className="text-xs text-slate-300 font-bold">Complete summary of additions & deductions</p>
+                                </div>
+                            </div>
+                            <button onClick={() => setScoreModalOpen(false)} className="w-8 h-8 flex items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors">
+                                <XCircle className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        <div className="p-6 space-y-6 max-h-[75vh] overflow-y-auto">
+                            {/* Score Card Banner */}
+                            <div className={`p-5 rounded-2xl border flex items-center justify-between ${
+                                creditStats.creditScore < 40 ? 'bg-rose-50 border-rose-200 text-rose-950' : creditStats.creditScore < 80 ? 'bg-amber-50 border-amber-200 text-amber-950' : 'bg-emerald-50 border-emerald-200 text-emerald-950'
+                            }`}>
+                                <div>
+                                    <span className="text-[10px] font-black uppercase tracking-widest block opacity-75">Current Vendor LS Score</span>
+                                    <div className="flex items-baseline gap-2 mt-1">
+                                        <span className="text-4xl font-black">{creditStats.creditScore}</span>
+                                        <span className="text-sm font-bold opacity-60">/ 100</span>
+                                    </div>
+                                </div>
+                                <span className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider shadow-sm ${
+                                    creditStats.creditScore < 40 ? 'bg-rose-600 text-white' : creditStats.creditScore < 80 ? 'bg-amber-600 text-white' : 'bg-emerald-600 text-white'
+                                }`}>
+                                    {creditStats.creditRating || 'Active'}
+                                </span>
+                            </div>
+
+                            {/* Audit Items List */}
+                            <div>
+                                <h4 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-3">Score Breakdown Audit Log (Kaise Kata / Badha)</h4>
+                                <div className="space-y-3">
+                                    {creditStats.scoreAudit && creditStats.scoreAudit.length > 0 ? (
+                                        creditStats.scoreAudit.map((item, idx) => (
+                                            <div key={idx} className="bg-slate-50 p-4 rounded-xl border border-slate-200 flex items-start justify-between gap-3">
+                                                <div>
+                                                    <h5 className="text-sm font-black text-slate-800">{item.title}</h5>
+                                                    <p className="text-xs font-bold text-slate-500 mt-0.5">{item.reason}</p>
+                                                </div>
+                                                <span className={`text-sm font-black px-2.5 py-1 rounded-lg shrink-0 ${
+                                                    item.pointsValue > 0 ? 'bg-green-100 text-green-700' : item.pointsValue < 0 ? 'bg-rose-100 text-rose-700' : 'bg-blue-100 text-blue-700'
+                                                }`}>
+                                                    {item.points}
+                                                </span>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <div className="bg-slate-50 p-4 rounded-xl text-center text-xs font-bold text-slate-500">
+                                            No deduction logs recorded. Standard score of 100/100.
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Rules & Score Growth Tips */}
+                            <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 space-y-2">
+                                <h4 className="text-xs font-black text-blue-900 uppercase tracking-wider flex items-center gap-1.5">
+                                    <Zap className="w-4 h-4 text-blue-600" /> LS Score Guide (Score Kaise Badhaye?)
+                                </h4>
+                                <ul className="text-xs font-bold text-blue-800 space-y-1.5 list-disc list-inside pl-1">
+                                    <li><b>Pay Dues On-Time</b>: Avoid invoice overdue dates to prevent <b>-20 Pts</b> penalties per invoice.</li>
+                                    <li><b>Recharge Wallet</b>: Wallet recharges auto-clear oldest dues instantly.</li>
+                                    <li><b>Repayment Bonus</b>: Every cleared invoice adds <b>+2 Bonus Points</b> back to your LS Score!</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div className="p-4 bg-slate-50 border-t border-slate-100 text-center">
+                            <button onClick={() => setScoreModalOpen(false)} className="w-full bg-[#0B1E43] hover:bg-[#1a3668] text-white py-3 rounded-xl font-black text-sm transition-all shadow-md">
+                                Close Breakdown
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

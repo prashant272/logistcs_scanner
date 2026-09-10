@@ -3,9 +3,21 @@ import axios from 'axios';
 import useInfiniteScroll from '../../hooks/useInfiniteScroll';
 import { 
   User, Users, Mail, Phone, MapPin, Building, Calendar, Search, 
-  ArrowRight, FileText, CheckCircle2, XCircle, ArrowLeft, RefreshCw, Globe, Plus, X, Loader2, Wallet, LogIn
+  ArrowRight, FileText, CheckCircle2, XCircle, ArrowLeft, RefreshCw, Globe, Plus, X, Loader2, Wallet, LogIn, Sparkles
 } from 'lucide-react';
 import { COUNTRIES } from '../../utils/countries';
+
+const isNewSelfRegistered = (c) => {
+  if (!c || !c.createdAt) return false;
+  // Must be self-registered explicitly (ignores old records without createdVia)
+  const isSelf = c.createdVia === 'self';
+  if (!isSelf) return false;
+  
+  const createdTime = new Date(c.createdAt).getTime();
+  const currentTime = Date.now();
+  const diffInDays = (currentTime - createdTime) / (1000 * 60 * 60 * 24);
+  return diffInDays <= 3;
+};
 
 const getCountryFromPhone = (phone) => {
   if (!phone) return '';
@@ -545,7 +557,19 @@ const CustomerManagement = () => {
                       ref={index === filteredCustomers.length - 1 ? lastCustomerElementRef : null}
                       className="hover:bg-slate-50/50 transition-colors group"
                     >
-                      <td className="p-5 font-black text-[#0B1E43] cursor-pointer" onClick={() => fetchHistory({ ...c, type: 'customer', id: c._id })}>{c.name || 'N/A'}</td>
+                      <td className="p-5 font-black text-[#0B1E43] cursor-pointer" onClick={() => fetchHistory({ ...c, type: 'customer', id: c._id })}>
+                        <div className="flex items-center gap-2">
+                          <span>{c.name || 'N/A'}</span>
+                          {isNewSelfRegistered(c) && (
+                            <span 
+                              className="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest bg-gradient-to-r from-[#0066FF] to-[#00B2FE] text-white shadow-[0_0_12px_rgba(0,102,255,0.45)] border border-white/20 flex items-center gap-1"
+                              title="Self-registered customer (Joined within last 3 days)"
+                            >
+                              <Sparkles size={10} className="animate-pulse text-blue-100" /> NEW
+                            </span>
+                          )}
+                        </div>
+                      </td>
                       <td className="p-5 text-slate-500 font-medium">{c.email}</td>
                       <td className="p-5 text-slate-700">{c.phone || 'N/A'}</td>
                       <td className="p-5">

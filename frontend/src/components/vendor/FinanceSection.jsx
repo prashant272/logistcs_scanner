@@ -25,7 +25,7 @@ const FinanceSection = ({ stats }) => {
               <span className="text-xs font-black !text-slate-800">{invoicesCount} Invoices</span>
             </div>
           </div>
-          <Link to="/vendor/upload-invoice" className="text-[10px] text-[#0066FF] font-black hover:underline uppercase tracking-wider">
+          <Link to="/vendor/finance-list?tab=upload_invoice" className="text-[10px] text-[#0066FF] font-black hover:underline uppercase tracking-wider">
             View Details →
           </Link>
         </div>
@@ -41,7 +41,7 @@ const FinanceSection = ({ stats }) => {
               <span className="text-xs font-black !text-green-600">₹ {upcomingPaymentDue.toLocaleString('en-IN')}</span>
             </div>
           </div>
-          <Link to="/vendor/finance-list" className="text-[10px] text-[#0066FF] font-black hover:underline uppercase tracking-wider">
+          <Link to="/vendor/finance-list?tab=upload_invoice&filter=upcoming" className="text-[10px] text-[#0066FF] font-black hover:underline uppercase tracking-wider">
             View Details →
           </Link>
         </div>
@@ -57,7 +57,7 @@ const FinanceSection = ({ stats }) => {
               <span className="text-xs font-black !text-red-600">₹ {dueIn5Days.toLocaleString('en-IN')}</span>
             </div>
           </div>
-          <Link to="/vendor/finance-list" className="text-[10px] text-[#0066FF] font-black hover:underline uppercase tracking-wider">
+          <Link to="/vendor/finance-list?tab=upload_invoice&filter=due_5_days" className="text-[10px] text-[#0066FF] font-black hover:underline uppercase tracking-wider">
             View Details →
           </Link>
         </div>

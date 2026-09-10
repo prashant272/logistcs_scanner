@@ -67,16 +67,41 @@ const UserProfileSection = ({ user }) => {
             view more
           </button>
         </div>
-        <div className="flex items-center justify-between gap-2 pt-4 border-t border-slate-100">
-          <div>
-            <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">LS SCORE</p>
-            <span className="text-xs font-black tracking-wide text-green-600">
-              {Math.min(user?.creditScore ?? 100, 100)} / 100
-            </span>
-          </div>
-          <div className="bg-green-50 text-green-600 text-[9px] font-black px-3.5 py-2 rounded-xl uppercase tracking-widest">
-            Active
-          </div>
+        <div 
+          onClick={() => navigate('/vendor/wallet-ledger')}
+          className="flex items-center justify-between gap-2 pt-4 border-t border-slate-100 cursor-pointer hover:bg-slate-50/80 p-1.5 rounded-xl transition-all group"
+          title="Click to view detailed LS Score Audit & Summary Breakdown"
+        >
+          {(() => {
+            const score = user?.creditScore ?? 100;
+            let colorClass = 'text-green-600';
+            let badgeClass = 'bg-green-50 text-green-600';
+            let badgeText = 'Active';
+
+            if (score < 40) {
+              colorClass = 'text-rose-600';
+              badgeClass = 'bg-rose-50 text-rose-600 border border-rose-200';
+              badgeText = 'High Risk';
+            } else if (score < 80) {
+              colorClass = 'text-amber-600';
+              badgeClass = 'bg-amber-50 text-amber-600 border border-amber-200';
+              badgeText = 'Moderate';
+            }
+
+            return (
+              <>
+                <div>
+                  <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">LS SCORE</p>
+                  <span className={`text-xs font-black tracking-wide ${colorClass}`}>
+                    {score} / 100
+                  </span>
+                </div>
+                <div className={`${badgeClass} text-[9px] font-black px-3.5 py-2 rounded-xl uppercase tracking-widest`}>
+                  {badgeText}
+                </div>
+              </>
+            );
+          })()}
         </div>
       </div>
     </div>

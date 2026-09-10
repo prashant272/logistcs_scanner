@@ -319,7 +319,7 @@ const VendorDashboardMain = () => {
                         <div className="lg:col-span-4 space-y-6">
 
                             {/* USER PROFILE CARD */}
-                            <UserProfileSection user={user} />
+                            <UserProfileSection user={stats?.profile || user} />
 
                             {/* RM DETAIL CARD */}
                             {user?.assignedRM ? (

@@ -1,11 +1,34 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import VendorFinanceList from './VendorFinanceList';
 import UploadInvoiceTab from '../../components/vendor/UploadInvoiceTab';
 import WalletLedgerTab from '../../components/vendor/WalletLedgerTab';
 import { FileText, UploadCloud, Wallet } from 'lucide-react';
 
 const VendorFinanceDashboard = () => {
-    const [activeTab, setActiveTab] = useState('finance_list');
+    const location = useLocation();
+    const navigate = useNavigate();
+    
+    // Parse tab from URL
+    const queryParams = new URLSearchParams(location.search);
+    const initialTab = queryParams.get('tab') || 'finance_list';
+    
+    const [activeTab, setActiveTab] = useState(initialTab);
+
+    // Sync tab changes with URL
+    useEffect(() => {
+        const currentTab = queryParams.get('tab');
+        if (currentTab && currentTab !== activeTab) {
+            setActiveTab(currentTab);
+        }
+    }, [location.search]);
+
+    const handleTabChange = (tab) => {
+        setActiveTab(tab);
+        const newParams = new URLSearchParams(location.search);
+        newParams.set('tab', tab);
+        navigate(`/vendor/finance-list?${newParams.toString()}`, { replace: true });
+    };
 
     return (
         <div className="space-y-6">
@@ -19,7 +42,7 @@ const VendorFinanceDashboard = () => {
             {/* Tabs */}
             <div className="flex items-center gap-2 border-b border-slate-200 pb-px overflow-x-auto hide-scrollbar">
                 <button
-                    onClick={() => setActiveTab('finance_list')}
+                    onClick={() => handleTabChange('finance_list')}
                     className={`flex items-center gap-2 px-6 py-3 text-sm font-black transition-all border-b-2 whitespace-nowrap ${
                         activeTab === 'finance_list'
                             ? 'border-[#0066FF] text-[#0066FF]'
@@ -29,7 +52,7 @@ const VendorFinanceDashboard = () => {
                     <FileText size={16} /> Finance Applications
                 </button>
                 <button
-                    onClick={() => setActiveTab('upload_invoice')}
+                    onClick={() => handleTabChange('upload_invoice')}
                     className={`flex items-center gap-2 px-6 py-3 text-sm font-black transition-all border-b-2 whitespace-nowrap ${
                         activeTab === 'upload_invoice'
                             ? 'border-[#0066FF] text-[#0066FF]'
@@ -39,7 +62,7 @@ const VendorFinanceDashboard = () => {
                     <UploadCloud size={16} /> Upload Invoice
                 </button>
                 <button
-                    onClick={() => setActiveTab('wallet_ledger')}
+                    onClick={() => handleTabChange('wallet_ledger')}
                     className={`flex items-center gap-2 px-6 py-3 text-sm font-black transition-all border-b-2 whitespace-nowrap ${
                         activeTab === 'wallet_ledger'
                             ? 'border-[#0066FF] text-[#0066FF]'

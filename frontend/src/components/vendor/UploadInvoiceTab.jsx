@@ -1,11 +1,16 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { UploadCloud, CheckCircle2, XCircle, FileText, Loader2, IndianRupee, Clock, Search } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 const UploadInvoiceTab = () => {
     const { user } = useAuth();
+    const location = useLocation();
     
+    // Parse URL query params
+    const queryParams = new URLSearchParams(location.search);
+    const filterParam = queryParams.get('filter');
     const [formData, setFormData] = useState({
         lsId: '',
         vendorName: '',
@@ -30,6 +35,21 @@ const UploadInvoiceTab = () => {
     const [repaySubmitting, setRepaySubmitting] = useState(false);
     
     const fileInputRef = useRef(null);
+
+    const filteredInvoices = useMemo(() => {
+        return invoices.filter(inv => {
+            if (!filterParam) return true;
+            if (filterParam === 'upcoming') {
+                return inv.status === 'Approved';
+            }
+            if (filterParam === 'due_5_days') {
+                if (inv.status !== 'Approved' || !inv.timelineDate) return false;
+                const nowTime = Date.now();
+                return (new Date(inv.timelineDate).getTime() - nowTime) <= 5 * 24 * 60 * 60 * 1000;
+            }
+            return true;
+        });
+    }, [invoices, filterParam]);
 
     useEffect(() => {
         fetchMyInvoices();
@@ -284,37 +304,39 @@ const UploadInvoiceTab = () => {
                 </div>
 
                 <div className="overflow-x-auto">
-                    <table className="w-full text-left whitespace-nowrap">
-                        <thead>
-                            <tr className="bg-slate-50 border-b border-slate-200">
-                                <th className="px-6 py-4 text-xs font-black text-slate-500 uppercase tracking-wider">Date</th>
-                                <th className="px-6 py-4 text-xs font-black text-slate-500 uppercase tracking-wider">Target Vendor</th>
-                                <th className="px-6 py-4 text-xs font-black text-slate-500 uppercase tracking-wider">Invoice Doc</th>
-                                <th className="px-6 py-4 text-xs font-black text-slate-500 uppercase tracking-wider">Amount</th>
-                                <th className="px-6 py-4 text-xs font-black text-slate-500 uppercase tracking-wider">Status</th>
-                                <th className="px-6 py-4 text-xs font-black text-slate-500 uppercase tracking-wider">Timeline / Proof</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100 text-xs font-bold">
-                            {loading ? (
-                                <tr>
-                                    <td colSpan="5" className="px-6 py-12 text-center text-slate-500">
-                                        <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />
-                                        <span className="text-sm font-bold">Loading invoices...</span>
-                                    </td>
-                                </tr>
-                            ) : invoices.length === 0 ? (
-                                <tr>
-                                    <td colSpan="5" className="px-6 py-12 text-center text-slate-500">
-                                        <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-3">
-                                            <FileText className="w-6 h-6 text-slate-300" />
-                                        </div>
-                                        <span className="text-sm font-bold block">No invoices submitted yet.</span>
-                                    </td>
-                                </tr>
-                            ) : (
-                                invoices.map((inv) => (
-                                    <tr key={inv._id} className="hover:bg-slate-50/50 transition-colors">
+                            <table className="w-full text-left whitespace-nowrap">
+                                <thead>
+                                    <tr className="bg-slate-50 border-b border-slate-200">
+                                        <th className="px-6 py-4 text-xs font-black text-slate-500 uppercase tracking-wider">Date</th>
+                                        <th className="px-6 py-4 text-xs font-black text-slate-500 uppercase tracking-wider">Target Vendor</th>
+                                        <th className="px-6 py-4 text-xs font-black text-slate-500 uppercase tracking-wider">Invoice Doc</th>
+                                        <th className="px-6 py-4 text-xs font-black text-slate-500 uppercase tracking-wider">Amount</th>
+                                        <th className="px-6 py-4 text-xs font-black text-slate-500 uppercase tracking-wider">Status</th>
+                                        <th className="px-6 py-4 text-xs font-black text-slate-500 uppercase tracking-wider">Timeline / Proof</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100 text-xs font-bold">
+                                    {loading ? (
+                                        <tr>
+                                            <td colSpan="6" className="px-6 py-12 text-center text-slate-500">
+                                                <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />
+                                                <span className="text-sm font-bold">Loading invoices...</span>
+                                            </td>
+                                        </tr>
+                                    ) : filteredInvoices.length === 0 ? (
+                                        <tr>
+                                            <td colSpan="6" className="px-6 py-12 text-center text-slate-500">
+                                                <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-3">
+                                                    <FileText className="w-6 h-6 text-slate-300" />
+                                                </div>
+                                                <span className="text-sm font-bold block">
+                                                    {filterParam ? 'No invoices found for this filter.' : 'No invoices submitted yet.'}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    ) : (
+                                        filteredInvoices.map((inv) => (
+                                            <tr key={inv._id} className="hover:bg-slate-50/50 transition-colors">
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-2 text-slate-600">
                                                 <Clock className="w-4 h-4 text-slate-400" />
@@ -377,10 +399,10 @@ const UploadInvoiceTab = () => {
                                             </div>
                                         </td>
                                     </tr>
-                                ))
-                            )}
-                        </tbody>
-                    </table>
+                                        ))
+                                    )}
+                                </tbody>
+                            </table>
                 </div>
             </div>
 

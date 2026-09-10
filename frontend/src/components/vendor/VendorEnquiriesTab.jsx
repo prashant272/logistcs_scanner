@@ -579,7 +579,7 @@ const VendorEnquiriesTab = ({ title, type }) => {
                           </span>
                         )
                       ) : (
-                        enq.client?.activePlan && typeof enq.client.activePlan === 'object' && enq.client.activePlan.price > 0 && enq.client?.planEndDate && new Date(enq.client.planEndDate) > new Date() ? (
+                        enq.isPremiumCustomerLead || (enq.client?.activePlan && typeof enq.client.activePlan === 'object' && enq.client.activePlan.price > 0 && enq.client?.planEndDate && new Date(enq.client.planEndDate) > new Date()) ? (
                           <span className="bg-blue-100 text-blue-800 text-[8px] font-black px-2 py-0.5 rounded-md border border-blue-200 uppercase tracking-wider">
                             Verified Customer
                           </span>
