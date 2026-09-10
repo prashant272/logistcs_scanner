@@ -378,7 +378,28 @@ exports.verifyRazorpayPayment = async (req, res) => {
                 }
             }
 
-            const invoiceNo = 'LS' + new Date().toISOString().slice(2,10).replace(/-/g,'') + Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+            // Generate sequential Invoice No: LS + MM + YY + Sequence (starting at 28)
+            const now = new Date();
+            const monthStr = String(now.getMonth() + 1).padStart(2, '0'); // MM (e.g. 09)
+            const yearStr = String(now.getFullYear()).slice(-2);          // YY (e.g. 26)
+            const prefix = `LS${monthStr}${yearStr}`;
+
+            const existingInvoices = await PlanInvoice.find({}, { invoiceNo: 1 }).lean();
+            let maxSeq = 27; // Baseline: previous last invoice was 27, next begins from 28
+
+            for (const inv of existingInvoices) {
+                if (!inv || !inv.invoiceNo) continue;
+                const match = inv.invoiceNo.match(/^LS\d{4}(\d+)$/);
+                if (match) {
+                    const seqNum = parseInt(match[1], 10);
+                    if (!isNaN(seqNum) && seqNum > maxSeq) {
+                        maxSeq = seqNum;
+                    }
+                }
+            }
+
+            const nextSeq = maxSeq + 1;
+            const invoiceNo = `${prefix}${String(nextSeq).padStart(2, '0')}`;
 
             await PlanInvoice.create({
                 vendor: user._id,
