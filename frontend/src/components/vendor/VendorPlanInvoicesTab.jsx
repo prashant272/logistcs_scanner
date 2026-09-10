@@ -103,40 +103,45 @@ const VendorPlanInvoicesTab = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {invoices.map((inv) => (
-                <tr key={inv._id} className="hover:bg-slate-50/50 transition-colors">
-                  <td className="py-4 px-4">
-                    <span className="text-sm font-bold text-slate-800">{inv.invoiceNo}</span>
-                  </td>
-                  <td className="py-4 px-4">
-                    <span className="text-xs font-semibold text-slate-600">
-                      {new Date(inv.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
-                    </span>
-                  </td>
-                  <td className="py-4 px-4">
-                    <span className="text-xs font-bold text-[#0066FF] bg-blue-50 px-2.5 py-1 rounded-md">
-                      {inv.planName}
-                    </span>
-                  </td>
-                  <td className="py-4 px-4">
-                    <span className="text-sm font-bold text-slate-800">₹{inv.totalAmount.toLocaleString()}</span>
-                  </td>
-                  <td className="py-4 px-4 text-right">
-                    <button
-                      onClick={() => handleDownload(inv)}
-                      disabled={downloadingId === inv._id}
-                      className="inline-flex items-center gap-1.5 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-[10px] font-black uppercase tracking-wider rounded-xl transition-all shadow-md disabled:opacity-50"
-                    >
-                      {downloadingId === inv._id ? (
-                        <Loader2 size={14} className="animate-spin" />
-                      ) : (
-                        <Download size={14} />
-                      )}
-                      <span>Download</span>
-                    </button>
-                  </td>
-                </tr>
-              ))}
+              {invoices.map((inv) => {
+                const isUsd = inv.currency === 'USD' || (inv.country && inv.country.toLowerCase() !== 'india' && inv.country.toLowerCase() !== 'in') || (Number(inv.gstRate) === 0 && (!inv.address || !/india\b/i.test(inv.address)));
+                return (
+                  <tr key={inv._id} className="hover:bg-slate-50/50 transition-colors">
+                    <td className="py-4 px-4">
+                      <span className="text-sm font-bold text-slate-800">{inv.invoiceNo}</span>
+                    </td>
+                    <td className="py-4 px-4">
+                      <span className="text-xs font-semibold text-slate-600">
+                        {new Date(inv.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                      </span>
+                    </td>
+                    <td className="py-4 px-4">
+                      <span className="text-xs font-bold text-[#0066FF] bg-blue-50 px-2.5 py-1 rounded-md">
+                        {inv.planName}
+                      </span>
+                    </td>
+                    <td className="py-4 px-4">
+                      <span className="text-sm font-bold text-slate-800">
+                        {isUsd ? `$ ${inv.totalAmount?.toLocaleString()}` : `₹ ${inv.totalAmount?.toLocaleString()}`}
+                      </span>
+                    </td>
+                    <td className="py-4 px-4 text-right">
+                      <button
+                        onClick={() => handleDownload(inv)}
+                        disabled={downloadingId === inv._id}
+                        className="inline-flex items-center gap-1.5 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-[10px] font-black uppercase tracking-wider rounded-xl transition-all shadow-md disabled:opacity-50 cursor-pointer"
+                      >
+                        {downloadingId === inv._id ? (
+                          <Loader2 size={14} className="animate-spin" />
+                        ) : (
+                          <Download size={14} />
+                        )}
+                        <span>Download</span>
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
