@@ -98,7 +98,8 @@ exports.createEnquiry = async (req, res) => {
                     password: hashedPassword,
                     role: 'customer',
                     company: guestCompany || '',
-                    isVerified: true
+                    isVerified: true,
+                    createdVia: 'enquiry'
                 });
 
                 sendGuestAccountCreatedEmail(guestEmail, guestName, generatedPassword)
@@ -174,6 +175,49 @@ exports.createEnquiry = async (req, res) => {
             });
         }
 
+        let isPremiumCustomerLead = false;
+        
+        // Evaluate premium status for customers/guests
+        if (loggedInUser && loggedInUser.role !== 'admin' && loggedInUser.role !== 'vendor') {
+            const emailToCheck = (loggedInUser.email || guestEmail || '').toLowerCase();
+            const freeDomains = ['gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'live.com', 'aol.com', 'icloud.com', 'mail.com', 'ymail.com', 'proton.me', 'protonmail.com', 'zoho.com'];
+            
+            if (emailToCheck.includes('@')) {
+                const domain = emailToCheck.split('@')[1];
+                if (!freeDomains.includes(domain)) {
+                    isPremiumCustomerLead = true;
+                }
+            }
+
+            if (!isPremiumCustomerLead) {
+                const pastEnquiriesCount = await Enquiry.countDocuments({
+                    $or: [
+                        { client: loggedInUser._id },
+                        { guestEmail: new RegExp(`^${emailToCheck}$`, 'i') }
+                    ]
+                });
+                if (pastEnquiriesCount >= 3) {
+                    isPremiumCustomerLead = true;
+                }
+            }
+        } else if (!loggedInUser && guestEmail) {
+            const emailToCheck = guestEmail.toLowerCase();
+            const freeDomains = ['gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'live.com', 'aol.com', 'icloud.com', 'mail.com', 'ymail.com', 'proton.me', 'protonmail.com', 'zoho.com'];
+            if (emailToCheck.includes('@')) {
+                const domain = emailToCheck.split('@')[1];
+                if (!freeDomains.includes(domain)) {
+                    isPremiumCustomerLead = true;
+                }
+            }
+
+            if (!isPremiumCustomerLead) {
+                const pastEnquiriesCount = await Enquiry.countDocuments({ guestEmail: new RegExp(`^${guestEmail}$`, 'i') });
+                if (pastEnquiriesCount >= 3) {
+                    isPremiumCustomerLead = true;
+                }
+            }
+        }
+
         const enquiry = await Enquiry.create({
             client: validatedClientId,
             vendor: validatedVendorId,
@@ -216,7 +260,8 @@ exports.createEnquiry = async (req, res) => {
             message: message || '',
             attachment: attachment || '',
             status: 'Pending',
-            source: detectedSource
+            source: detectedSource,
+            isPremiumCustomerLead
         });
 
         // Notifications
@@ -329,17 +374,18 @@ exports.getVendorEnquiries = async (req, res) => {
                     };
                 } else if (type === 'direct') {
                     const customerIds = await User.find({ role: 'customer' }).distinct('_id');
+                    const threeHoursAgo = new Date(Date.now() - 3 * 60 * 60 * 1000);
 
                     const directOrConditions = [
-                        { client: { $in: customerIds } },
-                        { client: null },
-                        { type: 'land', client: { $ne: req.user.id } } // Includes 'land' enquiries created by vendors
+                        { client: { $in: customerIds }, isPremiumCustomerLead: { $ne: true } },
+                        { client: null, isPremiumCustomerLead: { $ne: true } },
+                        { type: 'land', client: { $ne: req.user.id } }, // Includes 'land' enquiries created by vendors
+                        { isPremiumCustomerLead: true, createdAt: { $lte: threeHoursAgo } } // 3-hour fallback for premium leads
                     ];
 
                     // Free plan vendors get B2B enquiries that are > 3 hours old and not accepted by anyone
                     if (!isPaidPlan) {
                         const vendorIds = await User.find({ role: 'vendor' }).distinct('_id');
-                        const threeHoursAgo = new Date(Date.now() - 3 * 60 * 60 * 1000);
 
                         directOrConditions.push({
                             client: { $in: vendorIds, $ne: req.user.id },
@@ -358,7 +404,10 @@ exports.getVendorEnquiries = async (req, res) => {
                     query = {
                         isDirect: true,
                         isBroadcasted: true,
-                        client: { $in: vendorIds, $ne: req.user.id }
+                        $or: [
+                            { client: { $in: vendorIds, $ne: req.user.id } },
+                            { isPremiumCustomerLead: true }
+                        ]
                     };
                 }
             }

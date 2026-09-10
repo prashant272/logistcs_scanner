@@ -225,6 +225,11 @@ const userSchema = new mongoose.Schema({
         enum: ['web', 'app'],
         default: 'web'
     },
+    createdVia: {
+        type: String,
+        enum: ['self', 'enquiry', 'admin'],
+        default: 'enquiry'
+    },
     createdAt: {
         type: Date,
         default: Date.now

@@ -211,6 +211,10 @@ const enquirySchema = new mongoose.Schema({
         type: Date,
         default: null
     },
+    isPremiumCustomerLead: {
+        type: Boolean,
+        default: false
+    },
     createdAt: {
         type: Date,
         default: Date.now

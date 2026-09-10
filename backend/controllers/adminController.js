@@ -772,7 +772,8 @@ exports.adminAddUser = async (req, res) => {
             state: state || '',
             city: city || '',
             isVerified: role === 'vendor' ? false : true,
-            verificationStatus: role === 'vendor' ? 'Pending' : undefined
+            verificationStatus: role === 'vendor' ? 'Pending' : undefined,
+            createdVia: 'admin'
         });
 
         // Send email with credentials
@@ -1133,17 +1134,8 @@ exports.updateRechargeRequestStatus = async (req, res) => {
         await request.save();
 
         if (status === 'Approved') {
-            const vendor = request.vendor;
-            vendor.walletBalance = (vendor.walletBalance || 0) + request.amount;
-            await vendor.save();
-
-            await WalletTransaction.create({
-                vendor: vendor._id,
-                type: 'Credit',
-                amount: request.amount,
-                description: `Wallet Recharge via Bank Transfer`,
-                balanceAfter: vendor.walletBalance
-            });
+            const { processAutoDeductionOnRecharge } = require('../utils/autoDeductService');
+            await processAutoDeductionOnRecharge(request.vendor._id || request.vendor, request.amount, 'Bank Transfer');
         }
 
         res.json({ message: `Recharge request ${status}`, request });

@@ -564,3 +564,142 @@ exports.approveRepayment = async (req, res) => {
         res.status(500).json({ message: 'Server Error' });
     }
 };
+
+// @desc    Get Vendor Credit Dashboard Stats
+// @route   GET /api/finance/credit-stats
+// @access  Vendor
+exports.getVendorCreditStats = async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id);
+        if (!user) {
+            return res.status(404).json({ message: 'Vendor not found' });
+        }
+
+        const pendingInvoices = await InvoiceRequest.find({
+            vendor: req.user.id,
+            status: { $in: ['Approved', 'Paid', 'Repayment Pending'] }
+        }).sort({ timelineDate: 1, createdAt: -1 });
+
+        const clearedInvoicesCount = await InvoiceRequest.countDocuments({
+            vendor: req.user.id,
+            status: 'Cleared'
+        });
+
+        let totalPendingDues = 0;
+        let totalPenalties = 0;
+        let overdueCount = 0;
+        const now = new Date();
+
+        const itemizedDues = pendingInvoices.map(inv => {
+            const base = inv.approvedAmount || inv.amount || 0;
+            const fee = inv.processingFee || 0;
+            const penalty = inv.penaltyAmount || 0;
+            const totalDue = base + fee + penalty;
+
+            totalPendingDues += totalDue;
+            totalPenalties += penalty;
+
+            const isOverdue = inv.timelineDate && new Date(inv.timelineDate) < now;
+            if (isOverdue) overdueCount++;
+
+            let daysOverdue = 0;
+            if (inv.timelineDate && isOverdue) {
+                daysOverdue = Math.ceil((now - new Date(inv.timelineDate)) / (1000 * 60 * 60 * 24));
+            }
+
+            return {
+                _id: inv._id,
+                lsId: inv.lsId || `INV-${inv._id.toString().slice(-6)}`,
+                approvedAmount: base,
+                processingFee: fee,
+                penaltyAmount: penalty,
+                totalDue: totalDue,
+                timelineDate: inv.timelineDate,
+                status: inv.status,
+                isOverdue,
+                daysOverdue,
+                createdAt: inv.createdAt
+            };
+        });
+
+        // Dynamic Credit Score Calculation
+        let calculatedScore = 100;
+        const overdueDeduction = overdueCount * 20;
+        const penaltyDeduction = Math.floor(totalPenalties / 500);
+        const clearedBonus = clearedInvoicesCount * 2;
+
+        calculatedScore -= overdueDeduction;
+        calculatedScore -= penaltyDeduction;
+        calculatedScore += clearedBonus;
+
+        // Clamp between 0 and 100
+        calculatedScore = Math.max(0, Math.min(100, Math.round(calculatedScore)));
+
+        // Audit Trail for Score Breakdown Modal
+        const scoreAudit = [
+            {
+                title: 'Initial Base Score',
+                points: '+100 Pts',
+                pointsValue: 100,
+                type: 'base',
+                reason: 'Base credit allocation for registered vendors'
+            }
+        ];
+
+        if (overdueCount > 0) {
+            scoreAudit.push({
+                title: 'Overdue Invoices Penalty',
+                points: `-${overdueDeduction} Pts`,
+                pointsValue: -overdueDeduction,
+                type: 'penalty',
+                reason: `${overdueCount} invoice(s) passed repayment timeline (-20 Pts per overdue invoice)`
+            });
+        }
+
+        if (penaltyDeduction > 0) {
+            scoreAudit.push({
+                title: 'Late Payment Fee Deduction',
+                points: `-${penaltyDeduction} Pts`,
+                pointsValue: -penaltyDeduction,
+                type: 'penalty',
+                reason: `Accrued ₹${totalPenalties.toLocaleString('en-IN')} in late fees (-1 Pt per ₹500 fee)`
+            });
+        }
+
+        if (clearedInvoicesCount > 0) {
+            scoreAudit.push({
+                title: 'On-Time Repayment Bonus',
+                points: `+${clearedBonus} Pts`,
+                pointsValue: clearedBonus,
+                type: 'bonus',
+                reason: `${clearedInvoicesCount} invoice(s) cleared successfully (+2 Pts per cleared invoice)`
+            });
+        }
+
+        // Update score in User model
+        user.creditScore = calculatedScore;
+        await user.save();
+
+        let creditRating = 'Excellent';
+        if (calculatedScore < 40) creditRating = 'Poor (High Risk)';
+        else if (calculatedScore < 60) creditRating = 'Average';
+        else if (calculatedScore < 80) creditRating = 'Good';
+
+        res.status(200).json({
+            walletBalance: user.walletBalance || 0,
+            creditScore: calculatedScore,
+            creditRating,
+            totalPendingDues,
+            totalPenalties,
+            pendingCount: pendingInvoices.length,
+            overdueCount,
+            clearedCount: clearedInvoicesCount,
+            scoreAudit,
+            pendingInvoices: itemizedDues
+        });
+    } catch (error) {
+        console.error('Get Vendor Credit Stats Error:', error);
+        res.status(500).json({ message: 'Server Error' });
+    }
+};
+

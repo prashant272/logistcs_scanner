@@ -17,7 +17,7 @@ exports.createInvoicePaymentOrder = async (req, res) => {
         const gatewayCharge = baseAmount * 0.02;
         const gstAmount = gatewayCharge * 0.18;
         const finalAmount = baseAmount + gatewayCharge + gstAmount;
-        
+
         // Razorpay expects amount in paise (multiply by 100)
         const razorpayAmount = Math.round(finalAmount * 100);
 
@@ -52,9 +52,9 @@ exports.createInvoicePaymentOrder = async (req, res) => {
         });
     } catch (error) {
         console.error('Invoice Razorpay Order Creation Error:', error.response?.data || error.message);
-        res.status(500).json({ 
-            message: 'Failed to create payment order', 
-            error: error.response?.data?.error?.description || error.message 
+        res.status(500).json({
+            message: 'Failed to create payment order',
+            error: error.response?.data?.error?.description || error.message
         });
     }
 };
@@ -80,22 +80,22 @@ exports.verifyInvoicePayment = async (req, res) => {
 
         const InvoiceRequest = require('../models/InvoiceRequest');
         const invoice = await InvoiceRequest.findById(invoiceId).populate('vendor');
-        
+
         if (invoice) {
             invoice.status = 'Cleared';
             await invoice.save();
-            
+
             // Calculate total to refund to wallet
             const totalPaid = (invoice.approvedAmount || invoice.amount) + invoice.penaltyAmount + (invoice.processingFee || 0);
-            
+
             const User = require('../models/User');
             const user = await User.findById(invoice.vendor._id);
-            
+
             user.walletBalance = (user.walletBalance || 0) + totalPaid;
             // Increase credit score by 5 (capped at 100) on successful repayment
             user.creditScore = Math.min(100, (user.creditScore || 100) + 5);
             await user.save();
-            
+
             const WalletTransaction = require('../models/WalletTransaction');
             await WalletTransaction.create({
                 vendor: user._id,
@@ -105,7 +105,7 @@ exports.verifyInvoicePayment = async (req, res) => {
                 referenceId: invoice._id,
                 balanceAfter: user.walletBalance
             });
-            
+
             const { sendNotification } = require('../utils/notificationService');
             if (sendNotification) {
                 await sendNotification(user._id, `Your online repayment for invoice ${invoice.lsId} has been verified and cleared! Credit score +5.`, 'success', '/vendor/upload-invoice');
@@ -161,7 +161,7 @@ exports.createRechargeOrder = async (req, res) => {
         const gatewayCharge = baseAmount * 0.02;
         const gstAmount = gatewayCharge * 0.18;
         const finalAmount = baseAmount + gatewayCharge + gstAmount;
-        
+
         const razorpayAmount = Math.round(finalAmount * 100);
 
         const keyId = process.env.RAZORPAY_KEY_ID || 'rzp_live_pOPvY6ZqKx29kZ';
@@ -195,9 +195,9 @@ exports.createRechargeOrder = async (req, res) => {
         });
     } catch (error) {
         console.error('Recharge Razorpay Order Creation Error:', error.response?.data || error.message);
-        res.status(500).json({ 
-            message: 'Failed to create recharge order', 
-            error: error.response?.data?.error?.description || error.message 
+        res.status(500).json({
+            message: 'Failed to create recharge order',
+            error: error.response?.data?.error?.description || error.message
         });
     }
 };
@@ -221,14 +221,7 @@ exports.verifyRechargePayment = async (req, res) => {
             return res.status(400).json({ message: 'Payment verification failed: Signature mismatch' });
         }
 
-        // Add to wallet
-        const vendor = await User.findById(req.user.id);
-        if (!vendor) {
-            return res.status(404).json({ message: 'Vendor not found' });
-        }
-
-        vendor.walletBalance = (vendor.walletBalance || 0) + parseFloat(amount);
-        await vendor.save();
+        const { processAutoDeductionOnRecharge } = require('../utils/autoDeductService');
 
         // Create Recharge Request log
         await RechargeRequest.create({
@@ -240,18 +233,15 @@ exports.verifyRechargePayment = async (req, res) => {
             razorpayPaymentId: razorpay_payment_id
         });
 
-        // Create transaction
-        await Transaction.create({
-            vendor: req.user.id,
-            type: 'Credit',
-            amount: parseFloat(amount),
-            description: `Wallet Recharge via Online Payment`,
-            balanceAfter: vendor.walletBalance
-        });
+        // Run auto deduction process on recharge
+        const deductionResult = await processAutoDeductionOnRecharge(req.user.id, parseFloat(amount), 'Online Payment');
 
         res.json({
-            message: 'Payment verified successfully. Wallet recharged.',
-            newBalance: vendor.walletBalance
+            message: deductionResult.clearedInvoices.length > 0 
+                ? `Payment verified! ${deductionResult.clearedInvoices.length} pending invoice(s) automatically cleared.` 
+                : 'Payment verified successfully. Wallet recharged.',
+            newBalance: deductionResult.finalBalance,
+            clearedInvoices: deductionResult.clearedInvoices
         });
     } catch (error) {
         console.error('Recharge Payment Verification Error:', error.message);

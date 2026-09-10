@@ -77,7 +77,8 @@ exports.registerUser = async (req, res) => {
             company: company || '',
             otp,
             otpExpires,
-            isVerified: false
+            isVerified: false,
+            createdVia: 'self'
         };
 
         if (role === 'vendor' && vendorTypes) {
