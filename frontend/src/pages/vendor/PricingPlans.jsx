@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { ShieldCheck, Loader2, Calendar, CheckCircle } from 'lucide-react';
+import { ShieldCheck, Loader2, Calendar, CheckCircle, FileText } from 'lucide-react';
 
 const PricingPlans = () => {
     const { user, updateProfile } = useAuth();
@@ -342,9 +343,14 @@ const PricingPlans = () => {
             )}
 
             {successMessage && (
-                <div className="bg-green-50 border border-green-200 text-green-800 p-4 rounded-2xl text-xs font-bold flex items-center gap-2 max-w-xl mx-auto">
-                    <CheckCircle className="w-4 h-4 text-green-600" />
-                    <span>{successMessage}</span>
+                <div className="bg-green-50 border border-green-200 text-green-800 p-4 rounded-2xl text-xs font-bold flex flex-col sm:flex-row sm:items-center justify-between gap-4 max-w-xl mx-auto">
+                    <div className="flex items-center gap-2">
+                        <CheckCircle className="w-4 h-4 text-green-600" />
+                        <span>{successMessage}</span>
+                    </div>
+                    <Link to="/vendor/finance-list?tab=plan_invoices" className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-xl text-[10px] uppercase tracking-wider font-black transition-colors flex items-center gap-1.5 whitespace-nowrap">
+                        <FileText className="w-3 h-3" /> View Invoice
+                    </Link>
                 </div>
             )}
 

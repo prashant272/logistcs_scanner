@@ -31,6 +31,7 @@ app.use("/api/coupons", require("./routes/couponRoutes"));
 app.use("/api/complaints", require("./routes/complaintRoutes"));
 app.use("/api/rm", require("./routes/rmRoutes"));
 app.use("/api/finance", require("./routes/financeRoutes"));
+app.use("/api/invoices", require("./routes/invoiceRoutes"));
 app.use("/api/notifications", require("./routes/notificationRoutes"));
 app.use("/api/ihc", require("./routes/ihcRoutes"));
 app.use("/api/upload", require("./routes/uploadRoutes"));

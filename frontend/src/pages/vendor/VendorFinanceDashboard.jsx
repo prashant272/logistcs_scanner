@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import VendorFinanceList from './VendorFinanceList';
 import UploadInvoiceTab from '../../components/vendor/UploadInvoiceTab';
 import WalletLedgerTab from '../../components/vendor/WalletLedgerTab';
+import VendorPlanInvoicesTab from '../../components/vendor/VendorPlanInvoicesTab';
 import { FileText, UploadCloud, Wallet } from 'lucide-react';
 
 const VendorFinanceDashboard = () => {
@@ -71,6 +72,16 @@ const VendorFinanceDashboard = () => {
                 >
                     <Wallet size={16} /> Wallet Passbook
                 </button>
+                <button
+                    onClick={() => handleTabChange('plan_invoices')}
+                    className={`flex items-center gap-2 px-6 py-3 text-sm font-black transition-all border-b-2 whitespace-nowrap ${
+                        activeTab === 'plan_invoices'
+                            ? 'border-[#0066FF] text-[#0066FF]'
+                            : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50/50'
+                    }`}
+                >
+                    <FileText size={16} /> Subscription Invoices
+                </button>
             </div>
 
             {/* Tab Content */}
@@ -78,6 +89,7 @@ const VendorFinanceDashboard = () => {
                 {activeTab === 'finance_list' && <VendorFinanceList />}
                 {activeTab === 'upload_invoice' && <UploadInvoiceTab />}
                 {activeTab === 'wallet_ledger' && <WalletLedgerTab />}
+                {activeTab === 'plan_invoices' && <VendorPlanInvoicesTab />}
             </div>
         </div>
     );

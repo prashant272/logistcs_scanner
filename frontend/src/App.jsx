@@ -137,6 +137,7 @@ const DelhiverySettings = lazy(() => import('./pages/admin/DelhiverySettings'));
 const AdminPtlBookings = lazy(() => import('./pages/admin/AdminPtlBookings'));
 const AdminRoleUpdate = lazy(() => import('./pages/admin/AdminRoleUpdate'));
 const ManualTracking = lazy(() => import('./pages/admin/ManualTracking'));
+const AdminPlanInvoicesTab = lazy(() => import('./pages/admin/AdminPlanInvoicesTab'));
 const PtlBookingsTab = lazy(() => import('./components/common/PtlBookingsTab'));
 const DelhiveryCalculator = lazy(() => import('./pages/public/DelhiveryCalculator'));
 const DelhiveryCreateOrder = lazy(() => import('./pages/public/DelhiveryCreateOrder'));
@@ -228,6 +229,7 @@ function App() {
               {/* Request Management */}
               <Route path="invoice-request" element={<AdminInvoiceRequests />} />
               <Route path="recharge-requests" element={<AdminRechargeRequests />} />
+              <Route path="reports/plan-invoices" element={<AdminPlanInvoicesTab />} />
               <Route path="upgrade-requests" element={<AdminUpgradationRequests />} />
               
               {/* Other sections */}

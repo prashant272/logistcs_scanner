@@ -83,7 +83,8 @@ const AdminSidebar = ({ isSidebarOpen, logout }) => {
             category: 'Finance',
             items: [
                 { name: 'Invoice Request', path: '/admin/invoice-request', icon: <FileText size={16} /> },
-                { name: 'Recharge Requests', path: '/admin/recharge-requests', icon: <CreditCard size={16} /> }
+                { name: 'Recharge Requests', path: '/admin/recharge-requests', icon: <CreditCard size={16} /> },
+                { name: 'Plan Invoices', path: '/admin/reports/plan-invoices', icon: <FileSpreadsheet size={16} /> }
             ]
         },
         {

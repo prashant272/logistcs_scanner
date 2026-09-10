@@ -356,6 +356,54 @@ exports.verifyRazorpayPayment = async (req, res) => {
             { new: true }
         ).populate('activePlan');
 
+        try {
+            const PlanInvoice = require('../models/PlanInvoice');
+            
+            const userCountry = (user.country || '').trim().toLowerCase();
+            const isOutsideIndia = userCountry && userCountry !== 'india' && userCountry !== 'in';
+
+            let baseAmount = plan.price;
+            let currency = isOutsideIndia ? 'USD' : (plan.currency || 'INR');
+            let gstRate = isOutsideIndia ? 0 : 18;
+            let gstAmount = isOutsideIndia ? 0 : Math.round(baseAmount * gstRate / 100);
+            let totalAmount = baseAmount + gstAmount;
+            
+            let igstAmount = 0, cgstAmount = 0, sgstAmount = 0;
+            if (!isOutsideIndia) {
+                if (user.state && user.state.toLowerCase().includes('delhi')) {
+                    cgstAmount = gstAmount / 2;
+                    sgstAmount = gstAmount / 2;
+                } else {
+                    igstAmount = gstAmount;
+                }
+            }
+
+            const invoiceNo = 'LS' + new Date().toISOString().slice(2,10).replace(/-/g,'') + Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+
+            await PlanInvoice.create({
+                vendor: user._id,
+                invoiceNo,
+                companyName: user.company || user.name || 'Vendor',
+                address: [user.city, user.state, user.pincode, user.country].filter(Boolean).join(', '),
+                country: user.country || 'India',
+                currency: currency,
+                gstNo: user.gst || '',
+                panNo: user.pan || '',
+                planName: plan.name,
+                sacCode: isOutsideIndia ? '998313' : '9956',
+                gstRate: gstRate,
+                baseAmount,
+                igstAmount,
+                cgstAmount,
+                sgstAmount,
+                totalAmount,
+                paymentMethod: 'Payment Gateway',
+                paymentReferenceNo: razorpay_payment_id
+            });
+        } catch (invoiceErr) {
+            console.error('Error generating invoice:', invoiceErr);
+        }
+
         res.json({
             message: `Successfully subscribed to ${plan.name}`,
             user: updatedUser
