@@ -437,9 +437,19 @@ const AdminPlanInvoicesTab = () => {
                       <span className="text-sm font-bold text-slate-900">{inv.invoiceNo}</span>
                     </td>
                     <td className="py-4 px-4">
-                      <span className="text-xs font-semibold text-slate-600">
-                        {new Date(inv.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
-                      </span>
+                      <div className="flex flex-col">
+                        <span className="text-xs font-semibold text-slate-700">
+                          {new Date(inv.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                        </span>
+                        {(() => {
+                          const due = inv.dueDate || inv.timelineDate || (inv.date ? new Date(new Date(inv.date).setDate(new Date(inv.date).getDate() + 15)) : null);
+                          return due ? (
+                            <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200 mt-1 inline-flex items-center gap-1 w-fit">
+                              Due: {new Date(due).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                            </span>
+                          ) : null;
+                        })()}
+                      </div>
                     </td>
                     <td className="py-4 px-4">
                       <div className="flex flex-col">

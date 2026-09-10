@@ -5,6 +5,15 @@ const User = require('../models/User');
 exports.getAdminInvoices = async (req, res) => {
     try {
         console.log('--- getAdminInvoices CALLED ---');
+        // Backfill dueDate for any invoices missing it
+        const missingDueDates = await PlanInvoice.find({ $or: [{ dueDate: { $exists: false } }, { dueDate: null }] });
+        for (const inv of missingDueDates) {
+            const d = new Date(inv.date || inv.createdAt || Date.now());
+            d.setDate(d.getDate() + 15);
+            inv.dueDate = d;
+            await inv.save();
+        }
+
         const invoices = await PlanInvoice.find().populate('vendor', 'name email phone').sort({ createdAt: -1 });
         console.log(`Found ${invoices.length} invoices for admin`);
         res.json(invoices);

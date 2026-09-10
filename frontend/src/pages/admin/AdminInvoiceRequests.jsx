@@ -398,14 +398,17 @@ const AdminInvoiceRequests = () => {
                                         />
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-sm font-bold text-slate-700">Processing Fee (Deducted from Wallet)</label>
+                                        <label className="text-sm font-bold text-slate-700">Documentation / Processing Fee (Deducted from Wallet)</label>
                                         <input
                                             type="number"
                                             value={formData.processingFee}
                                             onChange={(e) => setFormData({...formData, processingFee: e.target.value})}
                                             className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-semibold focus:outline-none focus:border-[#0066FF] transition-colors"
-                                            placeholder="e.g. 500 (Optional)"
+                                            placeholder="e.g. 10000"
                                         />
+                                        <p className="text-[11px] text-blue-600 font-bold flex items-center gap-1">
+                                            <span>✓</span> An official Tax Invoice for Documentation Fee (+ 18% GST) will be automatically generated in Plan Invoices.
+                                        </p>
                                     </div>
                                     <div className="space-y-2">
                                         <label className="text-sm font-bold text-slate-700">Timeline / Deadline Date</label>

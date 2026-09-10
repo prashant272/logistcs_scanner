@@ -399,6 +399,109 @@ exports.updateInvoiceStatus = async (req, res) => {
             invoice.processingFee = fee;
             invoice.timelineDate = timelineDate;
 
+            // Auto-generate Tax Invoice for Documentation Fee if fee > 0
+            if (fee > 0) {
+                try {
+                    const PlanInvoice = require('../models/PlanInvoice');
+
+                    const invoiceDate = new Date();
+                    const monthStr = String(invoiceDate.getMonth() + 1).padStart(2, '0');
+                    const yearStr = String(invoiceDate.getFullYear()).slice(-2);
+                    const prefix = `LS${monthStr}${yearStr}`;
+
+                    const existingInvoices = await PlanInvoice.find({}, { invoiceNo: 1 }).lean();
+                    let maxSeq = 27;
+
+                    for (const inv of existingInvoices) {
+                        if (!inv || !inv.invoiceNo) continue;
+                        const match = inv.invoiceNo.match(/^LS\d{4}(\d+)$/);
+                        if (match) {
+                            const seqNum = parseInt(match[1], 10);
+                            if (!isNaN(seqNum) && seqNum > maxSeq) {
+                                maxSeq = seqNum;
+                            }
+                        }
+                    }
+
+                    const nextSeq = maxSeq + 1;
+                    const invoiceNo = `${prefix}${String(nextSeq).padStart(2, '0')}`;
+
+                    const rawCountry = (vendor.country || '').trim();
+                    const isForeign = rawCountry && rawCountry.toLowerCase() !== 'india' && rawCountry.toLowerCase() !== 'in';
+                    const finalCountry = rawCountry || 'India';
+                    const finalCurrency = isForeign ? 'USD' : 'INR';
+                    const gstRate = isForeign ? 0 : 18;
+                    const sacCode = isForeign ? '998313' : '9956';
+
+                    const totalBase = finalAmount + fee;
+                    let gstAmount = 0;
+                    let igstAmount = 0;
+                    let cgstAmount = 0;
+                    let sgstAmount = 0;
+
+                    // 18% GST applies strictly to the Documentation / Processing Fee portion
+                    if (!isForeign && gstRate > 0 && fee > 0) {
+                        gstAmount = Math.round((fee * gstRate) / 100);
+                        const addr = [vendor.address, vendor.city, vendor.state].filter(Boolean).join(' ').toLowerCase();
+                        if (addr.includes('delhi')) {
+                            cgstAmount = gstAmount / 2;
+                            sgstAmount = gstAmount / 2;
+                        } else {
+                            igstAmount = gstAmount;
+                        }
+                    }
+
+                    const totalAmount = totalBase + gstAmount;
+                    const resolvedAddress = [vendor.address, vendor.city, vendor.state, vendor.pincode].filter(Boolean).join(', ');
+                    const targetVendorName = invoice.vendorName || invoice.lsId || 'Vendor';
+
+                    await PlanInvoice.create({
+                        vendor: vendor._id,
+                        invoiceNo,
+                        date: invoiceDate,
+                        dueDate: timelineDate ? new Date(timelineDate) : (invoice.timelineDate ? new Date(invoice.timelineDate) : null),
+                        companyName: vendor.company || vendor.name || 'Vendor',
+                        address: resolvedAddress,
+                        country: finalCountry,
+                        currency: finalCurrency,
+                        gstNo: vendor.gst || '',
+                        panNo: vendor.pan || '',
+                        planName: `Invoice Financing & Documentation Charges - ${targetVendorName}`,
+                        sacCode,
+                        gstRate,
+                        baseAmount: totalBase,
+                        approvedAmount: finalAmount,
+                        processingFee: fee,
+                        items: [
+                            {
+                                description: `Reimbursement of Vendor Invoice (${targetVendorName})`,
+                                subtitle: `Invoice disbursement & settlement for target vendor ${targetVendorName}`,
+                                sacCode: '9956',
+                                gstRate: 0,
+                                amount: finalAmount
+                            },
+                            {
+                                description: `Documentation & Processing Charges`,
+                                subtitle: `Platform verification, legal & documentation processing charges`,
+                                sacCode: '9956',
+                                gstRate: isForeign ? 0 : 18,
+                                amount: fee
+                            }
+                        ],
+                        igstAmount,
+                        cgstAmount,
+                        sgstAmount,
+                        totalAmount,
+                        paymentMethod: 'Wallet Deduction',
+                        paymentReferenceNo: `IR-${invoice._id.toString().slice(-6).toUpperCase()}`
+                    });
+
+                    console.log(`Auto-generated invoice ${invoiceNo} (Base: ₹${totalBase}, GST on Doc Fee: ₹${gstAmount}, Total: ₹${totalAmount}) for ${vendor.email}`);
+                } catch (invErr) {
+                    console.error('Error auto-generating invoice financing document invoice:', invErr);
+                }
+            }
+
             await sendNotification(vendor._id, `Your invoice ${invoice.lsId} has been Approved! ₹${totalDeduction} deducted.`, 'success', '/vendor/upload-invoice');
         }
 

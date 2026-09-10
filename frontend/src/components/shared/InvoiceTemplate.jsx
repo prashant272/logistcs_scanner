@@ -131,6 +131,79 @@ const InvoiceTemplate = ({ invoice, forwardRef }) => {
     ? (Number(invoice.totalAmount) || baseAmount)
     : (Number(invoice.totalAmount) || (baseAmount + igstAmount + sgstAmount + cgstAmount));
 
+  const effectiveDueDate = invoice.dueDate || invoice.timelineDate || (() => {
+    if (invoice.date) {
+      const d = new Date(invoice.date);
+      d.setDate(d.getDate() + 15);
+      return d;
+    }
+    return null;
+  })();
+
+  // Determine line items to render (supporting distinct items for base invoice and documentation fee)
+  const itemsToRender = (() => {
+    if (invoice.items && Array.isArray(invoice.items) && invoice.items.length > 0) {
+      return invoice.items;
+    }
+    
+    // Check if this is an Invoice Financing / Documentation invoice with processing fee
+    const isInvoiceFinancing = (invoice.planName && (
+      invoice.planName.toLowerCase().includes('financing') || 
+      invoice.planName.toLowerCase().includes('charges') || 
+      invoice.planName.toLowerCase().includes('documentation')
+    ));
+
+    const totalTax = igstAmount + sgstAmount + cgstAmount;
+    const procFee = Number(invoice.processingFee) || (totalTax > 0 ? Math.round(totalTax / 0.18) : 0);
+    const totalBase = baseAmount;
+
+    if (isInvoiceFinancing && procFee > 0 && totalBase > procFee) {
+      const baseDisbursement = totalBase - procFee;
+      const targetVendor = invoice.planName.includes('-') 
+        ? invoice.planName.split('-').slice(1).join('-').trim()
+        : (invoice.companyName || 'Target Vendor');
+
+      return [
+        {
+          description: `Reimbursement of Vendor Invoice (${targetVendor})`,
+          subtitle: `Invoice disbursement & settlement for target vendor ${targetVendor}`,
+          sacCode: invoice.sacCode || '9956',
+          gstRate: 0,
+          amount: baseDisbursement
+        },
+        {
+          description: `Documentation & Processing Charges`,
+          subtitle: `Platform verification, legal & documentation processing charges`,
+          sacCode: invoice.sacCode || '9956',
+          gstRate: isForeign ? 0 : (invoice.gstRate || 18),
+          amount: procFee
+        }
+      ];
+    }
+
+    // Default single item for normal subscription plans
+    return [
+      {
+        description: invoice.planName ? (
+          invoice.planName.toLowerCase().includes('plan') || 
+          invoice.planName.toLowerCase().includes('fee') || 
+          invoice.planName.toLowerCase().includes('charges') || 
+          invoice.planName.toLowerCase().includes('financing')
+            ? invoice.planName
+            : `${invoice.planName} Membership Plan`
+        ) : 'Yearly Membership Plan',
+        subtitle: (invoice.planName && (invoice.planName.toLowerCase().includes('financing') || invoice.planName.toLowerCase().includes('fee')))
+          ? `Invoice Financing disbursement & documentation processing services for ${invoice.companyName || 'client'}`
+          : 'Subscription access to Logistics Scanner Vendor Portal & Directory Services',
+        sacCode: invoice.sacCode || (isForeign ? '998313' : '9956'),
+        gstRate: isForeign ? 0 : (invoice.gstRate || 18),
+        amount: totalBase
+      }
+    ];
+  })();
+
+  const isMultiItem = itemsToRender.length > 1;
+
   return (
     <div
       ref={forwardRef}
@@ -260,6 +333,12 @@ const InvoiceTemplate = ({ invoice, forwardRef }) => {
           <div style={{ fontSize: '12px', fontWeight: '800', color: '#000000', marginTop: '2px' }}>
             {formatDate(invoice.date)}
           </div>
+          {effectiveDueDate && (
+            <div style={{ marginTop: '4px', paddingTop: '3px', borderTop: '1px solid #e2e8f0' }}>
+              <div style={{ fontSize: '9px', fontWeight: '800', color: '#000000', textTransform: 'uppercase' }}>Repayment Due Date</div>
+              <div style={{ fontSize: '11px', fontWeight: '800', color: '#000000' }}>{formatDate(effectiveDueDate)}</div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -327,59 +406,63 @@ const InvoiceTemplate = ({ invoice, forwardRef }) => {
         </thead>
 
         <tbody>
-          <tr>
-            <td
-              style={{
-                border: '1.5px solid #000000',
-                padding: '10px',
-                verticalAlign: 'top',
-                color: '#000000',
-              }}
-            >
-              <div style={{ fontWeight: '800', fontSize: '11px', color: '#000000' }}>
-                {invoice.planName ? `${invoice.planName} Membership Plan` : 'Yearly Membership Plan'}
-              </div>
-              <div style={{ color: '#000000', fontSize: '9.5px', marginTop: '2px', fontWeight: '500' }}>
-                Subscription access to Logistics Scanner Vendor Portal &amp; Directory Services
-              </div>
-            </td>
-            <td
-              style={{
-                border: '1.5px solid #000000',
-                padding: '10px',
-                textAlign: 'center',
-                verticalAlign: 'top',
-                fontWeight: '700',
-                color: '#000000',
-              }}
-            >
-              {invoice.sacCode || (isForeign ? '998313' : '9956')}
-            </td>
-            <td
-              style={{
-                border: '1.5px solid #000000',
-                padding: '10px',
-                textAlign: 'center',
-                verticalAlign: 'top',
-                fontWeight: '700',
-                color: '#000000',
-              }}
-            >
-              {isForeign ? '0% (Export)' : `${invoice.gstRate || 18}%`}
-            </td>
-            <td
-              style={{
-                border: '1.5px solid #000000',
-                padding: '10px',
-                textAlign: 'right',
-                verticalAlign: 'top',
-                fontWeight: '800',
-                color: '#000000',
-              }}
-            >
-              {money(baseAmount)}
-            </td>
-          </tr>
+          {itemsToRender.map((item, index) => (
+            <tr key={index}>
+              <td
+                style={{
+                  border: '1.5px solid #000000',
+                  padding: '9px 10px',
+                  verticalAlign: 'top',
+                  color: '#000000',
+                }}
+              >
+                <div style={{ fontWeight: '800', fontSize: '11px', color: '#000000' }}>
+                  {item.description}
+                </div>
+                {item.subtitle && (
+                  <div style={{ color: '#000000', fontSize: '9.5px', marginTop: '2px', fontWeight: '500' }}>
+                    {item.subtitle}
+                  </div>
+                )}
+              </td>
+              <td
+                style={{
+                  border: '1.5px solid #000000',
+                  padding: '9px 10px',
+                  textAlign: 'center',
+                  verticalAlign: 'top',
+                  fontWeight: '700',
+                  color: '#000000',
+                }}
+              >
+                {item.sacCode || invoice.sacCode || (isForeign ? '998313' : '9956')}
+              </td>
+              <td
+                style={{
+                  border: '1.5px solid #000000',
+                  padding: '9px 10px',
+                  textAlign: 'center',
+                  verticalAlign: 'top',
+                  fontWeight: '700',
+                  color: '#000000',
+                }}
+              >
+                {isForeign ? '0% (Export)' : (item.gstRate > 0 ? `${item.gstRate}%` : '0% (Exempt)')}
+              </td>
+              <td
+                style={{
+                  border: '1.5px solid #000000',
+                  padding: '9px 10px',
+                  textAlign: 'right',
+                  verticalAlign: 'top',
+                  fontWeight: '800',
+                  color: '#000000',
+                }}
+              >
+                {money(item.amount)}
+              </td>
+            </tr>
+          ))}
 
           {/* Amount in words & Tax Breakdown Row */}
           <tr>
@@ -433,6 +516,12 @@ const InvoiceTemplate = ({ invoice, forwardRef }) => {
                       <td style={{ padding: '8px 8px', fontSize: '11px', color: '#000000', borderTop: '1.5px solid #000000' }}>Total Amount</td>
                       <td style={{ padding: '8px 8px', textAlign: 'right', fontSize: '11px', color: '#000000', borderTop: '1.5px solid #000000' }}>{money(totalAmount)}</td>
                     </tr>
+                    {effectiveDueDate && (
+                      <tr style={{ borderTop: '1px solid #000000', background: '#fcfcfc' }}>
+                        <td style={{ padding: '6px 8px', fontSize: '10px', fontWeight: '800', color: '#000000' }}>Due Date / Repayment Deadline</td>
+                        <td style={{ padding: '6px 8px', textAlign: 'right', fontSize: '10.5px', fontWeight: '800', color: '#000000' }}>{formatDate(effectiveDueDate)}</td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               ) : (
@@ -444,21 +533,39 @@ const InvoiceTemplate = ({ invoice, forwardRef }) => {
                       <td style={{ padding: '5px 8px', textAlign: 'right', fontWeight: '700', color: '#000000' }}>{money(baseAmount)}</td>
                     </tr>
                     <tr style={{ borderBottom: '1px solid #000000' }}>
-                      <td style={{ padding: '5px 8px', color: '#000000', fontWeight: '600' }}>IGST ({invoice.gstRate || 18}%)</td>
-                      <td style={{ padding: '5px 8px', textAlign: 'right', fontWeight: '600', color: '#000000' }}>{igstAmount > 0 ? money(igstAmount) : '-'}</td>
+                      <td style={{ padding: '5px 8px', color: '#000000', fontWeight: '600' }}>
+                        IGST ({invoice.gstRate || 18}%{isMultiItem ? ' on Doc Fee' : ''})
+                      </td>
+                      <td style={{ padding: '5px 8px', textAlign: 'right', fontWeight: '600', color: '#000000' }}>
+                        {igstAmount > 0 ? money(igstAmount) : '-'}
+                      </td>
                     </tr>
                     <tr style={{ borderBottom: '1px solid #000000' }}>
-                      <td style={{ padding: '5px 8px', color: '#000000', fontWeight: '600' }}>SGST (9%)</td>
-                      <td style={{ padding: '5px 8px', textAlign: 'right', fontWeight: '600', color: '#000000' }}>{sgstAmount > 0 ? money(sgstAmount) : '-'}</td>
+                      <td style={{ padding: '5px 8px', color: '#000000', fontWeight: '600' }}>
+                        SGST (9%{isMultiItem ? ' on Doc Fee' : ''})
+                      </td>
+                      <td style={{ padding: '5px 8px', textAlign: 'right', fontWeight: '600', color: '#000000' }}>
+                        {sgstAmount > 0 ? money(sgstAmount) : '-'}
+                      </td>
                     </tr>
                     <tr style={{ borderBottom: '1px solid #000000' }}>
-                      <td style={{ padding: '5px 8px', color: '#000000', fontWeight: '600' }}>CGST (9%)</td>
-                      <td style={{ padding: '5px 8px', textAlign: 'right', fontWeight: '600', color: '#000000' }}>{cgstAmount > 0 ? money(cgstAmount) : '-'}</td>
+                      <td style={{ padding: '5px 8px', color: '#000000', fontWeight: '600' }}>
+                        CGST (9%{isMultiItem ? ' on Doc Fee' : ''})
+                      </td>
+                      <td style={{ padding: '5px 8px', textAlign: 'right', fontWeight: '600', color: '#000000' }}>
+                        {cgstAmount > 0 ? money(cgstAmount) : '-'}
+                      </td>
                     </tr>
                     <tr style={{ background: '#f5f5f5', fontWeight: '800' }}>
                       <td style={{ padding: '7px 8px', fontSize: '11px', color: '#000000', borderTop: '1.5px solid #000000' }}>Total Amount</td>
                       <td style={{ padding: '7px 8px', textAlign: 'right', fontSize: '11px', color: '#000000', borderTop: '1.5px solid #000000' }}>{money(totalAmount)}</td>
                     </tr>
+                    {effectiveDueDate && (
+                      <tr style={{ borderTop: '1px solid #000000', background: '#fcfcfc' }}>
+                        <td style={{ padding: '6px 8px', fontSize: '10px', fontWeight: '800', color: '#000000' }}>Due Date / Repayment Deadline</td>
+                        <td style={{ padding: '6px 8px', textAlign: 'right', fontSize: '10.5px', fontWeight: '800', color: '#000000' }}>{formatDate(effectiveDueDate)}</td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               )}
@@ -499,6 +606,12 @@ const InvoiceTemplate = ({ invoice, forwardRef }) => {
                 <td style={{ color: '#000000', paddingRight: '12px', fontWeight: '600' }}>Payment Reference No.:</td>
                 <td style={{ fontWeight: '700', color: '#000000' }}>{invoice.paymentReferenceNo || '-'}</td>
               </tr>
+              {effectiveDueDate && (
+                <tr>
+                  <td style={{ color: '#000000', paddingRight: '12px', fontWeight: '600' }}>Repayment Due Date:</td>
+                  <td style={{ fontWeight: '800', color: '#000000' }}>{formatDate(effectiveDueDate)}</td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
@@ -535,21 +648,44 @@ const InvoiceTemplate = ({ invoice, forwardRef }) => {
           marginTop: '12px',
           paddingTop: '8px',
           borderTop: '1.5px solid #000000',
-          fontSize: '9.5px',
+          fontSize: '9px',
           color: '#000000',
           lineHeight: '1.45',
         }}
       >
-        <div style={{ fontWeight: '800', color: '#000000', marginBottom: '4px' }}>
+        <div style={{ fontWeight: '800', color: '#000000', marginBottom: '4px', fontSize: '9.5px' }}>
           TERMS &amp; CONDITIONS:
         </div>
-        <div style={{ display: 'grid', rowGap: '2px', color: '#000000', fontWeight: '500' }}>
-          <div>• Subscription once purchased is non-cancellable and non-refundable.</div>
-          <div>• This is a one-time subscription valid only for the selected duration.</div>
-          <div>• Services will be activated immediately after successful payment confirmation.</div>
-          <div>• LogisticsScanner is not responsible for any indirect business outcomes or losses.</div>
-          <div>• All disputes are subject to New Delhi jurisdiction only.</div>
-        </div>
+        {(isMultiItem || 
+          invoice.approvedAmount ||
+          invoice.processingFee ||
+          invoice.paymentMethod === 'Wallet Deduction' ||
+          invoice.paymentReferenceNo?.startsWith('IR-') ||
+          (invoice.planName && (
+            invoice.planName.toLowerCase().includes('financing') || 
+            invoice.planName.toLowerCase().includes('reimbursement') || 
+            invoice.planName.toLowerCase().includes('documentation') || 
+            invoice.planName.toLowerCase().includes('charges') ||
+            invoice.planName.toLowerCase().includes('credit')
+          ))) ? (
+          <div style={{ display: 'grid', rowGap: '2.5px', color: '#000000', fontWeight: '600' }}>
+            <div>• Payment shall be made to LogisticsScanner as per the agreed credit terms.</div>
+            <div>• Delay up to 3 days: ₹5,000 + GST per overdue invoice.</div>
+            <div>• Delay above 3 days up to 5 days: ₹8,000 + GST per overdue invoice.</div>
+            <div>• After 5 days, credit facility may be suspended and applicable recovery action may be initiated.</div>
+            <div>• Any invoice dispute must be raised in writing within the agreed period.</div>
+            <div>• All payments shall be made to LogisticsScanner only through the approved payment channel.</div>
+            <div>• All disputes are subject to New Delhi jurisdiction.</div>
+          </div>
+        ) : (
+          <div style={{ display: 'grid', rowGap: '2px', color: '#000000', fontWeight: '500' }}>
+            <div>• Subscription once purchased is non-cancellable and non-refundable.</div>
+            <div>• This is a one-time subscription valid only for the selected duration.</div>
+            <div>• Services will be activated immediately after successful payment confirmation.</div>
+            <div>• LogisticsScanner is not responsible for any indirect business outcomes or losses.</div>
+            <div>• All disputes are subject to New Delhi jurisdiction only.</div>
+          </div>
+        )}
       </div>
 
       {/* Thank you Footer */}

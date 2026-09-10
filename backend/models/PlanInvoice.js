@@ -15,6 +15,9 @@ const planInvoiceSchema = new mongoose.Schema({
         type: Date,
         default: Date.now
     },
+    dueDate: {
+        type: Date
+    },
     companyName: {
         type: String,
         required: true
@@ -55,6 +58,21 @@ const planInvoiceSchema = new mongoose.Schema({
         type: Number,
         required: true
     },
+    approvedAmount: {
+        type: Number,
+        default: 0
+    },
+    processingFee: {
+        type: Number,
+        default: 0
+    },
+    items: [{
+        description: { type: String, required: true },
+        subtitle: { type: String, default: '' },
+        sacCode: { type: String, default: '9956' },
+        gstRate: { type: Number, default: 0 },
+        amount: { type: Number, required: true }
+    }],
     igstAmount: {
         type: Number,
         default: 0
