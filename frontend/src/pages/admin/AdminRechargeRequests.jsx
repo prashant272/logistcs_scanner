@@ -108,8 +108,17 @@ const AdminRechargeRequests = () => {
                                             <div className="text-xs text-slate-400">{new Date(req.createdAt).toLocaleTimeString()}</div>
                                         </td>
                                         <td className="p-4">
-                                            <div className="font-bold text-slate-800">{req.vendor?.organizationName}</div>
-                                            <div className="text-xs text-slate-500">LSID: {req.vendor?.lsid}</div>
+                                            <div className="font-black text-[#0B1E43]">
+                                                {req.vendor?.company || req.vendor?.organizationName || req.vendor?.name || 'Unknown Vendor'}
+                                            </div>
+                                            <div className="text-xs text-slate-500 font-semibold">
+                                                {req.vendor?.email || 'No Email'}
+                                            </div>
+                                            {(req.vendor?.phone || req.vendor?.mobile) && (
+                                                <div className="text-[11px] text-slate-400 font-medium">
+                                                    Ph: {req.vendor?.phone || req.vendor?.mobile}
+                                                </div>
+                                            )}
                                         </td>
                                         <td className="p-4">
                                             <span className="inline-flex items-center gap-1.5 font-bold text-slate-700 bg-slate-100 px-2.5 py-1 rounded-lg text-xs">
@@ -194,11 +203,15 @@ const AdminRechargeRequests = () => {
 
                         <form onSubmit={handleActionSubmit} className="p-6">
                             <div className="mb-6 p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                                <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Vendor Details</p>
-                                <p className="font-bold text-slate-800">{selectedRequest.vendor?.organizationName}</p>
-                                <p className="text-sm text-slate-600 mt-1 flex items-center">
-                                    Amount: <IndianRupee size={12} className="ml-1 mr-0.5"/> 
-                                    <span className="font-black text-slate-800">{selectedRequest.amount.toLocaleString()}</span>
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Vendor Details</p>
+                                <p className="font-bold text-[#0B1E43] text-sm">{selectedRequest.vendor?.company || selectedRequest.vendor?.organizationName || selectedRequest.vendor?.name || 'Unknown Vendor'}</p>
+                                <p className="text-xs text-slate-500 font-medium">{selectedRequest.vendor?.email}</p>
+                                {(selectedRequest.vendor?.phone || selectedRequest.vendor?.mobile) && (
+                                    <p className="text-[11px] text-slate-400 font-medium mt-0.5">Ph: {selectedRequest.vendor?.phone || selectedRequest.vendor?.mobile}</p>
+                                )}
+                                <p className="text-sm font-semibold text-slate-700 mt-2.5 pt-2 border-t border-slate-200/60 flex items-center">
+                                    Recharge Amount: <IndianRupee size={13} className="ml-1 mr-0.5 text-blue-600"/> 
+                                    <span className="font-black text-[#0B1E43] text-base">{selectedRequest.amount.toLocaleString('en-IN')}</span>
                                 </p>
                             </div>
 

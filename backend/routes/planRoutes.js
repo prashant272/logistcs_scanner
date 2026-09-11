@@ -8,6 +8,7 @@ router.get('/', planController.getPlans);
 router.post('/upgrade', authMiddleware, planController.upgradeUserPlan);
 router.post('/razorpay-order', authMiddleware, planController.createRazorpayOrder);
 router.post('/razorpay-verify', authMiddleware, planController.verifyRazorpayPayment);
+router.post('/wallet-pay', authMiddleware, planController.payPlanViaWallet);
 router.post('/', planController.createPlan);
 router.put('/:id', planController.updatePlan);
 router.delete('/:id', planController.deletePlan);

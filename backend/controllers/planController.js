@@ -263,6 +263,12 @@ exports.createRazorpayOrder = async (req, res) => {
             }
         );
 
+        const { convertCurrency } = require('../utils/currencyService');
+        let inrConversion = null;
+        if (currencyCode === 'USD') {
+            inrConversion = await convertCurrency(totalPriceWithGst, 'USD', 'INR');
+        }
+
         res.json({
             orderId: response.data.id,
             amount: response.data.amount,
@@ -273,7 +279,10 @@ exports.createRazorpayOrder = async (req, res) => {
             finalPrice: finalPrice,
             gstAmount: gstAmount,
             totalPriceWithGst: totalPriceWithGst,
-            discountAmount: discountAmount
+            discountAmount: discountAmount,
+            inrAmount: inrConversion ? inrConversion.new_amount : totalPriceWithGst,
+            exchangeRate: inrConversion ? inrConversion.rate : 1,
+            isConverted: !!inrConversion
         });
     } catch (error) {
         console.error('Razorpay Order Creation Error:', error.response?.data || error.message);
@@ -431,6 +440,209 @@ exports.verifyRazorpayPayment = async (req, res) => {
         });
     } catch (error) {
         console.error('Razorpay Payment Verification Error:', error);
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
+
+// Pay for Plan Subscription via Wallet Balance
+exports.payPlanViaWallet = async (req, res) => {
+    try {
+        const { planId, couponCode } = req.body;
+        if (!planId) {
+            return res.status(400).json({ message: 'Plan ID is required' });
+        }
+
+        const plan = await Plan.findById(planId);
+        if (!plan) {
+            return res.status(404).json({ message: 'Plan not found' });
+        }
+
+        if (plan.status !== 'Active') {
+            return res.status(400).json({ message: 'Selected plan is inactive' });
+        }
+
+        const user = await User.findById(req.user.id);
+        if (!user) return res.status(404).json({ message: 'User not found' });
+
+        if (plan.planType === 'Topup') {
+            if (!user.activePlan || !user.planEndDate || user.planEndDate < new Date()) {
+                return res.status(400).json({ message: 'You must have an active regular plan to purchase a top-up.' });
+            }
+            const activePlanDoc = await Plan.findById(user.activePlan);
+            if (!activePlanDoc || activePlanDoc.price <= 0 || (activePlanDoc.name && activePlanDoc.name.toLowerCase() === 'vendor lite')) {
+                return res.status(400).json({ message: 'You can only purchase a top-up if you are on a paid premium plan.' });
+            }
+        }
+
+        let isOutsideIndia = false;
+        if (user && user.country && user.country.toLowerCase() !== 'india' && user.country.toLowerCase() !== 'in') {
+            isOutsideIndia = true;
+        }
+
+        let basePrice = plan.price;
+        let finalPrice = basePrice;
+        let discountAmount = 0;
+
+        if (couponCode) {
+            const coupon = await Coupon.findOne({ code: couponCode.toUpperCase() });
+            if (coupon && coupon.status === 'Active' && new Date(coupon.expiryDate) >= new Date()) {
+                if (coupon.discountType === 'Percent') {
+                    discountAmount = (basePrice * coupon.discountValue) / 100;
+                } else {
+                    discountAmount = coupon.discountValue;
+                }
+                if (discountAmount > basePrice) {
+                    discountAmount = basePrice;
+                }
+                finalPrice = basePrice - discountAmount;
+            }
+        }
+
+        let isIndiaPlan = plan.country && (plan.country.toLowerCase() === 'india' || plan.country.toLowerCase() === 'in');
+        let currencyCode = isOutsideIndia ? 'USD' : (plan.currency || 'INR');
+        let gstAmount = isIndiaPlan ? Math.round((finalPrice * 18) / 100) : 0;
+        let totalPriceWithGst = finalPrice + gstAmount;
+
+        const { convertCurrency } = require('../utils/currencyService');
+        let inrConversion = null;
+        let inrAmountToDeduct = totalPriceWithGst;
+
+        if (currencyCode === 'USD') {
+            inrConversion = await convertCurrency(totalPriceWithGst, 'USD', 'INR');
+            inrAmountToDeduct = inrConversion.new_amount;
+        }
+
+        const currentWalletBalance = parseFloat(user.walletBalance) || 0;
+        if (currentWalletBalance < inrAmountToDeduct) {
+            const conversionNote = inrConversion ? ` (Converted from $${totalPriceWithGst} USD @ 1 USD = ₹${inrConversion.rate})` : '';
+            return res.status(400).json({
+                message: `Insufficient wallet balance. Required: ₹${inrAmountToDeduct.toLocaleString('en-IN')}${conversionNote}, Available: ₹${currentWalletBalance.toLocaleString('en-IN')}. Please recharge your wallet or pay online.`
+            });
+        }
+
+        // Deduct from wallet balance
+        user.walletBalance = currentWalletBalance - inrAmountToDeduct;
+
+        const planStartDate = new Date();
+        const planEndDate = new Date();
+        if (plan.duration === 'Monthly') {
+            planEndDate.setMonth(planEndDate.getMonth() + 1);
+        } else if (plan.duration === 'Quarterly') {
+            planEndDate.setMonth(planEndDate.getMonth() + 3);
+        } else if (plan.duration === 'Half-Yearly') {
+            planEndDate.setMonth(planEndDate.getMonth() + 6);
+        } else if (plan.duration === 'Yearly') {
+            planEndDate.setFullYear(planEndDate.getFullYear() + 1);
+        } else {
+            planEndDate.setMonth(planEndDate.getMonth() + 1);
+        }
+
+        if (plan.planType === 'Topup') {
+            user.topupEnquiryLimit = (user.topupEnquiryLimit || 0) + plan.inquiryLimit;
+            user.topupPlanEndDate = planEndDate;
+        } else {
+            user.activePlan = plan._id;
+            user.planStartDate = planStartDate;
+            user.planEndDate = planEndDate;
+        }
+
+        await user.save();
+
+        const WalletTransaction = require('../models/WalletTransaction');
+        const transactionDesc = inrConversion 
+            ? `Plan Upgrade: ${plan.name} ($${totalPriceWithGst} USD @ ₹${inrConversion.rate}/USD) paid via Wallet`
+            : `Plan Upgrade: ${plan.name} (${plan.duration || 'Plan'}) paid via Wallet`;
+
+        await WalletTransaction.create({
+            vendor: user._id,
+            type: 'Debit',
+            amount: inrAmountToDeduct,
+            description: transactionDesc,
+            balanceAfter: user.walletBalance
+        });
+
+        // Generate Tax Invoice
+        try {
+            const PlanInvoice = require('../models/PlanInvoice');
+            const currency = isOutsideIndia ? 'USD' : (plan.currency || 'INR');
+            const gstRate = isOutsideIndia ? 0 : 18;
+
+            let igstAmount = 0, cgstAmount = 0, sgstAmount = 0;
+            if (!isOutsideIndia) {
+                if (user.state && user.state.toLowerCase().includes('delhi')) {
+                    cgstAmount = gstAmount / 2;
+                    sgstAmount = gstAmount / 2;
+                } else {
+                    igstAmount = gstAmount;
+                }
+            }
+
+            const now = new Date();
+            const monthStr = String(now.getMonth() + 1).padStart(2, '0');
+            const yearStr = String(now.getFullYear()).slice(-2);
+            const prefix = `LS${monthStr}${yearStr}`;
+
+            const existingInvoices = await PlanInvoice.find({}, { invoiceNo: 1 }).lean();
+            let maxSeq = 27;
+
+            for (const inv of existingInvoices) {
+                if (!inv || !inv.invoiceNo) continue;
+                const match = inv.invoiceNo.match(/^LS\d{4}(\d+)$/);
+                if (match) {
+                    const seqNum = parseInt(match[1], 10);
+                    if (!isNaN(seqNum) && seqNum > maxSeq) {
+                        maxSeq = seqNum;
+                    }
+                }
+            }
+
+            const nextSeq = maxSeq + 1;
+            const invoiceNo = `${prefix}${String(nextSeq).padStart(2, '0')}`;
+
+            await PlanInvoice.create({
+                vendor: user._id,
+                invoiceNo,
+                companyName: user.company || user.name || 'Vendor',
+                address: [user.city, user.state, user.pincode, user.country].filter(Boolean).join(', '),
+                country: user.country || 'India',
+                currency: currency,
+                gstNo: user.gst || '',
+                panNo: user.pan || '',
+                planName: plan.name,
+                sacCode: isOutsideIndia ? '998313' : '9956',
+                gstRate: gstRate,
+                baseAmount: finalPrice,
+                igstAmount,
+                cgstAmount,
+                sgstAmount,
+                totalAmount: totalPriceWithGst,
+                paymentMethod: 'Wallet Balance',
+                paymentReferenceNo: `WAL-${Date.now().toString().slice(-8)}`
+            });
+        } catch (invoiceErr) {
+            console.error('Error generating invoice for wallet payment:', invoiceErr);
+        }
+
+        const { sendNotification } = require('../utils/notificationService');
+        if (typeof sendNotification === 'function') {
+            sendNotification(
+                user._id,
+                `Plan upgraded to ${plan.name} successfully! ₹${totalPriceWithGst.toLocaleString('en-IN')} deducted from wallet.`,
+                'success',
+                '/vendor/upgrade'
+            ).catch(() => {});
+        }
+
+        const updatedUser = await User.findById(user._id).populate('activePlan');
+
+        res.json({
+            message: `Successfully upgraded to ${plan.name} using Wallet Balance!`,
+            user: updatedUser,
+            deductedAmount: totalPriceWithGst,
+            walletBalance: user.walletBalance
+        });
+    } catch (error) {
+        console.error('Wallet Plan Payment Error:', error);
         res.status(500).json({ message: 'Server error', error: error.message });
     }
 };

@@ -81,7 +81,41 @@ exports.processAutoDeductionOnRecharge = async (vendorId, rechargeAmount, paymen
             });
         }
 
+        // Auto-approve vendor verification status if not already approved
+        if (vendor.verificationStatus !== 'Approved') {
+            vendor.verificationStatus = 'Approved';
+            vendor.isVerified = true;
+        }
+
+        // Auto-approve any pending FinanceApplication for this vendor
+        try {
+            const FinanceApplication = require('../models/FinanceApplication');
+            const pendingApps = await FinanceApplication.find({
+                vendor: vendor._id,
+                adminStatus: { $in: ['Pending', 'In Review'] }
+            });
+            for (const app of pendingApps) {
+                app.adminStatus = 'Approved';
+                app.isFeePaid = true;
+                if (!app.approvedAmount || parseFloat(app.approvedAmount) <= 0) {
+                    app.approvedAmount = rechargeAmount.toString();
+                }
+                await app.save();
+            }
+        } catch (appErr) {
+            console.error('Error auto-approving finance application on recharge:', appErr);
+        }
+
         await vendor.save();
+
+        if (typeof sendNotification === 'function') {
+            sendNotification(
+                vendor._id,
+                `Wallet recharged with ₹${parseFloat(rechargeAmount).toLocaleString('en-IN')} via ${paymentMethod}. Your wallet is active!`,
+                'success',
+                '/vendor/wallet-ledger'
+            ).catch(() => {});
+        }
 
         return {
             clearedInvoices,

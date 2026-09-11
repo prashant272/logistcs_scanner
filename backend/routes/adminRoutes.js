@@ -31,6 +31,7 @@ const {
     getUserByEmailForRole,
     updateUserRole,
     updateUserWallet,
+    getUserWalletDetails,
     getVendorActivity,
     migrateUserEnquiries,
     deleteUserAccount
@@ -67,6 +68,7 @@ router.get("/recharge-requests", auth, getRechargeRequests);
 router.put("/recharge-requests/:id", auth, updateRechargeRequestStatus);
 
 // Wallet Management
+router.get("/user/:id/wallet", auth, getUserWalletDetails);
 router.post("/user/:id/wallet", auth, updateUserWallet);
 
 // Admin pricing management routes

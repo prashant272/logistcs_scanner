@@ -1105,7 +1105,7 @@ const WalletTransaction = require('../models/WalletTransaction');
 exports.getRechargeRequests = async (req, res) => {
     try {
         const requests = await RechargeRequest.find()
-            .populate('vendor', 'name organizationName email mobile lsid')
+            .populate('vendor', 'name company organizationName email phone mobile lsid')
             .sort({ createdAt: -1 });
         res.json(requests);
     } catch (error) {
@@ -1144,6 +1144,25 @@ exports.updateRechargeRequestStatus = async (req, res) => {
     }
 };
 
+exports.getUserWalletDetails = async (req, res) => {
+    try {
+        const user = await User.findById(req.params.id).select('name email company phone walletBalance verificationStatus role');
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+        const transactions = await WalletTransaction.find({ vendor: user._id })
+            .sort({ createdAt: -1 })
+            .limit(50);
+        res.json({
+            user,
+            balance: user.walletBalance || 0,
+            transactions
+        });
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
+
 exports.updateUserWallet = async (req, res) => {
     try {
         const { amount, action, description } = req.body;
@@ -1155,31 +1174,58 @@ exports.updateUserWallet = async (req, res) => {
 
         const parsedAmount = parseFloat(amount);
         if (isNaN(parsedAmount) || parsedAmount <= 0) {
-            return res.status(400).json({ message: 'Invalid amount' });
+            return res.status(400).json({ message: 'Please enter a valid amount greater than 0' });
         }
 
+        const reason = (description || '').trim();
+        if (!reason) {
+            return res.status(400).json({ message: 'Please provide a reason for this wallet adjustment' });
+        }
+
+        const previousBalance = user.walletBalance || 0;
+
         if (action === 'Credit') {
-            user.walletBalance = (user.walletBalance || 0) + parsedAmount;
+            user.walletBalance = previousBalance + parsedAmount;
         } else if (action === 'Debit') {
-            if ((user.walletBalance || 0) < parsedAmount) {
-                return res.status(400).json({ message: 'Insufficient balance to deduct' });
+            if (previousBalance < parsedAmount) {
+                return res.status(400).json({ 
+                    message: `Cannot deduct ₹${parsedAmount.toLocaleString('en-IN')}. Current wallet balance is only ₹${previousBalance.toLocaleString('en-IN')}` 
+                });
             }
-            user.walletBalance = (user.walletBalance || 0) - parsedAmount;
+            user.walletBalance = previousBalance - parsedAmount;
         } else {
             return res.status(400).json({ message: 'Invalid action. Must be Credit or Debit' });
         }
 
         await user.save();
 
-        await WalletTransaction.create({
+        const txn = await WalletTransaction.create({
             vendor: user._id, // vendor field acts as generic user field in this schema
             type: action,
             amount: parsedAmount,
-            description: description || `Admin Manual ${action}`,
+            description: reason,
             balanceAfter: user.walletBalance
         });
 
-        res.json({ message: `Wallet ${action} successful`, balance: user.walletBalance });
+        // Send real-time notification to vendor
+        try {
+            const { sendNotification } = require('../utils/notificationService');
+            if (typeof sendNotification === 'function') {
+                const notifType = action === 'Credit' ? 'success' : 'warning';
+                const notifMsg = action === 'Credit' 
+                    ? `Admin credited ₹${parsedAmount.toLocaleString('en-IN')} to your wallet. Reason: ${reason}. Current Balance: ₹${user.walletBalance.toLocaleString('en-IN')}`
+                    : `Admin deducted ₹${parsedAmount.toLocaleString('en-IN')} from your wallet. Reason: ${reason}. Current Balance: ₹${user.walletBalance.toLocaleString('en-IN')}`;
+                await sendNotification(user._id, notifMsg, notifType, '/vendor/wallet-ledger');
+            }
+        } catch (notifErr) {
+            console.error('Notification error on wallet update:', notifErr);
+        }
+
+        res.json({ 
+            message: `Wallet ${action === 'Credit' ? 'credited' : 'debited'} successfully by ₹${parsedAmount.toLocaleString('en-IN')}`, 
+            balance: user.walletBalance,
+            transaction: txn
+        });
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
     }

@@ -3,7 +3,8 @@ import axios from 'axios';
 import useInfiniteScroll from '../../hooks/useInfiniteScroll';
 import {
   ShieldCheck, Truck, Mail, Phone, MapPin, Building, Calendar,
-  Search, ExternalLink, LogIn, CheckCircle2, AlertCircle, Upload, RefreshCw, Plus, X, Loader2, Activity, Edit, Download, ChevronDown
+  Search, ExternalLink, LogIn, CheckCircle2, AlertCircle, Upload, RefreshCw, Plus, X, Loader2, Activity, Edit, Download, ChevronDown,
+  Wallet, IndianRupee, ArrowUpRight, ArrowDownRight, Clock
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { COUNTRIES } from '../../utils/countries';
@@ -85,6 +86,19 @@ const VendorManagement = () => {
   const [creditFormData, setCreditFormData] = useState({
     takesCreditDays: 0, givesCreditDays: 0
   });
+
+  // Wallet Management Modal State
+  const [showWalletModal, setShowWalletModal] = useState(false);
+  const [walletVendor, setWalletVendor] = useState(null);
+  const [walletBalance, setWalletBalance] = useState(0);
+  const [walletTransactions, setWalletTransactions] = useState([]);
+  const [loadingWallet, setLoadingWallet] = useState(false);
+  const [walletAction, setWalletAction] = useState('Credit'); // 'Credit' | 'Debit'
+  const [walletAmount, setWalletAmount] = useState('');
+  const [walletReason, setWalletReason] = useState('');
+  const [submittingWallet, setSubmittingWallet] = useState(false);
+  const [walletError, setWalletError] = useState('');
+  const [walletSuccess, setWalletSuccess] = useState('');
 
   // Verify Documents Modal State
   const [showVerifyModal, setShowVerifyModal] = useState(false);
@@ -552,6 +566,80 @@ const VendorManagement = () => {
     }
   };
 
+  const handleOpenWalletModal = async (vendor) => {
+    setWalletVendor(vendor);
+    setWalletBalance(vendor.walletBalance || 0);
+    setWalletTransactions([]);
+    setWalletAction('Credit');
+    setWalletAmount('');
+    setWalletReason('');
+    setWalletError('');
+    setWalletSuccess('');
+    setShowWalletModal(true);
+    setLoadingWallet(true);
+
+    try {
+      const token = sessionStorage.getItem('adminToken');
+      const { data } = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/admin/user/${vendor._id}/wallet`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (data) {
+        setWalletBalance(data.balance ?? (vendor.walletBalance || 0));
+        setWalletTransactions(data.transactions || []);
+      }
+    } catch (err) {
+      console.error('Failed to load wallet details:', err);
+    } finally {
+      setLoadingWallet(false);
+    }
+  };
+
+  const handleWalletSubmit = async (e) => {
+    e.preventDefault();
+    const parsedAmt = parseFloat(walletAmount);
+    if (isNaN(parsedAmt) || parsedAmt <= 0) {
+      setWalletError('Please enter a valid amount greater than 0');
+      return;
+    }
+    if (!walletReason.trim()) {
+      setWalletError('Reason / Description is required for wallet adjustment');
+      return;
+    }
+
+    try {
+      setSubmittingWallet(true);
+      setWalletError('');
+      setWalletSuccess('');
+      const token = sessionStorage.getItem('adminToken');
+      const { data } = await axios.post(
+        `${import.meta.env.VITE_API_BASE_URL}/admin/user/${walletVendor._id}/wallet`,
+        {
+          amount: parsedAmt,
+          action: walletAction,
+          description: walletReason.trim()
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      setWalletSuccess(data.message || `Wallet ${walletAction === 'Credit' ? 'credited' : 'debited'} successfully!`);
+      setWalletBalance(data.balance);
+      if (data.transaction) {
+        setWalletTransactions(prev => [data.transaction, ...prev]);
+      }
+
+      // Update in vendor list state
+      setVendors(prev => prev.map(v => v._id === walletVendor._id ? { ...v, walletBalance: data.balance } : v));
+
+      setWalletAmount('');
+      setWalletReason('');
+    } catch (err) {
+      console.error('Wallet update failed:', err);
+      setWalletError(err.response?.data?.message || 'Failed to update wallet balance');
+    } finally {
+      setSubmittingWallet(false);
+    }
+  };
+
   const handleUpdateLimit = async (vendorId, limit) => {
     // Optimistic UI Update for instant feedback
     setVendors(prev => prev.map(v => v._id === vendorId ? { ...v, topupEnquiryLimit: Number(limit) } : v));
@@ -740,6 +828,7 @@ const VendorManagement = () => {
                   <th className="p-4 text-center">Audit Log</th>
                   <th className="p-4 text-center">Edit</th>
                   <th className="p-4 text-center">Credit</th>
+                  <th className="p-4 text-center">Wallet</th>
                   <th className="p-4">First Name</th>
                   <th className="p-4">Last Name</th>
                   <th className="p-4">Email</th>
@@ -826,6 +915,16 @@ const VendorManagement = () => {
                           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                           </svg>
+                        </button>
+                      </td>
+                      <td className="p-4 text-center">
+                        <button
+                          onClick={() => handleOpenWalletModal(vendor)}
+                          className="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-[10px] font-black px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 mx-auto cursor-pointer transition-all shadow-sm border border-emerald-200/80 whitespace-nowrap hover:scale-105"
+                          title="Manage Vendor Wallet (Add / Deduct Funds with Reason)"
+                        >
+                          <Wallet size={13} className="text-emerald-600" />
+                          <span>₹{(vendor.walletBalance || 0).toLocaleString('en-IN')}</span>
                         </button>
                       </td>
                       <td className="p-4 text-slate-800">{firstName}</td>
@@ -1652,6 +1751,278 @@ const VendorManagement = () => {
                   ))}
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Wallet Management Modal */}
+      {showWalletModal && walletVendor && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm overflow-y-auto">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden border border-slate-200 my-8 flex flex-col max-h-[90vh]">
+            {/* Modal Header */}
+            <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center text-indigo-300">
+                  <Wallet size={22} />
+                </div>
+                <div>
+                  <h2 className="text-lg font-black tracking-tight text-white flex items-center gap-2">
+                    Vendor Wallet Management
+                  </h2>
+                  <p className="text-xs text-indigo-200/80 font-bold">
+                    {walletVendor.company || walletVendor.name} &bull; {walletVendor.email}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowWalletModal(false)}
+                className="text-slate-400 hover:text-white p-2 rounded-xl hover:bg-white/10 transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="p-6 overflow-y-auto flex-1 space-y-6">
+              {/* Balance Summary Card */}
+              <div className="bg-gradient-to-br from-indigo-50 via-blue-50 to-slate-50 border border-indigo-100 rounded-2xl p-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                  <span className="text-[10px] font-black text-indigo-600 uppercase tracking-widest block">Current Wallet Balance</span>
+                  <div className="text-3xl font-black text-slate-900 flex items-center mt-1">
+                    <IndianRupee className="w-6 h-6 mr-0.5 text-indigo-600" />
+                    {parseFloat(walletBalance || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </div>
+                  <span className="text-xs font-semibold text-slate-500 mt-1 block">
+                    Available for plan upgrades, inquiry leads & credit settlements
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2 bg-white px-3.5 py-2 rounded-xl border border-indigo-100 shadow-sm text-xs font-bold text-slate-700">
+                  <Building size={14} className="text-indigo-600" />
+                  <span>{walletVendor.company || 'Individual Vendor'}</span>
+                </div>
+              </div>
+
+              {/* Action Form */}
+              <form onSubmit={handleWalletSubmit} className="bg-white border border-slate-200 rounded-2xl p-5 space-y-4 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xs font-black uppercase tracking-wider text-slate-700">
+                    Add / Deduct Funds (With Mandatory Reason)
+                  </h3>
+                  <span className="text-[11px] font-bold text-slate-400">
+                    Reason will be visible in vendor's wallet ledger
+                  </span>
+                </div>
+
+                {/* Segmented Action Selector */}
+                <div className="grid grid-cols-2 gap-2 bg-slate-100 p-1.5 rounded-xl">
+                  <button
+                    type="button"
+                    onClick={() => { setWalletAction('Credit'); setWalletError(''); }}
+                    className={`py-2.5 rounded-lg text-xs font-black flex items-center justify-center gap-2 transition-all ${
+                      walletAction === 'Credit'
+                        ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20'
+                        : 'text-slate-600 hover:text-slate-900 font-bold'
+                    }`}
+                  >
+                    <ArrowUpRight size={16} />
+                    + Add Money (Credit)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setWalletAction('Debit'); setWalletError(''); }}
+                    className={`py-2.5 rounded-lg text-xs font-black flex items-center justify-center gap-2 transition-all ${
+                      walletAction === 'Debit'
+                        ? 'bg-rose-600 text-white shadow-md shadow-rose-600/20'
+                        : 'text-slate-600 hover:text-slate-900 font-bold'
+                    }`}
+                  >
+                    <ArrowDownRight size={16} />
+                    - Deduct Money (Debit)
+                  </button>
+                </div>
+
+                {/* Amount Input */}
+                <div>
+                  <label className="block text-[11px] font-black uppercase tracking-wider text-slate-600 mb-1.5">
+                    Amount (₹) *
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-base">₹</span>
+                    <input
+                      type="number"
+                      min="1"
+                      step="any"
+                      required
+                      placeholder="Enter amount (e.g. 5000)"
+                      value={walletAmount}
+                      onChange={(e) => { setWalletAmount(e.target.value); setWalletError(''); }}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-4 py-2.5 text-sm font-black text-slate-800 focus:outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 transition-all"
+                    />
+                  </div>
+
+                  {/* Preset Amount Chips */}
+                  <div className="flex flex-wrap gap-1.5 mt-2">
+                    {[500, 1000, 2000, 5000, 10000, 25000, 50000].map((amt) => (
+                      <button
+                        key={amt}
+                        type="button"
+                        onClick={() => setWalletAmount(amt.toString())}
+                        className="px-2.5 py-1 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 text-slate-600 rounded-lg text-[10px] font-bold transition-colors border border-slate-200/60"
+                      >
+                        +₹{amt.toLocaleString('en-IN')}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Reason / Description Input (MANDATORY) */}
+                <div>
+                  <label className="block text-[11px] font-black uppercase tracking-wider text-slate-600 mb-1.5">
+                    Reason / Description (Mandatory) *
+                  </label>
+                  <textarea
+                    required
+                    rows="2"
+                    placeholder="Enter explicit reason for adding/deducting money (visible to vendor)..."
+                    value={walletReason}
+                    onChange={(e) => { setWalletReason(e.target.value); setWalletError(''); }}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-800 focus:outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 transition-all resize-none"
+                  />
+
+                  {/* Quick Reason Suggestions */}
+                  <div className="flex flex-wrap gap-1.5 mt-1.5">
+                    <span className="text-[10px] font-bold text-slate-400 self-center">Presets:</span>
+                    {[
+                      'Manual Wallet Recharge',
+                      'Security Deposit Refund',
+                      'Promotional / Referral Bonus',
+                      'Invoice Payment Settlement Adjustment',
+                      'Penalty Deduction',
+                      'Lead Processing Fee Refund',
+                      'Account Balance Correction'
+                    ].map((reasonText) => (
+                      <button
+                        key={reasonText}
+                        type="button"
+                        onClick={() => setWalletReason(reasonText)}
+                        className="px-2 py-0.5 bg-slate-50 hover:bg-slate-200 text-slate-600 rounded-md text-[9px] font-semibold transition-colors border border-slate-200"
+                      >
+                        {reasonText}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Preview Calculation */}
+                {walletAmount && parseFloat(walletAmount) > 0 && (
+                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/80 flex justify-between items-center text-xs font-bold">
+                    <span className="text-slate-500">Calculated New Balance:</span>
+                    <span className={`font-black ${walletAction === 'Credit' ? 'text-emerald-700' : 'text-slate-800'}`}>
+                      ₹{(walletAction === 'Credit'
+                        ? (parseFloat(walletBalance || 0) + parseFloat(walletAmount || 0))
+                        : Math.max(0, parseFloat(walletBalance || 0) - parseFloat(walletAmount || 0))
+                      ).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                )}
+
+                {/* Alerts */}
+                {walletError && (
+                  <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl text-xs font-bold flex items-center gap-2">
+                    <AlertCircle size={16} className="shrink-0" />
+                    <span>{walletError}</span>
+                  </div>
+                )}
+
+                {walletSuccess && (
+                  <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-xl text-xs font-bold flex items-center gap-2">
+                    <CheckCircle2 size={16} className="shrink-0" />
+                    <span>{walletSuccess}</span>
+                  </div>
+                )}
+
+                {/* Submit Button */}
+                <button
+                  type="submit"
+                  disabled={submittingWallet}
+                  className={`w-full py-3 rounded-xl text-xs font-black text-white shadow-md transition-all flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer ${
+                    walletAction === 'Credit'
+                      ? 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20'
+                      : 'bg-rose-600 hover:bg-rose-700 shadow-rose-600/20'
+                  }`}
+                >
+                  {submittingWallet ? (
+                    <Loader2 size={16} className="animate-spin" />
+                  ) : walletAction === 'Credit' ? (
+                    <ArrowUpRight size={16} />
+                  ) : (
+                    <ArrowDownRight size={16} />
+                  )}
+                  {walletAction === 'Credit'
+                    ? `Credit ₹${walletAmount ? parseFloat(walletAmount).toLocaleString('en-IN') : '0'} to Wallet`
+                    : `Deduct ₹${walletAmount ? parseFloat(walletAmount).toLocaleString('en-IN') : '0'} from Wallet`}
+                </button>
+              </form>
+
+              {/* Vendor Wallet History */}
+              <div className="border border-slate-200 rounded-2xl overflow-hidden bg-white">
+                <div className="p-4 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
+                  <div className="flex items-center gap-2">
+                    <Clock size={16} className="text-slate-500" />
+                    <h4 className="text-xs font-black uppercase tracking-wider text-slate-700">
+                      Recent Wallet Transactions ({walletTransactions.length})
+                    </h4>
+                  </div>
+                  <span className="text-[10px] font-bold text-slate-400">Live vendor statement</span>
+                </div>
+
+                {loadingWallet ? (
+                  <div className="py-8 text-center text-slate-400 font-bold text-xs flex items-center justify-center gap-2">
+                    <Loader2 size={16} className="animate-spin" />
+                    <span>Loading transactions...</span>
+                  </div>
+                ) : walletTransactions.length === 0 ? (
+                  <div className="py-8 text-center text-slate-400 font-bold text-xs">
+                    No transactions recorded for this vendor yet.
+                  </div>
+                ) : (
+                  <div className="max-h-60 overflow-y-auto divide-y divide-slate-100">
+                    {walletTransactions.map((txn) => (
+                      <div key={txn._id} className="p-3.5 hover:bg-slate-50/60 transition-colors flex items-start justify-between gap-3 text-xs">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider ${
+                              txn.type === 'Credit'
+                                ? 'bg-emerald-100 text-emerald-800'
+                                : 'bg-rose-100 text-rose-800'
+                            }`}>
+                              {txn.type}
+                            </span>
+                            <span className="text-[10px] font-bold text-slate-400">
+                              {new Date(txn.createdAt).toLocaleString()}
+                            </span>
+                          </div>
+                          <p className="font-bold text-slate-700 text-xs">
+                            {txn.description}
+                          </p>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <span className={`font-black text-sm block ${
+                            txn.type === 'Credit' ? 'text-emerald-600' : 'text-rose-600'
+                          }`}>
+                            {txn.type === 'Credit' ? '+' : '-'} ₹{parseFloat(txn.amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                          </span>
+                          {txn.balanceAfter !== undefined && (
+                            <span className="text-[10px] font-semibold text-slate-400 block">
+                              Bal: ₹{parseFloat(txn.balanceAfter || 0).toLocaleString('en-IN')}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>

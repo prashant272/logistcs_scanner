@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { ShieldCheck, Loader2, Calendar, CheckCircle, FileText } from 'lucide-react';
+import { ShieldCheck, Loader2, Calendar, CheckCircle, FileText, Wallet, CreditCard, ArrowRight, AlertCircle } from 'lucide-react';
 
 const PricingPlans = () => {
     const { user, updateProfile } = useAuth();
@@ -14,6 +14,8 @@ const PricingPlans = () => {
     const [showPaymentModal, setShowPaymentModal] = useState(false);
     const [paymentModalData, setPaymentModalData] = useState(null);
     const [activeTab, setActiveTab] = useState('regular');
+    const [walletBalance, setWalletBalance] = useState(user?.walletBalance || 0);
+    const [walletPayLoading, setWalletPayLoading] = useState(false);
 
     const logActivity = async (action, planDetails = {}, notes = '') => {
         try {
@@ -148,11 +150,54 @@ const PricingPlans = () => {
             }
 
             setPlans(finalPlans);
+
+            // Also fetch current wallet balance
+            axios.get(`${import.meta.env.VITE_API_BASE_URL}/finance/wallet/ledger`, config)
+                .then(wRes => {
+                    if (wRes.data && wRes.data.balance !== undefined) {
+                        setWalletBalance(wRes.data.balance);
+                    }
+                })
+                .catch(() => {});
         } catch (err) {
             console.error('Error fetching plans:', err);
             setError('Failed to fetch pricing plans.');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handlePayViaWallet = async () => {
+        if (!paymentModalData) return;
+        try {
+            setWalletPayLoading(true);
+            const token = localStorage.getItem('userToken');
+            const config = { headers: { Authorization: `Bearer ${token}` } };
+            
+            const res = await axios.post(
+                `${import.meta.env.VITE_API_BASE_URL}/plans/wallet-pay`,
+                {
+                    planId: paymentModalData.planId,
+                    couponCode: appliedCoupons[paymentModalData.planId]?.code || null
+                },
+                config
+            );
+
+            setShowPaymentModal(false);
+            setPaymentModalData(null);
+            setSuccessMessage(res.data.message || 'Subscription upgraded successfully using wallet balance!');
+            setWalletBalance(res.data.walletBalance);
+
+            if (updateProfile) {
+                await updateProfile(res.data.user);
+            } else {
+                window.location.reload();
+            }
+        } catch (err) {
+            console.error('Wallet payment error:', err);
+            alert(err.response?.data?.message || 'Failed to pay via wallet');
+        } finally {
+            setWalletPayLoading(false);
         }
     };
 
@@ -178,20 +223,20 @@ const PricingPlans = () => {
             setError('');
             setSuccessMessage('');
 
-            // 1. Load Razorpay script
-            const scriptLoaded = await loadRazorpayScript();
-            if (!scriptLoaded) {
-                setError('Razorpay SDK failed to load. Please check your internet connection.');
-                setUpgradingId(null);
-                return;
-            }
-
             const token = localStorage.getItem('userToken');
             const config = {
                 headers: { Authorization: `Bearer ${token}` }
             };
 
-            // 2. Create Razorpay Order
+            // Fetch fresh wallet balance before opening modal
+            try {
+                const wRes = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/finance/wallet/ledger`, config);
+                if (wRes.data && wRes.data.balance !== undefined) {
+                    setWalletBalance(wRes.data.balance);
+                }
+            } catch (wErr) {}
+
+            // 1. Create Razorpay Order & Get Pricing Summary
             const orderRes = await axios.post(
                 `${import.meta.env.VITE_API_BASE_URL}/plans/razorpay-order`,
                 {
@@ -203,7 +248,7 @@ const PricingPlans = () => {
 
             logActivity('Clicked Upgrade Now', { planId, planName: orderRes.data.planName, amount: orderRes.data.amount });
 
-            // 3. Show Payment Breakdown Modal
+            // 2. Show Payment Breakdown Modal
             setPaymentModalData({
                 ...orderRes.data,
                 planId,
@@ -612,28 +657,28 @@ const PricingPlans = () => {
 
             {/* Payment Breakdown Modal */}
             {showPaymentModal && paymentModalData && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
-                    <div className="bg-white rounded-3xl w-full max-w-sm shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300">
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+                    <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300">
                         <div className="bg-[#0066FF] p-5 text-center relative">
                             <h3 className="text-white font-black text-lg">Payment Summary</h3>
                             <p className="text-white/80 text-xs font-medium mt-1">Review your plan upgrade</p>
                         </div>
 
-                        <div className="p-6 space-y-4">
-                            <div className="flex justify-between items-center pb-3 border-b border-slate-100">
+                        <div className="p-6 space-y-3.5">
+                            <div className="flex justify-between items-center pb-2.5 border-b border-slate-100">
                                 <span className="text-slate-500 font-bold text-sm">Plan Name</span>
                                 <span className="text-slate-800 font-black text-sm">{paymentModalData.planName}</span>
                             </div>
 
-                            <div className="flex justify-between items-center pb-3 border-b border-slate-100">
-                                <span className="text-slate-500 font-bold text-sm">Plan Amount</span>
+                            <div className="flex justify-between items-center pb-2.5 border-b border-slate-100">
+                                <span className="text-slate-500 font-bold text-sm">Plan Base Amount</span>
                                 <span className="text-slate-800 font-black text-sm">
                                     {paymentModalData.currency === 'INR' ? '₹' : '$'}{paymentModalData.finalPrice.toLocaleString()}
                                 </span>
                             </div>
 
                             {paymentModalData.gstAmount > 0 && (
-                                <div className="flex justify-between items-center pb-3 border-b border-slate-100">
+                                <div className="flex justify-between items-center pb-2.5 border-b border-slate-100">
                                     <span className="text-slate-500 font-bold text-sm">GST (18%)</span>
                                     <span className="text-slate-800 font-black text-sm">
                                         + {paymentModalData.currency === 'INR' ? '₹' : '$'}{paymentModalData.gstAmount.toLocaleString()}
@@ -641,31 +686,96 @@ const PricingPlans = () => {
                                 </div>
                             )}
 
-                            <div className="flex justify-between items-center pt-2">
-                                <span className="text-[#0066FF] font-black text-base">Total Amount</span>
-                                <span className="text-[#0066FF] font-black text-xl">
-                                    {paymentModalData.currency === 'INR' ? '₹' : '$'}{paymentModalData.totalPriceWithGst.toLocaleString()}
+                            {paymentModalData.isConverted && (
+                                <div className="p-3 bg-amber-50/70 border border-amber-200/80 rounded-2xl flex items-center justify-between text-xs">
+                                    <span className="font-bold text-amber-900 flex items-center gap-1.5">
+                                        USD to INR Rate:
+                                    </span>
+                                    <span className="font-black text-amber-900">
+                                        1 USD ≈ ₹{(paymentModalData.exchangeRate || 94.62).toFixed(2)}
+                                    </span>
+                                </div>
+                            )}
+
+                            <div className="flex justify-between items-center pt-1 pb-2">
+                                <span className="text-[#0066FF] font-black text-base">
+                                    Total Payable {paymentModalData.isConverted && '(INR for Wallet)'}
                                 </span>
+                                <div className="text-right">
+                                    <span className="text-[#0066FF] font-black text-xl block">
+                                        ₹{(paymentModalData.inrAmount || paymentModalData.totalPriceWithGst).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                    </span>
+                                    {paymentModalData.isConverted && (
+                                        <span className="text-[10px] text-slate-400 font-bold block">
+                                            (${paymentModalData.totalPriceWithGst} USD)
+                                        </span>
+                                    )}
+                                </div>
                             </div>
+
+                            {/* Wallet Balance Info */}
+                            <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200/80 flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    <div className="w-8 h-8 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center">
+                                        <Wallet size={16} />
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Available Wallet</span>
+                                        <span className="text-xs font-black text-slate-800">
+                                            ₹{(walletBalance || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                        </span>
+                                    </div>
+                                </div>
+                                {walletBalance >= (paymentModalData.inrAmount || paymentModalData.totalPriceWithGst) ? (
+                                    <span className="bg-emerald-100 text-emerald-800 text-[10px] font-black px-2.5 py-1 rounded-full">
+                                        Sufficient Balance
+                                    </span>
+                                ) : (
+                                    <span className="bg-amber-100 text-amber-800 text-[10px] font-black px-2.5 py-1 rounded-full">
+                                        Low Balance
+                                    </span>
+                                )}
+                            </div>
+
+                            {walletBalance < (paymentModalData.inrAmount || paymentModalData.totalPriceWithGst) && (
+                                <div className="bg-amber-50 border border-amber-200 text-amber-800 p-2.5 rounded-xl text-xs font-semibold flex items-center gap-2">
+                                    <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+                                    <span>Wallet balance is insufficient. Please pay online via Gateway.</span>
+                                </div>
+                            )}
                         </div>
 
-                        <div className="p-5 bg-slate-50 flex gap-3">
-                            <button
-                                onClick={() => {
-                                    setShowPaymentModal(false);
-                                    setPaymentModalData(null);
-                                    setUpgradingId(null);
-                                }}
-                                className="flex-1 py-3 rounded-xl font-bold text-slate-600 bg-white border border-slate-200 hover:bg-slate-100 transition-colors"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={proceedToPay}
-                                className="flex-1 py-3 rounded-xl font-black text-white bg-[#0066FF] hover:bg-[#0052cc] shadow-md transition-colors"
-                            >
-                                Proceed to Pay
-                            </button>
+                        <div className="p-5 bg-slate-50 flex flex-col gap-2.5 border-t border-slate-100">
+                            {walletBalance >= (paymentModalData.inrAmount || paymentModalData.totalPriceWithGst) && (
+                                <button
+                                    onClick={handlePayViaWallet}
+                                    disabled={walletPayLoading}
+                                    className="w-full py-3 rounded-xl font-black text-sm text-white bg-emerald-600 hover:bg-emerald-700 shadow-md transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                                >
+                                    {walletPayLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wallet size={16} />}
+                                    Pay via Wallet (₹{(paymentModalData.inrAmount || paymentModalData.totalPriceWithGst).toLocaleString('en-IN', { minimumFractionDigits: 2 })})
+                                </button>
+                            )}
+
+                            <div className="flex gap-2.5">
+                                <button
+                                    onClick={() => {
+                                        setShowPaymentModal(false);
+                                        setPaymentModalData(null);
+                                        setUpgradingId(null);
+                                    }}
+                                    className="flex-1 py-3 rounded-xl font-bold text-xs text-slate-600 bg-white border border-slate-200 hover:bg-slate-100 transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={proceedToPay}
+                                    className="flex-1 py-3 rounded-xl font-black text-xs text-white bg-[#0066FF] hover:bg-[#0052cc] shadow-md transition-colors flex items-center justify-center gap-1.5"
+                                >
+                                    <CreditCard size={15} />
+                                    Pay via Gateway ({paymentModalData.currency === 'INR' ? 'Card / UPI' : 'USD Card'})
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
