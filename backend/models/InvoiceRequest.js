@@ -20,7 +20,7 @@ const invoiceRequestSchema = new mongoose.Schema({
     // Admin Fields
     status: {
         type: String,
-        enum: ['Pending', 'Approved', 'Rejected', 'Paid', 'Repayment Pending', 'Cleared'],
+        enum: ['Pending', 'Pending Vendor Approval', 'Approved', 'Rejected', 'Paid', 'Repayment Pending', 'Cleared'],
         default: 'Pending'
     },
     rejectionReason: { type: String, default: '' },
@@ -29,7 +29,11 @@ const invoiceRequestSchema = new mongoose.Schema({
     timelineDate: { type: Date }, // Deadline to repay
     penaltyAmount: { type: Number, default: 0 },
     paymentProofFile: { type: String, default: '' }, // Admin uploaded proof of external payment
-    repaymentProofFile: { type: String, default: '' } // Vendor uploaded proof of repayment
+    repaymentProofFile: { type: String, default: '' }, // Vendor uploaded proof of repayment
+    generatedInvoice: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'PlanInvoice'
+    }
 }, { timestamps: true });
 
 module.exports = mongoose.model('InvoiceRequest', invoiceRequestSchema);

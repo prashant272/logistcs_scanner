@@ -17,9 +17,11 @@ const {
     applyPenalty,
     getWalletLedger,
     submitRepayment,
+    submitBulkRepayment,
     approveRepayment,
     getReceivedInvoices,
-    getVendorCreditStats
+    getVendorCreditStats,
+    respondToInvoiceProposal
 } = require('../controllers/financeController');
 
 // Vendor routes
@@ -34,6 +36,8 @@ router.get('/credit-stats', protect, getVendorCreditStats);
 router.post('/invoice', protect, submitInvoice);
 router.get('/invoice/my', protect, getMyInvoices);
 router.get('/invoice/received', protect, getReceivedInvoices);
+router.post('/invoice/repay-all', protect, submitBulkRepayment);
+router.post('/invoice/:id/vendor-response', protect, respondToInvoiceProposal);
 router.post('/invoice/:id/repay', protect, submitRepayment);
 router.get('/wallet/ledger', protect, getWalletLedger);
 

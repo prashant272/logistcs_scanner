@@ -25,12 +25,16 @@ exports.createInvoicePaymentOrder = async (req, res) => {
         const keySecret = process.env.RAZORPAY_KEY_SECRET || '1Z1SD6PB3KZG5IVSyZ7FitVD';
         const authHeader = 'Basic ' + Buffer.from(keyId + ':' + keySecret).toString('base64');
 
+        const receiptId = invoiceId === 'all' 
+            ? `rcpt_inv_all_${Date.now().toString().slice(-8)}`
+            : `rcpt_inv_${invoiceId.toString().slice(-6)}_${Date.now().toString().slice(-8)}`;
+
         const response = await axios.post(
             'https://api.razorpay.com/v1/orders',
             {
                 amount: razorpayAmount,
                 currency: 'INR',
-                receipt: `rcpt_inv_${invoiceId.toString().slice(-6)}_${Date.now().toString().slice(-8)}`
+                receipt: receiptId
             },
             {
                 headers: {
@@ -79,6 +83,47 @@ exports.verifyInvoicePayment = async (req, res) => {
         }
 
         const InvoiceRequest = require('../models/InvoiceRequest');
+        const WalletTransaction = require('../models/WalletTransaction');
+        const { sendNotification } = require('../utils/notificationService');
+
+        if (invoiceId === 'all') {
+            const pendingInvoices = await InvoiceRequest.find({
+                vendor: req.user.id,
+                status: { $in: ['Approved', 'Paid', 'Repayment Pending'] }
+            });
+
+            let totalRefund = 0;
+            for (const inv of pendingInvoices) {
+                inv.status = 'Cleared';
+                await inv.save();
+                totalRefund += (inv.approvedAmount || inv.amount || 0) + (inv.penaltyAmount || 0) + (inv.processingFee || 0);
+            }
+
+            const user = await User.findById(req.user.id);
+            if (user) {
+                user.walletBalance = (user.walletBalance || 0) + totalRefund;
+                user.creditScore = Math.min(100, (user.creditScore || 100) + Math.min(25, pendingInvoices.length * 5));
+                await user.save();
+
+                await WalletTransaction.create({
+                    vendor: user._id,
+                    amount: totalRefund,
+                    type: 'Credit',
+                    description: `Full Repayment Cleared (${pendingInvoices.length} invoices cleared online)`,
+                    balanceAfter: user.walletBalance
+                });
+
+                if (sendNotification) {
+                    await sendNotification(user._id, `All ${pendingInvoices.length} pending invoice(s) cleared and ₹${totalRefund.toLocaleString('en-IN')} restored to your wallet!`, 'success', '/vendor/upload-invoice');
+                }
+            }
+
+            return res.json({
+                message: `All ${pendingInvoices.length} pending invoices cleared successfully!`,
+                totalRefund
+            });
+        }
+
         const invoice = await InvoiceRequest.findById(invoiceId).populate('vendor');
 
         if (invoice) {
@@ -86,29 +131,26 @@ exports.verifyInvoicePayment = async (req, res) => {
             await invoice.save();
 
             // Calculate total to refund to wallet
-            const totalPaid = (invoice.approvedAmount || invoice.amount) + invoice.penaltyAmount + (invoice.processingFee || 0);
+            const totalPaid = (invoice.approvedAmount || invoice.amount) + (invoice.penaltyAmount || 0) + (invoice.processingFee || 0);
 
-            const User = require('../models/User');
-            const user = await User.findById(invoice.vendor._id);
+            const user = await User.findById(invoice.vendor._id || invoice.vendor);
+            if (user) {
+                user.walletBalance = (user.walletBalance || 0) + totalPaid;
+                user.creditScore = Math.min(100, (user.creditScore || 100) + 5);
+                await user.save();
 
-            user.walletBalance = (user.walletBalance || 0) + totalPaid;
-            // Increase credit score by 5 (capped at 100) on successful repayment
-            user.creditScore = Math.min(100, (user.creditScore || 100) + 5);
-            await user.save();
+                await WalletTransaction.create({
+                    vendor: user._id,
+                    amount: totalPaid,
+                    type: 'Credit',
+                    description: `Invoice Repayment Cleared (Base: ₹${invoice.approvedAmount}, Fee: ₹${invoice.processingFee || 0}, Penalty: ₹${invoice.penaltyAmount || 0})`,
+                    referenceId: invoice._id,
+                    balanceAfter: user.walletBalance
+                });
 
-            const WalletTransaction = require('../models/WalletTransaction');
-            await WalletTransaction.create({
-                vendor: user._id,
-                amount: totalPaid,
-                type: 'Credit',
-                description: `Invoice Repayment Cleared (Base: ₹${invoice.approvedAmount}, Fee: ₹${invoice.processingFee || 0}, Penalty: ₹${invoice.penaltyAmount})`,
-                referenceId: invoice._id,
-                balanceAfter: user.walletBalance
-            });
-
-            const { sendNotification } = require('../utils/notificationService');
-            if (sendNotification) {
-                await sendNotification(user._id, `Your online repayment for invoice ${invoice.lsId} has been verified and cleared! Credit score +5.`, 'success', '/vendor/upload-invoice');
+                if (sendNotification) {
+                    await sendNotification(user._id, `Your online repayment for invoice ${invoice.lsId} has been verified and cleared! Credit score +5.`, 'success', '/vendor/upload-invoice');
+                }
             }
         }
 

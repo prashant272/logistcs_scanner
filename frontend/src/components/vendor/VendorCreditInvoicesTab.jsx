@@ -77,6 +77,7 @@ const VendorCreditInvoicesTab = () => {
 
     const getStatusColor = (status) => {
         switch(status) {
+            case 'Pending Vendor Approval': return 'bg-purple-50 text-purple-700 border-purple-200';
             case 'Pending': return 'bg-amber-50 text-amber-600 border-amber-200';
             case 'Approved': return 'bg-blue-50 text-blue-600 border-blue-200';
             case 'Paid': return 'bg-green-50 text-green-600 border-green-200';
@@ -223,26 +224,6 @@ const VendorCreditInvoicesTab = () => {
                                             </a>
                                         </div>
                                     </div>
-                                </div>
-
-                                <div className="bg-slate-50 rounded-2xl p-4 flex items-center justify-between border border-slate-100">
-                                    <div>
-                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-1">Current Status</span>
-                                        <span className={`px-3 py-1 rounded-lg text-xs font-black uppercase tracking-wider ${getStatusColor(selectedInvoice.status)}`}>
-                                            {(selectedInvoice.status === 'Paid' || selectedInvoice.status === 'Approved') ? 'APPROVED INVOICE' : (selectedInvoice.status === 'Repayment Pending' ? 'VERIFICATION PENDING' : selectedInvoice.status)}
-                                        </span>
-                                    </div>
-                                </div>
-
-                                <div className="border-t border-slate-100 pt-6 flex flex-wrap gap-3">
-                                    {(selectedInvoice.status === 'Approved' || selectedInvoice.status === 'Paid') && (
-                                        <button onClick={() => setActionType('repay')} className="bg-amber-600 text-white px-6 py-2.5 rounded-xl text-sm font-black transition-colors hover:bg-amber-700">
-                                            Repay Invoice
-                                        </button>
-                                    )}
-                                    {['Pending', 'Repayment Pending', 'Cleared', 'Rejected'].includes(selectedInvoice.status) && (
-                                        <p className="text-sm font-bold text-slate-400 italic">No further actions required.</p>
-                                    )}
                                 </div>
                             </div>
                         ) : (

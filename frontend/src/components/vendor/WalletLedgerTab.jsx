@@ -54,7 +54,9 @@ const WalletLedgerTab = () => {
             }
 
             const token = localStorage.getItem('userToken');
-            const baseAmount = (selectedRepayInvoice.approvedAmount || selectedRepayInvoice.amount || 0) + (selectedRepayInvoice.penaltyAmount || 0) + (selectedRepayInvoice.processingFee || 0);
+            const baseAmount = selectedRepayInvoice.isAll 
+                ? (creditStats.totalPendingDues || selectedRepayInvoice.approvedAmount || 0)
+                : ((selectedRepayInvoice.approvedAmount || selectedRepayInvoice.amount || 0) + (selectedRepayInvoice.penaltyAmount || 0) + (selectedRepayInvoice.processingFee || 0));
 
             // 1. Create order
             const orderRes = await axios.post(
@@ -70,7 +72,7 @@ const WalletLedgerTab = () => {
                 amount: amount.toString(),
                 currency: currency,
                 name: 'Logistics Scanner',
-                description: 'Invoice Repayment',
+                description: selectedRepayInvoice.isAll ? 'Full Repayment of All Pending Invoices' : `Invoice Repayment - ${selectedRepayInvoice.lsId || 'Credit'}`,
                 order_id: orderId,
                 handler: async function (response) {
                     try {
@@ -85,11 +87,12 @@ const WalletLedgerTab = () => {
                             { headers: { Authorization: `Bearer ${token}` } }
                         );
                         
-                        setSuccess('Payment verified successfully!');
+                        setSuccess('Payment verified successfully! All cleared invoices updated.');
                         setRepayModalOpen(false);
                         setSelectedRepayInvoice(null);
+                        setShowOnlineBreakdown(false);
                         fetchLedger();
-                        alert('Payment Successful!');
+                        alert('Payment Successful & Invoices Cleared!');
                     } catch (verifyErr) {
                         console.error('Payment verification error:', verifyErr);
                         alert(verifyErr.response?.data?.message || 'Payment verification failed.');
@@ -176,13 +179,20 @@ const WalletLedgerTab = () => {
 
             const uploadedProofUrl = uploadRes.data.url;
 
-            await axios.post(`${import.meta.env.VITE_API_BASE_URL}/finance/invoice/${selectedRepayInvoice._id}/repay`, {
-                repaymentProofFile: uploadedProofUrl
-            }, { headers: { Authorization: `Bearer ${token}` }});
+            if (selectedRepayInvoice.isAll || selectedRepayInvoice._id === 'all') {
+                await axios.post(`${import.meta.env.VITE_API_BASE_URL}/finance/invoice/repay-all`, {
+                    repaymentProofFile: uploadedProofUrl
+                }, { headers: { Authorization: `Bearer ${token}` }});
+            } else {
+                await axios.post(`${import.meta.env.VITE_API_BASE_URL}/finance/invoice/${selectedRepayInvoice._id}/repay`, {
+                    repaymentProofFile: uploadedProofUrl
+                }, { headers: { Authorization: `Bearer ${token}` }});
+            }
 
             setRepayModalOpen(false);
             setSelectedRepayInvoice(null);
             setRepayProofFile(null);
+            setShowOnlineBreakdown(false);
             fetchLedger(); // Refresh transactions
             setSuccess('Repayment submitted! Waiting for Admin verification.');
             setTimeout(() => setSuccess(''), 4000);
@@ -315,12 +325,27 @@ const WalletLedgerTab = () => {
                         </button>
                         <button 
                             onClick={() => {
-                                const pendingInvoiceTxns = transactions.filter(t => t.type === 'Debit' && t.referenceId && (t.referenceId.status === 'Approved' || t.referenceId.status === 'Paid'));
-                                if (pendingInvoiceTxns.length > 0) {
-                                    setSelectedRepayInvoice(pendingInvoiceTxns[0].referenceId);
+                                if (creditStats.totalPendingDues > 0 || (creditStats.pendingInvoices && creditStats.pendingInvoices.length > 0)) {
+                                    setSelectedRepayInvoice({
+                                        isAll: true,
+                                        _id: 'all',
+                                        lsId: `All Pending Invoices (${creditStats.pendingCount || creditStats.pendingInvoices?.length || 1})`,
+                                        approvedAmount: creditStats.totalPendingDues,
+                                        penaltyAmount: 0,
+                                        processingFee: 0,
+                                        totalDue: creditStats.totalPendingDues
+                                    });
+                                    setShowOnlineBreakdown(false);
                                     setRepayModalOpen(true);
                                 } else {
-                                    alert('No pending invoices found to repay.');
+                                    const pendingInvoiceTxns = transactions.filter(t => t.type === 'Debit' && t.referenceId && (t.referenceId.status === 'Approved' || t.referenceId.status === 'Paid' || t.referenceId.status === 'Repayment Pending'));
+                                    if (pendingInvoiceTxns.length > 0) {
+                                        setSelectedRepayInvoice(pendingInvoiceTxns[0].referenceId);
+                                        setShowOnlineBreakdown(false);
+                                        setRepayModalOpen(true);
+                                    } else {
+                                        alert('No pending invoices found to repay. All dues are clear!');
+                                    }
                                 }
                             }}
                             className="w-full bg-white/10 hover:bg-white/20 text-white py-2.5 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 transition-all border border-white/20"
@@ -462,6 +487,7 @@ const WalletLedgerTab = () => {
                                             <button
                                                 onClick={() => {
                                                     setSelectedRepayInvoice(inv);
+                                                    setShowOnlineBreakdown(false);
                                                     setRepayModalOpen(true);
                                                 }}
                                                 className="bg-rose-600 hover:bg-rose-700 text-white text-xs font-black px-3 py-1.5 rounded-lg shadow-sm transition-all"
@@ -544,6 +570,7 @@ const WalletLedgerTab = () => {
                                                 <button 
                                                     onClick={() => {
                                                         setSelectedRepayInvoice(txn.referenceId);
+                                                        setShowOnlineBreakdown(false);
                                                         setRepayModalOpen(true);
                                                     }}
                                                     className="mt-2 bg-amber-100 text-amber-700 hover:bg-amber-200 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-colors inline-block"
@@ -586,9 +613,18 @@ const WalletLedgerTab = () => {
             {repayModalOpen && selectedRepayInvoice && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
                     <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300">
-                        <div className="p-6 border-b border-slate-100 flex justify-between items-center">
-                            <h3 className="text-xl font-black text-[#0B1E43]">Repay Invoice</h3>
-                            <button onClick={() => { setRepayModalOpen(false); setSelectedRepayInvoice(null); setShowOnlineBreakdown(false); }} className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-50 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors">
+                        <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                            <div>
+                                <h3 className="text-xl font-black text-[#0B1E43]">
+                                    {selectedRepayInvoice.isAll ? 'Repay All Pending Dues' : 'Repay Invoice'}
+                                </h3>
+                                <p className="text-xs font-bold text-slate-400 mt-0.5">
+                                    {selectedRepayInvoice.isAll 
+                                        ? `Total Dues Across ${creditStats.pendingCount || creditStats.pendingInvoices?.length || 1} Invoices` 
+                                        : `Invoice LS ID: ${selectedRepayInvoice.lsId || 'N/A'}`}
+                                </p>
+                            </div>
+                            <button onClick={() => { setRepayModalOpen(false); setSelectedRepayInvoice(null); setShowOnlineBreakdown(false); }} className="w-8 h-8 flex items-center justify-center rounded-full bg-white text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors shadow-sm">
                                 <XCircle className="w-5 h-5" />
                             </button>
                         </div>
@@ -604,17 +640,24 @@ const WalletLedgerTab = () => {
                                         <p className="text-sm font-black text-slate-700">Branch: JANAK PURI B BLOCK</p>
                                         <p className="text-sm font-black text-slate-700 mb-2">SWIFT: AXISINBB207</p>
                                         <div className="pt-2 border-t border-slate-200">
-                                            <span className="text-xs font-bold text-slate-500">Amount to Pay</span>
-                                            <span className="text-xl font-black text-amber-600 flex items-center justify-center">
+                                            <span className="text-xs font-bold text-slate-500">
+                                                {selectedRepayInvoice.isAll ? 'Total Outstanding Amount to Pay' : 'Amount to Pay'}
+                                            </span>
+                                            <span className="text-2xl font-black text-amber-600 flex items-center justify-center mt-0.5">
                                                 <IndianRupee className="w-5 h-5 mr-0.5" />
-                                                {((selectedRepayInvoice.approvedAmount || selectedRepayInvoice.amount || 0) + (selectedRepayInvoice.penaltyAmount || 0) + (selectedRepayInvoice.processingFee || 0)).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                                {(selectedRepayInvoice.isAll 
+                                                    ? (creditStats.totalPendingDues || selectedRepayInvoice.approvedAmount || 0)
+                                                    : ((selectedRepayInvoice.approvedAmount || selectedRepayInvoice.amount || 0) + (selectedRepayInvoice.penaltyAmount || 0) + (selectedRepayInvoice.processingFee || 0))
+                                                ).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                                             </span>
                                         </div>
                                     </>
                                 )}
                                 
                                 {showOnlineBreakdown && (() => {
-                                    const baseAmount = ((selectedRepayInvoice.approvedAmount || selectedRepayInvoice.amount || 0) + (selectedRepayInvoice.penaltyAmount || 0) + (selectedRepayInvoice.processingFee || 0));
+                                    const baseAmount = selectedRepayInvoice.isAll 
+                                        ? (creditStats.totalPendingDues || selectedRepayInvoice.approvedAmount || 0)
+                                        : ((selectedRepayInvoice.approvedAmount || selectedRepayInvoice.amount || 0) + (selectedRepayInvoice.penaltyAmount || 0) + (selectedRepayInvoice.processingFee || 0));
                                     const gatewayCharge = baseAmount * 0.02;
                                     const gstAmount = gatewayCharge * 0.18;
                                     const finalAmount = baseAmount + gatewayCharge + gstAmount;
@@ -622,7 +665,7 @@ const WalletLedgerTab = () => {
                                     return (
                                         <div className="text-left space-y-1">
                                             <div className="flex justify-between items-center text-xs font-bold text-slate-500">
-                                                <span>Base Amount</span>
+                                                <span>Base Amount {selectedRepayInvoice.isAll && '(All Invoices)'}</span>
                                                 <span className="flex items-center"><IndianRupee className="w-3.5 h-3.5 mr-0.5" /> {baseAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
                                             </div>
                                             <div className="flex justify-between items-center text-xs font-bold text-slate-500">
@@ -635,7 +678,7 @@ const WalletLedgerTab = () => {
                                             </div>
                                             <div className="flex justify-between items-center text-sm font-black text-[#0B1E43] pt-2 border-t border-slate-200 mt-2">
                                                 <span>Total Payable (Online)</span>
-                                                <span className="flex items-center text-amber-600"><IndianRupee className="w-4 h-4 mr-0.5" /> {finalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                                                <span className="flex items-center text-amber-600 font-black text-base"><IndianRupee className="w-4 h-4 mr-0.5" /> {finalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
                                             </div>
                                         </div>
                                     );
