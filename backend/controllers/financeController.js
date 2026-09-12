@@ -456,6 +456,11 @@ exports.updateInvoiceStatus = async (req, res) => {
         if (status === 'Rejected') {
             invoice.rejectionReason = rejectionReason || '';
             sendNotification(invoice.vendor, `Your invoice ${invoice.lsId} was Rejected. Reason: ${rejectionReason}`, 'error', '/vendor/upload-invoice').catch(() => {});
+            
+            if (invoice.generatedInvoice) {
+                await PlanInvoice.findByIdAndDelete(invoice.generatedInvoice);
+                invoice.generatedInvoice = null;
+            }
         }
         
         await invoice.save();
@@ -489,6 +494,12 @@ exports.respondToInvoiceProposal = async (req, res) => {
         if (action === 'reject') {
             invoice.status = 'Rejected';
             invoice.rejectionReason = rejectionReason || 'Rejected by Vendor';
+            
+            if (invoice.generatedInvoice) {
+                await PlanInvoice.findByIdAndDelete(invoice.generatedInvoice);
+                invoice.generatedInvoice = null;
+            }
+            
             await invoice.save();
 
             sendAdminNotification(`Vendor ${vendor.company || vendor.name} rejected the invoice financing proposal for ${invoice.lsId}.`, 'warning', '/admin/finance/invoice-requests').catch(() => {});

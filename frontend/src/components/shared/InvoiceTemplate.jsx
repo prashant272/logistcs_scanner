@@ -140,18 +140,19 @@ const InvoiceTemplate = ({ invoice, forwardRef }) => {
     return null;
   })();
 
+  // Check if this is an Invoice Financing / Documentation invoice with processing fee
+  const isInvoiceFinancing = (invoice.planName && (
+    invoice.planName.toLowerCase().includes('financing') || 
+    invoice.planName.toLowerCase().includes('charges') || 
+    invoice.planName.toLowerCase().includes('documentation')
+  ));
+
   // Determine line items to render (supporting distinct items for base invoice and documentation fee)
   const itemsToRender = (() => {
     if (invoice.items && Array.isArray(invoice.items) && invoice.items.length > 0) {
       return invoice.items;
     }
-    
-    // Check if this is an Invoice Financing / Documentation invoice with processing fee
-    const isInvoiceFinancing = (invoice.planName && (
-      invoice.planName.toLowerCase().includes('financing') || 
-      invoice.planName.toLowerCase().includes('charges') || 
-      invoice.planName.toLowerCase().includes('documentation')
-    ));
+
 
     const totalTax = igstAmount + sgstAmount + cgstAmount;
     const procFee = Number(invoice.processingFee) || (totalTax > 0 ? Math.round(totalTax / 0.18) : 0);
@@ -333,7 +334,7 @@ const InvoiceTemplate = ({ invoice, forwardRef }) => {
           <div style={{ fontSize: '12px', fontWeight: '800', color: '#000000', marginTop: '2px' }}>
             {formatDate(invoice.date)}
           </div>
-          {effectiveDueDate && (
+          {isInvoiceFinancing && effectiveDueDate && (
             <div style={{ marginTop: '4px', paddingTop: '3px', borderTop: '1px solid #e2e8f0' }}>
               <div style={{ fontSize: '9px', fontWeight: '800', color: '#000000', textTransform: 'uppercase' }}>Repayment Due Date</div>
               <div style={{ fontSize: '11px', fontWeight: '800', color: '#000000' }}>{formatDate(effectiveDueDate)}</div>
@@ -516,7 +517,7 @@ const InvoiceTemplate = ({ invoice, forwardRef }) => {
                       <td style={{ padding: '8px 8px', fontSize: '11px', color: '#000000', borderTop: '1.5px solid #000000' }}>Total Amount</td>
                       <td style={{ padding: '8px 8px', textAlign: 'right', fontSize: '11px', color: '#000000', borderTop: '1.5px solid #000000' }}>{money(totalAmount)}</td>
                     </tr>
-                    {effectiveDueDate && (
+                    {isInvoiceFinancing && effectiveDueDate && (
                       <tr style={{ borderTop: '1px solid #000000', background: '#fcfcfc' }}>
                         <td style={{ padding: '6px 8px', fontSize: '10px', fontWeight: '800', color: '#000000' }}>Due Date / Repayment Deadline</td>
                         <td style={{ padding: '6px 8px', textAlign: 'right', fontSize: '10.5px', fontWeight: '800', color: '#000000' }}>{formatDate(effectiveDueDate)}</td>
@@ -560,7 +561,7 @@ const InvoiceTemplate = ({ invoice, forwardRef }) => {
                       <td style={{ padding: '7px 8px', fontSize: '11px', color: '#000000', borderTop: '1.5px solid #000000' }}>Total Amount</td>
                       <td style={{ padding: '7px 8px', textAlign: 'right', fontSize: '11px', color: '#000000', borderTop: '1.5px solid #000000' }}>{money(totalAmount)}</td>
                     </tr>
-                    {effectiveDueDate && (
+                    {isInvoiceFinancing && effectiveDueDate && (
                       <tr style={{ borderTop: '1px solid #000000', background: '#fcfcfc' }}>
                         <td style={{ padding: '6px 8px', fontSize: '10px', fontWeight: '800', color: '#000000' }}>Due Date / Repayment Deadline</td>
                         <td style={{ padding: '6px 8px', textAlign: 'right', fontSize: '10.5px', fontWeight: '800', color: '#000000' }}>{formatDate(effectiveDueDate)}</td>
@@ -606,7 +607,7 @@ const InvoiceTemplate = ({ invoice, forwardRef }) => {
                 <td style={{ color: '#000000', paddingRight: '12px', fontWeight: '600' }}>Payment Reference No.:</td>
                 <td style={{ fontWeight: '700', color: '#000000' }}>{invoice.paymentReferenceNo || '-'}</td>
               </tr>
-              {effectiveDueDate && (
+              {isInvoiceFinancing && effectiveDueDate && (
                 <tr>
                   <td style={{ color: '#000000', paddingRight: '12px', fontWeight: '600' }}>Repayment Due Date:</td>
                   <td style={{ fontWeight: '800', color: '#000000' }}>{formatDate(effectiveDueDate)}</td>
