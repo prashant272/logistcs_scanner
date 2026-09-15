@@ -580,9 +580,16 @@ const VendorEnquiriesTab = ({ title, type }) => {
                         )
                       ) : (
                         enq.isPremiumCustomerLead || (enq.client?.activePlan && typeof enq.client.activePlan === 'object' && enq.client.activePlan.price > 0 && enq.client?.planEndDate && new Date(enq.client.planEndDate) > new Date()) ? (
-                          <span className="bg-blue-100 text-blue-800 text-[8px] font-black px-2 py-0.5 rounded-md border border-blue-200 uppercase tracking-wider">
-                            Premium Customer
-                          </span>
+                          <div className="flex gap-1.5 items-center">
+                            <span className="bg-blue-100 text-blue-800 text-[8px] font-black px-2 py-0.5 rounded-md border border-blue-200 uppercase tracking-wider">
+                              Premium Customer
+                            </span>
+                            {enq.client?.activePlan && typeof enq.client.activePlan === 'object' && enq.client.activePlan.price > 0 && enq.client?.planEndDate && new Date(enq.client.planEndDate) > new Date() && (
+                              <span className="bg-purple-100 text-purple-800 text-[8px] font-black px-2 py-0.5 rounded-md border border-purple-200 uppercase tracking-wider">
+                                B2B
+                              </span>
+                            )}
+                          </div>
                         ) : (
                           <span className="bg-slate-100 text-slate-800 text-[8px] font-black px-2 py-0.5 rounded-md border border-slate-200 uppercase tracking-wider">
                             Customer

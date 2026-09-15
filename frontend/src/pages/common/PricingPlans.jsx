@@ -158,7 +158,7 @@ const PricingPlans = () => {
                         setWalletBalance(wRes.data.balance);
                     }
                 })
-                .catch(() => {});
+                .catch(() => { });
         } catch (err) {
             console.error('Error fetching plans:', err);
             setError('Failed to fetch pricing plans.');
@@ -173,7 +173,7 @@ const PricingPlans = () => {
             setWalletPayLoading(true);
             const token = localStorage.getItem('userToken');
             const config = { headers: { Authorization: `Bearer ${token}` } };
-            
+
             const res = await axios.post(
                 `${import.meta.env.VITE_API_BASE_URL}/plans/wallet-pay`,
                 {
@@ -234,7 +234,7 @@ const PricingPlans = () => {
                 if (wRes.data && wRes.data.balance !== undefined) {
                     setWalletBalance(wRes.data.balance);
                 }
-            } catch (wErr) {}
+            } catch (wErr) { }
 
             // 1. Create Razorpay Order & Get Pricing Summary
             const orderRes = await axios.post(
@@ -415,7 +415,7 @@ const PricingPlans = () => {
                 </div>
 
                 {/* Stat Grid displaying plan details */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
+                <div className={`grid grid-cols-2 ${user?.role === 'customer' ? 'sm:grid-cols-3' : 'sm:grid-cols-4'} gap-4 text-xs`}>
                     <div className="bg-slate-50/70 p-3 rounded-2xl border border-slate-100/50">
                         <span className="text-[8px] font-black text-slate-400 uppercase tracking-wider block">Price Paid</span>
                         <span className="font-extrabold text-slate-800 text-sm mt-0.5 block">
@@ -428,12 +428,14 @@ const PricingPlans = () => {
                             {user?.activePlan?.duration || 'Yearly'}
                         </span>
                     </div>
-                    <div className="bg-slate-50/70 p-3 rounded-2xl border border-slate-100/50">
-                        <span className="text-[8px] font-black text-slate-400 uppercase tracking-wider block">Enquiry Limit</span>
-                        <span className="font-extrabold text-slate-800 text-xs mt-0.5 block">
-                            {user?.activePlan?.inquiryLimit && user?.activePlan?.price > 0 ? `${user.activePlan.inquiryLimit + (user?.topupEnquiryLimit || 0)} Enquiries Per month` : `${5 + (user?.topupEnquiryLimit || 0)} Enquiries Annually`}
-                        </span>
-                    </div>
+                    {user?.role !== 'customer' && (
+                        <div className="bg-slate-50/70 p-3 rounded-2xl border border-slate-100/50">
+                            <span className="text-[8px] font-black text-slate-400 uppercase tracking-wider block">Enquiry Limit</span>
+                            <span className="font-extrabold text-slate-800 text-xs mt-0.5 block">
+                                {user?.activePlan?.inquiryLimit && user?.activePlan?.price > 0 ? `${user.activePlan.inquiryLimit + (user?.topupEnquiryLimit || 0)} Enquiries Per month` : `${5 + (user?.topupEnquiryLimit || 0)} Enquiries Annually`}
+                            </span>
+                        </div>
+                    )}
                     <div className="bg-slate-50/70 p-3 rounded-2xl border border-slate-100/50">
                         <span className="text-[8px] font-black text-slate-400 uppercase tracking-wider block">Valid Until</span>
                         <span className="font-extrabold text-slate-800 text-[11px] mt-0.5 block">
@@ -584,7 +586,7 @@ const PricingPlans = () => {
 
                                     {/* Direct Backend Features Render */}
                                     <div className="flex-1 p-4 bg-slate-50/20 flex flex-col rounded-b-3xl mt-4">
-                                        <div 
+                                        <div
                                             className="w-full text-[11px] text-slate-700 font-medium 
                                             [&_table]:w-full [&_table]:border-collapse [&_table]:border [&_table]:border-slate-200 [&_table]:rounded-xl [&_table]:overflow-hidden [&_table]:bg-white [&_table]:shadow-sm
                                             [&_th]:p-2 [&_th]:bg-slate-100 [&_th]:text-[10px] [&_th]:font-black [&_th]:text-slate-800 [&_th]:uppercase [&_th]:tracking-wider [&_th]:border-b [&_th]:border-slate-200 [&_th]:text-left
@@ -631,7 +633,7 @@ const PricingPlans = () => {
                                             <span className="font-black text-purple-700">+{plan.inquiryLimit} Enquiries</span>
                                         </div>
                                         <div className="flex justify-between items-center text-xs">
-                        <span className="font-bold text-slate-500">Validity</span>
+                                            <span className="font-bold text-slate-500">Validity</span>
                                             <span className="font-black text-slate-700">{plan.duration}</span>
                                         </div>
                                     </div>

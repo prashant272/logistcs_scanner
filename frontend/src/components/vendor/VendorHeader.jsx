@@ -50,16 +50,24 @@ const VendorHeader = ({ isSidebarOpen, setSidebarOpen, user, logout, searchQuery
                 )}
 
                 {/* User Avatar */}
-                <div className="flex items-center gap-3 pl-2 border-l border-slate-100">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#0066FF]/10 to-[#00b2fe]/10 flex items-center justify-center !text-[#0066FF] font-black border border-[#0066FF]/10 shadow-sm">
-                        {user?.name ? user.name.charAt(0).toUpperCase() : 'S'}
+                <div className="flex items-center gap-3 pl-3 border-l border-slate-100">
+                    <div className="w-14 h-14 rounded-full bg-gradient-to-tr from-[#0066FF]/10 to-[#00b2fe]/10 flex items-center justify-center !text-[#0066FF] font-black text-xl border border-[#0066FF]/20 shadow-sm overflow-hidden">
+                        {user?.profilePhoto ? (
+                            <img 
+                                src={user.profilePhoto.startsWith('http') ? user.profilePhoto : `${import.meta.env.VITE_API_BASE_URL.replace('/api', '')}${user.profilePhoto}`} 
+                                alt="Profile" 
+                                className="w-full h-full object-cover" 
+                            />
+                        ) : (
+                            user?.name ? user.name.charAt(0).toUpperCase() : 'V'
+                        )}
                     </div>
                     <div className="hidden sm:flex flex-col">
                         <span className="text-xs font-black !text-slate-800 leading-tight">
-                            {user?.name || 'Sandeep'}
+                            {user?.name || 'Vendor'}
                         </span>
                         <span className="text-[9px] !text-[#0066FF] font-extrabold tracking-wider uppercase mt-0.5">
-                            {user?.company || 'PIRAMAL LOGISTICS'}
+                            {user?.company || 'Company Name'}
                         </span>
                     </div>
                 </div>

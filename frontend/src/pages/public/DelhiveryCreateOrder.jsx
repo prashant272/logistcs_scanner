@@ -238,7 +238,7 @@ const DelhiveryCreateOrder = ({ isDashboard = false }) => {
                 setError(
                     <span>
                         {err.response.data.message} <br/>
-                        <a href="/customer/wallet" className="text-blue-600 underline font-bold mt-2 inline-block">Go to My Wallet</a>
+                        <a href="/customer/wallet-ledger" className="text-blue-600 underline font-bold mt-2 inline-block">Go to My Wallet</a>
                     </span>
                 );
             } else {

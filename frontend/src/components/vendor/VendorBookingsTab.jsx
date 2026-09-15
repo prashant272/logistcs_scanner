@@ -306,9 +306,14 @@ const VendorBookingsTab = ({ title = 'Bookings', type = 'my' }) => {
                                 )
                               ) : (
                                 displayPartner.activePlan && typeof displayPartner.activePlan === 'object' && displayPartner.activePlan.price > 0 && displayPartner.planEndDate && new Date(displayPartner.planEndDate) > new Date() && (
-                                  <span className="bg-blue-100 text-blue-800 text-[8px] font-black px-2 py-0.5 rounded-md border border-blue-200 uppercase tracking-wider">
-                                    Premium Customer
-                                  </span>
+                                  <div className="flex gap-1.5 items-center">
+                                    <span className="bg-blue-100 text-blue-800 text-[8px] font-black px-2 py-0.5 rounded-md border border-blue-200 uppercase tracking-wider">
+                                      Premium Customer
+                                    </span>
+                                    <span className="bg-purple-100 text-purple-800 text-[8px] font-black px-2 py-0.5 rounded-md border border-purple-200 uppercase tracking-wider">
+                                      B2B
+                                    </span>
+                                  </div>
                                 )
                               )}
                             </div>

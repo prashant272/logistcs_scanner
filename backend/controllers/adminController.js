@@ -156,7 +156,17 @@ exports.getCustomers = async (req, res) => {
         if (req.query.premium === 'true') {
             const freeDomains = ['gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'live.com', 'aol.com', 'icloud.com', 'mail.com', 'ymail.com', 'proton.me', 'protonmail.com', 'zoho.com'];
             const freeDomainRegexes = freeDomains.map(domain => new RegExp(`@${domain}$`, 'i'));
-            query.email = { $not: { $in: freeDomainRegexes } };
+            
+            query.$and = query.$and || [];
+            query.$and.push({
+                $or: [
+                    { email: { $not: { $in: freeDomainRegexes } } },
+                    { 
+                        activePlan: { $ne: null },
+                        planEndDate: { $gt: new Date() }
+                    }
+                ]
+            });
         }
 
         const totalCount = await User.countDocuments(query);

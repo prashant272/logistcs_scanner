@@ -85,7 +85,6 @@ const DownloadApp = lazy(() => import('./pages/public/DownloadApp'));
 
 const CustomerDashboard = lazy(() => import('./pages/customer/CustomerDashboard'));
 const CustomerEnquiriesTab = lazy(() => import('./components/customer/CustomerEnquiriesTab'));
-const CustomerWallet = lazy(() => import('./pages/customer/CustomerWallet'));
 const CustomerComplaintsTab = lazy(() => import('./components/customer/CustomerComplaintsTab'));
 const CustomerProfileTab = lazy(() => import('./components/customer/CustomerProfileTab'));
 
@@ -99,13 +98,13 @@ const VendorPricingTab = lazy(() => import('./components/vendor/VendorPricingTab
 const VendorBulkImportTab = lazy(() => import('./components/vendor/VendorBulkImportTab'));
 const VendorProfileTab = lazy(() => import('./components/vendor/VendorProfileTab'));
 const FinanceSection = lazy(() => import('./components/vendor/FinanceSection'));
-const PricingPlans = lazy(() => import('./pages/vendor/PricingPlans'));
+const PricingPlans = lazy(() => import('./pages/common/PricingPlans'));
 const VendorComplaintsTab = lazy(() => import('./components/vendor/VendorComplaintsTab'));
-const VendorFinanceForm = lazy(() => import('./pages/vendor/VendorFinanceForm'));
-const VendorFinanceDashboard = lazy(() => import('./pages/vendor/VendorFinanceDashboard'));
-const UploadInvoiceTab = lazy(() => import('./components/vendor/UploadInvoiceTab'));
-const VendorCreditInvoicesTab = lazy(() => import('./components/vendor/VendorCreditInvoicesTab'));
-const WalletLedgerTab = lazy(() => import('./components/vendor/WalletLedgerTab'));
+const FinanceForm = lazy(() => import('./pages/common/FinanceForm'));
+const FinanceDashboard = lazy(() => import('./pages/common/FinanceDashboard'));
+const UploadInvoiceTab = lazy(() => import('./components/common/UploadInvoiceTab'));
+const CreditInvoicesTab = lazy(() => import('./components/common/CreditInvoicesTab'));
+const WalletLedgerTab = lazy(() => import('./components/common/WalletLedgerTab'));
 const VendorContactListTab = lazy(() => import('./components/vendor/VendorContactListTab'));
 const VendorUpdates = lazy(() => import('./pages/vendor/Updates'));
 
@@ -254,9 +253,15 @@ function App() {
               <Route path="direct-enquiry" element={<CustomerEnquiriesTab title="Direct Enquiry" type="direct" />} />
               <Route path="my-enquiry" element={<CustomerEnquiriesTab title="My Enquiry" type="my" />} />
               <Route path="ptl-bookings" element={<PtlBookingsTab />} />
-              <Route path="wallet" element={<CustomerWallet />} />
+
               <Route path="ptl-calculator" element={<DelhiveryCalculator isDashboard={true} />} />
               <Route path="ptl-calculator/order" element={<DelhiveryCreateOrder isDashboard={true} />} />
+              <Route path="plans" element={<PricingPlans />} />
+              <Route path="finance" element={<FinanceForm />} />
+              <Route path="finance-list" element={<FinanceDashboard />} />
+              <Route path="upload-invoice" element={<UploadInvoiceTab />} />
+              <Route path="credit-invoices" element={<CreditInvoicesTab />} />
+              <Route path="wallet-ledger" element={<WalletLedgerTab />} />
               <Route path="complaint" element={<CustomerComplaintsTab />} />
               <Route path="profile" element={<CustomerProfileTab />} />
             </Route>
@@ -276,10 +281,10 @@ function App() {
               <Route path="ptl-calculator" element={<DelhiveryCalculator isDashboard={true} />} />
               <Route path="ptl-calculator/order" element={<DelhiveryCreateOrder isDashboard={true} />} />
               <Route path="my-pricing" element={<VendorPricingTab />} />
-              <Route path="finance" element={<VendorFinanceForm />} />
-              <Route path="finance-list" element={<VendorFinanceDashboard />} />
+              <Route path="finance" element={<FinanceForm />} />
+              <Route path="finance-list" element={<FinanceDashboard />} />
               <Route path="upload-invoice" element={<UploadInvoiceTab />} />
-              <Route path="credit-invoices" element={<VendorCreditInvoicesTab />} />
+              <Route path="credit-invoices" element={<CreditInvoicesTab />} />
               <Route path="wallet-ledger" element={<WalletLedgerTab />} />
               <Route path="bulk-import" element={<VendorBulkImportTab />} />
               <Route path="view-profile" element={<VendorProfileTab />} />

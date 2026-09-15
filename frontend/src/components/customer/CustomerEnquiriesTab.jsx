@@ -16,6 +16,7 @@ const CustomerEnquiriesTab = ({ title, type }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all');
   const [selectedVendor, setSelectedVendor] = useState(null);
+  const [showResponsesModal, setShowResponsesModal] = useState(null);
 
   const getLSID = (id) => {
     if (!id) return 'N/A';
@@ -289,272 +290,148 @@ const CustomerEnquiriesTab = ({ title, type }) => {
               return (
                 <div 
                   key={enq._id} 
-                  className="bg-gradient-to-br from-white to-[#f4f8ff]/30 rounded-3xl p-6 md:p-8 border border-sky-100/70 hover:border-sky-300 hover:shadow-xl transition-all duration-300 relative shadow-[0_12px_45px_rgba(11,30,67,0.025)]"
+                  className="bg-white rounded-3xl p-5 md:p-6 border border-slate-100 hover:border-[#0066FF]/20 hover:shadow-xl transition-all duration-300 relative shadow-[0_4px_25px_rgba(11,30,67,0.03)]"
                 >
-                  {/* Date of Enquiry Badge */}
-                  <div className="absolute top-4 right-6 text-xs text-slate-600 font-extrabold">
-                    Posted on : <span className="text-slate-800 font-black">{formatDate(enq.createdAt)}</span>
-                  </div>
-
-                  {/* Card Main Grid */}
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                    {/* Left Column: Avatar & Contact Specs */}
-                    <div className="flex items-start gap-4">
-                      <div className="w-12 h-12 rounded-2xl bg-sky-50 border border-sky-100 flex items-center justify-center shrink-0 shadow-sm mt-1">
+                  {/* Top Row */}
+                  <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-6">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-xl bg-emerald-50/80 border border-emerald-100 flex items-center justify-center text-emerald-500 shrink-0">
                         {getEnquiryIcon(enq.type)}
                       </div>
-
-                      <div className="space-y-1.5">
-                        <h4 className="text-base font-black text-[#0B1E43] tracking-tight flex items-center gap-2">
+                      <div>
+                        <h3 className="text-[#0B1E43] font-black text-lg tracking-tight">
                           {enq.vendor ? (enq.vendor.company || enq.vendor.name) : 'Broadcasted Lead'}
-                          {enq.vendor?.activePlan?.price > 0 && (
-                            <span className="bg-emerald-100 text-emerald-700 text-[10px] font-black uppercase px-2 py-0.5 rounded-full flex items-center gap-1">
-                              <CheckCircle2 size={10} /> Verified
-                            </span>
-                          )}
-                        </h4>
+                        </h3>
+                        <p className="text-slate-400 text-xs font-bold mt-0.5">Enquiry ID: {enq.enquiryId || `DEQ-${getLSID(enq._id)}`}</p>
+                      </div>
+                    </div>
+                    <div className="text-slate-500 text-xs font-bold text-left sm:text-right">
+                      Posted on : <span className="text-[#0B1E43] font-black">{formatDate(enq.createdAt)}</span>
+                    </div>
+                  </div>
 
-                        {enq.vendor && (
-                          <div className="text-xs text-slate-500 font-bold space-y-1">
-                            <div className="flex items-center gap-2 text-slate-600">
-                              <Phone size={13} className="text-[#0066FF]" /> 
-                              <span>{enq.vendor.phone || 'N/A'}</span>
+                  {/* Middle Row (Specs) */}
+                  <div className="flex flex-wrap items-stretch gap-3 mb-6">
+                    {/* Route Box */}
+                    <div className="flex items-center gap-4 bg-[#f4f7fc]/80 px-5 py-3.5 rounded-2xl border border-slate-100 grow min-w-[280px]">
+                      <div className="flex flex-col">
+                        <div className="flex items-center gap-1.5 text-slate-500 text-[10px] font-black uppercase mb-1">
+                          <MapPin size={12} className="text-[#0066FF]" /> {enq.type === 'cha' ? 'Port/Airport' : enq.type === 'warehouse' ? 'Location' : 'Origin'}
+                        </div>
+                        <span className="font-extrabold text-[#0B1E43] text-sm">{enq.fromLocation}</span>
+                      </div>
+                      
+                      {enq.type !== 'warehouse' && enq.type !== 'cha' && (
+                        <>
+                          <div className="flex-shrink-0 text-[#0066FF] font-black">⇄</div>
+                          <div className="flex flex-col">
+                            <div className="flex items-center gap-1.5 text-slate-500 text-[10px] font-black uppercase mb-1">
+                              <MapPin size={12} className="text-[#0066FF]" /> Destination
                             </div>
-                            <div className="flex items-center gap-2 text-slate-500">
-                              <Mail size={13} className="text-[#0066FF]" /> 
-                              <span className="break-all">{enq.vendor.email || 'N/A'}</span>
-                            </div>
+                            <span className="font-extrabold text-[#0B1E43] text-sm">{enq.toLocation}</span>
                           </div>
-                        )}
+                        </>
+                      )}
+                      
+                      {enq.type === 'cha' && (
+                         <>
+                          <div className="flex-shrink-0 text-[#0066FF] font-black">-</div>
+                          <div className="flex flex-col">
+                            <div className="flex items-center gap-1.5 text-slate-500 text-[10px] font-black uppercase mb-1">
+                              <Building2 size={12} className="text-[#0066FF]" /> Service
+                            </div>
+                            <span className="font-extrabold text-[#0B1E43] text-sm">{enq.chaServiceType || 'CHA'}</span>
+                          </div>
+                         </>
+                      )}
+                    </div>
 
-                        {enq.commodity && (
-                          <div className="inline-block mt-2 text-xs font-black text-slate-800 uppercase bg-[#f4f7fc] px-3 py-1 rounded-xl border border-slate-100">
-                            Commodity - <span className="text-[#0066FF]">{enq.commodity}</span>
-                          </div>
-                        )}
+                    {/* Weight / Size */}
+                    <div className="bg-[#f4f7fc]/80 px-4 py-3.5 rounded-2xl border border-slate-100 flex items-center gap-3 grow sm:grow-0">
+                      <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-[#0066FF] shadow-sm shrink-0 border border-slate-100">
+                        <Package size={14} />
+                      </div>
+                      <div>
+                        <div className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{enq.type === 'sea' && (enq.seaLoadType?.toUpperCase() === 'FCL' || enq.truckLoad?.toUpperCase() === 'FCL') ? 'Container' : 'Weight'}</div>
+                        <div className="text-sm font-extrabold text-[#0B1E43] mt-0.5">{enq.weightRange || (enq.fclStandard ? enq.fclStandard : 'N/A')}</div>
                       </div>
                     </div>
 
-                    {/* Middle Column: Specs Badges */}
-                    <div className="flex flex-wrap gap-3 max-w-md items-center md:justify-center">
-                      {enq.type === 'sea' && (enq.seaLoadType?.toUpperCase() === 'FCL' || enq.truckLoad?.toUpperCase() === 'FCL') ? (
-                        <div className="bg-white border border-slate-100/90 rounded-2xl py-2 px-4 shadow-sm text-center min-w-[80px]">
-                          <div className="text-[10px] text-slate-400 font-black tracking-wider uppercase">Container Type</div>
-                          <div className="text-xs font-black text-slate-800 mt-0.5">{enq.fclStandard || 'N/A'}</div>
-                        </div>
-                      ) : (
-                        <div className="bg-white border border-slate-100/90 rounded-2xl py-2 px-4 shadow-sm text-center min-w-[80px]">
-                          <div className="text-[10px] text-slate-400 font-black tracking-wider uppercase">Weight</div>
-                          <div className="text-xs font-black text-slate-800 mt-0.5">{enq.weightRange || 'N/A'}</div>
-                        </div>
-                      )}
-
-                      <div className="bg-white border border-slate-100/90 rounded-2xl py-2 px-4 shadow-sm text-center min-w-[80px]">
-                        <div className="text-[10px] text-slate-400 font-black tracking-wider uppercase">Load Type</div>
-                        <span className="font-extrabold text-[#0B1E43]">
-                          {enq.type === 'sea' ? (enq.seaLoadType || enq.handlingType || enq.truckLoad || 'LCL') : (enq.truckLoad || 'General')}
-                        </span>
+                    {/* Load Type */}
+                    <div className="bg-[#f4f7fc]/80 px-4 py-3.5 rounded-2xl border border-slate-100 flex items-center gap-3 grow sm:grow-0">
+                      <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-[#0066FF] shadow-sm shrink-0 border border-slate-100">
+                        <Warehouse size={14} />
                       </div>
+                      <div>
+                        <div className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Load Type</div>
+                        <div className="text-sm font-extrabold text-[#0B1E43] mt-0.5">
+                           {enq.type === 'sea' ? (enq.seaLoadType || enq.handlingType || enq.truckLoad || 'LCL') : (enq.truckLoad || 'General')}
+                        </div>
+                      </div>
+                    </div>
 
-                      {/* Additional Dynamic Fields */}
-                      {(enq.type === 'air' && enq.category) && (
-                        <div className="bg-white border border-slate-100/90 rounded-2xl py-2 px-4 shadow-sm text-center min-w-[80px]">
-                          <div className="text-[10px] text-slate-400 font-black tracking-wider uppercase">Category</div>
-                          <span className="font-extrabold text-[#0B1E43] capitalize">{enq.category}</span>
-                        </div>
-                      )}
-                      {(enq.type === 'air' && enq.airline) && (
-                        <div className="bg-white border border-slate-100/90 rounded-2xl py-2 px-4 shadow-sm text-center min-w-[80px]">
-                          <div className="text-[10px] text-slate-400 font-black tracking-wider uppercase">Airline</div>
-                          <span className="font-extrabold text-[#0B1E43]">{enq.airline}</span>
-                        </div>
-                      )}
-                      {enq.cbmRange && (
-                        <div className="bg-white border border-slate-100/90 rounded-2xl py-2 px-4 shadow-sm text-center min-w-[80px]">
-                          <div className="text-[10px] text-slate-400 font-black tracking-wider uppercase">Volume</div>
-                          <span className="font-extrabold text-[#0B1E43]">{enq.cbmRange}</span>
-                        </div>
-                      )}
-                      {(enq.length && enq.width && enq.height) && (
-                        <div className="bg-white border border-slate-100/90 rounded-2xl py-2 px-4 shadow-sm text-center min-w-[80px]">
-                          <div className="text-[10px] text-slate-400 font-black tracking-wider uppercase">Dimensions</div>
-                          <span className="font-extrabold text-[#0B1E43]">{`${enq.length}x${enq.width}x${enq.height} ${enq.unit || 'cm'}`}</span>
-                        </div>
-                      )}
-                      {enq.quantity && (
-                        <div className="bg-white border border-slate-100/90 rounded-2xl py-2 px-4 shadow-sm text-center min-w-[80px]">
-                          <div className="text-[10px] text-slate-400 font-black tracking-wider uppercase">Qty</div>
-                          <span className="font-extrabold text-[#0B1E43]">{enq.quantity}</span>
-                        </div>
-                      )}
-                      {/* Container Type moved to primary badge if FCL */}
-                      {enq.fclUnit && (
-                        <div className="bg-white border border-slate-100/90 rounded-2xl py-2 px-4 shadow-sm text-center min-w-[80px]">
-                          <div className="text-[10px] text-slate-400 font-black tracking-wider uppercase">Units</div>
-                          <span className="font-extrabold text-[#0B1E43]">{enq.fclUnit}</span>
-                        </div>
-                      )}
-                      {enq.vehicleType && (
-                        <div className="bg-white border border-slate-100/90 rounded-2xl py-2 px-4 shadow-sm text-center min-w-[80px]">
-                          <div className="text-[10px] text-slate-400 font-black tracking-wider uppercase">Vehicle</div>
-                          <span className="font-extrabold text-[#0B1E43]">{enq.vehicleType}</span>
-                        </div>
-                      )}
-                      {(enq.type === 'warehouse' && enq.warehouseStorageType) && (
-                        <div className="bg-white border border-slate-100/90 rounded-2xl py-2 px-4 shadow-sm text-center min-w-[80px]">
-                          <div className="text-[10px] text-slate-400 font-black tracking-wider uppercase">Storage</div>
-                          <span className="font-extrabold text-[#0B1E43]">{enq.warehouseStorageType}</span>
-                        </div>
-                      )}
-                      {(enq.type === 'warehouse' && enq.warehouseRateType) && (
-                        <div className="bg-white border border-slate-100/90 rounded-2xl py-2 px-4 shadow-sm text-center min-w-[80px]">
-                          <div className="text-[10px] text-slate-400 font-black tracking-wider uppercase">Rate Type</div>
-                          <span className="font-extrabold text-[#0B1E43]">{enq.warehouseRateType}</span>
-                        </div>
-                      )}
-                      {(enq.type === 'cha' && enq.chaServiceType) && (
-                        <div className="bg-white border border-slate-100/90 rounded-2xl py-2 px-4 shadow-sm text-center min-w-[80px]">
-                          <div className="text-[10px] text-slate-400 font-black tracking-wider uppercase">Service</div>
-                          <span className="font-extrabold text-[#0B1E43]">{enq.chaServiceType}</span>
-                        </div>
-                      )}
-                      {(enq.type === 'cha' && enq.chaCargoType) && (
-                        <div className="bg-white border border-slate-100/90 rounded-2xl py-2 px-4 shadow-sm text-center min-w-[80px]">
-                          <div className="text-[10px] text-slate-400 font-black tracking-wider uppercase">Cargo</div>
-                          <span className="font-extrabold text-[#0B1E43]">{enq.chaCargoType}</span>
-                        </div>
-                      )}
-
-                      <div className="bg-white border border-slate-100/90 rounded-2xl py-2 px-4 shadow-sm text-center min-w-[100px]">
-                        <div className="text-[10px] text-slate-400 font-black tracking-wider uppercase">Target Delivery</div>
-                        <div className="text-xs font-black text-slate-800 mt-0.5">
-                            {enq.shipmentDate ? formatDate(enq.shipmentDate) : getTargetDate(enq.createdAt, enq.deliverySpeed)}
+                    {/* Target Delivery */}
+                    <div className="bg-[#f4f7fc]/80 px-4 py-3.5 rounded-2xl border border-slate-100 flex items-center gap-3 grow sm:grow-0">
+                      <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-[#0066FF] shadow-sm shrink-0 border border-slate-100">
+                        <Clock size={14} />
+                      </div>
+                      <div>
+                        <div className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Target Delivery</div>
+                        <div className="text-sm font-extrabold text-[#0B1E43] mt-0.5">
+                           {enq.shipmentDate ? formatDate(enq.shipmentDate) : getTargetDate(enq.createdAt, enq.deliverySpeed)}
                         </div>
                       </div>
                     </div>
                   </div>
 
-                  {/* Route & Actions Bottom Bar */}
-                  <div className="mt-6 pt-6 border-t border-slate-100/80 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    {/* Ports / Locations Route */}
-                    <div className="flex flex-wrap items-center gap-3 text-xs font-bold text-slate-700">
-                      <div className="flex items-center gap-2 bg-[#f4f7fc] px-3.5 py-2 rounded-xl border border-slate-150">
-                        <Building2 size={14} className="text-slate-400" />
-                        <span>{enq.fromLocation}</span>
-                      </div>
-                      {enq.type === 'cha' ? (
-                        <>
-                          <span className="text-slate-300 font-black">-</span>
-                          <div className="flex items-center gap-2 bg-[#f4f7fc] px-3.5 py-2 rounded-xl border border-slate-150 text-[#0066FF]">
-                            <Building2 size={14} className="text-[#0066FF]" />
-                            <span className="font-black">{enq.chaServiceType || 'CHA'}</span>
-                            <span className="text-slate-700">{enq.chaCargoType || 'Customs Clearance'}</span>
-                          </div>
-                        </>
-                      ) : enq.type !== 'warehouse' && (
-                        <>
-                          <span className="text-[#0066FF] font-black text-lg">↔</span>
-                          <div className="flex items-center gap-2 bg-[#f4f7fc] px-3.5 py-2 rounded-xl border border-slate-150">
-                            <Building2 size={14} className="text-slate-400" />
-                            <span>{enq.toLocation}</span>
-                          </div>
-                        </>
-                      )}
+                  {/* Bottom Row (Avatars + Button or Status) */}
+                  <div className="border-t border-slate-100 pt-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    {/* Avatars Side */}
+                    <div className="flex items-center gap-3">
+                       <div className="flex items-center gap-2">
+                          <User size={16} className="text-[#0066FF]" />
+                          <span className="text-[11px] font-black text-slate-500 uppercase tracking-wider">
+                             Acceptance Received ({enq.responses?.length || 0})
+                          </span>
+                       </div>
+                       
+                       {type === 'direct' && enq.responses && enq.responses.length > 0 && (
+                         <div className="flex -space-x-2">
+                            {enq.responses.slice(0, 3).map((resp, idx) => {
+                               const colors = ['bg-pink-100 text-pink-700', 'bg-blue-100 text-blue-700', 'bg-emerald-100 text-emerald-700'];
+                               return (
+                                 <div key={idx} className={`w-7 h-7 rounded-full border-2 border-white flex items-center justify-center text-[10px] font-black uppercase shadow-sm ${colors[idx % colors.length]}`}>
+                                    {(resp.vendor?.company || resp.vendor?.name || 'V').charAt(0)}
+                                 </div>
+                               );
+                            })}
+                            {enq.responses.length > 3 && (
+                               <div className="w-7 h-7 rounded-full bg-slate-100 border-2 border-white flex items-center justify-center text-[9px] font-black text-slate-600 shadow-sm">
+                                  +{enq.responses.length - 3}
+                               </div>
+                            )}
+                         </div>
+                       )}
                     </div>
 
-                    {/* Quoted display or Status */}
-                    <div className="flex flex-col items-end gap-3 w-full sm:w-auto">
+                    {/* Action Button / Quote Display */}
+                    <div className="flex items-center justify-end">
                       {type === 'direct' && enq.responses && enq.responses.length > 0 ? (
-                        <div className="w-full">
-                          <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-2 block">Acceptance Received ({enq.responses.length})</span>
-                          <div className="space-y-2">
-                            {enq.responses.map((resp, idx) => {
-                              console.log("VENDOR DATA:", resp.vendor);
-                              return (
-                              <div key={idx} className="flex flex-wrap items-center justify-between gap-4 text-xs font-black bg-blue-50/50 px-4 py-3 rounded-xl border border-blue-100/70">
-                                <div 
-                                    className="flex items-center gap-2 cursor-pointer hover:bg-blue-100 p-1 rounded transition-colors"
-                                    onClick={() => setSelectedVendor(resp.vendor)}
-                                >
-                                  <User size={14} className="text-[#0066FF]" />
-                                  <span className="text-[#0B1E43] underline decoration-blue-200 underline-offset-4">{resp.vendor?.company || resp.vendor?.name || 'Vendor'}</span>
-                                  {resp.vendor?.activePlan?.price > 0 && (
-                                    <span className="bg-emerald-100 text-emerald-700 text-[9px] font-black uppercase px-1.5 py-0.5 rounded-full flex items-center gap-1 ml-1">
-                                      <CheckCircle2 size={10} /> Verified
-                                    </span>
-                                  )}
-                                </div>
-                                <div className="flex items-center gap-4 text-emerald-600">
-                                  {resp.quoteDetails?.freightCharges ? (
-                                      <div className="flex flex-col items-end">
-                                          <span className="text-[9px] text-emerald-600/70 uppercase font-black">Freight Charges</span>
-                                          <span className="font-bold">{resp.quoteDetails.freightCurrency} {Number(resp.quoteDetails.freightCharges).toLocaleString()}</span>
-                                      </div>
-                                  ) : null}
-                                  {resp.quoteDetails?.otherCharges ? (
-                                      <div className={`flex flex-col items-end ${resp.quoteDetails?.freightCharges ? 'border-l border-emerald-200 pl-4' : ''}`}>
-                                          <span className="text-[9px] text-emerald-600/70 uppercase font-black">Other Charges</span>
-                                          <span className="font-bold">{resp.quoteDetails.otherCurrency} {Number(resp.quoteDetails.otherCharges).toLocaleString()}</span>
-                                      </div>
-                                  ) : null}
-                                  {resp.quoteDetails?.allInCharges ? (
-                                      <div className={`flex flex-col items-end ${(resp.quoteDetails?.freightCharges || resp.quoteDetails?.otherCharges) ? 'border-l border-emerald-200 pl-4' : ''}`}>
-                                          <span className="text-[9px] text-emerald-600/70 uppercase font-black">All-In Charges</span>
-                                          <div className="flex items-center gap-1 font-bold">
-                                            <span>{resp.quoteDetails.allInCurrency} {Number(resp.quoteDetails.allInCharges).toLocaleString()}</span>
-                                          </div>
-                                      </div>
-                                  ) : null}
-                                  {(!resp.quoteDetails || (!resp.quoteDetails.freightCharges && !resp.quoteDetails.otherCharges && !resp.quoteDetails.allInCharges)) && (
-                                      <div className="flex flex-col items-end">
-                                          <span className="text-[9px] text-emerald-600/70 uppercase font-black">Quote Amount</span>
-                                          <div className="flex items-center gap-1 font-bold">
-                                            <span>$ {resp.price ? resp.price.toLocaleString() : 'N/A'}</span>
-                                          </div>
-                                      </div>
-                                  )}
-                                </div>
-                              </div>
-                              );
-                            })}
-                          </div>
-                        </div>
+                        <button
+                           onClick={() => setShowResponsesModal(enq)}
+                           className="flex items-center gap-2 bg-[#0066FF] hover:bg-[#0055D4] text-white px-5 py-2.5 rounded-xl font-bold text-xs transition-all shadow-md shadow-[#0066FF]/20"
+                        >
+                           View All Quotes <span className="text-sm font-black leading-none mt-[1px]">→</span>
+                        </button>
                       ) : (
                         <div className="flex items-center gap-3">
                           {hasQuote && (
-                            <div className="flex items-center gap-4 text-xs font-black text-emerald-600 bg-emerald-50 px-4 py-2.5 rounded-xl border border-emerald-100/70">
-                                {enq.quoteDetails?.freightCharges ? (
-                                    <div className="flex flex-col items-end">
-                                        <span className="text-[9px] text-emerald-600/70 uppercase font-black">Freight Charges</span>
-                                        <span>{enq.quoteDetails.freightCurrency} {Number(enq.quoteDetails.freightCharges).toLocaleString()}</span>
-                                    </div>
-                                ) : null}
-                                {enq.quoteDetails?.otherCharges ? (
-                                    <div className={`flex flex-col items-end ${enq.quoteDetails?.freightCharges ? 'border-l border-emerald-200 pl-4' : ''}`}>
-                                        <span className="text-[9px] text-emerald-600/70 uppercase font-black">Other Charges</span>
-                                        <span>{enq.quoteDetails.otherCurrency} {Number(enq.quoteDetails.otherCharges).toLocaleString()}</span>
-                                    </div>
-                                ) : null}
-                                {enq.quoteDetails?.allInCharges ? (
-                                    <div className={`flex flex-col items-end ${(enq.quoteDetails?.freightCharges || enq.quoteDetails?.otherCharges) ? 'border-l border-emerald-200 pl-4' : ''}`}>
-                                        <span className="text-[9px] text-emerald-600/70 uppercase font-black">All-In Charges</span>
-                                        <div className="flex items-center gap-1">
-                                          <span>{enq.quoteDetails.allInCurrency} {Number(enq.quoteDetails.allInCharges).toLocaleString()}</span>
-                                        </div>
-                                    </div>
-                                ) : null}
-                                {(!enq.quoteDetails || (!enq.quoteDetails.freightCharges && !enq.quoteDetails.otherCharges && !enq.quoteDetails.allInCharges)) && (
-                                    <div className="flex flex-col items-end">
-                                        <span className="text-[9px] text-emerald-600/70 uppercase font-black">Quote Amount</span>
-                                        <div className="flex items-center gap-1">
-                                          <span>₹ {enq.price ? enq.price.toLocaleString() : 'N/A'}</span>
-                                        </div>
-                                    </div>
-                                )}
+                            <div className="flex flex-col items-end px-4 py-2 bg-emerald-50 rounded-xl border border-emerald-100 text-emerald-600">
+                                <span className="text-[9px] uppercase font-black opacity-80">Total Quote</span>
+                                <span className="text-sm font-black">₹ {enq.price ? enq.price.toLocaleString() : 'N/A'}</span>
                             </div>
                           )}
-
-                          <div className={`flex items-center gap-1.5 font-extrabold text-xs px-4 py-2 rounded-xl border ${
+                          <div className={`flex items-center gap-1.5 font-extrabold text-xs px-4 py-2.5 rounded-xl border ${
                             isAccepted 
                               ? 'bg-green-50 text-green-600 border-green-200' 
                               : 'bg-amber-50 text-amber-600 border-amber-200'
@@ -587,7 +464,7 @@ const CustomerEnquiriesTab = ({ title, type }) => {
 
       {/* Vendor Details Modal */}
       {selectedVendor && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
           <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden relative animate-in fade-in zoom-in duration-200">
             <div className="absolute top-4 right-4 z-10">
               <button 
@@ -653,6 +530,84 @@ const CustomerEnquiriesTab = ({ title, type }) => {
               >
                 Close
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Responses Modal */}
+      {showResponsesModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden relative animate-in fade-in zoom-in duration-200 flex flex-col max-h-[85vh]">
+            <div className="p-6 md:p-8 border-b border-slate-100 flex items-center justify-between shrink-0 bg-slate-50/50">
+              <div>
+                <h3 className="text-xl font-black text-[#0B1E43]">Received Quotes</h3>
+                <p className="text-xs font-bold text-slate-400 mt-1 uppercase tracking-wide">
+                  {showResponsesModal.responses.length} Carrier{showResponsesModal.responses.length !== 1 ? 's' : ''} Accepted
+                </p>
+              </div>
+              <button 
+                onClick={() => setShowResponsesModal(null)}
+                className="w-10 h-10 flex items-center justify-center rounded-full bg-white border border-slate-200 hover:bg-slate-100 text-slate-500 transition-colors shadow-sm"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            
+            <div className="p-6 md:p-8 overflow-y-auto flex-1 custom-scrollbar space-y-4 bg-slate-50/30">
+              {showResponsesModal.responses.map((resp, idx) => (
+                <div key={idx} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs font-black bg-white px-5 py-4 rounded-2xl border border-slate-200/60 shadow-[0_4px_20px_rgba(11,30,67,0.03)] hover:border-[#0066FF]/30 transition-all hover:shadow-md group">
+                  <div 
+                      className="flex items-center gap-3 cursor-pointer p-2 -ml-2 rounded-xl transition-colors group-hover:bg-[#0066FF]/5"
+                      onClick={() => setSelectedVendor(resp.vendor)}
+                  >
+                    <div className="w-10 h-10 rounded-full bg-[#0066FF]/10 flex items-center justify-center text-[#0066FF]">
+                      <User size={18} />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-sm text-[#0B1E43] group-hover:text-[#0066FF] transition-colors">{resp.vendor?.company || resp.vendor?.name || 'Vendor'}</span>
+                        {resp.vendor?.activePlan?.price > 0 && (
+                          <span className="bg-emerald-100 text-emerald-700 text-[9px] font-black uppercase px-1.5 py-0.5 rounded-full flex items-center gap-1">
+                            <CheckCircle2 size={10} /> Verified
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-[10px] text-slate-400 font-bold tracking-wider uppercase mt-0.5 block">View Details</span>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-6 sm:border-l sm:border-slate-100 sm:pl-6">
+                    {resp.quoteDetails?.freightCharges ? (
+                        <div className="flex flex-col items-end">
+                            <span className="text-[9px] text-slate-400 uppercase font-black">Freight</span>
+                            <span className="font-extrabold text-slate-700 text-sm">{resp.quoteDetails.freightCurrency} {Number(resp.quoteDetails.freightCharges).toLocaleString()}</span>
+                        </div>
+                    ) : null}
+                    
+                    {resp.quoteDetails?.otherCharges ? (
+                        <div className="flex flex-col items-end">
+                            <span className="text-[9px] text-slate-400 uppercase font-black">Other</span>
+                            <span className="font-extrabold text-slate-700 text-sm">{resp.quoteDetails.otherCurrency} {Number(resp.quoteDetails.otherCharges).toLocaleString()}</span>
+                        </div>
+                    ) : null}
+                    
+                    {resp.quoteDetails?.allInCharges ? (
+                        <div className="flex flex-col items-end">
+                            <span className="text-[9px] text-[#0066FF]/70 uppercase font-black">All-In</span>
+                            <span className="font-black text-[#0066FF] text-lg">{resp.quoteDetails.allInCurrency} {Number(resp.quoteDetails.allInCharges).toLocaleString()}</span>
+                        </div>
+                    ) : null}
+                    
+                    {(!resp.quoteDetails || (!resp.quoteDetails.freightCharges && !resp.quoteDetails.otherCharges && !resp.quoteDetails.allInCharges)) && (
+                        <div className="flex flex-col items-end">
+                            <span className="text-[9px] text-[#0066FF]/70 uppercase font-black">Total Quote</span>
+                            <span className="font-black text-[#0066FF] text-lg">₹ {resp.price ? resp.price.toLocaleString() : 'N/A'}</span>
+                        </div>
+                    )}
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>

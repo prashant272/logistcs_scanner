@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import VendorFinanceList from './VendorFinanceList';
-import UploadInvoiceTab from '../../components/vendor/UploadInvoiceTab';
-import WalletLedgerTab from '../../components/vendor/WalletLedgerTab';
-import VendorPlanInvoicesTab from '../../components/vendor/VendorPlanInvoicesTab';
-import { FileText, UploadCloud, Wallet } from 'lucide-react';
+import FinanceList from './FinanceList';
+import UploadInvoiceTab from '../../components/common/UploadInvoiceTab';
+import WalletLedgerTab from '../../components/common/WalletLedgerTab';
+import PlanInvoicesTab from '../../components/common/PlanInvoicesTab';
+import CreditInvoicesTab from '../../components/common/CreditInvoicesTab';
+import { FileText, UploadCloud, Wallet, Clock, CheckCircle } from 'lucide-react';
 
-const VendorFinanceDashboard = () => {
+const FinanceDashboard = () => {
     const location = useLocation();
     const navigate = useNavigate();
     
@@ -28,7 +29,8 @@ const VendorFinanceDashboard = () => {
         setActiveTab(tab);
         const newParams = new URLSearchParams(location.search);
         newParams.set('tab', tab);
-        navigate(`/vendor/finance-list?${newParams.toString()}`, { replace: true });
+        const basePath = location.pathname.includes('/customer') ? '/customer' : '/vendor';
+        navigate(`${basePath}/finance-list?${newParams.toString()}`, { replace: true });
     };
 
     return (
@@ -85,14 +87,15 @@ const VendorFinanceDashboard = () => {
             </div>
 
             {/* Tab Content */}
-            <div className="pt-2">
-                {activeTab === 'finance_list' && <VendorFinanceList />}
+            <div className="mt-6">
+                {activeTab === 'finance_list' && <FinanceList />}
                 {activeTab === 'upload_invoice' && <UploadInvoiceTab />}
+                {activeTab === 'credit_invoices' && <CreditInvoicesTab />}
+                {activeTab === 'plan_invoices' && <PlanInvoicesTab />}
                 {activeTab === 'wallet_ledger' && <WalletLedgerTab />}
-                {activeTab === 'plan_invoices' && <VendorPlanInvoicesTab />}
             </div>
         </div>
     );
 };
 
-export default VendorFinanceDashboard;
+export default FinanceDashboard;
