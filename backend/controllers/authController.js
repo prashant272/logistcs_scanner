@@ -1,4 +1,5 @@
 const User = require('../models/User');
+const SystemUpdate = require('../models/SystemUpdate');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const ActivityLog = require('../models/ActivityLog');
@@ -357,9 +358,37 @@ exports.getUserProfile = async (req, res) => {
 
             await user.save().catch(err => console.error("Error saving user:", err));
         }
-        res.json(user);
+        
+        let hasNewUpdate = false;
+        let latestUpdate = null;
+        if (user && user.role === 'vendor') {
+            latestUpdate = await SystemUpdate.findOne().sort({ createdAt: -1 });
+            if (latestUpdate) {
+                if (!user.lastSeenUpdate || new Date(latestUpdate.createdAt) > new Date(user.lastSeenUpdate)) {
+                    hasNewUpdate = true;
+                }
+            }
+        }
+
+        const userObj = user.toObject ? user.toObject() : user;
+        res.json({ ...userObj, hasNewUpdate, latestUpdate });
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
+
+// Mark Updates as Seen
+exports.markUpdatesSeen = async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id);
+        if (user) {
+            user.lastSeenUpdate = new Date();
+            await user.save();
+            return res.json({ success: true, message: 'Updates marked as seen' });
+        }
+        return res.status(404).json({ message: 'User not found' });
+    } catch (error) {
+        res.status(500).json({ message: 'Server error' });
     }
 };
 

@@ -9,7 +9,7 @@ import FinanceSection from './FinanceSection';
 import ComplaintsSection from './ComplaintsSection';
 import UserProfileSection from './UserProfileSection';
 import RelationshipManagerCard from './RelationshipManagerCard';
-import { Calendar, RotateCcw, Menu, AlertCircle, Phone, Mail } from 'lucide-react';
+import { Calendar, RotateCcw, Menu, AlertCircle, Phone, Mail, BellRing, X, Sparkles } from 'lucide-react';
 
 const vendorStatsFetcher = async ([key, filterType, customStart, customEnd]) => {
     const token = localStorage.getItem('userToken');
@@ -86,6 +86,7 @@ const VendorDashboardMain = () => {
     const [filterType, setFilterType] = useState('All Time');
     const [customStart, setCustomStart] = useState('');
     const [customEnd, setCustomEnd] = useState('');
+    const [showUpdateModal, setShowUpdateModal] = useState(user?.hasNewUpdate || false);
 
     const { data: stats, isLoading: loadingStats } = useSWR(
         ['vendorDashboardStats', filterType, customStart, customEnd],
@@ -352,6 +353,66 @@ const VendorDashboardMain = () => {
                     </div>
                 </>
             ) : null}
+
+            {/* Premium New Update Popup */}
+            {showUpdateModal && user?.latestUpdate && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#0B1E43]/80 backdrop-blur-sm animate-in fade-in duration-300">
+                    <div className="bg-white rounded-[24px] w-full max-w-md shadow-[0_0_50px_rgba(0,102,255,0.15)] overflow-hidden transform animate-in zoom-in-95 duration-300 relative border border-white/20">
+                        
+                        {/* Decorative Background Elements */}
+                        <div className="absolute top-0 right-0 -mr-16 -mt-16 w-48 h-48 bg-gradient-to-br from-[#0066FF]/20 to-purple-500/20 rounded-full blur-3xl"></div>
+                        <div className="absolute bottom-0 left-0 -ml-16 -mb-16 w-48 h-48 bg-gradient-to-tr from-cyan-400/20 to-[#0066FF]/20 rounded-full blur-3xl"></div>
+
+                        {/* Close Button */}
+                        <button 
+                            onClick={() => setShowUpdateModal(false)}
+                            className="absolute top-4 right-4 text-slate-400 hover:text-slate-700 bg-slate-50 hover:bg-slate-100 p-2 rounded-full transition-all z-10"
+                        >
+                            <X size={18} />
+                        </button>
+
+                        <div className="p-8 relative z-10 text-center">
+                            {/* Floating Icon */}
+                            <div className="mx-auto w-16 h-16 bg-gradient-to-br from-[#0066FF] to-cyan-500 rounded-2xl flex items-center justify-center shadow-lg shadow-[#0066FF]/30 mb-6 relative">
+                                <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                                  <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500 border-2 border-white"></span>
+                                </span>
+                                <BellRing size={28} className="text-white" />
+                            </div>
+
+                            {/* Type Badge */}
+                            <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#0066FF]/10 text-[#0066FF] text-[10px] font-black uppercase tracking-widest rounded-full mb-4">
+                                <Sparkles size={12} />
+                                {user.latestUpdate.type || 'Announcement'}
+                            </div>
+
+                            {/* Content */}
+                            <h4 className="font-black text-slate-800 text-xl mb-3 leading-tight">{user.latestUpdate.title}</h4>
+                            <p className="text-slate-500 text-[13px] leading-relaxed mb-8 whitespace-pre-wrap px-2">{user.latestUpdate.content}</p>
+
+                            {/* Buttons */}
+                            <div className="flex flex-col gap-3">
+                                <button
+                                    onClick={() => {
+                                        setShowUpdateModal(false);
+                                        window.location.href = '/vendor/updates';
+                                    }}
+                                    className="w-full py-3.5 px-4 bg-gradient-to-r from-[#0066FF] to-cyan-500 hover:from-blue-700 hover:to-cyan-600 text-white font-bold rounded-xl text-sm transition-all shadow-lg shadow-[#0066FF]/25 hover:-translate-y-0.5"
+                                >
+                                    View All Updates
+                                </button>
+                                <button
+                                    onClick={() => setShowUpdateModal(false)}
+                                    className="w-full py-3.5 px-4 bg-slate-50 hover:bg-slate-100 text-slate-600 font-bold rounded-xl text-sm transition-all border border-slate-200"
+                                >
+                                    Maybe Later
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

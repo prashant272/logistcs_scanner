@@ -193,7 +193,8 @@ export const AuthProvider = ({ children }) => {
         updateProfile,
         deleteAccount,
         logout,
-        reloadUserProfile
+        reloadUserProfile,
+        setUser
     };
 
     return (

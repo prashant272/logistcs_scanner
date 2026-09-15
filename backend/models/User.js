@@ -230,6 +230,10 @@ const userSchema = new mongoose.Schema({
         enum: ['self', 'enquiry', 'admin'],
         default: 'enquiry'
     },
+    lastSeenUpdate: {
+        type: Date,
+        default: null
+    },
     createdAt: {
         type: Date,
         default: Date.now

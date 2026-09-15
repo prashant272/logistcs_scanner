@@ -51,6 +51,7 @@ const CustomerManagement = () => {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [premiumFilter, setPremiumFilter] = useState(false);
 
   // Add Customer Modal State
   const [showAddModal, setShowAddModal] = useState(false);
@@ -88,7 +89,7 @@ const CustomerManagement = () => {
     } else {
       setGuests([]);
     }
-  }, [debouncedSearchQuery, activeTab]);
+  }, [debouncedSearchQuery, activeTab, premiumFilter]);
 
   // Fetch data
   useEffect(() => {
@@ -97,7 +98,7 @@ const CustomerManagement = () => {
     } else {
       fetchGuests();
     }
-  }, [activeTab, page, debouncedSearchQuery]);
+  }, [activeTab, page, debouncedSearchQuery, premiumFilter]);
 
   const fetchCustomers = async () => {
     try {
@@ -108,7 +109,7 @@ const CustomerManagement = () => {
       const token = sessionStorage.getItem('adminToken');
       const config = { headers: { Authorization: `Bearer ${token}` } };
       
-      const { data } = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/admin/customers?page=${page}&limit=10&search=${debouncedSearchQuery}`, config);
+      const { data } = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/admin/customers?page=${page}&limit=10&search=${debouncedSearchQuery}&premium=${premiumFilter}`, config);
       
       if (page === 1) {
         setCustomers(data.data || []);
@@ -473,6 +474,19 @@ const CustomerManagement = () => {
               className="w-full bg-white border border-slate-200/80 rounded-xl pl-10 pr-4 py-2.5 text-xs text-slate-700 font-bold focus:outline-none focus:border-[#0066FF] focus:ring-1 focus:ring-[#0066FF] transition-all placeholder:text-slate-400 shadow-sm"
             />
           </div>
+
+          <button 
+            onClick={() => setPremiumFilter(!premiumFilter)} 
+            className={`px-3 py-2.5 rounded-xl transition-all shadow-sm font-bold flex items-center gap-2 text-xs border ${
+                premiumFilter 
+                    ? 'bg-blue-50 border-blue-200 text-[#0066FF]' 
+                    : 'bg-white border-slate-200/80 hover:bg-slate-50 text-slate-600'
+            }`}
+            title="Show Premium Customers Only"
+          >
+            <Sparkles size={16} className={premiumFilter ? 'text-[#0066FF]' : 'text-slate-400'} />
+            Premium
+          </button>
 
           <button 
             onClick={handleRefresh} 

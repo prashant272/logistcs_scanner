@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 import { Bell, Clock, Megaphone, Settings, Gift, Star, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
 const getTypeConfig = (type) => {
     switch(type) {
@@ -43,6 +44,7 @@ const getTypeConfig = (type) => {
 };
 
 const VendorUpdates = () => {
+    const { user, setUser } = useAuth();
     const [updates, setUpdates] = useState([]);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('All Updates');
@@ -58,6 +60,18 @@ const VendorUpdates = () => {
                     headers: { Authorization: `Bearer ${token}` }
                 });
                 setUpdates(res.data);
+
+                // Mark updates as seen when they visit this tab
+                try {
+                    await axios.put(`${import.meta.env.VITE_API_BASE_URL}/auth/profile/updates-seen`, {}, {
+                        headers: { Authorization: `Bearer ${token}` }
+                    });
+                    if (user && user.hasNewUpdate) {
+                        setUser(prev => ({ ...prev, hasNewUpdate: false }));
+                    }
+                } catch (err) {
+                    console.error('Failed to mark updates as seen', err);
+                }
             } catch (error) {
                 console.error('Error fetching updates', error);
             } finally {
@@ -66,7 +80,7 @@ const VendorUpdates = () => {
         };
 
         fetchUpdates();
-    }, []);
+    }, [user, setUser]);
 
     const isNew = (dateString) => {
         const updateDate = new Date(dateString);

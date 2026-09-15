@@ -248,6 +248,14 @@ const VendorSidebar = ({ isSidebarOpen, logout, user }) => {
                                     <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
                                 </div>
                             )}
+                            {group.name === 'Updates' && user?.hasNewUpdate && (
+                                <div className={`absolute right-4 flex items-center justify-center bg-rose-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded shadow-sm ${!isSidebarOpen ? 'md:hidden' : ''}`}>
+                                    NEW
+                                </div>
+                            )}
+                            {group.name === 'Updates' && user?.hasNewUpdate && !isSidebarOpen && (
+                                <span className="absolute top-1 right-2 w-2 h-2 bg-rose-500 rounded-full md:block hidden" />
+                            )}
                         </Link>
                     );
                 })}
