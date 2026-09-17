@@ -8,6 +8,7 @@ import {
 import { useEnquiries } from '../../services/EnquiryService';
 import useInfiniteScroll from '../../hooks/useInfiniteScroll';
 import { useAuth } from '../../context/AuthContext';
+import api from '../../api/axios';
 
 const cleanCompanyName = (rawName) => {
   if (!rawName) return 'Customer';
@@ -64,6 +65,12 @@ const VendorEnquiriesTab = ({ title, type }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchInput, setSearchInput] = useState('');
   const [selectedFilter, setSelectedFilter] = useState('all'); // 'all', '7days', '15days', 'thismonth', or 'YYYY-MM'
+  const [selectedStatus, setSelectedStatus] = useState('all');
+  const [selectedMode, setSelectedMode] = useState('all');
+  
+  // Local state for tracking added CRM leads
+  const [crmAddedIds, setCrmAddedIds] = useState(new Set());
+  const [addingToCrm, setAddingToCrm] = useState(false);
 
   // Status filter from URL or default to 'all'
   const [statusFilter, setStatusFilter] = useState(() => {
@@ -133,6 +140,27 @@ const VendorEnquiriesTab = ({ title, type }) => {
     return () => { isMounted = false; };
   }, [type, page, searchQuery, selectedFilter, statusFilter, modeFilter]);
 
+  // Fetch existing CRM leads to populate crmAddedIds on mount
+  useEffect(() => {
+    let isMounted = true;
+    const fetchCrmLeads = async () => {
+      try {
+        const res = await api.get('/crm/vendor');
+        if (res.data.success && res.data.leads && isMounted) {
+          const leadIds = res.data.leads.map(l => l.enquiry);
+          console.log('[VendorEnquiriesTab] CRM lead enquiry IDs:', leadIds);
+          setCrmAddedIds(new Set(leadIds));
+        }
+      } catch (err) {
+        console.error('Failed to fetch CRM leads', err);
+      }
+    };
+    if (user) {
+      fetchCrmLeads();
+    }
+    return () => { isMounted = false; };
+  }, [user]);
+
   const handleLoadMore = useCallback(() => {
     setPage(prev => prev + 1);
   }, []);
@@ -170,6 +198,34 @@ const VendorEnquiriesTab = ({ title, type }) => {
       otherCharges: '', otherCurrency: 'INR',
       allInCharges: '', allInCurrency: 'INR'
     });
+  };
+
+  const handleAddLeadToCrm = async (enquiryId) => {
+    if (addingToCrm || crmAddedIds.has(enquiryId)) return;
+    setAddingToCrm(true);
+    try {
+      const res = await api.post('/crm', { enquiryId });
+      if (res.data.success) {
+        setCrmAddedIds(prev => {
+          const next = new Set(prev);
+          next.add(enquiryId);
+          return next;
+        });
+      }
+    } catch (err) {
+      console.error("Failed to add to CRM:", err);
+      if (err.response?.data?.message === 'Lead already exists in CRM') {
+        setCrmAddedIds(prev => {
+          const next = new Set(prev);
+          next.add(enquiryId);
+          return next;
+        });
+      } else {
+        alert(err.response?.data?.message || 'Failed to add to CRM');
+      }
+    } finally {
+      setAddingToCrm(false);
+    }
   };
 
   // Generate dynamic date filters (current month + past 5 months)
@@ -810,9 +866,19 @@ const VendorEnquiriesTab = ({ title, type }) => {
                   <div className="flex items-center gap-2 shrink-0">
                     {/* Status Accepted Badge */}
                     {isAccepted ? (
-                      <div className="flex items-center gap-1 bg-emerald-600 text-white font-extrabold text-[10px] px-4 py-2 rounded-xl shadow-md shadow-emerald-500/10">
-                        <CheckCircle2 size={12} />
-                        <span>Accepted</span>
+                      <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1 bg-emerald-600 text-white font-extrabold text-[10px] px-4 py-2 rounded-xl shadow-md shadow-emerald-500/10">
+                          <CheckCircle2 size={12} />
+                          <span>Accepted</span>
+                        </div>
+                        <button
+                          onClick={() => handleAddLeadToCrm(enq._id)}
+                          disabled={crmAddedIds.has(enq._id) || addingToCrm}
+                          className={`flex items-center gap-1 font-extrabold text-[10px] px-4 py-2 rounded-xl shadow-md uppercase tracking-wider transition-all ${(crmAddedIds.has(enq._id) || addingToCrm) ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 text-white shadow-blue-500/20'}`}
+                        >
+                          <User size={12} />
+                          {crmAddedIds.has(enq._id) ? 'Added to CRM' : addingToCrm ? 'Adding...' : 'Add to CRM'}
+                        </button>
                       </div>
                     ) : (
                       <button

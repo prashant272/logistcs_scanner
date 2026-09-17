@@ -108,6 +108,7 @@ const CreditInvoicesTab = lazy(() => import('./components/common/CreditInvoicesT
 const WalletLedgerTab = lazy(() => import('./components/common/WalletLedgerTab'));
 const VendorContactListTab = lazy(() => import('./components/vendor/VendorContactListTab'));
 const VendorUpdates = lazy(() => import('./pages/vendor/Updates'));
+const VendorCRMTab = lazy(() => import('./components/vendor/crm'));
 
 // Lazy loaded admin pages
 const AdminLogin = lazy(() => import('./pages/admin/AdminLogin'));
@@ -277,6 +278,7 @@ function App() {
               <Route path="my-enquiries" element={<VendorEnquiriesTab title="My Enquiries" type="my" />} />
               <Route path="direct-enquiries" element={<VendorEnquiriesTab title="Direct Enquiries" type="direct" />} />
               <Route path="b2b-enquiries" element={<VendorEnquiriesTab title="B2B Enquiries" type="b2b" />} />
+              <Route path="crm" element={<VendorCRMTab />} />
               <Route path="direct-booking" element={<VendorBookingsTab title="Direct Bookings" type="direct" />} />
               <Route path="my-bookings" element={<VendorBookingsTab title="My Bookings" type="my" />} />
               <Route path="ptl-bookings" element={<PtlBookingsTab />} />
