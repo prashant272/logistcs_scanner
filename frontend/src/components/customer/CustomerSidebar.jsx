@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { 
-    Truck, FileText, MessageSquare, AlertTriangle, LogOut, Search, User, Wallet, Crown, IndianRupee, PieChart, ChevronDown
+import {
+    Truck, FileText, MessageSquare, AlertTriangle, LogOut, Search, User, Wallet, Crown, IndianRupee, PieChart, ChevronDown, LayoutDashboard
 } from 'lucide-react';
 
 const CustomerSidebar = ({ isSidebarOpen, logout }) => {
@@ -21,6 +21,7 @@ const CustomerSidebar = ({ isSidebarOpen, logout }) => {
 
     // Sidebar navigation items for customer dashboard
     const allNavItems = [
+        { type: 'link', name: 'Dashboard', path: '/customer/dashboard', icon: <LayoutDashboard size={18} /> },
         { type: 'link', name: 'Live Price', path: '/customer/search-price', icon: <Search size={18} /> },
         { type: 'link', name: 'Plans', path: '/customer/plans', icon: <Crown size={18} />, isHighlight: true },
         {
@@ -80,7 +81,7 @@ const CustomerSidebar = ({ isSidebarOpen, logout }) => {
                                         <ChevronDown size={14} className={`text-slate-300 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
                                     </div>
                                 </button>
-                                
+
                                 <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isOpen ? 'max-h-[500px] opacity-100 mt-2' : 'max-h-0 opacity-0'}`}>
                                     <div className="space-y-1">
                                         {group.items.map(item => {
@@ -89,11 +90,10 @@ const CustomerSidebar = ({ isSidebarOpen, logout }) => {
                                                 <Link
                                                     key={item.name}
                                                     to={item.path}
-                                                    className={`w-full flex items-center gap-3.5 px-4 py-2.5 rounded-xl text-[11px] font-bold transition-all duration-200 relative group ${
-                                                        isActive
+                                                    className={`w-full flex items-center gap-3.5 px-4 py-2.5 rounded-xl text-[11px] font-bold transition-all duration-200 relative group ${isActive
                                                             ? 'bg-gradient-to-r from-[#0066FF] to-[#00b2fe] text-white shadow-lg shadow-[#0066FF]/20 translate-x-0.5'
                                                             : 'text-white hover:bg-white/[0.04] hover:translate-x-0.5'
-                                                    }`}
+                                                        }`}
                                                 >
                                                     {isActive && <span className="absolute left-0 top-2 bottom-2 w-1 bg-white rounded-r-full" />}
                                                     <span className={`transition-transform duration-200 group-hover:scale-105 text-white`}>
@@ -118,22 +118,21 @@ const CustomerSidebar = ({ isSidebarOpen, logout }) => {
                         <Link
                             key={group.name}
                             to={group.path}
-                            className={`w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-xs font-bold transition-all duration-200 relative group ${
-                                isActive
+                            className={`w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-xs font-bold transition-all duration-200 relative group ${isActive
                                     ? 'bg-gradient-to-r from-[#0066FF] to-[#00b2fe] text-white shadow-lg shadow-[#0066FF]/20 translate-x-0.5'
                                     : isLivePrice
                                         ? 'bg-[#0066FF]/15 text-[#00b2fe] border border-[#0066FF]/25 hover:bg-[#0066FF]/25 hover:translate-x-0.5'
                                         : isHighlight
                                             ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20 hover:bg-amber-500/20 hover:translate-x-0.5 mt-2 mb-2'
                                             : 'text-white hover:bg-white/[0.04] hover:translate-x-0.5'
-                            }`}
+                                }`}
                         >
                             {isActive && <span className="absolute left-0 top-3 bottom-3 w-1 bg-white rounded-r-full" />}
                             <span className={`transition-transform duration-200 group-hover:scale-105 ${isLivePrice ? 'text-[#00b2fe]' : isHighlight && !isActive ? 'text-amber-400' : 'text-white'}`}>
                                 {group.icon}
                             </span>
                             <span className={`tracking-wide transition-opacity duration-200 flex-1 ${!isSidebarOpen ? 'md:hidden' : ''}`}>{group.name}</span>
-                            
+
                             {isLivePrice && (
                                 <div className={`absolute right-4 flex h-2 w-2 ${!isSidebarOpen ? 'md:hidden' : ''}`}>
                                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>

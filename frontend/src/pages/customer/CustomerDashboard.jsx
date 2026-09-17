@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate, Outlet } from 'react-router-dom';
+import { useNavigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import CustomerSidebar from '../../components/customer/CustomerSidebar';
 import CustomerHeader from '../../components/customer/CustomerHeader';
@@ -7,6 +7,7 @@ import CustomerHeader from '../../components/customer/CustomerHeader';
 const CustomerDashboard = () => {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
+    const location = useLocation();
     const [isSidebarOpen, setSidebarOpen] = useState(window.innerWidth >= 768);
 
     const handleLogout = () => {
@@ -45,7 +46,7 @@ const CustomerDashboard = () => {
                 />
 
                 {/* Scrollable Dashboard Body */}
-                <main className="flex-grow p-6 md:p-8 space-y-6 overflow-y-auto">
+                <main className={`flex-grow overflow-y-auto ${location.pathname === '/customer/dashboard' ? 'p-0 bg-[#F4F7FC]' : 'p-6 md:p-8 space-y-6'}`}>
                     <Outlet />
                 </main>
 

@@ -916,6 +916,10 @@ exports.getClientEnquiries = async (req, res) => {
                 { commodity: searchRegex },
                 { type: searchRegex }
             ];
+            
+            if (mongoose.Types.ObjectId.isValid(search.trim())) {
+                query.$or.push({ _id: new mongoose.Types.ObjectId(search.trim()) });
+            }
         }
 
         const page = parseInt(pageQuery) || 1;

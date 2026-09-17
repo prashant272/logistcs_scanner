@@ -17,7 +17,7 @@ const VendorNetwork = () => {
     const [lsid, setLsid] = useState('');
     const [country, setCountry] = useState('');
     const [city, setCity] = useState('');
-    
+
     const [searchResults, setSearchResults] = useState([]);
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 5;
@@ -120,9 +120,9 @@ const VendorNetwork = () => {
 
     return (
         <div className="bg-slate-50 min-h-screen pt-32 pb-20 font-sans">
-            
+
             <div className="container mx-auto px-6 max-w-5xl">
-                
+
                 {/* Premium Simple Header */}
                 <div className="text-center mb-12 animate-fade-in-up">
                     <span className="text-[#0066FF] text-xs font-black tracking-[0.3em] uppercase block mb-3">
@@ -309,7 +309,7 @@ const VendorNetwork = () => {
                         {(() => {
                             const totalPages = Math.ceil(searchResults.length / itemsPerPage);
                             if (totalPages <= 1) return null;
-                            
+
                             return (
                                 <div className="flex justify-center items-center gap-4 p-6 border-t border-slate-100 bg-white">
                                     <button
@@ -341,8 +341,8 @@ const VendorNetwork = () => {
                     <div className="relative bg-white w-full max-w-lg rounded-3xl shadow-2xl border border-slate-100 p-8 overflow-hidden">
                         {/* soft gradient top bar */}
                         <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-[#0066FF] to-[#00b2fe]"></div>
-                        
-                        <button 
+
+                        <button
                             onClick={() => setSelectedVendor(null)}
                             className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 transition-colors"
                         >
@@ -416,7 +416,7 @@ const VendorNetwork = () => {
                             )}
                         </div>
 
-                        <button 
+                        <button
                             onClick={() => setSelectedVendor(null)}
                             className="w-full bg-[#0B1E43] hover:bg-[#0066FF] text-white font-black uppercase tracking-widest py-3 rounded-xl transition-all"
                         >
@@ -430,7 +430,7 @@ const VendorNetwork = () => {
             {showBlockModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#0B1E43]/60 backdrop-blur-sm animate-fade-in">
                     <div className="relative bg-white w-full max-w-md rounded-3xl shadow-2xl p-8 overflow-hidden text-center">
-                        <button 
+                        <button
                             onClick={() => setShowBlockModal(false)}
                             className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 transition-colors"
                         >
@@ -447,15 +447,15 @@ const VendorNetwork = () => {
                         </p>
 
                         <div className="flex flex-col gap-3">
-                            <Link 
-                                to="/vendor-auth" 
+                            <Link
+                                to="/vendor-auth"
                                 className="w-full bg-[#0066FF] hover:bg-[#0B1E43] text-white font-black uppercase tracking-widest py-3.5 rounded-xl shadow-lg shadow-[#0066FF]/20 transition-all text-center text-sm"
                                 onClick={() => setShowBlockModal(false)}
                             >
                                 Register as a Vendor
                             </Link>
-                            <Link 
-                                to="/vendor-auth" 
+                            <Link
+                                to="/vendor-auth"
                                 className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-black uppercase tracking-widest py-3.5 rounded-xl transition-all text-center text-sm"
                                 onClick={() => setShowBlockModal(false)}
                             >

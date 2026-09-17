@@ -84,6 +84,7 @@ const DownloadApp = lazy(() => import('./pages/public/DownloadApp'));
 
 
 const CustomerDashboard = lazy(() => import('./pages/customer/CustomerDashboard'));
+const CustomerMainDashboard = lazy(() => import('./pages/customer/CustomerMainDashboard'));
 const CustomerEnquiriesTab = lazy(() => import('./components/customer/CustomerEnquiriesTab'));
 const CustomerComplaintsTab = lazy(() => import('./components/customer/CustomerComplaintsTab'));
 const CustomerProfileTab = lazy(() => import('./components/customer/CustomerProfileTab'));
@@ -247,7 +248,8 @@ function App() {
 
             {/* Customer Dashboard Routes (No Navbar/Footer) */}
             <Route path="/customer" element={<CustomerPrivateRoute><CustomerDashboard /></CustomerPrivateRoute>}>
-              <Route index element={<Navigate to="/customer/direct-enquiry" replace />} />
+              <Route index element={<Navigate to="/customer/dashboard" replace />} />
+              <Route path="dashboard" element={<CustomerMainDashboard />} />
               <Route path="search-price" element={<SearchPrice isDashboard={true} />} />
               <Route path="search-results" element={<SearchResults />} />
               <Route path="direct-enquiry" element={<CustomerEnquiriesTab title="Direct Enquiry" type="direct" />} />

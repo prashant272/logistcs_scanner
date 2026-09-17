@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { 
   Phone, Mail, Search, MapPin, Building2, Ship, Plane, 
   Truck, Warehouse, Package, Coins, CheckCircle2, Clock, User, X, Hash 
@@ -27,8 +28,12 @@ const CustomerEnquiriesTab = ({ title, type }) => {
     }
     return 1000000000 + Math.abs(hash);
   };
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchInput, setSearchInput] = useState('');
+  
+  const [searchParams] = useSearchParams();
+  const initialSearch = searchParams.get('id') || '';
+
+  const [searchQuery, setSearchQuery] = useState(initialSearch);
+  const [searchInput, setSearchInput] = useState(initialSearch);
   const [selectedFilter, setSelectedFilter] = useState('all');
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
