@@ -1,5 +1,9 @@
 import React, { useState } from 'react';
-import { X, Building2, Phone, Mail, Edit3, MessageCircle, PhoneCall, Calendar, Clock, FileText, Check, Plus, AlertCircle, Phone as PhoneIcon } from 'lucide-react';
+import { 
+    X, Phone, Mail, MapPin, Building, Building2, Package, 
+    Weight, Calendar, FileText, Check, ArrowRight, Activity, Clock, FileInput, CheckCircle2, MessageSquare, Briefcase, Info, List, Plus, PlayCircle, Edit3, PhoneCall, MessageCircle, AlertCircle, Phone as PhoneIcon
+} from 'lucide-react';
+import { FaWhatsapp } from 'react-icons/fa';
 
 const CrmContactModal = ({
     selectedContactLead,
@@ -37,6 +41,30 @@ const CrmContactModal = ({
         handleScheduleFollowUp(selectedContactLead._id, dateObj.toISOString());
         setFollowUpDate('');
         setFollowUpTime('');
+    };
+
+
+
+    const handleWhatsAppClick = () => {
+        const phone = selectedContactLead.clientInfo?.phone;
+        if (phone) {
+            const cleanPhone = phone.replace(/[^0-9]/g, '');
+            window.open(`https://wa.me/${cleanPhone}`, '_blank');
+        }
+    };
+
+    const handleCallClick = () => {
+        const phone = selectedContactLead.clientInfo?.phone;
+        if (phone) {
+            window.location.href = `tel:${phone}`;
+        }
+    };
+
+    const handleEmailClick = () => {
+        const email = selectedContactLead.clientInfo?.email;
+        if (email) {
+            window.location.href = `mailto:${email}`;
+        }
     };
 
     return (
@@ -136,17 +164,23 @@ const CrmContactModal = ({
                             <PhoneCall size={16} className="text-blue-600" /> Quick Actions
                         </h3>
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                            <button className="bg-emerald-50 border border-emerald-100 p-4 rounded-2xl flex items-center gap-4 hover:bg-emerald-100 transition-colors group">
-                                <div className="w-10 h-10 rounded-full bg-emerald-500 text-white flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
-                                    <MessageCircle size={20} />
+                            <button 
+                                onClick={handleWhatsAppClick}
+                                className="bg-emerald-50 border border-emerald-100 p-4 rounded-2xl flex items-center gap-4 hover:bg-emerald-100 transition-colors group"
+                            >
+                                <div className="w-10 h-10 rounded-full bg-emerald-500 text-white flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform shadow-sm">
+                                    <FaWhatsapp size={22} />
                                 </div>
                                 <div className="text-left">
                                     <p className="text-sm font-bold text-emerald-700">Chat on WhatsApp</p>
                                     <p className="text-xs text-emerald-600/80">Open WhatsApp</p>
                                 </div>
                             </button>
-                            <button className="bg-blue-50 border border-blue-100 p-4 rounded-2xl flex items-center gap-4 hover:bg-blue-100 transition-colors group">
-                                <div className="w-10 h-10 rounded-full bg-blue-500 text-white flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                            <button 
+                                onClick={handleCallClick}
+                                className="bg-blue-50 border border-blue-100 p-4 rounded-2xl flex items-center gap-4 hover:bg-blue-100 transition-colors group"
+                            >
+                                <div className="w-10 h-10 rounded-full bg-blue-500 text-white flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform shadow-sm">
                                     <Phone size={20} />
                                 </div>
                                 <div className="text-left">
@@ -154,8 +188,11 @@ const CrmContactModal = ({
                                     <p className="text-xs text-blue-600/80">{selectedContactLead.clientInfo?.phone || 'No Number'}</p>
                                 </div>
                             </button>
-                            <button className="bg-purple-50 border border-purple-100 p-4 rounded-2xl flex items-center gap-4 hover:bg-purple-100 transition-colors group">
-                                <div className="w-10 h-10 rounded-full bg-purple-500 text-white flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                            <button 
+                                onClick={handleEmailClick}
+                                className="bg-purple-50 border border-purple-100 p-4 rounded-2xl flex items-center gap-4 hover:bg-purple-100 transition-colors group"
+                            >
+                                <div className="w-10 h-10 rounded-full bg-purple-500 text-white flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform shadow-sm">
                                     <Mail size={20} />
                                 </div>
                                 <div className="text-left truncate">
