@@ -15,6 +15,18 @@ const CustomerProfileTab = () => {
         company: user?.company || '',
         country: user?.address || '',
         profilePhoto: user?.profilePhoto || '',
+        designation: user?.designation || '',
+        whatsappNumber: user?.whatsappNumber || '',
+        businessType: user?.businessType || '',
+        companyWebsite: user?.companyWebsite || '',
+        yearOfEstablishment: user?.yearOfEstablishment || '',
+        gstin: user?.gstin || '',
+        iecCode: user?.iecCode || '',
+        pan: user?.pan || '',
+        cinLlpIn: user?.cinLlpIn || '',
+        udyamRegistration: user?.udyamRegistration || '',
+        taxVatBusinessReg: user?.taxVatBusinessReg || '',
+        registeredOfficeAddress: user?.registeredOfficeAddress || '',
     });
 
     const [uploading, setUploading] = useState({
@@ -70,7 +82,19 @@ const CustomerProfileTab = () => {
                 phone: formData.phone,
                 company: formData.company,
                 address: formData.country,
-                profilePhoto: formData.profilePhoto
+                profilePhoto: formData.profilePhoto,
+                designation: formData.designation,
+                whatsappNumber: formData.whatsappNumber,
+                businessType: formData.businessType,
+                companyWebsite: formData.companyWebsite,
+                yearOfEstablishment: formData.yearOfEstablishment,
+                gstin: formData.gstin,
+                iecCode: formData.iecCode,
+                pan: formData.pan,
+                cinLlpIn: formData.cinLlpIn,
+                udyamRegistration: formData.udyamRegistration,
+                taxVatBusinessReg: formData.taxVatBusinessReg,
+                registeredOfficeAddress: formData.registeredOfficeAddress
             };
             const res = await updateProfile(payload);
             if (res.success) {
@@ -224,13 +248,33 @@ const CustomerProfileTab = () => {
                                 placeholder="+919801017333"
                             />
                         </div>
+                        <div className="space-y-1.5">
+                            <label className="text-xs font-bold text-[#0B1E43] uppercase tracking-wide">Designation / Job Title</label>
+                            <input 
+                                type="text" 
+                                value={formData.designation}
+                                onChange={(e) => setFormData({ ...formData, designation: e.target.value })}
+                                className="w-full bg-[#f8fafc] border border-slate-200 rounded-xl px-4 py-3 text-xs text-slate-800 focus:outline-none focus:bg-white focus:border-[#0066FF] focus:ring-4 focus:ring-[#0066FF]/5 transition-all font-semibold"
+                                placeholder="e.g. Manager"
+                            />
+                        </div>
+                        <div className="space-y-1.5">
+                            <label className="text-xs font-bold text-[#0B1E43] uppercase tracking-wide">WhatsApp Number</label>
+                            <input 
+                                type="text" 
+                                value={formData.whatsappNumber}
+                                onChange={(e) => setFormData({ ...formData, whatsappNumber: e.target.value })}
+                                className="w-full bg-[#f8fafc] border border-slate-200 rounded-xl px-4 py-3 text-xs text-slate-800 focus:outline-none focus:bg-white focus:border-[#0066FF] focus:ring-4 focus:ring-[#0066FF]/5 transition-all font-semibold"
+                                placeholder="+919801017333"
+                            />
+                        </div>
                     </div>
                 </div>
 
-                {/* SECTION 3: COMPANY & LOCATION */}
+                {/* SECTION 3: BUSINESS DETAILS */}
                 <div className="bg-white rounded-3xl p-6 md:p-8 border border-slate-100 shadow-[0_8px_30px_rgba(11,30,67,0.02)] space-y-6">
                     <h3 className="text-sm font-extrabold text-[#0B1E43] uppercase tracking-wider flex items-center gap-2 border-b border-slate-100 pb-3">
-                        <Landmark size={16} className="text-[#0066FF]" /> Organization & Location
+                        <Landmark size={16} className="text-[#0066FF]" /> Business Details
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                         <div className="space-y-1.5">
@@ -243,8 +287,126 @@ const CustomerProfileTab = () => {
                                 placeholder="e.g. Cepta Global"
                             />
                         </div>
-                        
                         <div className="space-y-1.5">
+                            <label className="text-xs font-bold text-[#0B1E43] uppercase tracking-wide">Business Type</label>
+                            <select 
+                                value={formData.businessType}
+                                onChange={(e) => setFormData({ ...formData, businessType: e.target.value })}
+                                className="w-full bg-[#f8fafc] border border-slate-200 rounded-xl px-4 py-3 text-xs text-slate-800 focus:outline-none focus:bg-white focus:border-[#0066FF] focus:ring-4 focus:ring-[#0066FF]/5 transition-all font-semibold"
+                            >
+                                <option value="">Select Type</option>
+                                <option value="Importer">Importer</option>
+                                <option value="Exporter">Exporter</option>
+                                <option value="Manufacturer">Manufacturer</option>
+                                <option value="Trader">Trader</option>
+                                <option value="E-commerce">E-commerce</option>
+                                <option value="Distributor">Distributor</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        <div className="space-y-1.5">
+                            <label className="text-xs font-bold text-[#0B1E43] uppercase tracking-wide">Company Website</label>
+                            <input 
+                                type="text" 
+                                value={formData.companyWebsite}
+                                onChange={(e) => setFormData({ ...formData, companyWebsite: e.target.value })}
+                                className="w-full bg-[#f8fafc] border border-slate-200 rounded-xl px-4 py-3 text-xs text-slate-800 focus:outline-none focus:bg-white focus:border-[#0066FF] focus:ring-4 focus:ring-[#0066FF]/5 transition-all font-semibold"
+                                placeholder="https://www.example.com"
+                            />
+                        </div>
+                        <div className="space-y-1.5">
+                            <label className="text-xs font-bold text-[#0B1E43] uppercase tracking-wide">Year of Establishment</label>
+                            <input 
+                                type="text" 
+                                value={formData.yearOfEstablishment}
+                                onChange={(e) => setFormData({ ...formData, yearOfEstablishment: e.target.value })}
+                                className="w-full bg-[#f8fafc] border border-slate-200 rounded-xl px-4 py-3 text-xs text-slate-800 focus:outline-none focus:bg-white focus:border-[#0066FF] focus:ring-4 focus:ring-[#0066FF]/5 transition-all font-semibold"
+                                placeholder="e.g. 2015"
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                {/* SECTION 4: TAX & BUSINESS IDENTIFICATION */}
+                <div className="bg-white rounded-3xl p-6 md:p-8 border border-slate-100 shadow-[0_8px_30px_rgba(11,30,67,0.02)] space-y-6">
+                    <h3 className="text-sm font-extrabold text-[#0B1E43] uppercase tracking-wider flex items-center gap-2 border-b border-slate-100 pb-3">
+                        <ShieldCheck size={16} className="text-[#0066FF]" /> Tax & Business Identification
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                        <div className="space-y-1.5">
+                            <label className="text-xs font-bold text-[#0B1E43] uppercase tracking-wide">GSTIN / GST Number</label>
+                            <input 
+                                type="text" 
+                                value={formData.gstin}
+                                onChange={(e) => setFormData({ ...formData, gstin: e.target.value })}
+                                className="w-full bg-[#f8fafc] border border-slate-200 rounded-xl px-4 py-3 text-xs text-slate-800 focus:outline-none focus:bg-white focus:border-[#0066FF] focus:ring-4 focus:ring-[#0066FF]/5 transition-all font-semibold"
+                            />
+                        </div>
+                        <div className="space-y-1.5">
+                            <label className="text-xs font-bold text-[#0B1E43] uppercase tracking-wide">IEC Code</label>
+                            <input 
+                                type="text" 
+                                value={formData.iecCode}
+                                onChange={(e) => setFormData({ ...formData, iecCode: e.target.value })}
+                                className="w-full bg-[#f8fafc] border border-slate-200 rounded-xl px-4 py-3 text-xs text-slate-800 focus:outline-none focus:bg-white focus:border-[#0066FF] focus:ring-4 focus:ring-[#0066FF]/5 transition-all font-semibold"
+                            />
+                        </div>
+                        <div className="space-y-1.5">
+                            <label className="text-xs font-bold text-[#0B1E43] uppercase tracking-wide">PAN</label>
+                            <input 
+                                type="text" 
+                                value={formData.pan}
+                                onChange={(e) => setFormData({ ...formData, pan: e.target.value })}
+                                className="w-full bg-[#f8fafc] border border-slate-200 rounded-xl px-4 py-3 text-xs text-slate-800 focus:outline-none focus:bg-white focus:border-[#0066FF] focus:ring-4 focus:ring-[#0066FF]/5 transition-all font-semibold"
+                            />
+                        </div>
+                        <div className="space-y-1.5">
+                            <label className="text-xs font-bold text-[#0B1E43] uppercase tracking-wide">CIN / LLPIN</label>
+                            <input 
+                                type="text" 
+                                value={formData.cinLlpIn}
+                                onChange={(e) => setFormData({ ...formData, cinLlpIn: e.target.value })}
+                                className="w-full bg-[#f8fafc] border border-slate-200 rounded-xl px-4 py-3 text-xs text-slate-800 focus:outline-none focus:bg-white focus:border-[#0066FF] focus:ring-4 focus:ring-[#0066FF]/5 transition-all font-semibold"
+                            />
+                        </div>
+                        <div className="space-y-1.5">
+                            <label className="text-xs font-bold text-[#0B1E43] uppercase tracking-wide">Udyam Registration</label>
+                            <input 
+                                type="text" 
+                                value={formData.udyamRegistration}
+                                onChange={(e) => setFormData({ ...formData, udyamRegistration: e.target.value })}
+                                className="w-full bg-[#f8fafc] border border-slate-200 rounded-xl px-4 py-3 text-xs text-slate-800 focus:outline-none focus:bg-white focus:border-[#0066FF] focus:ring-4 focus:ring-[#0066FF]/5 transition-all font-semibold"
+                            />
+                        </div>
+                        <div className="space-y-1.5">
+                            <label className="text-xs font-bold text-[#0B1E43] uppercase tracking-wide">Tax / VAT Reg (Intl.)</label>
+                            <input 
+                                type="text" 
+                                value={formData.taxVatBusinessReg}
+                                onChange={(e) => setFormData({ ...formData, taxVatBusinessReg: e.target.value })}
+                                className="w-full bg-[#f8fafc] border border-slate-200 rounded-xl px-4 py-3 text-xs text-slate-800 focus:outline-none focus:bg-white focus:border-[#0066FF] focus:ring-4 focus:ring-[#0066FF]/5 transition-all font-semibold"
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                {/* SECTION 5: ADDRESS & LOCATION */}
+                <div className="bg-white rounded-3xl p-6 md:p-8 border border-slate-100 shadow-[0_8px_30px_rgba(11,30,67,0.02)] space-y-6">
+                    <h3 className="text-sm font-extrabold text-[#0B1E43] uppercase tracking-wider flex items-center gap-2 border-b border-slate-100 pb-3">
+                        <MapPin size={16} className="text-[#0066FF]" /> Address & Location
+                    </h3>
+                    <div className="grid grid-cols-1 gap-5">
+                        <div className="space-y-1.5">
+                            <label className="text-xs font-bold text-[#0B1E43] uppercase tracking-wide">Registered Office / Business Address</label>
+                            <textarea 
+                                value={formData.registeredOfficeAddress}
+                                onChange={(e) => setFormData({ ...formData, registeredOfficeAddress: e.target.value })}
+                                className="w-full bg-[#f8fafc] border border-slate-200 rounded-xl px-4 py-3 text-xs text-slate-800 focus:outline-none focus:bg-white focus:border-[#0066FF] focus:ring-4 focus:ring-[#0066FF]/5 transition-all font-semibold min-h-[80px]"
+                                placeholder="Enter full address"
+                            />
+                        </div>
+                        
+                        <div className="space-y-1.5 md:w-1/2">
                             <CountrySelect
                                 selectedCountry={formData.country}
                                 selectedPhoneCode=""

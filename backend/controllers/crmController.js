@@ -192,6 +192,7 @@ exports.scheduleFollowUp = async (req, res) => {
         }
 
         lead.followUpDate = new Date(followUpDate);
+        lead.status = 'Follow-up'; // Automatically update status
         
         lead.timeline.unshift({
             title: 'Follow-up Scheduled',
@@ -204,5 +205,56 @@ exports.scheduleFollowUp = async (req, res) => {
     } catch (error) {
         console.error('Error scheduling follow-up:', error);
         res.status(500).json({ success: false, message: 'Failed to schedule follow-up' });
+    }
+};
+
+exports.getFollowUps = async (req, res) => {
+    try {
+        const vendorId = req.user.id;
+        
+        // Find all leads with a followUpDate for this vendor
+        const followUpLeads = await CrmLead.find({ 
+            vendor: vendorId, 
+            followUpDate: { $ne: null } 
+        }).sort({ followUpDate: 1 });
+
+        const now = new Date();
+        const todaysFollowUps = [];
+        const missedFollowUps = [];
+
+        for (const lead of followUpLeads) {
+            const fDate = new Date(lead.followUpDate);
+            const timeDiffMinutes = (now.getTime() - fDate.getTime()) / (1000 * 60);
+
+            // If the follow-up is in the past by more than 30 mins
+            if (timeDiffMinutes > 30) {
+                // Check if any timeline event (note, status change) happened AFTER the followUpDate
+                const actionTaken = lead.timeline.some(event => {
+                    const eventDate = new Date(event.date || event.createdAt || now);
+                    return event.type !== 'followup' && eventDate.getTime() > fDate.getTime();
+                });
+
+                if (!actionTaken && !['Closed-Won', 'Closed-Lost'].includes(lead.status)) {
+                    // Update status in DB dynamically if not already set
+                    if (lead.status !== 'Missed Follow-up') {
+                        lead.status = 'Missed Follow-up';
+                        await lead.save();
+                    }
+                    missedFollowUps.push(lead);
+                }
+            } 
+            // If the follow-up is today or in the future
+            else {
+                // Ignore if it's already closed
+                if (!['Closed-Won', 'Closed-Lost'].includes(lead.status)) {
+                    todaysFollowUps.push(lead);
+                }
+            }
+        }
+
+        res.status(200).json({ success: true, todaysFollowUps, missedFollowUps });
+    } catch (error) {
+        console.error('Error fetching follow-ups:', error);
+        res.status(500).json({ success: false, message: 'Failed to fetch follow-ups' });
     }
 };

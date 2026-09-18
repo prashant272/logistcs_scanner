@@ -18,6 +18,27 @@ const CrmContactModal = ({
 }) => {
     const [followUpDate, setFollowUpDate] = useState('');
     const [followUpTime, setFollowUpTime] = useState('');
+    const dateInputRef = React.useRef(null);
+    const timeInputRef = React.useRef(null);
+
+    React.useEffect(() => {
+        if (selectedContactLead?.followUpDate) {
+            const d = new Date(selectedContactLead.followUpDate);
+            // Format YYYY-MM-DD
+            const yyyy = d.getFullYear();
+            const mm = String(d.getMonth() + 1).padStart(2, '0');
+            const dd = String(d.getDate()).padStart(2, '0');
+            setFollowUpDate(`${yyyy}-${mm}-${dd}`);
+            
+            // Format HH:MM
+            const hh = String(d.getHours()).padStart(2, '0');
+            const min = String(d.getMinutes()).padStart(2, '0');
+            setFollowUpTime(`${hh}:${min}`);
+        } else {
+            setFollowUpDate('');
+            setFollowUpTime('');
+        }
+    }, [selectedContactLead]);
 
     if (!selectedContactLead) return null;
 
@@ -27,7 +48,9 @@ const CrmContactModal = ({
         switch(status) {
             case 'New': return 'text-blue-600 bg-blue-50 border-blue-200';
             case 'Contacted': return 'text-purple-600 bg-purple-50 border-purple-200';
-            case 'Negotiating': return 'text-amber-600 bg-amber-50 border-amber-200';
+            case 'Follow-up': return 'text-amber-600 bg-amber-50 border-amber-200';
+            case 'Missed Follow-up': return 'text-rose-600 bg-rose-50 border-rose-200';
+            case 'Negotiating': return 'text-orange-600 bg-orange-50 border-orange-200';
             case 'Closed-Won': return 'text-emerald-600 bg-emerald-50 border-emerald-200';
             case 'Closed-Lost': return 'text-rose-600 bg-rose-50 border-rose-200';
             default: return 'text-slate-600 bg-slate-50 border-slate-200';
@@ -231,26 +254,46 @@ const CrmContactModal = ({
 
                         {/* Follow up */}
                         <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-                            <h3 className="text-sm font-bold text-[#0B1E43] mb-1 flex items-center gap-2">
-                                <Calendar size={16} className="text-blue-600" /> Schedule Follow-up
-                            </h3>
-                            <p className="text-xs text-slate-500 mb-4">Set a follow-up date and time</p>
+                            <div className="flex justify-between items-start mb-4">
+                                <div>
+                                    <h3 className="text-sm font-bold text-[#0B1E43] mb-1 flex items-center gap-2">
+                                        <Calendar size={16} className="text-blue-600" /> Schedule Follow-up
+                                    </h3>
+                                    <p className="text-xs text-slate-500">Set a follow-up date and time</p>
+                                </div>
+                                {selectedContactLead.followUpDate && (
+                                    <div className="text-right">
+                                        <p className="text-[10px] uppercase font-black tracking-widest text-emerald-500 mb-0.5">Current Target</p>
+                                        <p className="text-xs font-bold text-slate-700">
+                                            {new Date(selectedContactLead.followUpDate).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
                             
                             <div className="flex gap-3 mb-3">
-                                <div className="flex-1 relative">
+                                <div 
+                                    className="flex-1 relative cursor-pointer"
+                                    onClick={() => dateInputRef.current?.showPicker && dateInputRef.current.showPicker()}
+                                >
                                     <input 
+                                        ref={dateInputRef}
                                         type="date"
                                         value={followUpDate}
                                         onChange={(e) => setFollowUpDate(e.target.value)}
-                                        className="w-full text-sm font-medium border border-slate-200 rounded-xl px-3 py-2.5 outline-none focus:border-blue-500"
+                                        className="w-full text-sm font-medium border border-slate-200 rounded-xl px-3 py-2.5 outline-none focus:border-blue-500 cursor-pointer pointer-events-none sm:pointer-events-auto"
                                     />
                                 </div>
-                                <div className="flex-1 relative">
+                                <div 
+                                    className="flex-1 relative cursor-pointer"
+                                    onClick={() => timeInputRef.current?.showPicker && timeInputRef.current.showPicker()}
+                                >
                                     <input 
+                                        ref={timeInputRef}
                                         type="time"
                                         value={followUpTime}
                                         onChange={(e) => setFollowUpTime(e.target.value)}
-                                        className="w-full text-sm font-medium border border-slate-200 rounded-xl px-3 py-2.5 outline-none focus:border-blue-500"
+                                        className="w-full text-sm font-medium border border-slate-200 rounded-xl px-3 py-2.5 outline-none focus:border-blue-500 cursor-pointer pointer-events-none sm:pointer-events-auto"
                                     />
                                 </div>
                             </div>
@@ -259,7 +302,7 @@ const CrmContactModal = ({
                                 disabled={!followUpDate || !followUpTime || isUpdating}
                                 className="w-full bg-blue-50 text-blue-600 hover:bg-blue-100 disabled:opacity-50 font-bold text-sm py-2.5 rounded-xl transition-colors flex items-center justify-center gap-2"
                             >
-                                <Calendar size={16} /> Schedule Follow-up
+                                <Calendar size={16} /> Update Follow-up
                             </button>
                         </div>
                     </div>

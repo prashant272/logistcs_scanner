@@ -8,6 +8,7 @@ router.use(protect);
 
 router.post('/', crmController.createLead);
 router.get('/vendor', crmController.getVendorLeads);
+router.get('/vendor/followups', crmController.getFollowUps);
 router.put('/:id/status', crmController.updateLeadStatus);
 router.post('/:id/note', crmController.addTimelineNote);
 router.put('/:id/followup', crmController.scheduleFollowUp);

@@ -2,14 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { User, Plane, Truck, Warehouse, Package, Ship } from 'lucide-react';
 import api from '../../../api/axios';
 import { useAuth } from '../../../context/AuthContext';
+import { useLocation } from 'react-router-dom';
 
 import CrmHeader from './CrmHeader';
 import CrmFilters from './CrmFilters';
 import CrmLeadCard from './CrmLeadCard';
 import CrmDetailModal from './CrmDetailModal';
 import CrmContactModal from './CrmContactModal';
+import FollowupDashboardCards from './FollowupDashboardCards';
 
-const statuses = ['New', 'Contacted', 'Negotiating', 'Closed-Won', 'Closed-Lost'];
+const statuses = ['New', 'Contacted', 'Follow-up', 'Missed Follow-up', 'Negotiating', 'Closed-Won', 'Closed-Lost'];
 
 const VendorCRMTab = () => {
     const { user } = useAuth();
@@ -17,15 +19,21 @@ const VendorCRMTab = () => {
     const [loading, setLoading] = useState(true);
     const [selectedLead, setSelectedLead] = useState(null);
     const [selectedContactLead, setSelectedContactLead] = useState(null);
-    const [newNote, setNewNote] = useState('');
     const [isUpdating, setIsUpdating] = useState(false);
-    
-    // Filters State
+    const [newNote, setNewNote] = useState('');
+
+    const location = useLocation();
+
+    // Filters state
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState('All Status');
     const [modeFilter, setModeFilter] = useState('All Transport Mode');
     const [regionFilter, setRegionFilter] = useState('All Regions');
     const [sortFilter, setSortFilter] = useState('Sort by: Newest');
+
+    // Follow-ups state
+    const [todaysFollowUps, setTodaysFollowUps] = useState([]);
+    const [missedFollowUps, setMissedFollowUps] = useState([]);
 
     const fetchLeads = async () => {
         try {
@@ -47,9 +55,30 @@ const VendorCRMTab = () => {
         }
     };
 
+    const fetchFollowups = async () => {
+        try {
+            const res = await api.get('/crm/vendor/followups');
+            if (res.data.success) {
+                setTodaysFollowUps(res.data.todaysFollowUps);
+                setMissedFollowUps(res.data.missedFollowUps);
+            }
+        } catch (error) {
+            console.error('Failed to fetch followups', error);
+        }
+    };
+
     useEffect(() => {
         fetchLeads();
+        fetchFollowups();
     }, [searchQuery, statusFilter, modeFilter, regionFilter, sortFilter]);
+
+    useEffect(() => {
+        if (location.state?.openContactModalFor) {
+            setSelectedContactLead(location.state.openContactModalFor);
+            // Clear state so it doesn't reopen on refresh
+            window.history.replaceState({}, document.title);
+        }
+    }, [location.state]);
 
     const handleUpdateStatus = async (leadId, newStatus) => {
         setIsUpdating(true);
@@ -113,12 +142,14 @@ const VendorCRMTab = () => {
     // Helper functions passed to children
     const getStatusColor = (status) => {
         switch(status) {
-            case 'New': return 'bg-blue-100 text-blue-600';
-            case 'Contacted': return 'bg-purple-100 text-purple-600';
-            case 'Negotiating': return 'bg-amber-100 text-amber-600';
-            case 'Closed-Won': return 'bg-emerald-100 text-emerald-600';
-            case 'Closed-Lost': return 'bg-rose-100 text-rose-600';
-            default: return 'bg-slate-100 text-slate-600';
+            case 'New': return 'text-blue-600 bg-blue-50 border-blue-200';
+            case 'Contacted': return 'text-purple-600 bg-purple-50 border-purple-200';
+            case 'Follow-up': return 'text-amber-600 bg-amber-50 border-amber-200';
+            case 'Missed Follow-up': return 'text-rose-600 bg-rose-50 border-rose-200';
+            case 'Negotiating': return 'text-orange-600 bg-orange-50 border-orange-200';
+            case 'Closed-Won': return 'text-emerald-600 bg-emerald-50 border-emerald-200';
+            case 'Closed-Lost': return 'text-rose-600 bg-rose-50 border-rose-200';
+            default: return 'text-slate-600 bg-slate-50 border-slate-200';
         }
     };
 
@@ -168,6 +199,12 @@ const VendorCRMTab = () => {
                 sortFilter={sortFilter}
                 setSortFilter={setSortFilter}
                 statuses={statuses}
+            />
+
+            <FollowupDashboardCards 
+                todaysFollowUps={todaysFollowUps} 
+                missedFollowUps={missedFollowUps} 
+                onContactClick={setSelectedContactLead} 
             />
 
             {/* Leads List */}

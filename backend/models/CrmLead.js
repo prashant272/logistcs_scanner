@@ -57,7 +57,7 @@ const crmLeadSchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ['New', 'Contacted', 'Negotiating', 'Closed-Won', 'Closed-Lost'],
+        enum: ['New', 'Contacted', 'Follow-up', 'Missed Follow-up', 'Negotiating', 'Closed-Won', 'Closed-Lost'],
         default: 'New'
     },
     timeline: [timelineSchema],

@@ -100,6 +100,55 @@ const userSchema = new mongoose.Schema({
         type: String,
         default: ''
     },
+    designation: {
+        type: String,
+        default: ''
+    },
+    whatsappNumber: {
+        type: String,
+        default: ''
+    },
+    businessType: {
+        type: String,
+        enum: ['Importer', 'Exporter', 'Manufacturer', 'Trader', 'E-commerce', 'Distributor', 'Other', ''],
+        default: ''
+    },
+    companyWebsite: {
+        type: String,
+        default: ''
+    },
+    yearOfEstablishment: {
+        type: String,
+        default: ''
+    },
+    gstin: {
+        type: String,
+        default: ''
+    },
+    iecCode: {
+        type: String,
+        default: ''
+    },
+    pan: {
+        type: String,
+        default: ''
+    },
+    cinLlpIn: {
+        type: String,
+        default: ''
+    },
+    udyamRegistration: {
+        type: String,
+        default: ''
+    },
+    taxVatBusinessReg: {
+        type: String,
+        default: ''
+    },
+    registeredOfficeAddress: {
+        type: String,
+        default: ''
+    },
     dateOfIncorporation: {
         type: Date
     },

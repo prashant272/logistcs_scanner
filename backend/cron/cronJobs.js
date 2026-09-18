@@ -11,7 +11,7 @@ const initCronJobs = () => {
     // Run every day at midnight (00:00)
     cron.schedule('0 0 * * *', async () => {
         console.log('[CRON] Running daily penalty and reminder checks...');
-        
+
         try {
             const today = new Date();
             today.setHours(0, 0, 0, 0);
@@ -33,10 +33,10 @@ const initCronJobs = () => {
                 // Deduct penalty from wallet
                 const vendor = invoice.vendor;
                 vendor.walletBalance -= PENALTY_AMOUNT_PER_DAY;
-                
+
                 // Deduct credit score (but keep minimum 0)
                 vendor.creditScore = Math.max(0, vendor.creditScore - CREDIT_SCORE_DEDUCTION);
-                
+
                 await vendor.save();
 
                 // Log wallet transaction
@@ -57,9 +57,9 @@ const initCronJobs = () => {
             // Or roughly approaching. We'll find ones where timeline date is tomorrow or day after.
             const upcomingInvoices = await InvoiceRequest.find({
                 status: 'Approved',
-                timelineDate: { 
-                    $gte: today, 
-                    $lte: twoDaysFromNow 
+                timelineDate: {
+                    $gte: today,
+                    $lte: twoDaysFromNow
                 }
             }).populate('vendor');
 
@@ -67,11 +67,11 @@ const initCronJobs = () => {
                 // Determine days left
                 const msDiff = new Date(invoice.timelineDate).getTime() - today.getTime();
                 const daysLeft = Math.ceil(msDiff / (1000 * 3600 * 24));
-                
+
                 if (daysLeft === 2 || daysLeft === 1 || daysLeft === 0) {
                     const timeText = daysLeft === 0 ? 'TODAY' : `in ${daysLeft} day(s)`;
                     const msg = `Reminder: Repayment for invoice ${invoice.lsId} is due ${timeText}.`;
-                    
+
                     await sendNotification(invoice.vendor._id, msg, 'warning', '/vendor/upload-invoice');
                     await sendEmail(invoice.vendor.email, 'Invoice Repayment Reminder', `<p>${msg}</p>`);
                 }
@@ -89,7 +89,7 @@ const initCronJobs = () => {
             const Enquiry = require('../models/Enquiry');
             const { triggerVendorBroadcast } = require('../controllers/enquiryController');
             const now = new Date();
-            
+
             // Find enquiries that are scheduled, not yet broadcasted, and the time has passed
             const pendingBroadcasts = await Enquiry.find({
                 isBroadcasted: false,

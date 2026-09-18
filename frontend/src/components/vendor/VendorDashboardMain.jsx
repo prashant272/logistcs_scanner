@@ -9,7 +9,9 @@ import FinanceSection from './FinanceSection';
 import ComplaintsSection from './ComplaintsSection';
 import UserProfileSection from './UserProfileSection';
 import RelationshipManagerCard from './RelationshipManagerCard';
+import FollowupDashboardCards from './crm/FollowupDashboardCards';
 import { Calendar, RotateCcw, Menu, AlertCircle, Phone, Mail, BellRing, X, Sparkles } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const vendorStatsFetcher = async ([key, filterType, customStart, customEnd]) => {
     const token = localStorage.getItem('userToken');
@@ -83,10 +85,33 @@ const vendorStatsFetcher = async ([key, filterType, customStart, customEnd]) => 
 
 const VendorDashboardMain = () => {
     const { user } = useAuth();
+    const navigate = useNavigate();
     const [filterType, setFilterType] = useState('All Time');
     const [customStart, setCustomStart] = useState('');
     const [customEnd, setCustomEnd] = useState('');
     const [showUpdateModal, setShowUpdateModal] = useState(user?.hasNewUpdate || false);
+
+    const [todaysFollowUps, setTodaysFollowUps] = useState([]);
+    const [missedFollowUps, setMissedFollowUps] = useState([]);
+
+    React.useEffect(() => {
+        const fetchFollowups = async () => {
+            try {
+                const token = localStorage.getItem('userToken');
+                const config = { headers: { Authorization: `Bearer ${token}` } };
+                const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/crm/vendor/followups`, config);
+                if (res.data.success) {
+                    setTodaysFollowUps(res.data.todaysFollowUps);
+                    setMissedFollowUps(res.data.missedFollowUps);
+                }
+            } catch (error) {
+                console.error('Failed to fetch followups', error);
+            }
+        };
+        if (user) {
+            fetchFollowups();
+        }
+    }, [user]);
 
     const { data: stats, isLoading: loadingStats } = useSWR(
         ['vendorDashboardStats', filterType, customStart, customEnd],
@@ -171,6 +196,15 @@ const VendorDashboardMain = () => {
                         </div>
                     </div>
                 </div>
+            )}
+
+            {/* Follow-up Section */}
+            {(vendorStatus === 'Approved' || vendorStatus === 'Pre Approved' || user?.role === 'admin') && (
+                <FollowupDashboardCards 
+                    todaysFollowUps={todaysFollowUps} 
+                    missedFollowUps={missedFollowUps} 
+                    onContactClick={(lead) => navigate('/vendor/crm', { state: { openContactModalFor: lead } })} 
+                />
             )}
 
             {/* Verification Status Warning Card (kept for admin or other edge cases if needed) */}
