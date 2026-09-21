@@ -272,6 +272,13 @@ const PricingPlans = () => {
 
         logActivity('Proceeded to Payment Gateway', { planId, planName, amount });
 
+        const isLoaded = await loadRazorpayScript();
+        if (!isLoaded) {
+            setError('Failed to load Razorpay payment gateway. Please check your internet connection.');
+            setUpgradingId(null);
+            return;
+        }
+
         // Open Razorpay Checkout Modal
         const options = {
             key: keyId,
