@@ -379,13 +379,17 @@ exports.getVendorEnquiries = async (req, res) => {
                     const directOrConditions = [
                         { client: { $in: customerIds }, isPremiumCustomerLead: { $ne: true } },
                         { client: null, isPremiumCustomerLead: { $ne: true } },
-                        { type: 'land', client: { $ne: req.user.id } }, // Includes 'land' enquiries created by vendors
-                        { isPremiumCustomerLead: true, createdAt: { $lte: threeHoursAgo } } // 3-hour fallback for premium leads
+                        { type: 'land', client: { $ne: req.user.id } } // Includes 'land' enquiries created by vendors
                     ];
 
-                    // Free plan vendors get B2B enquiries that are > 3 hours old and not accepted by anyone
+                    // Free plan vendors get B2B enquiries and premium customer leads that are > 3 hours old
                     if (!isPaidPlan) {
                         const vendorIds = await User.find({ role: 'vendor' }).distinct('_id');
+
+                        directOrConditions.push({
+                            isPremiumCustomerLead: true,
+                            createdAt: { $lte: threeHoursAgo }
+                        });
 
                         directOrConditions.push({
                             client: { $in: vendorIds, $ne: req.user.id },
