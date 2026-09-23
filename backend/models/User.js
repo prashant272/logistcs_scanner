@@ -219,6 +219,10 @@ const userSchema = new mongoose.Schema({
         enum: ['Pending', 'Pre Approved', 'Approved', 'Declined'],
         default: 'Pending'
     },
+    preApprovedAmount: {
+        type: Number,
+        default: 0
+    },
     preApprovedAt: {
         type: Date,
         default: null

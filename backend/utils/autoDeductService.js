@@ -17,10 +17,14 @@ exports.processAutoDeductionOnRecharge = async (vendorId, rechargeAmount, paymen
             return { clearedInvoices: [], remainingRecharge: rechargeAmount, totalDeducted: 0, finalBalance: 0 };
         }
 
-        // Find all pending invoices awaiting repayment, sorted by oldest timelineDate / createdAt
+        const endOfToday = new Date();
+        endOfToday.setHours(23, 59, 59, 999);
+
+        // Find all pending invoices awaiting repayment that are due today or overdue
         const pendingInvoices = await InvoiceRequest.find({
             vendor: vendorId,
-            status: { $in: ['Approved', 'Paid', 'Repayment Pending'] }
+            status: { $in: ['Approved', 'Paid', 'Repayment Pending'] },
+            timelineDate: { $lte: endOfToday }
         }).sort({ timelineDate: 1, createdAt: 1 });
 
         let remainingRecharge = parseFloat(rechargeAmount);

@@ -6,7 +6,7 @@ import { Wallet, ArrowDownRight, ArrowUpRight, Loader2, IndianRupee, Clock, Hist
 const WalletLedgerTab = () => {
     const [balance, setBalance] = useState(0);
     const [transactions, setTransactions] = useState([]);
-    const [creditStats, setCreditStats] = useState({ totalPendingDues: 0, totalPenalties: 0, creditScore: 100, pendingCount: 0, scoreAudit: [] });
+    const [creditStats, setCreditStats] = useState({ totalPendingDues: 0, totalPenalties: 0, creditScore: 100, pendingCount: 0, scoreAudit: [], preApprovedAmount: 0 });
     const [scoreModalOpen, setScoreModalOpen] = useState(false);
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
@@ -145,7 +145,8 @@ const WalletLedgerTab = () => {
                     overdueCount: statsRes.data.overdueCount || 0,
                     clearedCount: statsRes.data.clearedCount || 0,
                     scoreAudit: statsRes.data.scoreAudit || [],
-                    pendingInvoices: statsRes.data.pendingInvoices || []
+                    pendingInvoices: statsRes.data.pendingInvoices || [],
+                    preApprovedAmount: statsRes.data.preApprovedAmount || 0
                 });
             }
         } catch (error) {
@@ -307,12 +308,14 @@ const WalletLedgerTab = () => {
                     <div>
                         <div className="flex items-center gap-2 text-blue-200 mb-2">
                             <Wallet size={18} />
-                            <span className="font-bold text-xs tracking-widest uppercase">Available Wallet Limit</span>
+                            <span className="font-bold text-xs tracking-widest uppercase">
+                                {balance <= 0 && creditStats.preApprovedAmount > 0 ? 'Pre-Approved Wallet Limit' : 'Available Wallet Limit'}
+                            </span>
                         </div>
                         <div className="flex items-end gap-1.5 mt-2">
                             <IndianRupee className="w-6 h-6 mb-1 text-blue-300" />
                             <h2 className="text-3xl font-black tracking-tight">
-                                {balance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                {balance > 0 ? balance.toLocaleString('en-IN', { minimumFractionDigits: 2 }) : (creditStats.preApprovedAmount > 0 ? creditStats.preApprovedAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 }) : '0.00')}
                             </h2>
                         </div>
                     </div>

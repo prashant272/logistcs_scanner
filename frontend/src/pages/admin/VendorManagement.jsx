@@ -64,6 +64,20 @@ const VendorManagement = () => {
   const [loadingMore, setLoadingMore] = useState(false);
   const [downloadingExcel, setDownloadingExcel] = useState(false);
 
+  // Bulk Upload State
+  const fileInputRef = React.useRef(null);
+  const [bulkVendorsData, setBulkVendorsData] = useState([]);
+  const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
+  const [bulkLimitType, setBulkLimitType] = useState('preApproved'); // 'preApproved' or 'walletBalance'
+  const [bulkUploading, setBulkUploading] = useState(false);
+  
+  // Column Mapping State
+  const [isColumnMappingModalOpen, setIsColumnMappingModalOpen] = useState(false);
+  const [bulkRawData, setBulkRawData] = useState([]);
+  const [bulkHeaders, setBulkHeaders] = useState([]);
+  const [selectedEmailColumn, setSelectedEmailColumn] = useState('');
+  const [selectedAmountColumn, setSelectedAmountColumn] = useState('');
+
   // Add Vendor Modal State
   const [showAddModal, setShowAddModal] = useState(false);
   const [addingVendor, setAddingVendor] = useState(false);
@@ -348,6 +362,26 @@ const VendorManagement = () => {
       // Revert Optimistic Update on failure
       setVendors(previousVendors);
       alert('Failed to update status');
+    }
+  };
+
+  const handleSetPreApprovedLimit = async (vendorId, currentAmount) => {
+    const amountStr = window.prompt("Enter the pre-approved wallet limit for this vendor (₹):", currentAmount || "0");
+    if (amountStr === null) return; // User cancelled
+    const preApprovedAmount = Number(amountStr) || 0;
+
+    // Optimistic Update
+    const previousVendors = [...vendors];
+    setVendors(prev => prev.map(v => v._id === vendorId ? { ...v, preApprovedAmount } : v));
+
+    try {
+      const token = sessionStorage.getItem('adminToken');
+      const config = { headers: { Authorization: `Bearer ${token}` } };
+      await axios.put(`${import.meta.env.VITE_API_BASE_URL}/admin/vendors/${vendorId}/pre-approve-wallet`, { amount: preApprovedAmount }, config);
+    } catch (err) {
+      console.error('Update limit failed:', err);
+      setVendors(previousVendors);
+      alert(err.response?.data?.message || 'Failed to update pre-approved limit');
     }
   };
 
@@ -705,27 +739,161 @@ const VendorManagement = () => {
     }
   };
 
+  const handleFileUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      try {
+        const bstr = evt.target.result;
+        const workbook = XLSX.read(bstr, { type: 'binary' });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const data = XLSX.utils.sheet_to_json(worksheet, { defval: "" }); // defval to ensure all keys exist
+        if (data.length === 0) {
+          alert("The Excel file is empty.");
+          return;
+        }
+
+        // Extract headers from the first row or from the sheet itself
+        // Because of defval: "", Object.keys(data[0]) is reliable
+        const headers = Object.keys(data[0]);
+        
+        setBulkHeaders(headers);
+        setBulkRawData(data);
+
+        // Auto-detect columns
+        const autoEmail = headers.find(h => h.toLowerCase().includes('email')) || '';
+        const autoAmount = headers.find(h => h.toLowerCase().includes('amount') || h.toLowerCase().includes('limit')) || '';
+        
+        setSelectedEmailColumn(autoEmail);
+        setSelectedAmountColumn(autoAmount);
+        
+        setIsColumnMappingModalOpen(true);
+      } catch (err) {
+        console.error("Excel parse error:", err);
+        alert("Failed to read the Excel file.");
+      }
+    };
+    reader.readAsBinaryString(file);
+    e.target.value = null; // reset input
+  };
+
+  const handleColumnMappingSubmit = () => {
+    if (!selectedEmailColumn) {
+      alert("Please select the Email column to proceed.");
+      return;
+    }
+
+    const extracted = bulkRawData.map(row => {
+      const email = row[selectedEmailColumn];
+      const amountRaw = selectedAmountColumn ? row[selectedAmountColumn] : null;
+      // Clean amount: remove commas, currency symbols, etc.
+      let amount = null;
+      if (amountRaw !== null && amountRaw !== "") {
+          const cleanAmount = String(amountRaw).replace(/[^0-9.]/g, '');
+          amount = cleanAmount ? Number(cleanAmount) : null;
+      }
+      return { email, amount };
+    }).filter(item => item.email && String(item.email).trim() !== "");
+
+    if (extracted.length === 0) {
+      alert("No valid emails found in the selected column.");
+      return;
+    }
+
+    setBulkVendorsData(extracted);
+    setIsColumnMappingModalOpen(false);
+    setIsBulkModalOpen(true);
+  };
+
+  const handleBulkSubmit = async () => {
+    try {
+      setBulkUploading(true);
+      const token = sessionStorage.getItem('adminToken');
+      const config = { headers: { Authorization: `Bearer ${token}` } };
+      
+      const payload = {
+        limitType: bulkLimitType,
+        vendors: bulkVendorsData.map(v => ({
+          email: v.email,
+          amount: v.amount !== null ? v.amount : 500000
+        }))
+      };
+
+      const { data } = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/admin/vendors/bulk-verify`, payload, config);
+      alert(data.message || "Bulk verification successful");
+      setIsBulkModalOpen(false);
+      handleRefresh(); // Refresh table
+    } catch (error) {
+      console.error("Bulk upload error:", error);
+      alert(error.response?.data?.message || "Failed to bulk verify vendors");
+    } finally {
+      setBulkUploading(false);
+    }
+  };
+
   const filteredVendors = vendors;
 
   return (
     <div className="space-y-6">
       {/* Header Panel */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-black text-[#0B1E43] tracking-tight">Vendor Management</h1>
-          <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mt-0.5">Manage transport partners, view certificates, verify status, and login to dashboards</p>
+      <div className="flex flex-col gap-5">
+        {/* Top Row: Title & Action Buttons */}
+        <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4">
+          <div>
+            <h1 className="text-2xl font-black text-[#0B1E43] tracking-tight">Vendor Management</h1>
+            <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mt-0.5 max-w-xl leading-relaxed">
+              Manage transport partners, view certificates, verify status, and login to dashboards
+            </p>
+          </div>
+          
+          <div className="flex flex-wrap items-center gap-3 shrink-0">
+            <input 
+              type="file" 
+              ref={fileInputRef} 
+              onChange={handleFileUpload} 
+              accept=".xlsx, .xls, .csv" 
+              className="hidden" 
+            />
+            <button
+              onClick={() => fileInputRef.current.click()}
+              className="px-4 py-2.5 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-xl transition-all shadow-sm font-bold flex items-center gap-2 text-xs"
+            >
+              <Upload size={16} />
+              Upload Excel
+            </button>
+  
+            <button
+              onClick={handleDownloadExcel}
+              disabled={downloadingExcel}
+              className="px-4 py-2.5 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white rounded-xl transition-all shadow-sm font-bold flex items-center gap-2 text-xs"
+            >
+              {downloadingExcel ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
+              Download Excel
+            </button>
+  
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="px-4 py-2.5 bg-[#0066FF] hover:bg-blue-600 text-white rounded-xl transition-all shadow-sm font-bold flex items-center gap-2 text-xs"
+            >
+              <Plus size={16} /> Add Vendor
+            </button>
+          </div>
         </div>
 
-        <div className="flex items-center gap-3 w-full md:w-auto">
+        {/* Bottom Row: Filters Bar */}
+        <div className="flex flex-wrap items-center gap-3 bg-white p-3 rounded-2xl border border-slate-200/80 shadow-[0_8px_30px_rgba(11,30,67,0.02)]">
           {/* Search Bar */}
-          <div className="relative w-full md:w-64">
+          <div className="relative flex-1 min-w-[200px]">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
             <input
               type="text"
               placeholder="Search vendor..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-white border border-slate-200/80 rounded-xl pl-10 pr-4 py-2.5 text-xs text-slate-700 font-bold focus:outline-none focus:border-[#0066FF] focus:ring-1 focus:ring-[#0066FF] transition-all placeholder:text-slate-400 shadow-sm"
+              className="w-full bg-slate-50 border border-slate-200/80 rounded-xl pl-10 pr-4 py-2 text-xs text-slate-700 font-bold focus:outline-none focus:bg-white focus:border-[#0066FF] focus:ring-1 focus:ring-[#0066FF] transition-all placeholder:text-slate-400"
             />
           </div>
 
@@ -733,11 +901,12 @@ const VendorManagement = () => {
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="bg-white border border-slate-200/80 rounded-xl px-4 py-2.5 text-xs text-slate-700 font-bold focus:outline-none focus:border-[#0066FF] focus:ring-1 focus:ring-[#0066FF] transition-all shadow-sm cursor-pointer"
+            className="bg-slate-50 hover:bg-slate-100 focus:bg-white border border-slate-200/80 rounded-xl px-4 py-2 text-xs text-slate-700 font-bold focus:outline-none focus:border-[#0066FF] focus:ring-1 focus:ring-[#0066FF] transition-all cursor-pointer min-w-[140px]"
           >
             <option value="All Status">All Status</option>
             <option value="Approved">Approved</option>
             <option value="Pre Approved">Pre Approved</option>
+            <option value="Pre-Approved Wallet">Pre-Approved Wallet</option>
             <option value="Declined">Declined</option>
             <option value="Pending">Pending</option>
             <option value="Login">Login</option>
@@ -746,10 +915,10 @@ const VendorManagement = () => {
           </select>
 
           {/* Service Filter Multi-Select */}
-          <div className="relative">
+          <div className="relative min-w-[140px]">
             <button
               onClick={() => setShowServiceDropdown(!showServiceDropdown)}
-              className="bg-white border border-slate-200/80 rounded-xl px-4 py-2.5 text-xs text-slate-700 font-bold focus:outline-none focus:border-[#0066FF] focus:ring-1 focus:ring-[#0066FF] transition-all shadow-sm cursor-pointer flex items-center justify-between gap-2 min-w-[140px]"
+              className="w-full bg-slate-50 hover:bg-slate-100 focus:bg-white border border-slate-200/80 rounded-xl px-4 py-2 text-xs text-slate-700 font-bold focus:outline-none focus:border-[#0066FF] focus:ring-1 focus:ring-[#0066FF] transition-all cursor-pointer flex items-center justify-between gap-2"
             >
               <span className="truncate">
                 {serviceFilter.length === 0 ? 'All Services' : `${serviceFilter.length} Selected`}
@@ -776,26 +945,10 @@ const VendorManagement = () => {
 
           <button
             onClick={handleRefresh}
-            className="p-2.5 bg-white border border-slate-200/80 hover:bg-slate-50 text-slate-650 rounded-xl transition-all cursor-pointer shadow-sm"
+            className="p-2 bg-slate-50 border border-slate-200/80 hover:bg-slate-100 text-slate-650 rounded-xl transition-all cursor-pointer"
             title="Refresh Vendors"
           >
-            <RefreshCw size={18} className={loading ? "animate-spin text-[#0066FF]" : ""} />
-          </button>
-
-          <button
-            onClick={handleDownloadExcel}
-            disabled={downloadingExcel}
-            className="px-4 py-2.5 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white rounded-xl transition-all shadow-sm font-bold flex items-center gap-2 text-xs"
-          >
-            {downloadingExcel ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
-            Download Excel
-          </button>
-
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="px-4 py-2.5 bg-[#0066FF] hover:bg-blue-600 text-white rounded-xl transition-all shadow-sm font-bold flex items-center gap-2 text-xs"
-          >
-            <Plus size={16} /> Add Vendor
+            <RefreshCw size={16} className={loading ? "animate-spin text-[#0066FF]" : ""} />
           </button>
         </div>
       </div>
@@ -829,6 +982,7 @@ const VendorManagement = () => {
                   <th className="p-4 text-center">Edit</th>
                   <th className="p-4 text-center">Credit</th>
                   <th className="p-4 text-center">Wallet</th>
+                  <th className="p-4 text-center">Pre-Approved Wallet</th>
                   <th className="p-4">First Name</th>
                   <th className="p-4">Last Name</th>
                   <th className="p-4">Email</th>
@@ -926,6 +1080,19 @@ const VendorManagement = () => {
                           <Wallet size={13} className="text-emerald-600" />
                           <span>₹{(vendor.walletBalance || 0).toLocaleString('en-IN')}</span>
                         </button>
+                      </td>
+                      <td className="p-4 text-center">
+                        {vendor.verificationStatus === 'Approved' ? (
+                          <button
+                            onClick={() => handleSetPreApprovedLimit(vendor._id, vendor.preApprovedAmount)}
+                            className="bg-blue-50 hover:bg-blue-100 text-blue-700 text-[10px] font-black px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 mx-auto cursor-pointer transition-all border border-blue-200 whitespace-nowrap"
+                            title="Set Pre-Approved Wallet Limit"
+                          >
+                            {vendor.preApprovedAmount > 0 ? `₹${vendor.preApprovedAmount.toLocaleString('en-IN')}` : 'Set Limit'}
+                          </button>
+                        ) : (
+                          <span className="text-[10px] text-slate-400 font-bold whitespace-nowrap">Approve First</span>
+                        )}
                       </td>
                       <td className="p-4 text-slate-800">{firstName}</td>
                       <td className="p-4 text-slate-800">{lastName}</td>
@@ -1164,6 +1331,145 @@ const VendorManagement = () => {
         </div>
       )}
       {/* Add Vendor Modal */}
+      {/* Column Mapping Modal */}
+      {isColumnMappingModalOpen && (
+        <div className="fixed inset-0 bg-[#0B1E43]/60 backdrop-blur-sm flex items-center justify-center p-4 z-[65]">
+          <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl flex flex-col">
+            <div className="bg-gradient-to-r from-[#0B1E43] to-[#1a3668] p-6 flex justify-between items-center text-white">
+              <div>
+                <h2 className="text-xl font-black tracking-tight">Map Excel Columns</h2>
+                <p className="text-blue-200 text-xs font-medium mt-1">Select which columns match our required fields</p>
+              </div>
+              <button onClick={() => setIsColumnMappingModalOpen(false)} className="text-blue-200 hover:text-white transition-colors bg-white/5 hover:bg-white/10 p-2 rounded-xl">
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-5">
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-slate-700 flex items-center gap-1">
+                  Email Column <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={selectedEmailColumn}
+                  onChange={(e) => setSelectedEmailColumn(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 text-slate-900 font-medium rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#0066FF]/20 focus:border-[#0066FF] transition-all"
+                >
+                  <option value="" disabled>Select Email Column</option>
+                  {bulkHeaders.map(h => <option key={h} value={h}>{h}</option>)}
+                </select>
+                <p className="text-[10px] text-slate-500">This column must contain the vendor's registered email address.</p>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-slate-700">
+                  Amount / Limit Column <span className="text-slate-400 font-normal">(Optional)</span>
+                </label>
+                <select
+                  value={selectedAmountColumn}
+                  onChange={(e) => setSelectedAmountColumn(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 text-slate-900 font-medium rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#0066FF]/20 focus:border-[#0066FF] transition-all"
+                >
+                  <option value="">-- No Amount Column (Will default to 5,00,000) --</option>
+                  {bulkHeaders.map(h => <option key={h} value={h}>{h}</option>)}
+                </select>
+                <p className="text-[10px] text-slate-500">If left blank, all extracted vendors will receive the default 5,00,000 limit.</p>
+              </div>
+            </div>
+
+            <div className="p-6 border-t border-slate-100 bg-slate-50 flex justify-end gap-3">
+              <button 
+                onClick={() => setIsColumnMappingModalOpen(false)}
+                className="px-6 py-2.5 text-sm font-bold text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 hover:text-slate-900 rounded-xl transition-all shadow-sm"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleColumnMappingSubmit}
+                disabled={!selectedEmailColumn}
+                className="px-6 py-2.5 text-sm font-black text-white bg-[#0066FF] hover:bg-blue-600 hover:shadow-lg hover:shadow-blue-500/25 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                Next Step <ChevronDown size={16} className="-rotate-90" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Verification Modal */}
+      {isBulkModalOpen && (
+        <div className="fixed inset-0 bg-[#0B1E43]/60 backdrop-blur-sm flex items-center justify-center p-4 z-[60]">
+          <div className="bg-white rounded-3xl w-full max-w-3xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+            <div className="bg-gradient-to-r from-[#0B1E43] to-[#1a3668] p-6 flex justify-between items-center text-white shrink-0">
+              <div>
+                <h2 className="text-xl font-black tracking-tight flex items-center gap-2">Bulk Verify Vendors</h2>
+                <p className="text-blue-200 text-xs font-medium mt-1">Review extracted vendors and choose limit type</p>
+              </div>
+              <button onClick={() => setIsBulkModalOpen(false)} className="text-blue-200 hover:text-white transition-colors bg-white/5 hover:bg-white/10 p-2 rounded-xl">
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className="p-6 overflow-y-auto flex-1 space-y-4">
+              <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-bold text-blue-900">Limit Destination</h3>
+                  <p className="text-xs text-blue-700 mt-1">Choose where the extracted limit should be applied for these vendors.</p>
+                </div>
+                <select
+                  value={bulkLimitType}
+                  onChange={(e) => setBulkLimitType(e.target.value)}
+                  className="bg-white border border-blue-200 text-blue-900 font-bold rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="preApproved">Pre-Approved Limit</option>
+                  <option value="walletBalance">Actual Wallet Balance</option>
+                </select>
+              </div>
+
+              <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden">
+                <table className="w-full text-left">
+                  <thead className="bg-slate-50 text-slate-500 uppercase text-[10px] font-black tracking-widest border-b border-slate-200">
+                    <tr>
+                      <th className="px-4 py-3">#</th>
+                      <th className="px-4 py-3">Email</th>
+                      <th className="px-4 py-3 text-right">Limit Assigned (₹)</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {bulkVendorsData.map((v, i) => (
+                      <tr key={i} className="hover:bg-slate-50/50">
+                        <td className="px-4 py-3 text-xs text-slate-400 font-bold">{i + 1}</td>
+                        <td className="px-4 py-3 text-sm text-slate-700 font-medium">{v.email}</td>
+                        <td className="px-4 py-3 text-sm font-bold text-[#0066FF] text-right">
+                          {v.amount !== null ? v.amount.toLocaleString('en-IN') : <span className="text-amber-500">5,00,000 (Default)</span>}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div className="p-6 border-t border-slate-100 bg-slate-50 flex justify-end gap-3 shrink-0">
+              <button 
+                onClick={() => setIsBulkModalOpen(false)}
+                className="px-6 py-2.5 text-sm font-bold text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 hover:text-slate-900 rounded-xl transition-all shadow-sm"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleBulkSubmit}
+                disabled={bulkUploading}
+                className="px-6 py-2.5 text-sm font-black text-white bg-[#0066FF] hover:bg-blue-600 hover:shadow-lg hover:shadow-blue-500/25 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                {bulkUploading ? <Loader2 size={18} className="animate-spin" /> : <CheckCircle2 size={18} />}
+                Confirm & Process ({bulkVendorsData.length})
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showAddModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">

@@ -19,6 +19,39 @@ const initCronJobs = () => {
             const twoDaysFromNow = new Date(today);
             twoDaysFromNow.setDate(today.getDate() + 2);
 
+            // 0. Auto-Pay Due Invoices from Wallet (if balance sufficient)
+            const dueInvoicesToAutoPay = await InvoiceRequest.find({
+                status: 'Approved',
+                timelineDate: { $lte: today }
+            }).populate('vendor');
+
+            for (let invoice of dueInvoicesToAutoPay) {
+                const vendor = invoice.vendor;
+                const baseAmount = invoice.approvedAmount || invoice.amount || 0;
+                const fee = invoice.processingFee || 0;
+                const penalty = invoice.penaltyAmount || 0;
+                const totalDue = baseAmount + fee + penalty;
+
+                if (vendor.walletBalance >= totalDue) {
+                    invoice.status = 'Cleared';
+                    await invoice.save();
+
+                    vendor.walletBalance -= totalDue;
+                    vendor.creditScore = Math.min(100, (vendor.creditScore || 100) + 5);
+                    await vendor.save();
+
+                    await WalletTransaction.create({
+                        user: vendor._id,
+                        type: 'debit',
+                        amount: totalDue,
+                        description: `Auto-paid Invoice (LS ID: ${invoice.lsId}) on due date`
+                    });
+
+                    await sendNotification(vendor._id, `Invoice ${invoice.lsId} (₹${totalDue}) was auto-paid from your wallet balance. Credit score +5.`, 'success', '/vendor/upload-invoice');
+                    await sendEmail(vendor.email, 'Invoice Auto-Paid', `<p>Invoice ${invoice.lsId} (₹${totalDue}) was auto-paid from your wallet balance.</p>`);
+                }
+            }
+
             // 1. Process Penalties (Timeline Date is in the past)
             const overdueInvoices = await InvoiceRequest.find({
                 status: 'Approved',

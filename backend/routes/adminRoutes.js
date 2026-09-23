@@ -11,6 +11,8 @@ const {
     adminUnacceptEnquiry,
     impersonateVendor,
     toggleVendorVerification,
+    bulkVerifyVendors,
+    setPreApprovedWallet,
     adminGetVendorPricing,
     adminAddPricing,
     adminTogglePricingStatus,
@@ -51,6 +53,8 @@ router.put("/vendor-history/:vendorId/unaccept/:enquiryId", auth, adminUnacceptE
 router.get("/guest-history", auth, getGuestHistory);
 router.get("/impersonate/:vendorId", auth, impersonateVendor);
 router.put("/vendors/:id/verify", auth, toggleVendorVerification);
+router.post("/vendors/bulk-verify", auth, bulkVerifyVendors);
+router.put("/vendors/:id/pre-approve-wallet", auth, setPreApprovedWallet);
 router.post("/vendors/:id/verify-documents", auth, verifyVendorDocuments);
 router.put("/vendors/:id/credit", auth, updateVendorCreditDays);
 router.put("/vendors/:id/enquiry-limit", auth, updateVendorEnquiryLimit);

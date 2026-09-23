@@ -37,14 +37,20 @@ const VendorHeader = ({ isSidebarOpen, setSidebarOpen, user, logout, searchQuery
                         onClick={() => navigate('/vendor/wallet-ledger')}
                         className={`flex items-center gap-2 px-4 py-2 rounded-xl border cursor-pointer transition-colors hover:shadow-sm ${user.walletBalance && user.walletBalance > 0
                                 ? 'bg-emerald-50 border-emerald-100 hover:bg-emerald-100'
-                                : 'bg-red-50 border-red-100 hover:bg-red-100'
+                                : (user.preApprovedAmount > 0 
+                                    ? 'bg-blue-50 border-blue-100 hover:bg-blue-100'
+                                    : 'bg-red-50 border-red-100 hover:bg-red-100')
                             }`}
                         title="Click to view wallet ledger"
                     >
                         <span className="text-[9px] font-black text-slate-550 uppercase tracking-wider">Available Wallet:</span>
-                        <span className={`text-xs font-black ${user.walletBalance && user.walletBalance > 0 ? 'text-emerald-600' : 'text-red-650'
+                        <span className={`text-[11px] font-black ${user.walletBalance && user.walletBalance > 0 ? 'text-emerald-600' : (user.preApprovedAmount > 0 ? 'text-blue-600' : 'text-red-650')
                             }`}>
-                            {user.walletBalance && user.walletBalance > 0 ? `₹${user.walletBalance.toLocaleString('en-IN')}` : 'Not Approved'}
+                            {user.walletBalance && user.walletBalance > 0 
+                                ? `₹${user.walletBalance.toLocaleString('en-IN')}` 
+                                : (user.preApprovedAmount > 0 
+                                    ? `Pre-Approved ₹${user.preApprovedAmount.toLocaleString('en-IN')}` 
+                                    : 'Not Approved')}
                         </span>
                     </div>
                 )}

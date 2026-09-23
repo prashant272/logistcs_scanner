@@ -637,8 +637,10 @@ exports.getVendorEnquiries = async (req, res) => {
             if (hasActivePlan && currentUser.activePlan && currentUser.activePlan.inquiryLimit) {
                 inquiryLimit = currentUser.activePlan.inquiryLimit;
             }
+            
+            let topupLimit = 0;
             if (!currentUser.topupPlanEndDate || new Date(currentUser.topupPlanEndDate) > new Date()) {
-                inquiryLimit += (currentUser.topupEnquiryLimit || 0);
+                topupLimit = currentUser.topupEnquiryLimit || 0;
             }
 
             const isPaidPlan = hasActivePlan && currentUser.activePlan && currentUser.activePlan.price > 0;
@@ -665,7 +667,7 @@ exports.getVendorEnquiries = async (req, res) => {
             });
 
 
-            if (acceptedCount >= inquiryLimit) {
+            if (acceptedCount >= inquiryLimit && topupLimit <= 0) {
                 isLimitReached = true;
                 res.setHeader('X-Limit-Reached', 'true');
                 res.setHeader('Access-Control-Expose-Headers', 'X-Limit-Reached');
@@ -731,9 +733,10 @@ exports.updateEnquiryStatus = async (req, res) => {
                 inquiryLimit = vendorUser.activePlan.inquiryLimit;
             }
 
-            // Add top-up limit if active (or if manually granted without an expiry date)
+            // Check top-up limit if active (or if manually granted without an expiry date)
+            let topupLimit = 0;
             if (!vendorUser.topupPlanEndDate || new Date(vendorUser.topupPlanEndDate) > new Date()) {
-                inquiryLimit += (vendorUser.topupEnquiryLimit || 0);
+                topupLimit = vendorUser.topupEnquiryLimit || 0;
             }
 
             let limitStartDate = new Date();
@@ -767,10 +770,16 @@ exports.updateEnquiryStatus = async (req, res) => {
                 });
 
                 if (acceptedCount >= inquiryLimit) {
-                    const period = !isPaidPlan ? 'year' : 'month';
-                    return res.status(403).json({
-                        message: `${period === 'year' ? 'Yearly' : 'Monthly'} limit reached. You can only accept/quote ${inquiryLimit} enquiries per ${period} on your current plan. Please upgrade your plan.`
-                    });
+                    if (topupLimit > 0) {
+                        // Consume 1 topup limit
+                        vendorUser.topupEnquiryLimit -= 1;
+                        await vendorUser.save();
+                    } else {
+                        const period = !isPaidPlan ? 'year' : 'month';
+                        return res.status(403).json({
+                            message: `${period === 'year' ? 'Yearly' : 'Monthly'} limit reached and top-ups exhausted. Please upgrade your plan or purchase a new top-up.`
+                        });
+                    }
                 }
             }
         }
@@ -1389,14 +1398,14 @@ const triggerVendorBroadcast = async (enquiryId) => {
                     } else if (isFreeChinaVendor) {
                         if (vendorUser.phone) {
                             const vendorName = vendorUser.company || vendorUser.name || 'Vendor';
-                            console.log(`[CHINA VENDOR WHATSAPP] Sending WhatsApp to free China vendor: ${vendorName} (${vendorUser.email}) - Phone: ${vendorUser.phone}`);
-                            sendNewEnquiryVendorWhatsApp(vendorUser.phone, {
-                                cargoType: sanitizedType,
-                                pickupCity: fromLocation,
-                                destinationCity: toLocation
-                            }, vendorName, vendorUser.country || '')
-                                .then(() => console.log(`[CHINA VENDOR WHATSAPP] Successfully sent to ${vendorName}`))
-                                .catch(err => console.error(`[CHINA VENDOR WHATSAPP] Error sending to ${vendorName}:`, err));
+                            console.log(`[CHINA VENDOR WHATSAPP] Skipped WhatsApp to free China vendor as per request: ${vendorName} (${vendorUser.email}) - Phone: ${vendorUser.phone}`);
+                            // sendNewEnquiryVendorWhatsApp(vendorUser.phone, {
+                            //     cargoType: sanitizedType,
+                            //     pickupCity: fromLocation,
+                            //     destinationCity: toLocation
+                            // }, vendorName, vendorUser.country || '')
+                            //     .then(() => console.log(`[CHINA VENDOR WHATSAPP] Successfully sent to ${vendorName}`))
+                            //     .catch(err => console.error(`[CHINA VENDOR WHATSAPP] Error sending to ${vendorName}:`, err));
                         } else {
                             console.log(`[CHINA VENDOR WHATSAPP] Skipped free China vendor (No phone number): ${vendorUser.company || vendorUser.name}`);
                         }

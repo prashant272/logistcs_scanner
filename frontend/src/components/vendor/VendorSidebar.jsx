@@ -11,7 +11,7 @@ import {
 const VendorSidebar = ({ isSidebarOpen, logout, user }) => {
     const location = useLocation();
 
-    const isPending = user && user.role !== 'admin' && user.verificationStatus !== 'Approved' && user.verificationStatus !== 'Pre Approved';
+    const isPending = user && user.role !== 'admin' && user.verificationStatus !== 'Approved' && fuser.verificationStatus !== 'Pre Approved';
 
     const fetchEnquiryCount = async (type) => {
         const token = localStorage.getItem('userToken');
@@ -102,7 +102,7 @@ const VendorSidebar = ({ isSidebarOpen, logout, user }) => {
         },
         { 
             type: 'group', 
-            label: 'Avail 30 Day Credit',
+            label: user?.preApprovedAmount > 0 ? `Avail now Pre-Approved ₹${user.preApprovedAmount.toLocaleString('en-IN')} Credit for 30 Days` : 'Avail 30 Day Credit',
             isSpecial: true,
             hideForPtl: true,
             items: [

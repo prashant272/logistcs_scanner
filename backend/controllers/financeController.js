@@ -844,6 +844,7 @@ exports.getVendorCreditStats = async (req, res) => {
 
         res.status(200).json({
             walletBalance: user.walletBalance || 0,
+            preApprovedAmount: user.preApprovedAmount || 0,
             creditScore: calculatedScore,
             creditRating,
             totalPendingDues,

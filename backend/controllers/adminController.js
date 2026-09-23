@@ -80,6 +80,8 @@ exports.getVendors = async (req, res) => {
                 query.$or = [{ verificationStatus: 'Pending' }, { isVerified: false, verificationStatus: { $nin: ['Approved', 'Declined', 'Pending', 'Pre Approved'] } }];
             } else if (statusFilter === 'Pre Approved') {
                 query.verificationStatus = 'Pre Approved';
+            } else if (statusFilter === 'Pre-Approved Wallet') {
+                query.preApprovedAmount = { $gt: 0 };
             } else if (statusFilter === 'Login') {
                 const startOfDay = new Date();
                 startOfDay.setHours(0, 0, 0, 0);
@@ -439,6 +441,72 @@ exports.toggleVendorVerification = async (req, res) => {
         await sendVendorStatusUpdateEmail(vendor.email, vendor.name, vendor.isVerified);
 
         res.json(vendor);
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
+
+// @desc    Bulk Verify & Set Limit for Vendors via Excel
+// @route   POST /api/admin/vendors/bulk-verify
+// @access  Private
+exports.bulkVerifyVendors = async (req, res) => {
+    try {
+        const { vendors, limitType } = req.body;
+        if (!Array.isArray(vendors)) {
+            return res.status(400).json({ message: 'Invalid data format' });
+        }
+
+        let updatedCount = 0;
+        let notFoundCount = 0;
+
+        for (const vData of vendors) {
+            const { email, amount } = vData;
+            if (!email) continue;
+            
+            // Search case-insensitively
+            const vendor = await User.findOne({ email: new RegExp('^' + email.trim() + '$', 'i'), role: 'vendor' });
+            if (!vendor) {
+                notFoundCount++;
+                continue;
+            }
+
+            vendor.isVerified = true;
+            vendor.verificationStatus = 'Approved';
+            if (!vendor.approvedAt) vendor.approvedAt = new Date();
+
+            const finalAmount = Number(amount) || 500000;
+            if (limitType === 'preApproved') {
+                vendor.preApprovedAmount = finalAmount;
+            } else {
+                vendor.walletBalance = finalAmount;
+            }
+
+            await vendor.save();
+            updatedCount++;
+        }
+
+        res.json({ message: `Successfully verified and updated ${updatedCount} vendors. (${notFoundCount} emails not found)` });
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
+
+// @desc    Set Pre-approved wallet limit for vendor
+// @route   PUT /api/admin/vendors/:id/pre-approve-wallet
+// @access  Private
+exports.setPreApprovedWallet = async (req, res) => {
+    try {
+        const { amount } = req.body;
+        const vendor = await User.findById(req.params.id);
+        if (!vendor || vendor.role !== 'vendor') {
+            return res.status(404).json({ message: 'Vendor not found' });
+        }
+        if (vendor.verificationStatus !== 'Approved') {
+            return res.status(400).json({ message: 'Vendor must be approved to receive a pre-approved wallet limit' });
+        }
+        vendor.preApprovedAmount = Number(amount) || 0;
+        await vendor.save();
+        res.json({ message: 'Pre-approved limit set successfully', preApprovedAmount: vendor.preApprovedAmount });
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
     }
