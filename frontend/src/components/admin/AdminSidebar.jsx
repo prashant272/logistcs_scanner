@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import {
     LayoutDashboard, User, Truck, DollarSign, PlusCircle, MapPin,
     Percent, FileText, UserPlus, Users, FileSpreadsheet, Globe,
-    TrendingUp, AlertCircle, Settings, ChevronDown, ChevronRight, LogOut, CreditCard, ShieldAlert
+    TrendingUp, AlertCircle, Settings, ChevronDown, ChevronRight, LogOut, CreditCard, ShieldAlert, Mail
 } from 'lucide-react';
 
 const AdminSidebar = ({ isSidebarOpen, logout }) => {
@@ -54,6 +54,12 @@ const AdminSidebar = ({ isSidebarOpen, logout }) => {
             category: 'Manage Enquiries',
             items: [
                 { name: 'All Enquiries', path: '/admin/enquiries', icon: <FileText size={16} /> }
+            ]
+        },
+        {
+            category: 'Communication',
+            items: [
+                { name: 'Bulk Email', path: '/admin/bulk-email', icon: <Mail size={16} /> }
             ]
         },
         {

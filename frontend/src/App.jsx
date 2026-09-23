@@ -125,6 +125,7 @@ const PlanManagement = lazy(() => import('./pages/admin/PlanManagement'));
 const CouponManagement = lazy(() => import('./pages/admin/CouponManagement'));
 const OrderManagement = lazy(() => import('./pages/admin/OrderManagement'));
 const VendorManagement = lazy(() => import('./pages/admin/VendorManagement'));
+const BulkEmail = lazy(() => import('./pages/admin/BulkEmail'));
 const LocationMaster = lazy(() => import('./pages/admin/LocationMaster'));
 const AdminComplaints = lazy(() => import('./pages/admin/AdminComplaints'));
 const AdminInquiryListing = lazy(() => import('./pages/admin/AdminInquiryListing'));
@@ -209,6 +210,7 @@ function App() {
               <Route path="menu" element={<MenuManagement />} />
               <Route path="orders" element={<OrderManagement />} />
               <Route path="vendors" element={<VendorManagement />} />
+              <Route path="bulk-email" element={<BulkEmail />} />
               <Route path="customers" element={<CustomerManagement />} />
               <Route path="enquiries" element={<AdminEnquiriesTab />} />
               
