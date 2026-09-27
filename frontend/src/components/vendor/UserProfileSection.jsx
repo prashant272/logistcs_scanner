@@ -63,7 +63,7 @@ const UserProfileSection = ({ user }) => {
               {user?.walletBalance && user.walletBalance > 0 
                 ? `₹ ${user.walletBalance.toLocaleString('en-IN')}` 
                 : (user?.preApprovedAmount > 0 
-                    ? `Pre-Approved: ₹ ${user.preApprovedAmount.toLocaleString('en-IN')}` 
+                    ? `Upto ₹ ${user.preApprovedAmount.toLocaleString('en-IN')}` 
                     : 'Not Approved')}
             </span>
           </div>

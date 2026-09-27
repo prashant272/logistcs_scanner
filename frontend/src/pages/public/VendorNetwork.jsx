@@ -251,7 +251,6 @@ const VendorNetwork = () => {
                                     <tr className="border-b border-slate-100 text-slate-400 font-extrabold text-xs uppercase tracking-wider bg-slate-50/20">
                                         <th className="py-4 px-6">LSID</th>
                                         <th className="py-4 px-6">Organization Name</th>
-                                        <th className="py-4 px-6">City</th>
                                         <th className="py-4 px-6">Country</th>
 
                                         <th className="py-4 px-6 text-right">Action</th>
@@ -278,10 +277,13 @@ const VendorNetwork = () => {
                                                             )}
                                                         </>
                                                     )}
+                                                    {vendor.verificationStatus === 'Approved' && (
+                                                        <span className="bg-indigo-500 text-white text-[9px] px-2 py-0.5 rounded-full font-black uppercase shadow-sm whitespace-nowrap flex items-center gap-1">
+                                                            <ShieldCheck size={10} />
+                                                            Verified Documents
+                                                        </span>
+                                                    )}
                                                 </div>
-                                            </td>
-                                            <td className="py-4 px-6 text-slate-600">
-                                                {vendor.city || 'N/A'}
                                             </td>
                                             <td className="py-4 px-6 text-slate-600">
                                                 {vendor.country || 'N/A'}

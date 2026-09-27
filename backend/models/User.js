@@ -164,6 +164,60 @@ const userSchema = new mongoose.Schema({
         type: Number,
         default: 0
     },
+    employeesCount: {
+        type: String,
+        default: ''
+    },
+    branchesCount: {
+        type: String,
+        default: ''
+    },
+    onTimeDelivery: {
+        type: String,
+        default: ''
+    },
+    responseTime: {
+        type: String,
+        default: ''
+    },
+    industriesServed: {
+        type: [String],
+        default: []
+    },
+    countriesServed: {
+        type: [String],
+        default: []
+    },
+    portsCovered: {
+        type: [String],
+        default: []
+    },
+    whyChooseUs: {
+        type: [String],
+        default: []
+    },
+    certifications: {
+        type: [String],
+        default: []
+    },
+    headOffice: {
+        type: String,
+        default: ''
+    },
+    workingHours: {
+        type: String,
+        default: ''
+    },
+    socialLinks: {
+        linkedin: { type: String, default: '' },
+        facebook: { type: String, default: '' },
+        twitter: { type: String, default: '' },
+        instagram: { type: String, default: '' }
+    },
+    faqs: [{
+        question: String,
+        answer: String
+    }],
     lastYearTurnover: {
         type: String,
         default: ''

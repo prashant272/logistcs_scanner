@@ -62,15 +62,18 @@ const VendorProfileTab = ({ user: propUser }) => {
     serviceLocations: user?.serviceLocations || [],
     takesCreditDays: user?.takesCreditDays || 0,
     givesCreditDays: user?.givesCreditDays || 0,
-    establishedYear: user?.establishedYear || '',
     employeesCount: user?.employeesCount || '',
-    branchesCount: user?.branchesCount || 0,
-    onTimeDeliveryRate: user?.onTimeDeliveryRate || 0,
+    branchesCount: user?.branchesCount || '',
+    onTimeDelivery: user?.onTimeDelivery || '',
     responseTime: user?.responseTime || '',
-    aboutText: user?.aboutText || '',
     industriesServed: user?.industriesServed || [],
+    countriesServed: user?.countriesServed || [],
     portsCovered: user?.portsCovered || [],
     whyChooseUs: user?.whyChooseUs || [],
+    certifications: user?.certifications || [],
+    headOffice: user?.headOffice || '',
+    workingHours: user?.workingHours || '',
+    socialLinks: user?.socialLinks || { linkedin: '', facebook: '', twitter: '', instagram: '' },
     faqs: user?.faqs || []
   });
 
@@ -79,6 +82,8 @@ const VendorProfileTab = ({ user: propUser }) => {
   const [newIndustry, setNewIndustry] = useState('');
   const [newPort, setNewPort] = useState('');
   const [newWhyChooseUs, setNewWhyChooseUs] = useState('');
+  const [newCountry, setNewCountry] = useState('');
+  const [newCertification, setNewCertification] = useState('');
   const [newFaq, setNewFaq] = useState({ question: '', answer: '' });
 
   const handleAddArrayItem = (e, field, value, setter) => {
@@ -859,6 +864,184 @@ const VendorProfileTab = ({ user: propUser }) => {
               ) : (
                 <p className="text-[11px] text-slate-400 font-semibold italic">No service locations added yet. All locations will be served by default.</p>
               )}
+            </div>
+
+          </div>
+        </div>
+
+        {/* SECTION 6: PUBLIC PROFILE & METRICS */}
+        <div className="bg-white rounded-3xl p-6 md:p-8 border border-slate-100 shadow-[0_8px_30px_rgba(11,30,67,0.02)] space-y-6">
+          <h3 className="text-sm font-extrabold text-[#0B1E43] uppercase tracking-wider flex items-center gap-2 border-b border-slate-100 pb-3">
+            <Info size={16} className="text-[#0066FF]" /> Public Profile Details (Shown to Customers)
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-[#0B1E43] uppercase tracking-wide">Number of Employees</label>
+              <input 
+                type="text" 
+                value={formData.employeesCount}
+                onChange={(e) => setFormData({ ...formData, employeesCount: e.target.value })}
+                className="w-full bg-[#f8fafc] border border-slate-200 rounded-xl px-4 py-3 text-xs text-slate-800 focus:outline-none focus:bg-white focus:border-[#0066FF] focus:ring-4 focus:ring-[#0066FF]/5 transition-all font-semibold"
+                placeholder="e.g. 50-100"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-[#0B1E43] uppercase tracking-wide">Number of Branches</label>
+              <input 
+                type="text" 
+                value={formData.branchesCount}
+                onChange={(e) => setFormData({ ...formData, branchesCount: e.target.value })}
+                className="w-full bg-[#f8fafc] border border-slate-200 rounded-xl px-4 py-3 text-xs text-slate-800 focus:outline-none focus:bg-white focus:border-[#0066FF] focus:ring-4 focus:ring-[#0066FF]/5 transition-all font-semibold"
+                placeholder="e.g. 5+"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-[#0B1E43] uppercase tracking-wide">On-Time Delivery Rate</label>
+              <input 
+                type="text" 
+                value={formData.onTimeDelivery}
+                onChange={(e) => setFormData({ ...formData, onTimeDelivery: e.target.value })}
+                className="w-full bg-[#f8fafc] border border-slate-200 rounded-xl px-4 py-3 text-xs text-slate-800 focus:outline-none focus:bg-white focus:border-[#0066FF] focus:ring-4 focus:ring-[#0066FF]/5 transition-all font-semibold"
+                placeholder="e.g. 98%"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-[#0B1E43] uppercase tracking-wide">Average Response Time</label>
+              <input 
+                type="text" 
+                value={formData.responseTime}
+                onChange={(e) => setFormData({ ...formData, responseTime: e.target.value })}
+                className="w-full bg-[#f8fafc] border border-slate-200 rounded-xl px-4 py-3 text-xs text-slate-800 focus:outline-none focus:bg-white focus:border-[#0066FF] focus:ring-4 focus:ring-[#0066FF]/5 transition-all font-semibold"
+                placeholder="e.g. < 2 Hrs"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-[#0B1E43] uppercase tracking-wide">Working Hours</label>
+              <input 
+                type="text" 
+                value={formData.workingHours}
+                onChange={(e) => setFormData({ ...formData, workingHours: e.target.value })}
+                className="w-full bg-[#f8fafc] border border-slate-200 rounded-xl px-4 py-3 text-xs text-slate-800 focus:outline-none focus:bg-white focus:border-[#0066FF] focus:ring-4 focus:ring-[#0066FF]/5 transition-all font-semibold"
+                placeholder="e.g. Mon - Sat (9:00 AM - 6:00 PM)"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-[#0B1E43] uppercase tracking-wide">Head Office Detail</label>
+              <input 
+                type="text" 
+                value={formData.headOffice}
+                onChange={(e) => setFormData({ ...formData, headOffice: e.target.value })}
+                className="w-full bg-[#f8fafc] border border-slate-200 rounded-xl px-4 py-3 text-xs text-slate-800 focus:outline-none focus:bg-white focus:border-[#0066FF] focus:ring-4 focus:ring-[#0066FF]/5 transition-all font-semibold"
+                placeholder="e.g. Mumbai, India"
+              />
+            </div>
+
+            {/* Social Links */}
+            <div className="md:col-span-2 space-y-3 mt-2 border-t border-slate-100 pt-4">
+              <label className="text-xs font-bold text-[#0B1E43] uppercase tracking-wide">Social Media Links</label>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <input type="text" value={formData.socialLinks.linkedin} onChange={(e) => setFormData({ ...formData, socialLinks: { ...formData.socialLinks, linkedin: e.target.value } })} className="w-full bg-[#f8fafc] border border-slate-200 rounded-xl px-4 py-3 text-xs text-slate-800 focus:outline-none focus:border-[#0066FF]" placeholder="LinkedIn URL" />
+                  <input type="text" value={formData.socialLinks.facebook} onChange={(e) => setFormData({ ...formData, socialLinks: { ...formData.socialLinks, facebook: e.target.value } })} className="w-full bg-[#f8fafc] border border-slate-200 rounded-xl px-4 py-3 text-xs text-slate-800 focus:outline-none focus:border-[#0066FF]" placeholder="Facebook URL" />
+                  <input type="text" value={formData.socialLinks.twitter} onChange={(e) => setFormData({ ...formData, socialLinks: { ...formData.socialLinks, twitter: e.target.value } })} className="w-full bg-[#f8fafc] border border-slate-200 rounded-xl px-4 py-3 text-xs text-slate-800 focus:outline-none focus:border-[#0066FF]" placeholder="Twitter URL" />
+                  <input type="text" value={formData.socialLinks.instagram} onChange={(e) => setFormData({ ...formData, socialLinks: { ...formData.socialLinks, instagram: e.target.value } })} className="w-full bg-[#f8fafc] border border-slate-200 rounded-xl px-4 py-3 text-xs text-slate-800 focus:outline-none focus:border-[#0066FF]" placeholder="Instagram URL" />
+              </div>
+            </div>
+            
+            {/* Array Fields */}
+            <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6 mt-4 pt-4 border-t border-slate-100">
+                {/* Certifications */}
+                <div className="space-y-3">
+                  <label className="text-xs font-bold text-[#0B1E43] uppercase tracking-wide">Certifications (e.g. ISO, MSME)</label>
+                  <div className="flex gap-2">
+                    <input type="text" value={newCertification} onChange={(e) => setNewCertification(e.target.value)} onKeyDown={(e) => { if(e.key === 'Enter') handleAddArrayItem(e, 'certifications', newCertification, setNewCertification); }} className="flex-grow bg-[#f8fafc] border border-slate-200 rounded-xl px-4 py-2 text-xs focus:outline-none focus:border-[#0066FF]" placeholder="Add Certification" />
+                    <button type="button" onClick={(e) => handleAddArrayItem(e, 'certifications', newCertification, setNewCertification)} className="bg-[#0066FF] text-white px-4 rounded-xl text-xs font-bold">Add</button>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {formData.certifications.map((item, idx) => (
+                      <span key={idx} className="bg-slate-100 text-slate-600 text-[10px] font-bold px-2.5 py-1 rounded-md flex items-center gap-1">{item} <button type="button" onClick={() => handleRemoveArrayItem('certifications', idx)} className="text-red-500 font-extrabold hover:text-red-700">✕</button></span>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Industries */}
+                <div className="space-y-3">
+                  <label className="text-xs font-bold text-[#0B1E43] uppercase tracking-wide">Industries Served</label>
+                  <div className="flex gap-2">
+                    <input type="text" value={newIndustry} onChange={(e) => setNewIndustry(e.target.value)} onKeyDown={(e) => { if(e.key === 'Enter') handleAddArrayItem(e, 'industriesServed', newIndustry, setNewIndustry); }} className="flex-grow bg-[#f8fafc] border border-slate-200 rounded-xl px-4 py-2 text-xs focus:outline-none focus:border-[#0066FF]" placeholder="Add Industry" />
+                    <button type="button" onClick={(e) => handleAddArrayItem(e, 'industriesServed', newIndustry, setNewIndustry)} className="bg-[#0066FF] text-white px-4 rounded-xl text-xs font-bold">Add</button>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {formData.industriesServed.map((item, idx) => (
+                      <span key={idx} className="bg-slate-100 text-slate-600 text-[10px] font-bold px-2.5 py-1 rounded-md flex items-center gap-1">{item} <button type="button" onClick={() => handleRemoveArrayItem('industriesServed', idx)} className="text-red-500 font-extrabold hover:text-red-700">✕</button></span>
+                    ))}
+                  </div>
+                </div>
+                
+                {/* Countries Served */}
+                <div className="space-y-3">
+                  <label className="text-xs font-bold text-[#0B1E43] uppercase tracking-wide">Countries Served (Names)</label>
+                  <div className="flex gap-2">
+                    <input type="text" value={newCountry} onChange={(e) => setNewCountry(e.target.value)} onKeyDown={(e) => { if(e.key === 'Enter') handleAddArrayItem(e, 'countriesServed', newCountry, setNewCountry); }} className="flex-grow bg-[#f8fafc] border border-slate-200 rounded-xl px-4 py-2 text-xs focus:outline-none focus:border-[#0066FF]" placeholder="Add Country" />
+                    <button type="button" onClick={(e) => handleAddArrayItem(e, 'countriesServed', newCountry, setNewCountry)} className="bg-[#0066FF] text-white px-4 rounded-xl text-xs font-bold">Add</button>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {formData.countriesServed.map((item, idx) => (
+                      <span key={idx} className="bg-slate-100 text-slate-600 text-[10px] font-bold px-2.5 py-1 rounded-md flex items-center gap-1">{item} <button type="button" onClick={() => handleRemoveArrayItem('countriesServed', idx)} className="text-red-500 font-extrabold hover:text-red-700">✕</button></span>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Ports Covered */}
+                <div className="space-y-3">
+                  <label className="text-xs font-bold text-[#0B1E43] uppercase tracking-wide">Ports Covered</label>
+                  <div className="flex gap-2">
+                    <input type="text" value={newPort} onChange={(e) => setNewPort(e.target.value)} onKeyDown={(e) => { if(e.key === 'Enter') handleAddArrayItem(e, 'portsCovered', newPort, setNewPort); }} className="flex-grow bg-[#f8fafc] border border-slate-200 rounded-xl px-4 py-2 text-xs focus:outline-none focus:border-[#0066FF]" placeholder="Add Port" />
+                    <button type="button" onClick={(e) => handleAddArrayItem(e, 'portsCovered', newPort, setNewPort)} className="bg-[#0066FF] text-white px-4 rounded-xl text-xs font-bold">Add</button>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {formData.portsCovered.map((item, idx) => (
+                      <span key={idx} className="bg-slate-100 text-slate-600 text-[10px] font-bold px-2.5 py-1 rounded-md flex items-center gap-1">{item} <button type="button" onClick={() => handleRemoveArrayItem('portsCovered', idx)} className="text-red-500 font-extrabold hover:text-red-700">✕</button></span>
+                    ))}
+                  </div>
+                </div>
+            </div>
+
+            {/* Why Choose Us */}
+            <div className="md:col-span-2 space-y-3 mt-4 pt-4 border-t border-slate-100">
+              <label className="text-xs font-bold text-[#0B1E43] uppercase tracking-wide">Why Choose Us? (Bullet Points)</label>
+              <div className="flex gap-2">
+                <input type="text" value={newWhyChooseUs} onChange={(e) => setNewWhyChooseUs(e.target.value)} onKeyDown={(e) => { if(e.key === 'Enter') handleAddArrayItem(e, 'whyChooseUs', newWhyChooseUs, setNewWhyChooseUs); }} className="flex-grow bg-[#f8fafc] border border-slate-200 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-[#0066FF]" placeholder="e.g. 24/7 Customer Support" />
+                <button type="button" onClick={(e) => handleAddArrayItem(e, 'whyChooseUs', newWhyChooseUs, setNewWhyChooseUs)} className="bg-[#0066FF] text-white px-5 rounded-xl text-xs font-bold">Add Point</button>
+              </div>
+              <ul className="space-y-2 pl-2">
+                {formData.whyChooseUs.map((item, idx) => (
+                  <li key={idx} className="text-xs font-bold text-slate-600 flex justify-between items-center bg-slate-50 p-2 rounded-lg border border-slate-100">
+                    <span>• {item}</span>
+                    <button type="button" onClick={() => handleRemoveArrayItem('whyChooseUs', idx)} className="text-red-500 hover:text-red-700">✕</button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            
+            {/* FAQs */}
+            <div className="md:col-span-2 space-y-3 mt-4 pt-4 border-t border-slate-100">
+              <label className="text-xs font-bold text-[#0B1E43] uppercase tracking-wide">Frequently Asked Questions</label>
+              <div className="flex flex-col gap-2 p-4 bg-slate-50 border border-slate-200 rounded-xl">
+                <input type="text" value={newFaq.question} onChange={(e) => setNewFaq({...newFaq, question: e.target.value})} className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:border-[#0066FF]" placeholder="Question (e.g. Do you provide customs clearance?)" />
+                <textarea value={newFaq.answer} onChange={(e) => setNewFaq({...newFaq, answer: e.target.value})} rows="2" className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:border-[#0066FF] resize-none" placeholder="Answer..."></textarea>
+                <button type="button" onClick={handleAddFaq} className="self-end bg-[#0066FF] text-white px-5 py-2 rounded-xl text-xs font-bold mt-1">Add FAQ</button>
+              </div>
+              <div className="space-y-3 mt-3">
+                {formData.faqs.map((faq, idx) => (
+                  <div key={idx} className="bg-white border border-slate-200 rounded-xl p-3 flex justify-between items-start gap-4">
+                    <div>
+                      <h5 className="text-xs font-bold text-[#0B1E43] mb-1">Q: {faq.question}</h5>
+                      <p className="text-[10px] font-medium text-slate-600">A: {faq.answer}</p>
+                    </div>
+                    <button type="button" onClick={() => handleRemoveFaq(idx)} className="text-red-500 font-extrabold hover:text-red-700 shrink-0">✕</button>
+                  </div>
+                ))}
+              </div>
             </div>
 
           </div>

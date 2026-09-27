@@ -48,9 +48,9 @@ router.get('/lookup', protect, async (req, res) => {
             }
             const cleanPhone = phone.trim().replace(/[^0-9]/g, '');
             // Find customer globally using regex on last 10 digits
-            const customer = await User.findOne({ 
-                role: 'customer', 
-                phone: { $regex: cleanPhone + '$' } 
+            const customer = await User.findOne({
+                role: 'customer',
+                phone: { $regex: cleanPhone + '$' }
             }).select('name company email phone');
             if (!customer) {
                 return res.status(404).json({ message: 'Customer not found' });
@@ -137,7 +137,7 @@ const jwt = require('jsonwebtoken');
 router.get('/public-vendors-locations', async (req, res) => {
     try {
         const vendors = await User.find({ role: 'vendor' }, 'country city').lean();
-        
+
         const formatName = (str) => {
             if (!str) return '';
             str = str.trim();
@@ -170,12 +170,12 @@ router.get('/public-vendors-locations', async (req, res) => {
                 }
             }
         });
-        
+
         const formattedLocations = {};
         Object.keys(locations).sort().forEach(country => {
             formattedLocations[country] = Array.from(locations[country]).sort();
         });
-        
+
         res.json(formattedLocations);
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
@@ -187,7 +187,7 @@ router.get('/public-vendors-search', async (req, res) => {
     try {
         const { lsid, country, city } = req.query;
         let query = { role: 'vendor' };
-        
+
         const escapeRegExp = (string) => string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         if (country) {
             query.country = new RegExp('^' + escapeRegExp(country) + '$', 'i');
@@ -199,7 +199,7 @@ router.get('/public-vendors-search', async (req, res) => {
                 'bangaluru': ['bangalore', 'bangaluru', 'bengaluru'],
                 'bengaluru': ['bangalore', 'bangaluru', 'bengaluru']
             };
-            
+
             if (cityAliases[cleanCity]) {
                 const aliasRegexStr = cityAliases[cleanCity].map(c => `^${escapeRegExp(c)}$`).join('|');
                 query.city = new RegExp(aliasRegexStr, 'i');
@@ -232,8 +232,8 @@ router.get('/public-vendors-search', async (req, res) => {
 
         if (lsid) {
             const cleanLsid = lsid.replace(/[^0-9]/g, '');
-            results = results.filter(v => 
-                v.lsid.toString().includes(cleanLsid) || 
+            results = results.filter(v =>
+                v.lsid.toString().includes(cleanLsid) ||
                 v._id.toString().includes(lsid)
             );
         }
@@ -260,8 +260,8 @@ router.get('/public-vendors-search/:id/details', async (req, res) => {
         if (!targetVendor) {
             // First try a loose regex search
             const searchName = vendorId.replace(/-/g, '.*');
-            const potentialVendors = await User.find({ 
-                role: 'vendor', 
+            const potentialVendors = await User.find({
+                role: 'vendor',
                 $or: [
                     { company: { $regex: new RegExp(`^\\s*${searchName}.*`, 'i') } },
                     { name: { $regex: new RegExp(`^\\s*${searchName}.*`, 'i') } }
@@ -277,7 +277,7 @@ router.get('/public-vendors-search/:id/details', async (req, res) => {
                     break;
                 }
             }
-            
+
             // Fallback if none perfectly matched the slug (e.g. extremely weird chars)
             if (!targetVendor && potentialVendors.length > 0) {
                 targetVendor = potentialVendors[0];
@@ -302,7 +302,7 @@ router.get('/public-vendors-search/:id/details', async (req, res) => {
 
         // Calculate Complaints Stats
         const Complaint = require('../models/Complaint');
-        
+
         // Against Me
         const complaintsAgainst = await Complaint.find({ vendor: targetVendor._id });
         const againstStats = {
@@ -411,7 +411,7 @@ router.post('/vendor-contact', async (req, res) => {
         if (!vendorId || !name || !email || !message) {
             return res.status(400).json({ message: 'All fields are required' });
         }
-        
+
         // Check if vendor exists
         const vendor = await User.findById(vendorId);
         if (!vendor || vendor.role !== 'vendor') {
@@ -439,10 +439,10 @@ router.get('/vendor-contact/my', protect, async (req, res) => {
         if (!user || user.role !== 'vendor') {
             return res.status(403).json({ message: 'Access denied. Vendor role required.' });
         }
-        
+
         const contacts = await VendorContact.find({ vendorId: user._id })
             .sort({ createdAt: -1 });
-            
+
         res.json(contacts);
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });

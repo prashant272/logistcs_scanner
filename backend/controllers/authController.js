@@ -520,7 +520,10 @@ exports.updateUserProfile = async (req, res) => {
             'companyAge', 'directorsNames', 'directorsCount', 'lastYearTurnover',
             'companyProfile', 'serviceIn', 'services', 'deductionPercentage', 'gst', 'serviceLocations',
             'designation', 'whatsappNumber', 'businessType', 'companyWebsite', 'yearOfEstablishment',
-            'gstin', 'iecCode', 'pan', 'cinLlpIn', 'udyamRegistration', 'taxVatBusinessReg', 'registeredOfficeAddress'
+            'gstin', 'iecCode', 'pan', 'cinLlpIn', 'udyamRegistration', 'taxVatBusinessReg', 'registeredOfficeAddress',
+            'employeesCount', 'branchesCount', 'onTimeDelivery', 'responseTime', 'industriesServed',
+            'countriesServed', 'portsCovered', 'whyChooseUs', 'certifications', 'headOffice',
+            'workingHours', 'socialLinks', 'faqs'
         ];
 
         let changes = [];

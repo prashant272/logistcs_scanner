@@ -52,7 +52,7 @@ const normalizeLocationInput = async (countryInput, cityInput) => {
         if (normalizedCountry && normalizedCountry !== 'India') {
             const existingCountries = await User.distinct('country', { role: 'vendor' });
             for (let c of existingCountries) {
-                if (c && getSimilarity(normalizedCountry, c) >= 0.65) {
+                if (c && getSimilarity(normalizedCountry, c) >= 0.85) {
                     normalizedCountry = toTitleCase(c);
                     break;
                 }
@@ -62,7 +62,7 @@ const normalizeLocationInput = async (countryInput, cityInput) => {
         if (normalizedCity && normalizedCity !== 'Bengaluru') {
             const existingCities = await User.distinct('city', { role: 'vendor' });
             for (let ct of existingCities) {
-                if (ct && getSimilarity(normalizedCity, ct) >= 0.65) {
+                if (ct && getSimilarity(normalizedCity, ct) >= 0.85) {
                     normalizedCity = toTitleCase(ct);
                     break;
                 }
