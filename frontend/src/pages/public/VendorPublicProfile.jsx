@@ -5,11 +5,12 @@ import {
     MapPin, Building2, ShieldCheck, Mail, Phone, Globe, Calendar, User,
     MessageSquare, Send, X, Lock, CheckCircle2, Star, Share2, Info, AlertTriangle, AlertCircle, Crown,
     Briefcase, Users, Globe2, Network, Clock, Timer, Check, Ship, Plane, Truck, Warehouse, Package, 
-    Bookmark, Flag, HelpCircle, FileText, Facebook, Twitter, Linkedin, Instagram
+    Bookmark, Flag, HelpCircle, FileText, Facebook, Twitter, Linkedin, Instagram, ClipboardList
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import useSEO from '../../hooks/useSEO';
 import ReactCountryFlag from "react-country-flag";
+import { useLocations } from '../../services/LocationService';
 
 const VendorPublicProfile = () => {
     useSEO({
@@ -50,6 +51,7 @@ const VendorPublicProfile = () => {
     const [showReportModal, setShowReportModal] = useState(false);
     const [reportReason, setReportReason] = useState('');
     const [reportSubmitted, setReportSubmitted] = useState(false);
+    const [openFaq, setOpenFaq] = useState(null);
 
     const handleSave = () => setIsSaved(!isSaved);
     const handleShare = () => {
@@ -59,9 +61,88 @@ const VendorPublicProfile = () => {
     };
 
     // Quick Inquiry Form State
+    const { getSuggestions } = useLocations();
+    const [suggestions, setSuggestions] = useState([]);
+    const [activeInput, setActiveInput] = useState(null);
     const [inqForm, setInqForm] = useState({
-        name: '', company: '', email: '', phone: '', origin: '', destination: '', cargoType: '', message: ''
+        name: '', company: '', email: '', phone: '', origin: '', destination: '', serviceType: 'sea', message: ''
     });
+
+    const fetchSuggestions = async (query, inputType) => {
+        if (!query || query.trim().length < 2) {
+            setSuggestions([]);
+            return;
+        }
+        try {
+            let typeParam = '';
+            if (inqForm.serviceType === 'sea') typeParam = 'Seaport';
+            else if (inqForm.serviceType === 'air') typeParam = 'Airport';
+            else if (inqForm.serviceType === 'land') typeParam = 'Land Port';
+            else if (inqForm.serviceType === 'warehouse') typeParam = 'Warehouse';
+            else typeParam = 'Seaport,Airport,Land Port'; // CHA generic
+
+            const locations = await getSuggestions(query, typeParam);
+            setSuggestions(locations || []);
+        } catch (err) {
+            console.error(err);
+            setSuggestions([]);
+        }
+    };
+
+    useEffect(() => {
+        let activeQuery = '';
+        if (activeInput === 'origin') activeQuery = inqForm.origin;
+        else if (activeInput === 'destination') activeQuery = inqForm.destination;
+
+        if (!activeQuery || activeQuery.trim().length < 2) {
+            setSuggestions([]);
+            return;
+        }
+
+        const delayDebounce = setTimeout(() => {
+            fetchSuggestions(activeQuery, activeInput);
+        }, 300);
+
+        return () => clearTimeout(delayDebounce);
+    }, [inqForm.origin, inqForm.destination, activeInput, inqForm.serviceType]);
+
+    const handleSelectSuggestion = (loc, inputType) => {
+        const value = loc.code ? `${loc.city} (${loc.code})` : loc.city;
+        setInqForm({ ...inqForm, [inputType]: value });
+        setSuggestions([]);
+        setActiveInput(null);
+    };
+
+    const renderSuggestions = (inputType) => {
+        if (activeInput !== inputType || suggestions.length === 0) return null;
+        return (
+            <div className="absolute left-0 right-0 z-[9999] mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-48 overflow-y-auto w-full">
+                {suggestions.map((loc) => (
+                    <div
+                        key={loc._id}
+                        onMouseDown={() => handleSelectSuggestion(loc, inputType)}
+                        className="px-4 py-2 hover:bg-slate-50 cursor-pointer text-left transition-colors flex items-center justify-between border-b border-slate-100 last:border-0"
+                    >
+                        <div className="flex flex-col min-w-0 pr-2">
+                            <span className="text-xs font-black text-slate-900 truncate">
+                                {loc.city}, {loc.country}
+                            </span>
+                            <span className="text-[10px] text-slate-400 font-bold truncate">
+                                {loc.name}
+                            </span>
+                        </div>
+                        {loc.code && (
+                            <div className="flex items-center gap-1.5 shrink-0">
+                                <span className="bg-[#0066FF]/10 text-[#0066FF] text-[9px] font-black px-1.5 py-0.5 rounded uppercase border border-[#0066FF]/20">
+                                    {loc.code}
+                                </span>
+                            </div>
+                        )}
+                    </div>
+                ))}
+            </div>
+        );
+    };
 
     // Generate Fingerprint
     useEffect(() => {
@@ -130,11 +211,44 @@ const VendorPublicProfile = () => {
             });
             setContactSuccess('Your message has been sent successfully to the vendor!');
             setContactName(''); setContactEmail(''); setContactMessage('');
-            setInqForm({name:'', company:'', email:'', phone:'', origin:'', destination:'', cargoType:'', message:''});
             setTimeout(() => {
                 setShowContactModal(false);
                 setContactSuccess('');
             }, 3000);
+        } catch (err) {
+            console.error(err);
+            alert(err.response?.data?.message || 'Failed to send message.');
+        } finally {
+            setSubmittingContact(false);
+        }
+    };
+
+    const handleQuickInquirySubmit = async (e) => {
+        e.preventDefault();
+        setSubmittingContact(true);
+        setContactSuccess('');
+        try {
+            const token = localStorage.getItem('userToken');
+            const config = token ? { headers: { Authorization: `Bearer ${token}` } } : {};
+            
+            const payload = {
+                vendor: vendor._id,
+                isDirect: false,
+                fromLocation: inqForm.origin || 'India',
+                toLocation: inqForm.destination || (inqForm.serviceType === 'warehouse' ? 'Warehouse' : 'Destination'),
+                type: inqForm.serviceType === 'sea' ? 'Sea' : (inqForm.serviceType === 'air' ? 'Air' : (inqForm.serviceType === 'land' ? 'Land' : (inqForm.serviceType === 'warehouse' ? 'Warehouse' : 'CHA'))),
+                guestName: inqForm.name,
+                guestEmail: inqForm.email,
+                guestPhone: inqForm.phone,
+                guestCompany: inqForm.company,
+                message: inqForm.message + '\n\n- This enquiry is created through vendor profile'
+            };
+
+            await axios.post(`${import.meta.env.VITE_API_BASE_URL}/enquiries`, payload, config);
+            
+            setContactSuccess('Your inquiry has been submitted directly to the vendor!');
+            setInqForm({name:'', company:'', email:'', phone:'', origin:'', destination:'', cargoType:'', message:''});
+            setTimeout(() => setContactSuccess(''), 4000);
         } catch (err) {
             console.error(err);
             alert(err.response?.data?.message || 'Failed to send inquiry.');
@@ -508,35 +622,44 @@ const VendorPublicProfile = () => {
                                 <Send size={20} />
                                 <h3 className="font-black text-base tracking-wide">Quick Inquiry</h3>
                             </div>
-                            <form onSubmit={handleContactSubmit} className="p-6 space-y-4">
-                                <input type="text" placeholder="Full Name*" required value={inqForm.name} onChange={e=>setInqForm({...inqForm, name: e.target.value})} className="w-full text-sm font-bold px-5 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[#0066FF]/20 focus:border-[#0066FF]" />
-                                <input type="text" placeholder="Company Name*" required value={inqForm.company} onChange={e=>setInqForm({...inqForm, company: e.target.value})} className="w-full text-sm font-bold px-5 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[#0066FF]/20 focus:border-[#0066FF]" />
-                                <input type="email" placeholder="Email Address*" required value={inqForm.email} onChange={e=>setInqForm({...inqForm, email: e.target.value})} className="w-full text-sm font-bold px-5 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[#0066FF]/20 focus:border-[#0066FF]" />
-                                <input type="text" placeholder="Phone Number*" required value={inqForm.phone} onChange={e=>setInqForm({...inqForm, phone: e.target.value})} className="w-full text-sm font-bold px-5 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[#0066FF]/20 focus:border-[#0066FF]" />
+                            <form onSubmit={handleQuickInquirySubmit} className="p-5 space-y-2.5">
+                                <div className="grid grid-cols-5 gap-2 mb-1 p-1 bg-slate-100 rounded-xl">
+                                    {[{id:'sea', icon:<Ship size={14}/>}, {id:'air', icon:<Plane size={14}/>}, {id:'land', icon:<Truck size={14}/>}, {id:'warehouse', icon:<Warehouse size={14}/>}, {id:'cha', icon:<ClipboardList size={14}/>}].map(type => (
+                                        <button
+                                            key={type.id}
+                                            type="button"
+                                            onClick={() => setInqForm({...inqForm, serviceType: type.id, origin: '', destination: ''})}
+                                            className={`flex justify-center items-center py-2 rounded-lg transition-all ${inqForm.serviceType === type.id ? 'bg-white text-[#0066FF] shadow-sm font-black' : 'text-slate-500 hover:text-slate-700'}`}
+                                            title={type.id.toUpperCase()}
+                                        >
+                                            {type.icon}
+                                        </button>
+                                    ))}
+                                </div>
                                 
-                                <select className="w-full text-sm font-bold px-5 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[#0066FF]/20 focus:border-[#0066FF] text-slate-500">
-                                    <option>From (Origin)* - Select Origin</option>
-                                    <option>India</option>
-                                    <option>China</option>
-                                </select>
-                                <select className="w-full text-sm font-bold px-5 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[#0066FF]/20 focus:border-[#0066FF] text-slate-500">
-                                    <option>To (Destination)* - Select Destination</option>
-                                    <option>USA</option>
-                                    <option>UAE</option>
-                                </select>
-                                <select className="w-full text-sm font-bold px-5 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[#0066FF]/20 focus:border-[#0066FF] text-slate-500">
-                                    <option>Cargo Type* - Select Cargo Type</option>
-                                    <option>FCL</option>
-                                    <option>LCL</option>
-                                    <option>Air Cargo</option>
-                                </select>
+                                <input type="text" placeholder="Full Name*" required value={inqForm.name} onChange={e=>setInqForm({...inqForm, name: e.target.value})} className="w-full text-sm font-bold px-5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[#0066FF]/20 focus:border-[#0066FF]" />
+                                <input type="text" placeholder="Company Name*" required value={inqForm.company} onChange={e=>setInqForm({...inqForm, company: e.target.value})} className="w-full text-sm font-bold px-5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[#0066FF]/20 focus:border-[#0066FF]" />
+                                <input type="email" placeholder="Email Address*" required value={inqForm.email} onChange={e=>setInqForm({...inqForm, email: e.target.value})} className="w-full text-sm font-bold px-5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[#0066FF]/20 focus:border-[#0066FF]" />
+                                <input type="text" placeholder="Phone Number*" required value={inqForm.phone} onChange={e=>setInqForm({...inqForm, phone: e.target.value})} className="w-full text-sm font-bold px-5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[#0066FF]/20 focus:border-[#0066FF]" />
                                 
-                                <textarea rows="3" placeholder="Message - Please describe your requirement..." required value={inqForm.message} onChange={e=>setInqForm({...inqForm, message: e.target.value})} className="w-full text-sm font-bold px-5 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[#0066FF]/20 focus:border-[#0066FF] resize-none"></textarea>
+                                <div className="relative">
+                                    <input type="text" placeholder="From (Origin)*" required value={inqForm.origin} onChange={e=>setInqForm({...inqForm, origin: e.target.value})} onFocus={() => setActiveInput('origin')} onBlur={() => setTimeout(() => setActiveInput(null), 200)} className="w-full text-sm font-bold px-5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[#0066FF]/20 focus:border-[#0066FF]" />
+                                    {renderSuggestions('origin')}
+                                </div>
                                 
-                                <button type="submit" disabled={submittingContact} className="w-full bg-[#0066FF] hover:bg-[#0B1E43] text-white text-sm font-black uppercase tracking-wider py-4 rounded-xl shadow-lg transition-all mt-3">
+                                {inqForm.serviceType !== 'warehouse' && (
+                                <div className="relative">
+                                    <input type="text" placeholder="To (Destination)*" required value={inqForm.destination} onChange={e=>setInqForm({...inqForm, destination: e.target.value})} onFocus={() => setActiveInput('destination')} onBlur={() => setTimeout(() => setActiveInput(null), 200)} className="w-full text-sm font-bold px-5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[#0066FF]/20 focus:border-[#0066FF]" />
+                                    {renderSuggestions('destination')}
+                                </div>
+                                )}
+                                
+                                <textarea rows="2" placeholder="Message - Please describe your requirement..." required value={inqForm.message} onChange={e=>setInqForm({...inqForm, message: e.target.value})} className="w-full text-sm font-bold px-5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[#0066FF]/20 focus:border-[#0066FF] resize-none"></textarea>
+                                
+                                <button type="submit" disabled={submittingContact} className="w-full bg-[#0066FF] hover:bg-[#0B1E43] text-white text-sm font-black uppercase tracking-wider py-3 rounded-xl shadow-lg transition-all mt-2">
                                     {submittingContact ? 'Sending...' : 'Send Inquiry'}
                                 </button>
-                                {contactSuccess && <p className="text-xs text-emerald-600 font-bold text-center mt-2">{contactSuccess}</p>}
+                                {contactSuccess && <p className="text-xs text-emerald-600 font-bold text-center">{contactSuccess}</p>}
                             </form>
                         </div>
 
@@ -655,15 +778,25 @@ const VendorPublicProfile = () => {
                         </div>
                         <div className="flex-1 flex flex-col">
                             {(vendor.faqs?.length > 0 ? vendor.faqs : [
-                                {question: `What services does ROI GLOBAL offer?`},
-                                {question: `Which countries does ROI GLOBAL serve?`},
-                                {question: `Do you provide door-to-door delivery?`},
-                                {question: `Can you handle project cargo & ODC shipments?`},
-                                {question: `Do you provide customs clearance services?`}
+                                {question: `What services does ROI GLOBAL offer?`, answer: `We offer end-to-end logistics solutions including sea freight, air freight, customs clearance, and warehousing.`},
+                                {question: `Which countries does ROI GLOBAL serve?`, answer: `We have a strong global network covering Asia, Europe, North America, and the Middle East.`},
+                                {question: `Do you provide door-to-door delivery?`, answer: `Yes, we provide seamless door-to-door delivery for both commercial and residential shipments.`},
+                                {question: `Can you handle project cargo & ODC shipments?`, answer: `Absolutely. We have specialized teams and equipment for oversized and project cargo.`},
+                                {question: `Do you provide customs clearance services?`, answer: `Yes, our in-house customs brokers ensure smooth and compliant clearance at all major ports.`}
                             ]).slice(0, 5).map((q, i) => (
-                                <div key={i} className="flex-1 flex items-center justify-between border-b border-slate-100 last:border-0 cursor-pointer hover:px-2 transition-all">
-                                    <span className="text-xs font-bold text-[#0B1E43]">{q.question}</span>
-                                    <span className="text-slate-800 font-black text-lg">+</span>
+                                <div key={i} className="flex-1 flex flex-col border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-all rounded-lg overflow-hidden">
+                                    <div 
+                                        className="flex items-center justify-between cursor-pointer py-3 px-2"
+                                        onClick={() => setOpenFaq(openFaq === i ? null : i)}
+                                    >
+                                        <span className={`text-xs font-bold transition-colors ${openFaq === i ? 'text-[#0066FF]' : 'text-[#0B1E43]'}`}>{q.question}</span>
+                                        <span className={`text-slate-500 font-black text-lg transition-transform ${openFaq === i ? 'rotate-45 text-[#0066FF]' : ''}`}>+</span>
+                                    </div>
+                                    {openFaq === i && (
+                                        <div className="px-2 pb-3 pt-1 text-xs font-medium text-slate-600 animate-fade-in whitespace-pre-line">
+                                            {q.answer || 'Answer not provided by vendor.'}
+                                        </div>
+                                    )}
                                 </div>
                             ))}
                         </div>
