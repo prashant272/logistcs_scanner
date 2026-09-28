@@ -13,12 +13,6 @@ import ReactCountryFlag from "react-country-flag";
 import { useLocations } from '../../services/LocationService';
 
 const VendorPublicProfile = () => {
-    useSEO({
-        title: 'Vendor Profile | Verified Freight Forwarders',
-        description: 'View the public profile of our verified logistics vendors. Read reviews, check services, and request quotes directly on Logistics Scanner.',
-        keywords: 'logistics scanner, freight rate comparison, shipping rates online, logistics platform India, freight forwarding services'
-    });
-
     const { id } = useParams();
     const { user } = useAuth();
     const navigate = useNavigate();
@@ -39,6 +33,7 @@ const VendorPublicProfile = () => {
     const [showIndustriesModal, setShowIndustriesModal] = useState(false);
     const [showCountriesModal, setShowCountriesModal] = useState(false);
     const [showPortsModal, setShowPortsModal] = useState(false);
+    const [showFaqsModal, setShowFaqsModal] = useState(false);
     const [contactName, setContactName] = useState('');
     const [contactEmail, setContactEmail] = useState('');
     const [contactMessage, setContactMessage] = useState('');
@@ -328,20 +323,68 @@ const VendorPublicProfile = () => {
         return <span className="text-[10px] text-slate-500 font-bold bg-slate-100 px-2 py-0.5 rounded">This is only for vendors</span>;
     };
 
+    const vendorName = vendor?.organizationName || 'Vendor';
+    const country = vendor?.country || 'India';
+    const vendorCoverImage = vendor?.profilePhoto ? (vendor.profilePhoto.startsWith('http') ? vendor.profilePhoto : `${import.meta.env.VITE_API_BASE_URL.replace('/api', '')}${vendor.profilePhoto}`) : 'https://www.logisticsscanner.com/default-vendor-image.jpg';
+    const currentUrl = typeof window !== 'undefined' ? window.location.href : `https://www.logisticsscanner.com/vendor-network/profile/${vendorName.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+    const metaDesc = `${vendorName} is a verified freight forwarding and logistics company in ${country} offering Sea Freight, Air Freight, Warehousing, Customs Clearance, Land Transport and global logistics solutions. Compare freight rates and connect directly through Logistics Scanner.`;
+
     return (
         <div className="bg-[#F8FAFC] min-h-screen pt-28 pb-16 font-sans text-slate-800">
+            {/* Dynamic SEO Tags (React 19+) */}
+            <title>{`${vendorName} | Verified Freight Forwarder in ${country} | Logistics Scanner`}</title>
+            <meta name="description" content={metaDesc} />
+            <meta name="keywords" content={`${vendorName}, ${vendorName} Logistics, Freight Forwarder ${country}, Shipping Company ${country}, Sea Freight ${country}, Air Freight ${country}, Warehouse ${country}, CHA ${country}, Import Export Logistics, Freight Rates, Global Logistics, Container Shipping, International Freight, Logistics Scanner`} />
+            <meta name="author" content="Logistics Scanner" />
+            <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1" />
+            <link rel="canonical" href={currentUrl} />
+            <meta name="theme-color" content="#0F6CBD" />
+            
+            {/* Open Graph Tags */}
+            <meta property="og:type" content="profile" />
+            <meta property="og:title" content={`${vendorName} | Freight Forwarder in ${country}`} />
+            <meta property="og:description" content={metaDesc} />
+            <meta property="og:url" content={currentUrl} />
+            <meta property="og:image" content={vendorCoverImage} />
+            <meta property="og:image:alt" content={vendorName} />
+            <meta property="og:site_name" content="Logistics Scanner" />
+            <meta property="og:locale" content="en_US" />
+            
+            {/* Twitter Tags */}
+            <meta name="twitter:card" content="summary_large_image" />
+            <meta name="twitter:title" content={`${vendorName} | Logistics Scanner`} />
+            <meta name="twitter:description" content={metaDesc} />
+            <meta name="twitter:image" content={vendorCoverImage} />
+            
+            {/* Alternate URL */}
+            <link rel="alternate" hreflang="en" href={currentUrl} />
+            
+            {/* Schema.org JSON-LD */}
+            <script type="application/ld+json">
+                {JSON.stringify({
+                    "@context": "https://schema.org",
+                    "@type": ["Organization", "LocalBusiness"],
+                    "name": vendorName,
+                    "image": vendorCoverImage,
+                    "description": metaDesc,
+                    "url": currentUrl,
+                    "address": {
+                        "@type": "PostalAddress",
+                        "addressCountry": country
+                    }
+                })}
+            </script>
+
             {/* Breadcrumbs */}
             <div className="w-full px-6 lg:px-12 mx-auto max-w-[1400px] mb-4">
                 <div className="flex flex-wrap items-center gap-2 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
                     <Link to="/" className="hover:text-[#0066FF] shrink-0">Home</Link>
                     <span className="shrink-0">/</span>
-                    <Link to="/vendor-network" className="hover:text-[#0066FF] shrink-0">Vendors</Link>
+                    <Link to="/vendor-network" className="hover:text-[#0066FF] shrink-0">Vendor Network</Link>
                     <span className="shrink-0">/</span>
-                    <span className="text-slate-600 shrink-0">{vendor.country || 'India'}</span>
+                    <span className="text-slate-600 shrink-0">{country} Freight Forwarders</span>
                     <span className="shrink-0">/</span>
-                    <span className="text-slate-600 shrink-0">{vendor.vendorTypes && vendor.vendorTypes.length > 0 ? vendor.vendorTypes[0] : 'Freight Forwarders'}</span>
-                    <span className="shrink-0">/</span>
-                    <span className="text-[#0066FF] truncate max-w-[200px] sm:max-w-xs">{vendor.organizationName}</span>
+                    <span className="text-[#0066FF] truncate max-w-[200px] sm:max-w-xs">{vendorName}</span>
                 </div>
             </div>
 
@@ -355,7 +398,8 @@ const VendorPublicProfile = () => {
                             {vendor.profilePhoto ? (
                                 <img
                                     src={vendor.profilePhoto.startsWith('http') ? vendor.profilePhoto : `${import.meta.env.VITE_API_BASE_URL.replace('/api', '')}${vendor.profilePhoto}`}
-                                    alt={vendor.organizationName}
+                                    alt={`${vendorName} Freight Forwarder ${country}`}
+                                    title={`${vendorName} Logistics Company`}
                                     className="w-full h-full object-contain"
                                     onError={(e) => { e.target.onerror = null; e.target.style.display = 'none'; e.target.nextElementSibling.style.display = 'flex'; }}
                                 />
@@ -465,12 +509,13 @@ const VendorPublicProfile = () => {
                                 <div className="p-2 bg-indigo-50 text-[#0066FF] rounded-lg">
                                     <User size={20} />
                                 </div>
-                                <h3 className="text-lg font-black text-[#0B1E43]">About {vendor.organizationName}</h3>
+                                <h2 className="text-lg font-black text-[#0B1E43]">About {vendor.organizationName}</h2>
                             </div>
                             <div className="relative">
-                                <p className="text-sm text-slate-600 leading-relaxed font-medium break-words line-clamp-5 mb-0">
-                                    {vendor.companyProfile || `${vendor.organizationName} is a trusted logistics and freight forwarding company based in ${vendor.country || 'India'}, offering comprehensive solutions in sea freight, air freight, land transportation, warehousing, and customs clearance. With a strong global network and experienced team, we deliver cost-effective, reliable and efficient logistics services tailored to your business needs.`}
-                                </p>
+                                <div 
+                                    className="text-sm text-slate-600 leading-relaxed font-medium break-words mb-0"
+                                    dangerouslySetInnerHTML={{ __html: vendor.companyProfile || `${vendor.organizationName} is a trusted logistics and freight forwarding company based in ${vendor.country || 'India'}, offering comprehensive solutions in sea freight, air freight, land transportation, warehousing, and customs clearance. With a strong global network and experienced team, we deliver cost-effective, reliable and efficient logistics services tailored to your business needs.` }}
+                                />
                                 {((vendor.companyProfile || '').length > 300 || !vendor.companyProfile) && (
                                     <button onClick={() => setShowAboutModal(true)} className="mt-4 text-xs font-bold text-[#0066FF] border border-[#0066FF] rounded-lg px-4 py-2 hover:bg-[#0066FF] hover:text-white transition-colors">
                                         View More
@@ -486,7 +531,7 @@ const VendorPublicProfile = () => {
                                     <div className="p-2 bg-indigo-50 text-[#0066FF] rounded-lg">
                                         <Briefcase size={20} />
                                     </div>
-                                    <h3 className="text-lg font-black text-[#0B1E43]">Services Offered</h3>
+                                    <h2 className="text-lg font-black text-[#0B1E43]">Freight & Logistics Services</h2>
                                 </div>
                                 {((vendor.services?.length > 0 ? vendor.services : ['Sea Freight', 'Air Freight', 'Road Freight', 'Warehousing', 'Customs Clearance', 'Project Cargo', 'Door to Door', 'Supply Chain']).length > 8) && (
                                     <button onClick={() => setShowServicesModal(true)} className="text-xs font-bold text-[#0066FF] hover:underline">View All Services →</button>
@@ -503,7 +548,7 @@ const VendorPublicProfile = () => {
                                              srv.toLowerCase().includes('ware') ? <Warehouse size={16} /> : 
                                              <Package size={16} />}
                                         </div>
-                                        <h4 className="text-[11px] font-black text-slate-800 leading-tight mb-0.5">{srv}</h4>
+                                        <h3 className="text-[11px] font-black text-slate-800 leading-tight mb-0.5">{srv}</h3>
                                         <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider leading-tight">{srv} solutions</p>
                                     </div>
                                 ))}
@@ -517,7 +562,7 @@ const VendorPublicProfile = () => {
                                     <div className="p-2 bg-indigo-50 text-[#0066FF] rounded-lg">
                                         <Building2 size={20} />
                                     </div>
-                                    <h3 className="text-lg font-black text-[#0B1E43]">Industries Served</h3>
+                                    <h2 className="text-lg font-black text-[#0B1E43]">Industries Served</h2>
                                 </div>
                                 {((vendor.industriesServed?.length > 0 ? vendor.industriesServed : ['Automotive', 'Electronics', 'Pharmaceutical', 'Retail', 'Chemicals', 'Engineering', 'Textiles', 'Food & Beverages']).length > 5) && (
                                     <button onClick={() => setShowIndustriesModal(true)} className="text-xs font-bold text-[#0066FF] hover:underline">View All Industries →</button>
@@ -539,7 +584,7 @@ const VendorPublicProfile = () => {
                                     <div className="p-2 bg-indigo-50 text-[#0066FF] rounded-lg">
                                         <Globe size={20} />
                                     </div>
-                                    <h3 className="text-lg font-black text-[#0B1E43]">Countries Served</h3>
+                                    <h2 className="text-lg font-black text-[#0B1E43]">Countries Served</h2>
                                 </div>
                                 {((vendor.countriesServed?.length > 0 ? vendor.countriesServed : [{code:'IN', name:'India'}]).length > 8) && (
                                     <button onClick={() => setShowCountriesModal(true)} className="text-xs font-bold text-[#0066FF] hover:underline">View All Countries →</button>
@@ -564,7 +609,7 @@ const VendorPublicProfile = () => {
                                     <div className="p-2 bg-indigo-50 text-[#0066FF] rounded-lg">
                                         <MapPin size={20} />
                                     </div>
-                                    <h3 className="text-lg font-black text-[#0B1E43]">Ports Covered</h3>
+                                    <h2 className="text-lg font-black text-[#0B1E43]">Ports Covered</h2>
                                 </div>
                                 {((vendor.portsCovered?.length > 0 ? vendor.portsCovered : ['Nhava Sheva', 'Mundra', 'Chennai', 'Kolkata', 'Vancouver', 'Montreal', 'Prince Rupert', 'Singapore']).length > 8) && (
                                     <button onClick={() => setShowPortsModal(true)} className="text-xs font-bold text-[#0066FF] hover:underline">View All Ports →</button>
@@ -588,7 +633,7 @@ const VendorPublicProfile = () => {
                                 <div className="p-2 bg-indigo-50 text-[#0066FF] rounded-lg">
                                     <ShieldCheck size={20} />
                                 </div>
-                                <h3 className="text-lg font-black text-[#0B1E43]">Why Choose {vendor.organizationName}?</h3>
+                                <h2 className="text-lg font-black text-[#0B1E43]">Why Choose {vendor.organizationName}?</h2>
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-y-5 gap-x-8">
                                 {(vendor.whyChooseUs?.length > 0 ? vendor.whyChooseUs : [
@@ -669,7 +714,7 @@ const VendorPublicProfile = () => {
                                 <div className="w-10 h-10 rounded-full bg-blue-50 text-[#0066FF] flex items-center justify-center">
                                     <Building2 size={20} />
                                 </div>
-                                <h3 className="font-black text-lg text-[#0B1E43]">Business Details</h3>
+                                <h2 className="font-black text-lg text-[#0B1E43]">Business Overview</h2>
                             </div>
                             <div className="space-y-5 text-sm">
                                 <div className="flex justify-between items-center gap-3">
@@ -686,7 +731,7 @@ const VendorPublicProfile = () => {
                                 </div>
                                 <div className="flex justify-between items-center gap-3">
                                     <div className="flex items-center gap-2 text-slate-500 shrink-0"><Globe size={16}/> <span>Website</span></div>
-                                    <span className="font-bold text-[#0066FF] hover:underline text-right truncate cursor-pointer">{renderContactDetail(vendor.website || vendor.companyWebsite || 'www.website.com')}</span>
+                                    <span className="font-bold text-[#0066FF] hover:underline text-right truncate cursor-pointer">{renderContactDetail(vendor.website || vendor.companyWebsite || 'NA')}</span>
                                 </div>
                                 <div className="flex justify-between items-center gap-3">
                                     <div className="flex items-center gap-2 text-slate-500 shrink-0"><Mail size={16}/> <span>Email</span></div>
@@ -736,7 +781,7 @@ const VendorPublicProfile = () => {
                                 <div className="p-1.5 bg-blue-50 text-[#0066FF] rounded-[6px]">
                                     <MessageSquare size={18} strokeWidth={2.5} />
                                 </div>
-                                <h3 className="text-[17px] font-black text-[#0B1E43]">Busiomer Highlews</h3>
+                                <h2 className="text-[17px] font-black text-[#0B1E43]">Business Highlights & Reviews</h2>
                             </div>
                             <Link to="#" className="text-[10px] font-bold text-[#0066FF] hover:underline">View All Reviews →</Link>
                         </div>
@@ -767,39 +812,51 @@ const VendorPublicProfile = () => {
                     
                     {/* FAQs */}
                     <div className="bg-white rounded-3xl shadow-sm border border-slate-100 p-8 flex flex-col h-full">
-                        <div className="flex items-center justify-between mb-8">
-                            <div className="flex items-center gap-3">
-                                <div className="p-1.5 bg-blue-50 text-[#0066FF] rounded-[6px]">
-                                    <CheckCircle2 size={18} strokeWidth={2.5} />
-                                </div>
-                                <h3 className="text-[17px] font-black text-[#0B1E43]">Frequently Asked Questions</h3>
-                            </div>
-                            <Link to="#" className="text-[10px] font-bold text-[#0066FF] hover:underline">View All FAQs →</Link>
-                        </div>
-                        <div className="flex-1 flex flex-col">
-                            {(vendor.faqs?.length > 0 ? vendor.faqs : [
-                                {question: `What services does ROI GLOBAL offer?`, answer: `We offer end-to-end logistics solutions including sea freight, air freight, customs clearance, and warehousing.`},
-                                {question: `Which countries does ROI GLOBAL serve?`, answer: `We have a strong global network covering Asia, Europe, North America, and the Middle East.`},
+                        {(() => {
+                            const faqsList = vendor.faqs?.length > 0 ? vendor.faqs : [
+                                {question: `What services does ${vendorName} offer?`, answer: `We offer end-to-end logistics solutions including sea freight, air freight, customs clearance, and warehousing.`},
+                                {question: `Which countries does ${vendorName} serve?`, answer: `We have a strong global network covering Asia, Europe, North America, and the Middle East.`},
                                 {question: `Do you provide door-to-door delivery?`, answer: `Yes, we provide seamless door-to-door delivery for both commercial and residential shipments.`},
                                 {question: `Can you handle project cargo & ODC shipments?`, answer: `Absolutely. We have specialized teams and equipment for oversized and project cargo.`},
                                 {question: `Do you provide customs clearance services?`, answer: `Yes, our in-house customs brokers ensure smooth and compliant clearance at all major ports.`}
-                            ]).slice(0, 5).map((q, i) => (
-                                <div key={i} className="flex-1 flex flex-col border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-all rounded-lg overflow-hidden">
-                                    <div 
-                                        className="flex items-center justify-between cursor-pointer py-3 px-2"
-                                        onClick={() => setOpenFaq(openFaq === i ? null : i)}
-                                    >
-                                        <span className={`text-xs font-bold transition-colors ${openFaq === i ? 'text-[#0066FF]' : 'text-[#0B1E43]'}`}>{q.question}</span>
-                                        <span className={`text-slate-500 font-black text-lg transition-transform ${openFaq === i ? 'rotate-45 text-[#0066FF]' : ''}`}>+</span>
-                                    </div>
-                                    {openFaq === i && (
-                                        <div className="px-2 pb-3 pt-1 text-xs font-medium text-slate-600 animate-fade-in whitespace-pre-line">
-                                            {q.answer || 'Answer not provided by vendor.'}
+                            ];
+                            const displayFaqs = faqsList.slice(0, 5);
+                            const hasMoreFaqs = faqsList.length > 5;
+
+                            return (
+                                <>
+                                    <div className="flex items-center justify-between mb-8">
+                                        <div className="flex items-center gap-3">
+                                            <div className="p-1.5 bg-blue-50 text-[#0066FF] rounded-[6px]">
+                                                <CheckCircle2 size={18} strokeWidth={2.5} />
+                                            </div>
+                                            <h2 className="text-[17px] font-black text-[#0B1E43]">Frequently Asked Questions</h2>
                                         </div>
-                                    )}
-                                </div>
-                            ))}
-                        </div>
+                                        {hasMoreFaqs ? (
+                                            <button onClick={() => setShowFaqsModal(true)} className="text-[10px] font-bold text-[#0066FF] hover:underline">View All FAQs →</button>
+                                        ) : null}
+                                    </div>
+                                    <div className="flex flex-col gap-1 overflow-y-auto max-h-[350px] pr-2 scrollbar-thin">
+                                        {displayFaqs.map((q, i) => (
+                                            <div key={i} className="flex flex-col border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-all rounded-lg overflow-hidden shrink-0">
+                                                <div 
+                                                    className="flex items-center justify-between cursor-pointer py-3 px-2"
+                                                    onClick={() => setOpenFaq(openFaq === i ? null : i)}
+                                                >
+                                                    <span className={`text-xs font-bold transition-colors ${openFaq === i ? 'text-[#0066FF]' : 'text-[#0B1E43]'}`}>{q.question}</span>
+                                                    <span className={`text-slate-500 font-black text-lg transition-transform ${openFaq === i ? 'rotate-45 text-[#0066FF]' : ''}`}>+</span>
+                                                </div>
+                                                {openFaq === i && (
+                                                    <div className="px-2 pb-3 pt-1 text-xs font-medium text-slate-600 animate-fade-in whitespace-pre-line">
+                                                        {q.answer || 'Answer not provided by vendor.'}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </>
+                            );
+                        })()}
                     </div>
                 </div>
 
@@ -834,7 +891,7 @@ const VendorPublicProfile = () => {
                 {/* Bottom CTA Banner */}
                 <div className="mt-8 rounded-[24px] overflow-hidden relative flex flex-col md:flex-row items-center justify-between shadow-lg h-[240px]">
                     <div className="absolute inset-0 z-0">
-                        <img src="/cta_ship.png" alt="Shipping Container Ship" className="w-full h-full object-cover object-center" />
+                        <img src="/cta_ship.png" alt={`${vendorName} Freight Forwarder ${country}`} title={`${vendorName} Logistics Company`} className="w-full h-full object-cover object-center" />
                     </div>
                     
                     <div className="relative z-20 p-12 pl-14 flex flex-col justify-center h-full max-w-2xl">
@@ -931,9 +988,10 @@ const VendorPublicProfile = () => {
                             </button>
                         </div>
                         <div className="overflow-y-auto flex-1 pr-2">
-                            <p className="text-sm text-slate-600 leading-relaxed font-medium whitespace-pre-line">
-                                {vendor.companyProfile || `${vendor.organizationName} is a trusted logistics and freight forwarding company based in ${vendor.country || 'India'}, offering comprehensive solutions in sea freight, air freight, land transportation, warehousing, and customs clearance. With a strong global network and experienced team, we deliver cost-effective, reliable and efficient logistics services tailored to your business needs.`}
-                            </p>
+                            <div 
+                                className="text-sm text-slate-600 leading-relaxed font-medium whitespace-pre-line"
+                                dangerouslySetInnerHTML={{ __html: vendor.companyProfile || `${vendor.organizationName} is a trusted logistics and freight forwarding company based in ${vendor.country || 'India'}, offering comprehensive solutions in sea freight, air freight, land transportation, warehousing, and customs clearance. With a strong global network and experienced team, we deliver cost-effective, reliable and efficient logistics services tailored to your business needs.` }}
+                            />
                         </div>
                     </div>
                 </div>
@@ -965,7 +1023,7 @@ const VendorPublicProfile = () => {
                                              srv.toLowerCase().includes('ware') ? <Warehouse size={16} /> : 
                                              <Package size={16} />}
                                         </div>
-                                        <h4 className="text-[11px] font-black text-slate-800 leading-tight mb-0.5">{srv}</h4>
+                                        <h3 className="text-[11px] font-black text-slate-800 leading-tight mb-0.5">{srv}</h3>
                                         <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider leading-tight">{srv} solutions</p>
                                     </div>
                                 ))}
@@ -1057,6 +1115,54 @@ const VendorPublicProfile = () => {
                                             <Ship size={24} />
                                         </div>
                                         <span className="text-[11px] font-black text-slate-700 whitespace-nowrap">{p}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* All FAQs Modal */}
+            {showFaqsModal && (
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[99999] flex items-center justify-center p-4">
+                    <div className="bg-white rounded-3xl shadow-2xl w-full max-w-3xl max-h-[85vh] flex flex-col overflow-hidden animate-fade-in-up">
+                        <div className="p-6 md:p-8 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+                            <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 rounded-xl bg-blue-100 text-[#0066FF] flex items-center justify-center">
+                                    <CheckCircle2 size={24} />
+                                </div>
+                                <div>
+                                    <h3 className="text-2xl font-black text-[#0B1E43]">All Frequently Asked Questions</h3>
+                                    <p className="text-xs font-bold text-slate-500 mt-1">Get answers to common queries about {vendorName}</p>
+                                </div>
+                            </div>
+                            <button onClick={() => setShowFaqsModal(false)} className="p-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-200 transition-colors">
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <div className="overflow-y-auto flex-1 p-6 md:p-8">
+                            <div className="flex flex-col gap-2">
+                                {(vendor.faqs?.length > 0 ? vendor.faqs : [
+                                    {question: `What services does ${vendorName} offer?`, answer: `We offer end-to-end logistics solutions including sea freight, air freight, customs clearance, and warehousing.`},
+                                    {question: `Which countries does ${vendorName} serve?`, answer: `We have a strong global network covering Asia, Europe, North America, and the Middle East.`},
+                                    {question: `Do you provide door-to-door delivery?`, answer: `Yes, we provide seamless door-to-door delivery for both commercial and residential shipments.`},
+                                    {question: `Can you handle project cargo & ODC shipments?`, answer: `Absolutely. We have specialized teams and equipment for oversized and project cargo.`},
+                                    {question: `Do you provide customs clearance services?`, answer: `Yes, our in-house customs brokers ensure smooth and compliant clearance at all major ports.`}
+                                ]).map((q, i) => (
+                                    <div key={i} className="flex flex-col border border-slate-100 rounded-xl overflow-hidden mb-2">
+                                        <div 
+                                            className="flex items-center justify-between cursor-pointer p-4 hover:bg-slate-50 transition-colors"
+                                            onClick={() => setOpenFaq(openFaq === i ? null : i)}
+                                        >
+                                            <span className={`text-sm font-bold transition-colors ${openFaq === i ? 'text-[#0066FF]' : 'text-[#0B1E43]'}`}>{q.question}</span>
+                                            <span className={`text-slate-500 font-black text-xl transition-transform ${openFaq === i ? 'rotate-45 text-[#0066FF]' : ''}`}>+</span>
+                                        </div>
+                                        {openFaq === i && (
+                                            <div className="p-4 pt-0 text-sm font-medium text-slate-600 animate-fade-in whitespace-pre-line border-t border-slate-50 bg-slate-50/50">
+                                                {q.answer || 'Answer not provided by vendor.'}
+                                            </div>
+                                        )}
                                     </div>
                                 ))}
                             </div>

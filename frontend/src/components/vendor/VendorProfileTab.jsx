@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import axios from 'axios';
 import CountrySelect from '../common/CountrySelect';
 import { COUNTRIES } from '../../utils/countries';
+import JoditEditor from 'jodit-react';
 
 const getCountryFromPhone = (phone) => {
   if (!phone) return '';
@@ -631,12 +632,19 @@ const VendorProfileTab = ({ user: propUser }) => {
             </div>
             <div className="md:col-span-2 space-y-1.5">
               <label className="text-xs font-bold text-[#0B1E43] uppercase tracking-wide">Company Profile Brief</label>
-              <textarea 
+              <JoditEditor 
                 value={formData.companyProfile}
-                onChange={(e) => setFormData({ ...formData, companyProfile: e.target.value })}
-                className="w-full bg-[#f8fafc] border border-slate-200 rounded-xl px-4 py-3 text-xs text-slate-800 focus:outline-none focus:bg-white focus:border-[#0066FF] focus:ring-4 focus:ring-[#0066FF]/5 transition-all font-semibold"
-                rows="3"
-                placeholder="Give a short summary of your company profile and core strengths..."
+                config={{
+                    readonly: false,
+                    toolbar: true,
+                    placeholder: "Give a short summary of your company profile and core strengths...",
+                    showCharsCounter: false,
+                    showWordsCounter: false,
+                    showXPathInStatusbar: false,
+                    hidePoweredByJodit: true,
+                    statusbar: false
+                }}
+                onBlur={newContent => setFormData({ ...formData, companyProfile: newContent })}
               />
             </div>
           </div>

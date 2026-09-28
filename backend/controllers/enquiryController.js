@@ -176,12 +176,12 @@ exports.createEnquiry = async (req, res) => {
         }
 
         let isPremiumCustomerLead = false;
-        
+
         // Evaluate premium status for customers/guests
         if (loggedInUser && loggedInUser.role !== 'admin' && loggedInUser.role !== 'vendor') {
             const emailToCheck = (loggedInUser.email || guestEmail || '').toLowerCase();
             const freeDomains = ['gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'live.com', 'aol.com', 'icloud.com', 'mail.com', 'ymail.com', 'proton.me', 'protonmail.com', 'zoho.com'];
-            
+
             if (emailToCheck.includes('@')) {
                 const domain = emailToCheck.split('@')[1];
                 if (!freeDomains.includes(domain)) {
@@ -436,7 +436,7 @@ exports.getVendorEnquiries = async (req, res) => {
             // Filter by service types if specified
             const acceptedCondition = { responses: { $elemMatch: { vendor: req.user.id, status: { $in: ['Accepted', 'Quoted'] } } } };
             const serviceConditions = [acceptedCondition];
-            
+
             if (currentUser.services && currentUser.services.length > 0) {
                 const mappedServices = currentUser.services.map(s => s.toLowerCase().trim());
                 serviceConditions.push({ type: { $in: mappedServices } });
@@ -452,7 +452,7 @@ exports.getVendorEnquiries = async (req, res) => {
                     }
                 });
             }
-            
+
             if (query.$or) {
                 query.$and = query.$and || [];
                 query.$and.push({ $or: query.$or });
@@ -637,7 +637,7 @@ exports.getVendorEnquiries = async (req, res) => {
             if (hasActivePlan && currentUser.activePlan && currentUser.activePlan.inquiryLimit) {
                 inquiryLimit = currentUser.activePlan.inquiryLimit;
             }
-            
+
             let topupLimit = 0;
             if (!currentUser.topupPlanEndDate || new Date(currentUser.topupPlanEndDate) > new Date()) {
                 topupLimit = currentUser.topupEnquiryLimit || 0;
@@ -929,7 +929,7 @@ exports.getClientEnquiries = async (req, res) => {
                 { commodity: searchRegex },
                 { type: searchRegex }
             ];
-            
+
             if (mongoose.Types.ObjectId.isValid(search.trim())) {
                 query.$or.push({ _id: new mongoose.Types.ObjectId(search.trim()) });
             }
@@ -1013,10 +1013,10 @@ exports.getVendorStats = async (req, res) => {
                 } else if (currentUser.createdAt) {
                     query.createdAt = { $gte: currentUser.createdAt };
                 }
-                
+
                 const acceptedCondition = { responses: { $elemMatch: { vendor: req.user.id, status: { $in: ['Accepted', 'Quoted'] } } } };
                 const serviceConditions = [acceptedCondition];
-                
+
                 if (currentUser.services && currentUser.services.length > 0) {
                     const mappedServices = currentUser.services.map(s => s.toLowerCase().trim());
                     serviceConditions.push({ type: { $in: mappedServices } });
@@ -1032,7 +1032,7 @@ exports.getVendorStats = async (req, res) => {
                         }
                     });
                 }
-                
+
                 if (query.$or) {
                     query.$and = query.$and || [];
                     query.$and.push({ $or: query.$or });
