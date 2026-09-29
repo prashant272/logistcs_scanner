@@ -554,6 +554,12 @@ exports.updateUserProfile = async (req, res) => {
                         user[field] = req.body[field];
                     }
                 } else if (user[field] !== req.body[field]) {
+                    // Prevent accidental deletion of documents by ignoring empty string updates for these fields
+                    const isDocField = field === 'uploadedDocument' || field === 'uploadedCertificate' || field === 'uploadedInvoice' || field === 'profilePhoto';
+                    if (isDocField && (req.body[field] === '' || req.body[field] === null || req.body[field] === undefined) && !req.body.deleteDocumentFlag) {
+                        return; // skip updating this field to empty unless deleteDocumentFlag is provided
+                    }
+
                     // Primitive
                     // Avoid logging huge strings
                     if (field !== 'profilePhoto' && field !== 'uploadedDocument' && field !== 'uploadedCertificate' && field !== 'uploadedInvoice' && field !== 'companyProfile') {
@@ -591,12 +597,13 @@ exports.updateUserProfile = async (req, res) => {
         await user.save();
 
         if (user.role === 'vendor' && changes.length > 0) {
+            const isAdmin = req.user.impersonated;
             await ActivityLog.create({
                 vendorId: user._id,
-                action: 'VENDOR_PROFILE_UPDATED',
-                performedBy: user._id,
-                performedByRole: 'vendor',
-                details: `Vendor updated their profile details. Changes: ${changes.join(', ')}`
+                action: isAdmin ? 'ADMIN_UPDATED_PROFILE' : 'VENDOR_PROFILE_UPDATED',
+                performedBy: isAdmin ? 'ad0000000000000000000000' : user._id,
+                performedByRole: isAdmin ? 'admin' : 'vendor',
+                details: `${isAdmin ? 'Admin' : 'Vendor'} updated profile details. Changes: ${changes.join(', ')}`
             });
         }
 

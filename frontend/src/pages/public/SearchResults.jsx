@@ -157,23 +157,16 @@ const SearchResults = () => {
       if (broadcastTriggered.current) return;
       broadcastTriggered.current = true;
 
-      const savedGuest = localStorage.getItem('guestInfo');
-      if (user) {
-        if (user.role === 'vendor') {
-          // Do not auto-broadcast for vendors. Let them trigger it manually.
-          broadcastTriggered.current = false;
-        } else {
-          // User logged in: Automatically trigger broadcast
-          handleAutoBroadcast();
-        }
+      if (user && user.role === 'vendor') {
+        // Do not auto-broadcast for vendors. Let them trigger it manually.
+        broadcastTriggered.current = false;
       } else {
-        // Guest user: Prompt for details to raise broadcast
-        // We no longer auto-broadcast using savedGuest to prevent accidental submissions from previous users
+        // For guests and customers: Prompt for details to raise broadcast
         setPendingAction({ type: 'enquiry', rate: null });
         setIsGuestModalOpen(true);
       }
     }
-  }, [state]);
+  }, [state, user]);
 
   const handleAutoBroadcast = async () => {
     setLoading(true);
@@ -575,7 +568,7 @@ const SearchResults = () => {
                 <span className="text-xs text-slate-400 font-bold hidden sm:inline-block">{searchResults.length} Match(es) found</span>
                 <button
                   type="button"
-                  onClick={user ? handleAutoBroadcast : () => { setPendingAction(null); setIsGuestModalOpen(true); }}
+                  onClick={() => { setPendingAction(null); setIsGuestModalOpen(true); }}
                   className="bg-[#0B1E43] hover:bg-[#06122a] text-white text-[10px] font-black uppercase tracking-wider px-4 py-2 rounded-lg transition-all shadow-md cursor-pointer"
                 >
                   Direct Enquiry

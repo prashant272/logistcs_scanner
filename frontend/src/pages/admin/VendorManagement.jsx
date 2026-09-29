@@ -461,7 +461,7 @@ const VendorManagement = () => {
       });
       const vendorToken = impersonateRes.data.token;
 
-      const payload = {};
+      const payload = { deleteDocumentFlag: true };
       if (docType === 'certificate') payload.uploadedCertificate = '';
       else if (docType === 'invoice') payload.uploadedInvoice = '';
       else if (docType === 'document') payload.uploadedDocument = '';
