@@ -513,7 +513,7 @@ const VendorPublicProfile = () => {
                             </div>
                             <div className="relative">
                                 <div 
-                                    className="text-sm text-slate-600 leading-relaxed font-medium break-words mb-0"
+                                    className="text-sm text-slate-600 leading-relaxed font-medium break-words mb-0 line-clamp-5 overflow-hidden prose prose-sm max-w-none prose-p:my-1 prose-ul:my-1 prose-li:my-0 prose-headings:my-2"
                                     dangerouslySetInnerHTML={{ __html: vendor.companyProfile || `${vendor.organizationName} is a trusted logistics and freight forwarding company based in ${vendor.country || 'India'}, offering comprehensive solutions in sea freight, air freight, land transportation, warehousing, and customs clearance. With a strong global network and experienced team, we deliver cost-effective, reliable and efficient logistics services tailored to your business needs.` }}
                                 />
                                 {((vendor.companyProfile || '').length > 300 || !vendor.companyProfile) && (
@@ -989,7 +989,7 @@ const VendorPublicProfile = () => {
                         </div>
                         <div className="overflow-y-auto flex-1 pr-2">
                             <div 
-                                className="text-sm text-slate-600 leading-relaxed font-medium whitespace-pre-line"
+                                className="text-sm text-slate-600 leading-relaxed font-medium prose prose-sm max-w-none prose-p:my-1 prose-ul:my-1 prose-li:my-0 prose-headings:my-2"
                                 dangerouslySetInnerHTML={{ __html: vendor.companyProfile || `${vendor.organizationName} is a trusted logistics and freight forwarding company based in ${vendor.country || 'India'}, offering comprehensive solutions in sea freight, air freight, land transportation, warehousing, and customs clearance. With a strong global network and experienced team, we deliver cost-effective, reliable and efficient logistics services tailored to your business needs.` }}
                             />
                         </div>

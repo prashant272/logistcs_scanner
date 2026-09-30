@@ -90,21 +90,32 @@ exports.deleteSmtpConfig = async (req, res) => {
 };
 
 // Background worker to process campaigns
+let isProcessingCampaigns = false;
 const processCampaigns = async () => {
+    if (isProcessingCampaigns) return;
+    isProcessingCampaigns = true;
+
     try {
         const runningCampaigns = await EmailCampaign.find({ status: 'running' });
         
         for (const campaign of runningCampaigns) {
-            // Find one pending recipient for this campaign
-            const recipient = await CampaignRecipient.findOne({ campaignId: campaign._id, status: 'pending' });
+            // Find one pending recipient for this campaign and atomically mark it as processing
+            const recipient = await CampaignRecipient.findOneAndUpdate(
+                { campaignId: campaign._id, status: 'pending' },
+                { status: 'processing' },
+                { new: true }
+            );
             
             if (!recipient) {
-                // No more pending recipients, mark campaign as completed
-                campaign.status = 'completed';
-                await campaign.save();
-                
-                const io = getIo();
-                if (io) io.to('adminRoom').emit('campaignUpdate', campaign);
+                // Check if there are any processing ones left (could be stuck). For now, assume completed if no pending.
+                const pendingCount = await CampaignRecipient.countDocuments({ campaignId: campaign._id, status: 'pending' });
+                if (pendingCount === 0) {
+                    campaign.status = 'completed';
+                    await campaign.save();
+                    
+                    const io = getIo();
+                    if (io) io.to('adminRoom').emit('campaignUpdate', campaign);
+                }
                 continue;
             }
 
@@ -181,6 +192,8 @@ const processCampaigns = async () => {
         }
     } catch (error) {
         console.error('Error processing campaigns:', error);
+    } finally {
+        isProcessingCampaigns = false;
     }
 };
 
