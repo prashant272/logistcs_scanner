@@ -132,7 +132,7 @@ exports.verifyOTP = async (req, res) => {
             return res.status(400).json({ message: 'Please provide email and OTP' });
         }
 
-        const user = await User.findOne({ email });
+        const user = await User.findOne({ email }).populate('activePlan').populate('assignedRM').populate('parentCompany', 'company gst pan');
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
@@ -207,6 +207,8 @@ exports.verifyOTP = async (req, res) => {
             verificationStatus: user.verificationStatus,
             isVerified: user.isVerified,
             walletBalance: user.walletBalance || 0,
+            activePlan: user.activePlan,
+            parentCompany: user.parentCompany,
             token: generateToken(user.id)
         });
     } catch (error) {
@@ -270,7 +272,7 @@ exports.loginUser = async (req, res) => {
         }
 
         // Check for user email
-        const user = await User.findOne({ email }).populate('assignedRM');
+        const user = await User.findOne({ email }).populate('activePlan').populate('assignedRM').populate('parentCompany', 'company gst pan');
 
         if (user && (await bcrypt.compare(password, user.password))) {
             // Check if user is verified
@@ -319,6 +321,8 @@ exports.loginUser = async (req, res) => {
                 verificationStatus: user.verificationStatus,
                 isVerified: user.isVerified,
                 walletBalance: user.walletBalance || 0,
+                activePlan: user.activePlan,
+                parentCompany: user.parentCompany,
                 token: generateToken(user.id)
             });
         } else {
