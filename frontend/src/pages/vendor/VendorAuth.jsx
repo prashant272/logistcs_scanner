@@ -33,6 +33,7 @@ const VendorAuth = () => {
         confirmPassword: '',
         country: '',
         state: '',
+        city: '',
         vendorTypes: ['Freight forwarder']
     });
 
@@ -85,7 +86,10 @@ const VendorAuth = () => {
                     phone: fullPhone,
                     company: formData.company,
                     password: formData.password,
-                    address: `${formData.state}, ${formData.country}`,
+                    address: `${formData.city}, ${formData.state}, ${formData.country}`,
+                    country: formData.country,
+                    state: formData.state,
+                    city: formData.city,
                     role: 'vendor',
                     vendorTypes: formData.vendorTypes
                 });
@@ -750,6 +754,22 @@ const VendorAuth = () => {
                                                     onChange={handleChange}
                                                     className="block w-full px-4 py-2.5 border border-slate-200 rounded-xl bg-white !text-slate-900 font-medium focus:outline-none focus:border-[#00b2fe] focus:ring-2 focus:ring-[#00b2fe]/10 transition-all placeholder:text-slate-400 text-sm"
                                                     placeholder="State Name"
+                                                />
+                                            </div>
+
+                                            {/* City Field */}
+                                            <div className="group">
+                                                <label className="block text-xs font-bold !text-slate-900 mb-1">
+                                                    City <span className="text-red-500">*</span>
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    name="city"
+                                                    required
+                                                    value={formData.city}
+                                                    onChange={handleChange}
+                                                    className="block w-full px-4 py-2.5 border border-slate-200 rounded-xl bg-white !text-slate-900 font-medium focus:outline-none focus:border-[#00b2fe] focus:ring-2 focus:ring-[#00b2fe]/10 transition-all placeholder:text-slate-400 text-sm"
+                                                    placeholder="City Name"
                                                 />
                                             </div>
 

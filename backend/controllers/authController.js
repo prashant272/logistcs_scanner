@@ -16,10 +16,16 @@ const generateToken = (id) => {
 // Register User
 exports.registerUser = async (req, res) => {
     try {
-        const { name, email, password, phone, address, role, company, vendorTypes } = req.body;
+        const { name, email, password, phone, address, role, company, vendorTypes, country, city, state } = req.body;
 
         if (!name || !email || !password || !phone) {
             return res.status(400).json({ message: 'Please fill in all fields' });
+        }
+
+        if (role === 'vendor') {
+            if (!country || !city || !state) {
+                return res.status(400).json({ message: 'Country, State and City are mandatory for vendor registration' });
+            }
         }
 
         // Hash password
@@ -43,27 +49,29 @@ exports.registerUser = async (req, res) => {
             userExists.phone = phone;
             userExists.address = address;
             userExists.role = role || 'customer';
-            if (role === 'vendor' && vendorTypes) {
-                userExists.vendorTypes = vendorTypes;
+            if (role === 'vendor') {
+                if (vendorTypes) userExists.vendorTypes = vendorTypes;
+                userExists.country = country;
+                userExists.state = state;
+                userExists.city = city;
             }
             userExists.company = company || '';
             userExists.otp = otp;
             userExists.otpExpires = otpExpires;
             await userExists.save();
 
-            const notification = await handleSignupNotification({
+            handleSignupNotification({
                 email,
                 phone,
                 country: address,
                 otp,
                 role: userExists.role
-            });
+            }).catch(err => console.error("Signup notification error:", err));
 
             return res.status(200).json({
                 message: 'Registration updated. Please verify the OTP sent to your email/mobile.',
                 email: userExists.email,
-                isVerified: false,
-                notification
+                isVerified: false
             });
         }
 
@@ -73,7 +81,10 @@ exports.registerUser = async (req, res) => {
             email,
             password: hashedPassword,
             phone,
-            address, // Contains country name
+            address, // Contains full address string
+            country: country || '',
+            state: state || '',
+            city: city || '',
             role: role || 'customer',
             company: company || '',
             otp,
@@ -89,14 +100,14 @@ exports.registerUser = async (req, res) => {
         const user = await User.create(userData);
 
         if (user) {
-            // Trigger OTP dispatch (SMS if India, always Email)
-            const notification = await handleSignupNotification({
+            // Trigger OTP dispatch in background
+            handleSignupNotification({
                 email,
                 phone,
                 country: address,
                 otp,
                 role: user.role
-            });
+            }).catch(err => console.error("Signup notification error:", err));
 
             // Log activity if it's a vendor
             if (user.role === 'vendor') {
@@ -112,8 +123,7 @@ exports.registerUser = async (req, res) => {
             res.status(201).json({
                 message: 'Registration successful. Please verify the OTP sent to your email/mobile.',
                 email: user.email,
-                isVerified: false,
-                notification
+                isVerified: false
             });
         } else {
             res.status(400).json({ message: 'Invalid user data' });
@@ -171,18 +181,18 @@ exports.verifyOTP = async (req, res) => {
         const isIndia = (user.address && user.address.toLowerCase() === 'india') || (user.phone && user.phone.startsWith('+91'));
         if (isIndia) {
             const templateID = user.role === 'vendor' ? "1707175750032925464" : "1707175750054912723";
-            await sendSMS({ mobile: user.phone, otp: '', templateID });
+            sendSMS({ mobile: user.phone, otp: '', templateID }).catch(err => console.error("Welcome SMS error:", err));
         }
 
         // Send Welcome Email based on role
         if (user.role === 'vendor') {
-            await sendVendorWelcomeEmail(user.email, user.name);
-            await sendVendorRegistrationAdminAlert({
+            sendVendorWelcomeEmail(user.email, user.name).catch(err => console.error("Vendor welcome email error:", err));
+            sendVendorRegistrationAdminAlert({
                 name: user.name,
                 companyName: user.company,
                 email: user.email,
                 phone: user.phone
-            });
+            }).catch(err => console.error("Admin alert error:", err));
         } else {
             const welcomeSubject = 'Welcome to The LogisticScanner!';
             const welcomeHtml = `
@@ -192,7 +202,7 @@ exports.verifyOTP = async (req, res) => {
                     <p>Happy Shipping, Seamless Delivery!</p>
                 </div>
             `;
-            await sendEmail({ to: user.email, subject: welcomeSubject, html: welcomeHtml });
+            sendEmail({ to: user.email, subject: welcomeSubject, html: welcomeHtml }).catch(err => console.error("Welcome email error:", err));
         }
 
         res.status(200).json({

@@ -30,6 +30,12 @@ const VendorProfileTab = ({ user: propUser }) => {
   const { user: authUser, updateProfile } = useAuth();
   const user = propUser || authUser;
 
+    // Fallbacks for existing users who registered before strict separation
+    const addressParts = (user?.address || '').split(',').map(s => s.trim());
+    const defaultCity = user?.city || (addressParts.length >= 3 ? addressParts[addressParts.length - 3] : '');
+    const defaultState = user?.state || (addressParts.length >= 2 ? addressParts[addressParts.length - 2] : '');
+    const defaultCountry = user?.country || (addressParts.length >= 1 ? addressParts[addressParts.length - 1] : '');
+
   const [formData, setFormData] = useState({
     firstName: user?.firstName || (user?.name ? user.name.split(' ')[0] : ''),
     lastName: user?.lastName || (user?.name ? user.name.split(' ').slice(1).join(' ') : ''),
@@ -41,9 +47,9 @@ const VendorProfileTab = ({ user: propUser }) => {
     uploadedDocument: user?.uploadedDocument || '',
     uploadedCertificate: user?.uploadedCertificate || '',
     uploadedInvoice: user?.uploadedInvoice || '',
-    country: user?.country || '',
-    city: user?.city || '',
-    state: user?.state || '',
+    country: defaultCountry,
+    city: defaultCity,
+    state: defaultState,
     pincode: user?.pincode || '',
     website: user?.website || '',
     alternativeEmail: user?.alternativeEmail || '',

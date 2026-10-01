@@ -180,65 +180,38 @@ const sendSMS = async ({ mobile, otp, templateID = "1707175750668490308" }) => {
 const sendWhatsAppOTP = async ({ mobile, otp }) => {
     try {
         // Clean mobile number (remove non-digits)
-        let cleanMobile = mobile.replace(/\D/g, '');
+        let cleanMobile = mobile ? mobile.replace(/\D/g, '') : '';
         // If it's exactly 10 digits and the original didn't start with '+', assume India
         if (cleanMobile.length === 10 && !mobile.startsWith('+')) {
             cleanMobile = '91' + cleanMobile;
         }
 
+        if (!cleanMobile) {
+            return { success: false, error: 'Invalid mobile number' };
+        }
+
         const payload = {
-            messaging_product: "whatsapp",
-            recipient_type: "individual",
-            to: cleanMobile,
-            type: "template",
-            template: {
-                name: "otp_verification",
-                language: {
-                    code: "en_US"
-                },
-                components: [
-                    {
-                        type: "body",
-                        parameters: [
-                            {
-                                type: "text",
-                                text: String(otp)
-                            }
-                        ]
-                    },
-                    {
-                        type: "button",
-                        sub_type: "url",
-                        index: 0,
-                        parameters: [
-                            {
-                                type: "text",
-                                text: String(otp)
-                            }
-                        ]
-                    }
-                ]
-            }
+            "app-key": process.env.WABRIDGE_APP_KEY || "9f0df15d-1058-44b2-9beb-ff309449afa9",
+            "auth-key": process.env.WABRIDGE_AUTH_KEY || "0ede54ddb11953c237dc825c4bdcd43e3ec41ce335a7d2591b",
+            "device_id": process.env.WABRIDGE_DEVICE_ID || "6960a3783524dd5a0916b9d5",
+            "destination_number": cleanMobile,
+            "template_id": "2114436642782977",
+            "variables": [String(otp)],
+            "button_variable": [],
+            "media": "",
+            "message": ""
         };
 
-        const phoneId = process.env.WHATSAPP_PHONE_ID || '790783224112773';
-        const accessToken = process.env.WHATSAPP_ACCESS_TOKEN;
-
-        const response = await axios.post(
-            `https://graph.facebook.com/v17.0/${phoneId}/messages`,
-            payload,
-            {
-                headers: {
-                    'Authorization': `Bearer ${accessToken}`,
-                    'Content-Type': 'application/json'
-                }
+        const response = await axios.post('https://web.wabridge.com/api/createmessage', payload, {
+            headers: {
+                'Content-Type': 'application/json'
             }
-        );
+        });
 
-        console.log('WhatsApp OTP sent response:', response.data);
+        console.log('[Notification Service] WhatsApp OTP sent via Webbridge. Response:', response.data);
         return { success: true, data: response.data };
     } catch (error) {
-        console.error('Error sending WhatsApp OTP:', error.response ? error.response.data : error.message);
+        console.error('[Notification Service] Error sending WhatsApp OTP via Webbridge:', error.response ? error.response.data : error.message);
         return { success: false, error: error.message };
     }
 };

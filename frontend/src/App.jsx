@@ -78,6 +78,7 @@ const Privacy = lazy(() => import('./pages/public/Privacy'));
 const Refund = lazy(() => import('./pages/public/Refund'));
 const Support = lazy(() => import('./pages/public/Support'));
 const DownloadApp = lazy(() => import('./pages/public/DownloadApp'));
+const PartnerCreditProgram = lazy(() => import('./pages/public/PartnerCreditProgram'));
 
 
 // Lazy loaded customer pages
@@ -325,6 +326,7 @@ function App() {
                     <Route path="/refund" element={<Refund />} />
                     <Route path="/support" element={<Support />} />
                     <Route path="/download-app" element={<DownloadApp />} />
+                    <Route path="/partner-credit-program" element={<PartnerCreditProgram />} />
 
                     <Route path="/upgrade" element={<CustomerPrivateRoute><PricingPlans /></CustomerPrivateRoute>} />
                     <Route path="/vendor-auth" element={<VendorAuth />} />
