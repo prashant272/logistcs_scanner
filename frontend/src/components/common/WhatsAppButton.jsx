@@ -2,7 +2,7 @@ import React from 'react';
 
 const WhatsAppButton = () => {
     // Phone number format with country code 91 for India
-    const phoneNumber = "919266335550";
+    const phoneNumber = "919278223300";
     const message = encodeURIComponent("Hello Logistics Scanner! I have an inquiry.");
 
     return (
