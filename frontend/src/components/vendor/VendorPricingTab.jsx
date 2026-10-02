@@ -488,7 +488,25 @@ const VendorPricingTab = () => {
 
       {/* Add Rate Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+        (() => {
+          const getOriginLabel = () => {
+            if (type === 'air') return 'Origin Airport';
+            if (type === 'sea') return 'Origin Port';
+            if (type === 'land') return 'Origin City';
+            if (type === 'warehouse') return 'Warehouse Location';
+            if (type === 'cha') return 'Port / Airport Location';
+            return 'Origin';
+          };
+
+          const getDestinationLabel = () => {
+            if (type === 'air') return 'Destination Airport';
+            if (type === 'sea') return 'Destination Port';
+            if (type === 'land') return 'Destination City';
+            return 'Destination';
+          };
+
+          return (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
           <div className="bg-white rounded-3xl w-full max-w-2xl shadow-[0_24px_60px_rgba(11,30,67,0.15)] border border-slate-100 overflow-hidden flex flex-col max-h-[90vh]">
             {/* Modal Header */}
             <div className="flex justify-between items-center p-6 border-b border-slate-100 bg-slate-50/50">
@@ -554,11 +572,7 @@ const VendorPricingTab = () => {
               <div className={`grid ${['warehouse', 'cha'].includes(type) ? 'grid-cols-1' : 'grid-cols-2'} gap-4`}>
                 <div className="space-y-1 relative">
                   <label className="block text-[10px] font-black text-slate-900 uppercase tracking-wider">
-                    {type === 'air' && 'Origin Airport'}
-                    {type === 'sea' && 'Origin Port'}
-                    {type === 'land' && 'Origin City'}
-                    {type === 'warehouse' && 'Warehouse Location'}
-                    {type === 'cha' && 'Port / Airport Location'}
+                    {getOriginLabel()}
                   </label>
                   {type === 'warehouse' ? (
                     <div className="flex gap-2">
@@ -630,9 +644,7 @@ const VendorPricingTab = () => {
                 {!['warehouse', 'cha'].includes(type) && (
                   <div className="space-y-1 relative">
                     <label className="block text-[10px] font-black text-slate-900 uppercase tracking-wider">
-                      {type === 'air' && 'Destination Airport'}
-                      {type === 'sea' && 'Destination Port'}
-                      {type === 'land' && 'Destination City'}
+                      {getDestinationLabel()}
                     </label>
                     <input
                       type="text"
@@ -1116,6 +1128,8 @@ const VendorPricingTab = () => {
             </form>
           </div>
         </div>
+          );
+        })()
       )}
     </div>
   );
