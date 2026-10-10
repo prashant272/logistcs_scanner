@@ -667,6 +667,7 @@ const SearchPrice = ({ isDashboard = false }) => {
                                                     value={loadType}
                                                     onChange={(e) => setLoadType(e.target.value)}
                                                     className="w-full bg-white border border-slate-300 rounded-xl px-3 py-3.5 text-xs font-bold !text-slate-900 focus:outline-none focus:border-[#0066FF] transition-all shadow-sm cursor-pointer"
+                                                    required
                                                 >
                                                     <option value="">Select Load Type</option>
                                                     <option value="LCL">Less Container Load (LCL)</option>

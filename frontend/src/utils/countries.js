@@ -72,6 +72,7 @@ export const COUNTRIES = [
   { name: "Guyana", code: "+592" },
   { name: "Haiti", code: "+509" },
   { name: "Honduras", code: "+504" },
+  { name: "Hong Kong", code: "+852" },
   { name: "Hungary", code: "+36" },
   { name: "Iceland", code: "+354" },
   { name: "India", code: "+91" },

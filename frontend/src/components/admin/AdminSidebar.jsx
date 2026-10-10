@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
     LayoutDashboard, User, Truck, DollarSign, PlusCircle, MapPin,
-    Percent, FileText, UserPlus, Users, FileSpreadsheet, Globe,
+    Percent, FileText, UserPlus, Users, FileSpreadsheet, Globe, Image,
     TrendingUp, AlertCircle, Settings, ChevronDown, ChevronRight, LogOut, CreditCard, ShieldAlert, Mail
 } from 'lucide-react';
 
@@ -59,7 +59,9 @@ const AdminSidebar = ({ isSidebarOpen, logout }) => {
         {
             category: 'Communication',
             items: [
-                { name: 'Bulk Email', path: '/admin/bulk-email', icon: <Mail size={16} /> }
+                { name: 'Bulk Email', path: '/admin/bulk-email', icon: <Mail size={16} /> },
+                { name: 'Popups', path: '/admin/popups', icon: <Globe size={16} /> },
+                { name: 'Banners & Ads', path: '/admin/ads', icon: <Image size={16} /> }
             ]
         },
         {

@@ -148,7 +148,7 @@ const VendorPricingTab = () => {
           >
             <div className="flex flex-col min-w-0 pr-2">
               <span className="text-xs font-bold text-slate-800 truncate">
-                {loc.city}, {loc.country}
+                {`${loc.city}, ${loc.country}`}
               </span>
               <span className="text-[10px] text-slate-400 font-medium truncate">
                 {loc.name}
