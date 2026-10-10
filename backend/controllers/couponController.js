@@ -1,10 +1,25 @@
 const Coupon = require('../models/Coupon');
 const Plan = require('../models/Plan');
+const User = require('../models/User');
 
 // Get all coupons
 exports.getCoupons = async (req, res) => {
     try {
-        const coupons = await Coupon.find().sort({ createdAt: -1 });
+        const coupons = await Coupon.find().populate('assignedTo', 'email').sort({ createdAt: -1 });
+        res.json(coupons);
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
+
+// Get my coupons
+exports.getMyCoupons = async (req, res) => {
+    try {
+        const coupons = await Coupon.find({ 
+            assignedTo: req.user.id,
+            status: 'Active',
+            expiryDate: { $gte: new Date() }
+        }).sort({ createdAt: -1 });
         res.json(coupons);
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
@@ -14,7 +29,7 @@ exports.getCoupons = async (req, res) => {
 // Create a coupon
 exports.createCoupon = async (req, res) => {
     try {
-        const { code, discountType, discountValue, expiryDate, status } = req.body;
+        const { code, discountType, discountValue, expiryDate, status, assignedEmail } = req.body;
         if (!code || !discountType || !discountValue || !expiryDate) {
             return res.status(400).json({ message: 'Please provide all required fields' });
         }
@@ -24,15 +39,26 @@ exports.createCoupon = async (req, res) => {
             return res.status(400).json({ message: 'Coupon code already exists' });
         }
 
+        let assignedUserId = null;
+        if (assignedEmail && assignedEmail.trim() !== '') {
+            const user = await User.findOne({ email: assignedEmail.trim().toLowerCase() });
+            if (!user) {
+                return res.status(404).json({ message: `User not found with email: ${assignedEmail}` });
+            }
+            assignedUserId = user._id;
+        }
+
         const coupon = await Coupon.create({
             code: code.toUpperCase(),
             discountType,
             discountValue: Number(discountValue),
             expiryDate: new Date(expiryDate),
-            status: status || 'Active'
+            status: status || 'Active',
+            assignedTo: assignedUserId
         });
 
-        res.status(201).json(coupon);
+        const populatedCoupon = await Coupon.findById(coupon._id).populate('assignedTo', 'email');
+        res.status(201).json(populatedCoupon);
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
     }
@@ -42,7 +68,7 @@ exports.createCoupon = async (req, res) => {
 exports.toggleCouponStatus = async (req, res) => {
     try {
         const { id } = req.params;
-        const coupon = await Coupon.findById(id);
+        const coupon = await Coupon.findById(id).populate('assignedTo', 'email');
         if (!coupon) {
             return res.status(404).json({ message: 'Coupon not found' });
         }
@@ -79,6 +105,10 @@ exports.validateCoupon = async (req, res) => {
         const coupon = await Coupon.findOne({ code: code.toUpperCase() });
         if (!coupon) {
             return res.status(404).json({ message: 'Invalid coupon code' });
+        }
+
+        if (coupon.assignedTo && req.user && coupon.assignedTo.toString() !== req.user.id.toString()) {
+            return res.status(403).json({ message: 'This coupon is strictly assigned to another user.' });
         }
 
         if (coupon.status !== 'Active') {
@@ -125,19 +155,33 @@ exports.validateCoupon = async (req, res) => {
 exports.updateCoupon = async (req, res) => {
     try {
         const { id } = req.params;
-        const { code, discountType, discountValue, expiryDate, status } = req.body;
+        const { code, discountType, discountValue, expiryDate, status, assignedEmail } = req.body;
         
+        let updateData = {
+            code: code ? code.toUpperCase() : undefined,
+            discountType,
+            discountValue: discountValue ? Number(discountValue) : undefined,
+            expiryDate: expiryDate ? new Date(expiryDate) : undefined,
+            status
+        };
+
+        if (assignedEmail !== undefined) {
+            if (assignedEmail.trim() === '') {
+                updateData.assignedTo = null;
+            } else {
+                const user = await User.findOne({ email: assignedEmail.trim().toLowerCase() });
+                if (!user) {
+                    return res.status(404).json({ message: `User not found with email: ${assignedEmail}` });
+                }
+                updateData.assignedTo = user._id;
+            }
+        }
+
         const updated = await Coupon.findByIdAndUpdate(
             id,
-            {
-                code: code ? code.toUpperCase() : undefined,
-                discountType,
-                discountValue: discountValue ? Number(discountValue) : undefined,
-                expiryDate: expiryDate ? new Date(expiryDate) : undefined,
-                status
-            },
+            updateData,
             { new: true }
-        );
+        ).populate('assignedTo', 'email');
         
         if (!updated) {
             return res.status(404).json({ message: 'Coupon not found' });

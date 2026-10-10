@@ -4,6 +4,7 @@ const couponController = require('../controllers/couponController');
 const authMiddleware = require('../middleware/authMiddleware');
 
 router.get('/', couponController.getCoupons);
+router.get('/my-coupons', authMiddleware, couponController.getMyCoupons);
 router.post('/', couponController.createCoupon);
 router.put('/:id', couponController.updateCoupon);
 router.put('/:id/toggle', couponController.toggleCouponStatus);

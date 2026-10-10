@@ -24,6 +24,11 @@ const offerSchema = new mongoose.Schema({
     isActive: {
         type: Boolean,
         default: true
+    },
+    assignedTo: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        default: null
     }
 }, { timestamps: true });
 

@@ -30,6 +30,10 @@ exports.validateOffer = async (req, res) => {
             return res.status(404).json({ message: "Invalid Coupon Code" });
         }
 
+        if (offer.assignedTo && req.user && offer.assignedTo.toString() !== req.user.id.toString()) {
+            return res.status(403).json({ message: 'This offer is strictly assigned to another user.' });
+        }
+
         if (orderValue < offer.minOrderValue) {
             return res.status(400).json({ message: `Minimum order value of ₹${offer.minOrderValue} required` });
         }

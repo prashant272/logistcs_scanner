@@ -16,6 +16,7 @@ const CouponManagement = () => {
     const [discountValue, setDiscountValue] = useState('');
     const [expiryDate, setExpiryDate] = useState('');
     const [status, setStatus] = useState('Active');
+    const [assignedTo, setAssignedTo] = useState('');
 
     useEffect(() => {
         fetchCoupons();
@@ -45,6 +46,7 @@ const CouponManagement = () => {
         setDiscountValue(coupon.discountValue || '');
         setExpiryDate(coupon.expiryDate ? coupon.expiryDate.split('T')[0] : '');
         setStatus(coupon.status || 'Active');
+        setAssignedTo(coupon.assignedTo ? coupon.assignedTo.email : '');
         setError('');
         setSuccess('');
     };
@@ -56,6 +58,7 @@ const CouponManagement = () => {
         setExpiryDate('');
         setStatus('Active');
         setDiscountType('Fix');
+        setAssignedTo('');
         setError('');
         setSuccess('');
     };
@@ -83,7 +86,8 @@ const CouponManagement = () => {
                 discountType,
                 discountValue: Number(discountValue),
                 expiryDate,
-                status
+                status,
+                assignedEmail: assignedTo.trim() || ''
             };
 
             if (editId) {
@@ -247,6 +251,17 @@ const CouponManagement = () => {
                             </select>
                         </div>
 
+                        <div className="group">
+                            <label className="block text-xs font-bold !text-slate-900 mb-1">Assign to User Email (Optional)</label>
+                            <input
+                                type="email"
+                                placeholder="Paste specific User Email here..."
+                                value={assignedTo}
+                                onChange={(e) => setAssignedTo(e.target.value)}
+                                className="w-full bg-[#f4f7fc] border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-800 focus:outline-none focus:bg-white"
+                            />
+                        </div>
+
                         <button
                             type="submit"
                             disabled={saving}
@@ -279,6 +294,7 @@ const CouponManagement = () => {
                                         <th className="p-4">Code</th>
                                         <th className="p-4">Discount</th>
                                         <th className="p-4">Expires</th>
+                                        <th className="p-4">Assigned To</th>
                                         <th className="p-4">Status</th>
                                         <th className="p-4 text-right">Actions</th>
                                     </tr>
@@ -294,6 +310,7 @@ const CouponManagement = () => {
                                                 {c.discountType === 'Percent' ? `${c.discountValue}%` : `₹${c.discountValue}`}
                                             </td>
                                             <td className="p-4 text-slate-500">{formatDate(c.expiryDate)}</td>
+                                            <td className="p-4 text-slate-500 text-[10px] break-all">{c.assignedTo?.email || 'All Users'}</td>
                                             <td className="p-4">
                                                 <button
                                                     onClick={() => handleToggleStatus(c._id)}
