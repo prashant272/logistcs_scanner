@@ -246,7 +246,7 @@ const CustomerEnquiriesTab = ({ title, type }) => {
                             {getEnquiryIcon(enq.type)}
                             <span className="font-extrabold">{enq.type} Freight</span>
                           </div>
-                          <div>{enq.type === 'sea' && (enq.seaLoadType?.toUpperCase() === 'FCL' || enq.truckLoad?.toUpperCase() === 'FCL') ? 'Container' : 'Weight/Size'}: <span className="font-black text-slate-800">{enq.type === 'sea' && (enq.seaLoadType?.toUpperCase() === 'FCL' || enq.truckLoad?.toUpperCase() === 'FCL') ? (enq.fclStandard || 'N/A') : (enq.weightRange || 'N/A')}</span></div>
+                          <div>{enq.type === 'sea' && (enq.seaLoadType?.toUpperCase() === 'FCL' || enq.truckLoad?.toUpperCase() === 'FCL') ? 'Container' : 'Weight/Size'}: <span className="font-black text-slate-800">{enq.type === 'sea' && (enq.seaLoadType?.toUpperCase() === 'FCL' || enq.truckLoad?.toUpperCase() === 'FCL') ? (enq.fclUnit ? `${enq.fclUnit} x ${enq.fclStandard || '20ft'}` : (enq.fclStandard || '20ft')) : (enq.weightRange && enq.weightRange !== 'N/A' ? enq.weightRange : (enq.fclStandard || 'N/A'))}</span></div>
                           <div>Date booked: <span className="font-black text-slate-800">{formatDate(enq.createdAt)}</span></div>
                         </div>
                       </div>
@@ -357,8 +357,12 @@ const CustomerEnquiriesTab = ({ title, type }) => {
                         <Package size={14} />
                       </div>
                       <div>
-                        <div className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{enq.type === 'sea' && (enq.seaLoadType?.toUpperCase() === 'FCL' || enq.truckLoad?.toUpperCase() === 'FCL') ? 'Container' : 'Weight'}</div>
-                        <div className="text-sm font-extrabold text-[#0B1E43] mt-0.5">{enq.weightRange || (enq.fclStandard ? enq.fclStandard : 'N/A')}</div>
+                        <div className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{enq.type === 'sea' && (enq.seaLoadType?.toUpperCase() === 'FCL' || enq.truckLoad?.toUpperCase() === 'FCL') ? 'Container' : 'Weight/Size'}</div>
+                        <div className="text-sm font-extrabold text-[#0B1E43] mt-0.5">
+                          {enq.type === 'sea' && (enq.seaLoadType?.toUpperCase() === 'FCL' || enq.truckLoad?.toUpperCase() === 'FCL') 
+                            ? (enq.fclUnit ? `${enq.fclUnit} x ${enq.fclStandard || '20ft'}` : (enq.fclStandard || '20ft')) 
+                            : (enq.weightRange && enq.weightRange !== 'N/A' ? enq.weightRange : (enq.fclStandard || 'N/A'))}
+                        </div>
                       </div>
                     </div>
 
