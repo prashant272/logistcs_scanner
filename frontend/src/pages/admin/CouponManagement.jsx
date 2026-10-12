@@ -46,7 +46,13 @@ const CouponManagement = () => {
         setDiscountValue(coupon.discountValue || '');
         setExpiryDate(coupon.expiryDate ? coupon.expiryDate.split('T')[0] : '');
         setStatus(coupon.status || 'Active');
-        setAssignedTo(coupon.assignedTo ? coupon.assignedTo.email : '');
+        if (Array.isArray(coupon.assignedTo)) {
+            setAssignedTo(coupon.assignedTo.map(u => u.email).filter(Boolean).join(', '));
+        } else if (coupon.assignedTo && coupon.assignedTo.email) {
+            setAssignedTo(coupon.assignedTo.email);
+        } else {
+            setAssignedTo('');
+        }
         setError('');
         setSuccess('');
     };
@@ -252,14 +258,17 @@ const CouponManagement = () => {
                         </div>
 
                         <div className="group">
-                            <label className="block text-xs font-bold !text-slate-900 mb-1">Assign to User Email (Optional)</label>
+                            <label className="block text-xs font-bold !text-slate-900 mb-1">
+                                Assign to User Emails (Optional)
+                            </label>
                             <input
-                                type="email"
-                                placeholder="Paste specific User Email here..."
+                                type="text"
+                                placeholder="e.g. user1@gmail.com, user2@gmail.com"
                                 value={assignedTo}
                                 onChange={(e) => setAssignedTo(e.target.value)}
                                 className="w-full bg-[#f4f7fc] border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-800 focus:outline-none focus:bg-white"
                             />
+                            <p className="text-[10px] text-slate-400 font-semibold mt-1">Separate multiple emails with commas (,)</p>
                         </div>
 
                         <button
@@ -310,7 +319,11 @@ const CouponManagement = () => {
                                                 {c.discountType === 'Percent' ? `${c.discountValue}%` : `₹${c.discountValue}`}
                                             </td>
                                             <td className="p-4 text-slate-500">{formatDate(c.expiryDate)}</td>
-                                            <td className="p-4 text-slate-500 text-[10px] break-all">{c.assignedTo?.email || 'All Users'}</td>
+                                            <td className="p-4 text-slate-500 text-[10px] break-all max-w-[180px]">
+                                                {Array.isArray(c.assignedTo) && c.assignedTo.length > 0
+                                                    ? c.assignedTo.map(u => u.email).filter(Boolean).join(', ')
+                                                    : (c.assignedTo?.email || 'All Users')}
+                                            </td>
                                             <td className="p-4">
                                                 <button
                                                     onClick={() => handleToggleStatus(c._id)}

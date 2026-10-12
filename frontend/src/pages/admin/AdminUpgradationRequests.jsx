@@ -111,8 +111,17 @@ const AdminUpgradationRequests = () => {
                                     <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
                                         <td className="px-6 py-4">
                                             <div className="flex flex-col">
-                                                <span className="font-bold text-slate-800">{req.vendor?.name}</span>
-                                                <span className="text-xs font-semibold text-slate-500">{req.vendor?.company || 'No Company'}</span>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="font-bold text-slate-800">{req.vendor?.name}</span>
+                                                    <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md border ${
+                                                        req.vendor?.role === 'customer'
+                                                            ? 'bg-amber-50 text-amber-700 border-amber-200'
+                                                            : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                                    }`}>
+                                                        {req.vendor?.role === 'customer' ? 'Customer' : 'Vendor'}
+                                                    </span>
+                                                </div>
+                                                <span className="text-xs font-semibold text-slate-500 mt-0.5">{req.vendor?.company || 'No Company'}</span>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
@@ -156,7 +165,16 @@ const AdminUpgradationRequests = () => {
                     <div className="bg-white rounded-3xl w-full max-w-2xl max-h-[85vh] shadow-2xl overflow-hidden flex flex-col animate-in fade-in zoom-in duration-300">
                         <div className="flex justify-between items-center p-6 border-b border-slate-100 bg-slate-50">
                             <div>
-                                <h3 className="text-xl font-black text-[#0B1E43] tracking-tight">{selectedVendor.vendor?.name}</h3>
+                                <div className="flex items-center gap-2">
+                                    <h3 className="text-xl font-black text-[#0B1E43] tracking-tight">{selectedVendor.vendor?.name}</h3>
+                                    <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md border ${
+                                        selectedVendor.vendor?.role === 'customer'
+                                            ? 'bg-amber-50 text-amber-700 border-amber-200'
+                                            : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                    }`}>
+                                        {selectedVendor.vendor?.role === 'customer' ? 'Customer' : 'Vendor'}
+                                    </span>
+                                </div>
                                 <p className="text-sm font-semibold text-slate-500 mt-0.5">{selectedVendor.vendor?.company}</p>
                             </div>
                             <button

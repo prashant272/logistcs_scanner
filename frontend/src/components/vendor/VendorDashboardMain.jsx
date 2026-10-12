@@ -10,7 +10,7 @@ import ComplaintsSection from './ComplaintsSection';
 import UserProfileSection from './UserProfileSection';
 import RelationshipManagerCard from './RelationshipManagerCard';
 import FollowupDashboardCards from './crm/FollowupDashboardCards';
-import { Calendar, RotateCcw, Menu, AlertCircle, Phone, Mail, BellRing, X, Sparkles } from 'lucide-react';
+import { Calendar, RotateCcw, Menu, AlertCircle, Phone, Mail, BellRing, X, Sparkles, Gift } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const vendorStatsFetcher = async ([key, filterType, customStart, customEnd]) => {
@@ -93,9 +93,10 @@ const VendorDashboardMain = () => {
 
     const [todaysFollowUps, setTodaysFollowUps] = useState([]);
     const [missedFollowUps, setMissedFollowUps] = useState([]);
+    const [myCoupons, setMyCoupons] = useState([]);
 
     React.useEffect(() => {
-        const fetchFollowups = async () => {
+        const fetchFollowupsAndCoupons = async () => {
             try {
                 const token = localStorage.getItem('userToken');
                 const config = { headers: { Authorization: `Bearer ${token}` } };
@@ -107,9 +108,21 @@ const VendorDashboardMain = () => {
             } catch (error) {
                 console.error('Failed to fetch followups', error);
             }
+
+            try {
+                const token = localStorage.getItem('userToken');
+                if (token) {
+                    const couponRes = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/coupons/my-coupons`, {
+                        headers: { Authorization: `Bearer ${token}` }
+                    });
+                    setMyCoupons(couponRes.data || []);
+                }
+            } catch (err) {
+                console.error('Failed to fetch coupons', err);
+            }
         };
         if (user) {
-            fetchFollowups();
+            fetchFollowupsAndCoupons();
         }
     }, [user]);
 
@@ -205,6 +218,52 @@ const VendorDashboardMain = () => {
                     missedFollowUps={missedFollowUps} 
                     onContactClick={(lead) => navigate('/vendor/crm', { state: { openContactModalFor: lead } })} 
                 />
+            )}
+
+            {/* Exclusive Offers Section - Only visible when vendor has active assigned coupons */}
+            {myCoupons.length > 0 && (
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 rounded-3xl p-6 shadow-sm relative overflow-hidden animate-fadeIn">
+                    <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
+                        <Gift size={160} />
+                    </div>
+                    <div className="relative z-10">
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-base md:text-lg font-black text-[#0B1E43] flex items-center gap-2">
+                                <Gift className="text-[#0066FF]" size={22} /> Exclusive Offers Just For You
+                            </h3>
+                            <button
+                                onClick={() => navigate('/vendor/upgrade')}
+                                className="bg-[#0066FF] hover:bg-[#0052cc] text-white text-[10px] font-black uppercase tracking-wider px-3.5 py-1.5 rounded-xl transition-all shadow-sm"
+                            >
+                                Upgrade Plan
+                            </button>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {myCoupons.map((coupon) => (
+                                <div key={coupon._id} className="bg-white rounded-2xl p-5 border border-blue-100/60 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow relative overflow-hidden">
+                                    <div className="absolute -right-4 -top-4 w-16 h-16 bg-gradient-to-br from-amber-200 to-orange-400 rounded-full opacity-20 blur-xl"></div>
+                                    <div>
+                                        <div className="flex justify-between items-start mb-2">
+                                            <span className="bg-[#0B1E43] text-white text-[10px] font-black uppercase tracking-wider px-3 py-1.5 rounded-lg shadow-sm">
+                                                {coupon.code}
+                                            </span>
+                                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider bg-slate-50 px-2 py-1 rounded-md">
+                                                Expires: {new Date(coupon.expiryDate).toLocaleDateString('en-GB')}
+                                            </span>
+                                        </div>
+                                        <p className="text-sm font-extrabold text-slate-800 mt-4 leading-snug">
+                                            Get <span className="text-[#0066FF] text-lg">{coupon.discountType === 'Percent' ? `${coupon.discountValue}%` : `₹${coupon.discountValue}`} OFF</span> on your next plan upgrade!
+                                        </p>
+                                    </div>
+                                    <div className="mt-5 pt-4 border-t border-slate-100 flex items-center gap-2">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+                                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Use this code at checkout to claim discount.</p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
             )}
 
             {/* Verification Status Warning Card (kept for admin or other edge cases if needed) */}

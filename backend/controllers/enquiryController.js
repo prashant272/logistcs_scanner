@@ -873,9 +873,9 @@ exports.updateEnquiryStatus = async (req, res) => {
 
             if (customerEmail && vendorUser) {
                 const { sendEnquiryAcceptedCustomerAlert } = require('../services/notificationService');
-                await sendEnquiryAcceptedCustomerAlert(customerEmail, vendorUser.name || vendorUser.company || 'Vendor', {
+                sendEnquiryAcceptedCustomerAlert(customerEmail, vendorUser.name || vendorUser.company || 'Vendor', {
                     cargoType: enquiry.type,
-                });
+                }).catch(err => console.error('Error sending Email on accept:', err));
             }
 
             if (customerPhone) {

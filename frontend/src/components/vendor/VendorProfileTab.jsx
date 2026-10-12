@@ -35,25 +35,6 @@ const VendorProfileTab = ({ user: propUser }) => {
     const defaultCity = user?.city || (addressParts.length >= 3 ? addressParts[addressParts.length - 3] : '');
     const defaultState = user?.state || (addressParts.length >= 2 ? addressParts[addressParts.length - 2] : '');
     const defaultCountry = user?.country || (addressParts.length >= 1 ? addressParts[addressParts.length - 1] : '');
-
-  const [myCoupons, setMyCoupons] = useState([]);
-
-  useEffect(() => {
-    const fetchMyCoupons = async () => {
-      try {
-        const token = localStorage.getItem('userToken');
-        if (!token) return;
-        const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/coupons/my-coupons`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        setMyCoupons(res.data || []);
-      } catch (error) {
-        console.error("Failed to fetch coupons", error);
-      }
-    };
-    fetchMyCoupons();
-  }, []);
-
   const [formData, setFormData] = useState({
     firstName: user?.firstName || (user?.name ? user.name.split(' ')[0] : ''),
     lastName: user?.lastName || (user?.name ? user.name.split(' ').slice(1).join(' ') : ''),
@@ -293,54 +274,6 @@ const VendorProfileTab = ({ user: propUser }) => {
             </span>
           </h2>
           <p className="text-sm text-slate-500 font-semibold mt-1">Manage your company credentials, uploads, services, and bidding preferences.</p>
-        </div>
-      </div>
-
-      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 rounded-3xl p-6 shadow-sm relative overflow-hidden">
-        <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
-          <Gift size={160} />
-        </div>
-        <div className="relative z-10">
-          <h3 className="text-lg font-extrabold text-[#0B1E43] flex items-center gap-2 mb-4">
-            <Gift className="text-[#0066FF]" size={22} /> Exclusive Offers Just For You
-          </h3>
-          
-          {myCoupons.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {myCoupons.map((coupon) => (
-                <div key={coupon._id} className="bg-white rounded-2xl p-5 border border-blue-100/60 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow relative overflow-hidden">
-                  <div className="absolute -right-4 -top-4 w-16 h-16 bg-gradient-to-br from-amber-200 to-orange-400 rounded-full opacity-20 blur-xl"></div>
-                  <div>
-                    <div className="flex justify-between items-start mb-2">
-                      <span className="bg-[#0B1E43] text-white text-[10px] font-black uppercase tracking-wider px-3 py-1.5 rounded-lg shadow-sm">
-                        {coupon.code}
-                      </span>
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider bg-slate-50 px-2 py-1 rounded-md">
-                        Expires: {new Date(coupon.expiryDate).toLocaleDateString('en-GB')}
-                      </span>
-                    </div>
-                    <p className="text-sm font-extrabold text-slate-800 mt-4 leading-snug">
-                      Get <span className="text-[#0066FF] text-lg">{coupon.discountType === 'Percent' ? `${coupon.discountValue}%` : `₹${coupon.discountValue}`} OFF</span> on your next plan upgrade!
-                    </p>
-                  </div>
-                  <div className="mt-5 pt-4 border-t border-slate-100 flex items-center gap-2">
-                     <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
-                     <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Use this code at checkout to claim.</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-8 border border-blue-100/50 text-center">
-              <Gift className="w-8 h-8 text-blue-200 mx-auto mb-3" />
-              <p className="text-sm font-bold text-slate-500">
-                You don't have any exclusive offers at the moment.
-              </p>
-              <p className="text-xs font-semibold text-slate-400 mt-1">
-                Keep an eye out for special discounts assigned just for you!
-              </p>
-            </div>
-          )}
         </div>
       </div>
 

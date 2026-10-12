@@ -34,6 +34,17 @@ const maskCompanyName = (name) => {
   }).join(' ');
 };
 
+const getCurrencySymbol = (curr) => {
+  if (!curr) return '$';
+  const c = curr.trim().toUpperCase();
+  if (c === 'USD' || c === '$') return '$';
+  if (c === 'INR' || c === 'RS' || c === '₹') return '₹';
+  if (c === 'EUR' || c === '€') return '€';
+  if (c === 'GBP' || c === '£') return '£';
+  if (c === 'AED') return 'AED ';
+  return `${curr} `;
+};
+
 const VendorEnquiriesTab = ({ title, type }) => {
   const {
     enquiries,
@@ -592,17 +603,17 @@ const VendorEnquiriesTab = ({ title, type }) => {
                 let primaryPrice = 0;
                 if (isAccepted && hasQuote) {
                   if (quoteData?.allInCharges) {
-                    primaryCurrency = quoteData.allInCurrency || '₹';
+                    primaryCurrency = getCurrencySymbol(quoteData.allInCurrency);
                     primaryPrice = quoteData.allInCharges;
                   } else if (quoteData?.freightCharges) {
-                    primaryCurrency = quoteData.freightCurrency || '₹';
+                    primaryCurrency = getCurrencySymbol(quoteData.freightCurrency);
                     primaryPrice = quoteData.freightCharges;
                   } else if (quoteData?.otherCharges) {
-                    primaryCurrency = quoteData.otherCurrency || '₹';
+                    primaryCurrency = getCurrencySymbol(quoteData.otherCurrency);
                     primaryPrice = quoteData.otherCharges;
                   } else if (quotePrice) {
                     primaryPrice = quotePrice;
-                    primaryCurrency = quoteData?.allInCurrency || quoteData?.freightCurrency || '₹';
+                    primaryCurrency = getCurrencySymbol(quoteData?.allInCurrency || quoteData?.freightCurrency);
                   }
                 } else {
                   primaryPrice = enq.vendorOwnPrice || enq.price;

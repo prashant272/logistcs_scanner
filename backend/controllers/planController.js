@@ -670,7 +670,11 @@ exports.logUpgradeActivity = async (req, res) => {
 exports.getUpgradeRequests = async (req, res) => {
     try {
         const activities = await UpgradeActivity.find()
-            .populate('vendor', 'name email phone company address')
+            .populate({
+                path: 'vendor',
+                select: 'name email phone company address role vendorTypes activePlan',
+                populate: { path: 'activePlan', select: 'name' }
+            })
             .sort({ createdAt: -1 })
             .lean();
 
@@ -681,12 +685,17 @@ exports.getUpgradeRequests = async (req, res) => {
             
             const vendorId = act.vendor._id.toString();
             if (!vendorsMap.has(vendorId)) {
-                const User = require('../models/User');
-                const vendorData = await User.findById(vendorId).populate('activePlan').lean();
-                
                 vendorsMap.set(vendorId, {
-                    vendor: act.vendor,
-                    currentPlan: vendorData?.activePlan?.name || 'Free / None',
+                    vendor: {
+                        _id: act.vendor._id,
+                        name: act.vendor.name,
+                        email: act.vendor.email,
+                        phone: act.vendor.phone,
+                        company: act.vendor.company,
+                        address: act.vendor.address,
+                        role: act.vendor.role || 'vendor'
+                    },
+                    currentPlan: act.vendor.activePlan?.name || 'Free / None',
                     latestActivity: act.createdAt,
                     activities: []
                 });

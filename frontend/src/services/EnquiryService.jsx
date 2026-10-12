@@ -123,8 +123,9 @@ export const EnquiryProvider = ({ children }) => {
         const next = prev.map((e) => {
           if (e._id === id) {
             const updated = { ...e };
-            if (typeContext === 'direct') {
+            if (typeContext === 'direct' || typeContext === 'b2b') {
               updated.myResponse = {
+                ...(e.myResponse || {}),
                 status: status || (e.myResponse?.status || 'Pending'),
                 price: price !== undefined ? price : (e.myResponse?.price || null),
                 quoteDetails: quoteDetails !== undefined ? quoteDetails : (e.myResponse?.quoteDetails || null)

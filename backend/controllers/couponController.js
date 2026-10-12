@@ -2,6 +2,30 @@ const Coupon = require('../models/Coupon');
 const Plan = require('../models/Plan');
 const User = require('../models/User');
 
+// Helper to parse comma-separated emails into User ObjectIds
+const parseAssignedEmails = async (assignedEmailStr) => {
+    if (!assignedEmailStr || !assignedEmailStr.trim()) {
+        return [];
+    }
+    const emailList = assignedEmailStr
+        .split(',')
+        .map(e => e.trim().toLowerCase())
+        .filter(e => e.length > 0);
+
+    if (emailList.length === 0) return [];
+
+    const foundUsers = await User.find({ email: { $in: emailList } }).select('_id email');
+    const foundEmailMap = new Set(foundUsers.map(u => u.email.toLowerCase()));
+    
+    // Find missing emails if any
+    const missing = emailList.filter(e => !foundEmailMap.has(e));
+    if (missing.length > 0) {
+        throw new Error(`User(s) not found: ${missing.join(', ')}`);
+    }
+
+    return foundUsers.map(u => u._id);
+};
+
 // Get all coupons
 exports.getCoupons = async (req, res) => {
     try {
@@ -15,8 +39,13 @@ exports.getCoupons = async (req, res) => {
 // Get my coupons
 exports.getMyCoupons = async (req, res) => {
     try {
+        const userId = req.user.id;
         const coupons = await Coupon.find({ 
-            assignedTo: req.user.id,
+            $or: [
+                { assignedTo: userId },
+                { assignedTo: { $size: 0 } },
+                { assignedTo: null }
+            ],
             status: 'Active',
             expiryDate: { $gte: new Date() }
         }).sort({ createdAt: -1 });
@@ -39,13 +68,13 @@ exports.createCoupon = async (req, res) => {
             return res.status(400).json({ message: 'Coupon code already exists' });
         }
 
-        let assignedUserId = null;
+        let assignedUserIds = [];
         if (assignedEmail && assignedEmail.trim() !== '') {
-            const user = await User.findOne({ email: assignedEmail.trim().toLowerCase() });
-            if (!user) {
-                return res.status(404).json({ message: `User not found with email: ${assignedEmail}` });
+            try {
+                assignedUserIds = await parseAssignedEmails(assignedEmail);
+            } catch (err) {
+                return res.status(404).json({ message: err.message });
             }
-            assignedUserId = user._id;
         }
 
         const coupon = await Coupon.create({
@@ -54,7 +83,7 @@ exports.createCoupon = async (req, res) => {
             discountValue: Number(discountValue),
             expiryDate: new Date(expiryDate),
             status: status || 'Active',
-            assignedTo: assignedUserId
+            assignedTo: assignedUserIds
         });
 
         const populatedCoupon = await Coupon.findById(coupon._id).populate('assignedTo', 'email');
@@ -107,8 +136,15 @@ exports.validateCoupon = async (req, res) => {
             return res.status(404).json({ message: 'Invalid coupon code' });
         }
 
-        if (coupon.assignedTo && req.user && coupon.assignedTo.toString() !== req.user.id.toString()) {
-            return res.status(403).json({ message: 'This coupon is strictly assigned to another user.' });
+        if (coupon.assignedTo && coupon.assignedTo.length > 0 && req.user) {
+            const userIdStr = req.user.id.toString();
+            const isAssigned = Array.isArray(coupon.assignedTo)
+                ? coupon.assignedTo.some(uId => (uId._id || uId).toString() === userIdStr)
+                : coupon.assignedTo.toString() === userIdStr;
+
+            if (!isAssigned) {
+                return res.status(403).json({ message: 'This coupon is strictly assigned to specific users.' });
+            }
         }
 
         if (coupon.status !== 'Active') {
@@ -167,13 +203,13 @@ exports.updateCoupon = async (req, res) => {
 
         if (assignedEmail !== undefined) {
             if (assignedEmail.trim() === '') {
-                updateData.assignedTo = null;
+                updateData.assignedTo = [];
             } else {
-                const user = await User.findOne({ email: assignedEmail.trim().toLowerCase() });
-                if (!user) {
-                    return res.status(404).json({ message: `User not found with email: ${assignedEmail}` });
+                try {
+                    updateData.assignedTo = await parseAssignedEmails(assignedEmail);
+                } catch (err) {
+                    return res.status(404).json({ message: err.message });
                 }
-                updateData.assignedTo = user._id;
             }
         }
 

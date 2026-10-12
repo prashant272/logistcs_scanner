@@ -21,4 +21,7 @@ const upgradeActivitySchema = new mongoose.Schema({
     }
 }, { timestamps: true });
 
+upgradeActivitySchema.index({ vendor: 1, createdAt: -1 });
+upgradeActivitySchema.index({ createdAt: -1 });
+
 module.exports = mongoose.model('UpgradeActivity', upgradeActivitySchema);
