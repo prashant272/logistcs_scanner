@@ -615,7 +615,7 @@ const VendorEnquiriesTab = ({ title, type }) => {
                     primaryPrice = quotePrice;
                     primaryCurrency = getCurrencySymbol(quoteData?.allInCurrency || quoteData?.freightCurrency);
                   }
-                } else {
+                } else if (!isDirectOrB2B && (enq.vendorOwnPrice || enq.price)) {
                   primaryPrice = enq.vendorOwnPrice || enq.price;
                 }
 
@@ -934,7 +934,7 @@ const VendorEnquiriesTab = ({ title, type }) => {
                         )}
 
                         {/* My Price Badge (Only visible when quoted) */}
-                        {((isAccepted && hasQuote) || enq.vendorOwnPrice || enq.price) && (
+                        {((isAccepted && hasQuote) || (!isDirectOrB2B && (enq.vendorOwnPrice || enq.price))) && (
                           <div className="bg-white border border-slate-200/90 rounded-xl py-1.5 px-4 shadow-[0_4px_12px_rgba(0,0,0,0.01)] text-center min-w-[85px]">
                             <div className="text-[9px] text-slate-600 font-black tracking-wider uppercase">My Price</div>
                             <div className="text-[10px] font-black text-slate-850 mt-0.5">
