@@ -3,7 +3,8 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Check, X, Phone, Mail, User, Info, Search, MapPin,
   Building2, Ship, Plane, Truck, Warehouse, Package,
-  Clock, Calendar, Coins, CheckCircle2, Eye, ToggleLeft, ToggleRight, Lock, Paperclip, AlertTriangle, ArrowRight
+  Clock, Calendar, Coins, CheckCircle2, Eye, ToggleLeft, ToggleRight, Lock, Paperclip, AlertTriangle, ArrowRight,
+  Globe
 } from 'lucide-react';
 import { useEnquiries } from '../../services/EnquiryService';
 import useInfiniteScroll from '../../hooks/useInfiniteScroll';
@@ -347,55 +348,72 @@ const VendorEnquiriesTab = ({ title, type }) => {
   const renderAdBlock = (ad, index) => {
     if (!ad) return null;
     return (
-      <div key={`ad-block-${ad._id || index}`} className="w-full bg-[#f0f7ff] rounded-2xl border border-[#cce4ff] shadow-[0_4px_20px_rgba(0,102,255,0.05)] relative flex flex-col md:flex-row overflow-hidden mb-6 p-3 gap-4 items-start transition-all hover:shadow-[0_4px_25px_rgba(0,102,255,0.1)] hover:border-[#b3d4ff]">
-
-        {/* Close Button */}
-        <button onClick={() => setHiddenAds(prev => [...prev, ad._id])} className="absolute top-3 right-3 text-slate-400 hover:text-slate-600 bg-white/50 hover:bg-white p-1 rounded-full backdrop-blur-sm transition-all z-10" title="Hide Ad">
-          <X size={14} />
+      <div
+        key={`ad-block-${ad._id || index}`}
+        className="w-full bg-gradient-to-r from-[#eef5ff] via-white to-white rounded-[26px] border border-[#3b82f6]/40 shadow-[0_4px_20px_rgba(0,102,255,0.06)] relative overflow-hidden mb-6 flex flex-col md:flex-row items-center justify-between transition-all hover:shadow-[0_6px_25px_rgba(0,102,255,0.1)] hover:border-[#3b82f6]/60 min-h-[135px]"
+      >
+        {/* Subtle Close Button in top right corner of banner */}
+        <button
+          onClick={() => setHiddenAds(prev => [...prev, ad._id])}
+          className="absolute top-2.5 right-2.5 text-white/50 hover:text-white p-1 rounded-full backdrop-blur-xs transition-all z-20"
+          title="Hide Ad"
+        >
+          <X size={13} />
         </button>
 
-        {/* Ad Image & Badge */}
-        {ad.imageUrl && (
-          <div className="w-full md:w-[260px] h-[130px] shrink-0 rounded-xl overflow-hidden bg-slate-200 relative shadow-sm">
-            <div className="absolute top-2 left-2 bg-[#0066FF] text-white text-[9px] font-black px-2 py-0.5 rounded uppercase tracking-widest shadow-md z-10">AD</div>
-            <img src={ad.imageUrl} alt={ad.title} className="w-full h-full object-cover" />
-          </div>
-        )}
-
-        {/* Ad Content */}
-        <div className="flex-1 flex flex-col justify-start w-full pt-1 pr-2">
+        {/* Left Section: Badges, Headline, Description, Pill CTA */}
+        <div className="flex-1 flex flex-col justify-center items-start p-4 sm:p-5 lg:pl-7 lg:py-4 z-10 w-full md:w-auto">
           <div className="flex items-center gap-2 mb-1.5">
-            <span className="text-[10px] font-black text-[#0B1E43] uppercase tracking-wider opacity-60">SPONSORED</span>
-            {ad.sponsorName && (
-              <>
-                <span className="text-slate-400 opacity-50">•</span>
-                <span className="text-[10px] font-bold text-slate-500">{ad.sponsorName}</span>
-              </>
-            )}
+            <span className="bg-[#0066FF] text-white text-[11px] font-bold px-2.5 py-0.5 rounded uppercase tracking-wider">
+              AD
+            </span>
+            <span className="bg-[#eef3fb] text-[#556987] text-[11px] font-semibold px-2.5 py-0.5 rounded">
+              Sponsored
+            </span>
           </div>
 
-          <h3 className="text-[#0B1E43] text-[1.1rem] font-black tracking-tight leading-tight">{ad.headline}</h3>
-          {ad.description && <p className="text-slate-600 text-[13px] font-medium mt-1">{ad.description}</p>}
+          <h3 className="text-[#07245d] text-[16px] sm:text-[18px] lg:text-[19px] font-bold tracking-tight leading-snug">
+            {ad.headline || (ad.sponsorName ? `${ad.sponsorName} – Your Trusted Partner` : 'Your Trusted Logistics Partner')}
+          </h3>
 
-          {ad.features && ad.features.length > 0 && (
-            <div className="flex flex-wrap items-center gap-4 mt-3">
-              {ad.features.map((feat, i) => (
-                <div key={i} className="flex items-center gap-1.5">
-                  <div className="w-4 h-4 rounded-full bg-[#0066FF] text-white flex items-center justify-center shadow-sm shadow-[#0066FF]/20">
-                    <Check size={10} strokeWidth={3} />
-                  </div>
-                  <span className="text-[11px] font-bold text-[#0B1E43] opacity-80">{feat}</span>
-                </div>
-              ))}
-            </div>
-          )}
+          <p className="text-[#556987] text-[12px] sm:text-[13px] font-normal mt-1 leading-normal max-w-lg">
+            {ad.description || 'Flexible credit facility for your global trade needs.'}
+          </p>
+
+          <div className="mt-3">
+            <a
+              href={ad.linkUrl || '#'}
+              target={ad.linkUrl ? "_blank" : "_self"}
+              className="inline-flex items-center gap-2 bg-[#0066FF] hover:bg-[#0052cc] text-white font-semibold text-[12px] sm:text-[13px] px-5 py-2 rounded-full shadow-sm hover:shadow transition-all group"
+            >
+              <span>{ad.buttonText || 'Get 30 Days Credit Access'}</span>
+              <ArrowRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
+            </a>
+          </div>
         </div>
 
-        {/* Ad CTA */}
-        <div className="mt-4 md:mt-0 md:ml-2 md:mr-6 shrink-0 w-full md:w-auto self-center">
-          <a href={ad.linkUrl || '#'} target={ad.linkUrl ? "_blank" : "_self"} className="block w-full text-center bg-[#0066FF] hover:bg-[#0052cc] text-white font-black text-[11px] px-6 py-2.5 rounded-xl uppercase tracking-wider shadow-md shadow-[#0066FF]/25 transition-all flex items-center justify-center gap-2 border border-transparent hover:border-blue-400/50">
-            {ad.buttonText || 'View Offer'} <ArrowRight size={14} />
-          </a>
+        {/* Center Section: Cargo Ship / Banner Image */}
+        <div className="shrink-0 my-2.5 px-4 md:px-2 flex items-center justify-center">
+          <img
+            src={ad.imageUrl || "https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=600&q=80"}
+            alt={ad.title || ad.headline || 'Ad Banner'}
+            className="w-full sm:w-[230px] md:w-[250px] lg:w-[285px] h-[115px] lg:h-[118px] object-cover rounded-2xl shadow-sm"
+          />
+        </div>
+
+        {/* Right Section: Royal Blue Wing stretching flush to top, bottom and right edge with curved left border */}
+        <div className="w-full md:w-auto self-stretch bg-gradient-to-r from-[#0047ba] to-[#003894] rounded-2xl md:rounded-none md:rounded-l-[55px] lg:rounded-l-[65px] px-6 lg:px-8 py-4 flex items-center justify-center md:justify-start gap-4 text-white shrink-0 min-w-[220px] lg:min-w-[260px] shadow-sm">
+          <div className="w-11 h-11 flex items-center justify-center shrink-0">
+            <Globe size={40} className="text-white" strokeWidth={1.8} />
+          </div>
+          <div className="flex flex-col justify-center">
+            <span className="font-bold text-[15px] sm:text-[16px] lg:text-[17px] leading-tight text-white tracking-tight">
+              {ad.sponsorName || 'BNB Worldwide'}
+            </span>
+            <span className="text-white/85 text-[11px] lg:text-[12px] leading-snug mt-1 max-w-[145px]">
+              {(ad.features && ad.features.length > 0 && ad.features[0]) || 'Financial Partner for Global Trade'}
+            </span>
+          </div>
         </div>
       </div>
     );
