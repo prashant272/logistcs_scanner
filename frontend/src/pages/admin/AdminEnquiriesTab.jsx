@@ -105,13 +105,23 @@ const AdminEnquiriesTab = () => {
 
     const handleEditClick = (enq) => {
         setEditingEnq(enq._id);
+        const nameVal = (enq.guestName === 'Guest' && enq.guestCompany)
+            ? enq.guestCompany
+            : (enq.guestName || enq.client?.name || '');
+
         setEditFormData({
+            guestName: nameVal,
+            guestCompany: enq.guestCompany || enq.client?.company || '',
+            guestEmail: enq.guestEmail || enq.client?.email || '',
+            guestPhone: enq.guestPhone || enq.client?.phone || '',
             status: enq.status || 'Pending',
-            price: enq.price || '',
+            price: enq.price !== undefined && enq.price !== null ? enq.price : '',
             fromLocation: enq.fromLocation || '',
             toLocation: enq.toLocation || '',
             type: enq.type || '',
-            commodity: enq.commodity || ''
+            commodity: enq.commodity || '',
+            weightRange: enq.weightRange || '',
+            shipmentDate: enq.shipmentDate || ''
         });
     };
 
@@ -234,10 +244,10 @@ const AdminEnquiriesTab = () => {
                                         >
                                             <td className="p-4 align-top">
                                                 <div className="flex items-start gap-3">
-                                                    <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center shrink-0">
+                                                    <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center shrink-0 mt-0.5">
                                                         <FileText size={14} className="text-slate-500" />
                                                     </div>
-                                                    <div>
+                                                    <div className="flex-1">
                                                         <div className="mb-2 flex items-center gap-2">
                                                             {enq.isDirect ? (
                                                                 (enq.client && enq.client.role === 'vendor') ? (
@@ -263,52 +273,135 @@ const AdminEnquiriesTab = () => {
                                                                 </div>
                                                             )}
                                                         </div>
-                                                        <p className="text-sm font-black text-slate-800">
-                                                            {(enq.guestName === 'Guest' && enq.guestCompany)
-                                                                ? enq.guestCompany
-                                                                : (enq.guestName || enq.client?.name || 'Unknown')}
-                                                        </p>
-                                                        <p className="text-[10px] font-bold text-slate-500">{enq.guestEmail || enq.client?.email}</p>
-                                                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mt-1">{new Date(enq.createdAt).toLocaleDateString()}</p>
+
+                                                        {editingEnq === enq._id ? (
+                                                            <div className="flex flex-col gap-2 w-64 mt-2">
+                                                                <div>
+                                                                    <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5">Name</label>
+                                                                    <input
+                                                                        type="text"
+                                                                        value={editFormData.guestName}
+                                                                        onChange={(e) => setEditFormData({ ...editFormData, guestName: e.target.value })}
+                                                                        className="w-full text-xs font-bold border-2 border-slate-200 focus:border-blue-500 rounded-lg px-2.5 py-1.5 outline-none transition-colors"
+                                                                        placeholder="Name / Contact Person"
+                                                                    />
+                                                                </div>
+                                                                <div>
+                                                                    <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5">Company</label>
+                                                                    <input
+                                                                        type="text"
+                                                                        value={editFormData.guestCompany}
+                                                                        onChange={(e) => setEditFormData({ ...editFormData, guestCompany: e.target.value })}
+                                                                        className="w-full text-xs font-bold border-2 border-slate-200 focus:border-blue-500 rounded-lg px-2.5 py-1.5 outline-none transition-colors"
+                                                                        placeholder="Company Name"
+                                                                    />
+                                                                </div>
+                                                                <div>
+                                                                    <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5">Email</label>
+                                                                    <input
+                                                                        type="email"
+                                                                        value={editFormData.guestEmail}
+                                                                        onChange={(e) => setEditFormData({ ...editFormData, guestEmail: e.target.value })}
+                                                                        className="w-full text-xs font-bold border-2 border-slate-200 focus:border-blue-500 rounded-lg px-2.5 py-1.5 outline-none transition-colors"
+                                                                        placeholder="Email Address"
+                                                                    />
+                                                                </div>
+                                                                <div>
+                                                                    <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5">Contact / Phone</label>
+                                                                    <input
+                                                                        type="text"
+                                                                        value={editFormData.guestPhone}
+                                                                        onChange={(e) => setEditFormData({ ...editFormData, guestPhone: e.target.value })}
+                                                                        className="w-full text-xs font-bold border-2 border-slate-200 focus:border-blue-500 rounded-lg px-2.5 py-1.5 outline-none transition-colors"
+                                                                        placeholder="Phone Number"
+                                                                    />
+                                                                </div>
+                                                            </div>
+                                                        ) : (
+                                                            <>
+                                                                <p className="text-sm font-black text-slate-800">
+                                                                    {(enq.guestName === 'Guest' && enq.guestCompany)
+                                                                        ? enq.guestCompany
+                                                                        : (enq.guestName || enq.client?.name || 'Unknown')}
+                                                                </p>
+                                                                {enq.guestCompany && enq.guestCompany !== enq.guestName && enq.guestName !== 'Guest' && (
+                                                                    <p className="text-[11px] font-bold text-slate-600">{enq.guestCompany}</p>
+                                                                )}
+                                                                <p className="text-[10px] font-bold text-slate-500">{enq.guestEmail || enq.client?.email}</p>
+                                                                {(enq.guestPhone || enq.client?.phone) && (
+                                                                    <p className="text-[10px] font-bold text-slate-500">📞 {enq.guestPhone || enq.client?.phone}</p>
+                                                                )}
+                                                                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mt-1">{new Date(enq.createdAt).toLocaleDateString()}</p>
+                                                            </>
+                                                        )}
                                                     </div>
                                                 </div>
                                             </td>
                                             {/* Cargo Info */}
-                                            <td className="p-4">
+                                            <td className="p-4 align-top">
                                                 {editingEnq === enq._id ? (
-                                                    <div className="flex flex-col gap-2 w-64">
-                                                        <div className="flex gap-2">
-                                                            <input
-                                                                type="text"
-                                                                value={editFormData.fromLocation}
-                                                                onChange={(e) => setEditFormData({ ...editFormData, fromLocation: e.target.value })}
-                                                                className="w-full text-xs font-bold border-2 border-slate-200 focus:border-blue-500 rounded-lg px-2 py-1.5 outline-none transition-colors"
-                                                                placeholder="From Port"
-                                                            />
-                                                            <span className="text-slate-300 self-center">→</span>
-                                                            <input
-                                                                type="text"
-                                                                value={editFormData.toLocation}
-                                                                onChange={(e) => setEditFormData({ ...editFormData, toLocation: e.target.value })}
-                                                                className="w-full text-xs font-bold border-2 border-slate-200 focus:border-blue-500 rounded-lg px-2 py-1.5 outline-none transition-colors"
-                                                                placeholder="To Port"
-                                                            />
+                                                    <div className="flex flex-col gap-2 w-72">
+                                                        <div>
+                                                            <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5">Route (Origin → Destination)</label>
+                                                            <div className="flex gap-2 items-center">
+                                                                <input
+                                                                    type="text"
+                                                                    value={editFormData.fromLocation}
+                                                                    onChange={(e) => setEditFormData({ ...editFormData, fromLocation: e.target.value })}
+                                                                    className="w-full text-xs font-bold border-2 border-slate-200 focus:border-blue-500 rounded-lg px-2 py-1.5 outline-none transition-colors"
+                                                                    placeholder="From Port/City"
+                                                                />
+                                                                <span className="text-slate-300 self-center">→</span>
+                                                                <input
+                                                                    type="text"
+                                                                    value={editFormData.toLocation}
+                                                                    onChange={(e) => setEditFormData({ ...editFormData, toLocation: e.target.value })}
+                                                                    className="w-full text-xs font-bold border-2 border-slate-200 focus:border-blue-500 rounded-lg px-2 py-1.5 outline-none transition-colors"
+                                                                    placeholder="To Port/City"
+                                                                />
+                                                            </div>
                                                         </div>
-                                                        <div className="flex gap-2">
-                                                            <input
-                                                                type="text"
-                                                                value={editFormData.type}
-                                                                onChange={(e) => setEditFormData({ ...editFormData, type: e.target.value })}
-                                                                className="w-1/2 text-[11px] font-black border-2 border-slate-200 focus:border-blue-500 rounded-lg px-2 py-1.5 outline-none transition-colors uppercase"
-                                                                placeholder="Cargo Type"
-                                                            />
-                                                            <input
-                                                                type="text"
-                                                                value={editFormData.commodity}
-                                                                onChange={(e) => setEditFormData({ ...editFormData, commodity: e.target.value })}
-                                                                className="w-1/2 text-[11px] font-bold border-2 border-slate-200 focus:border-blue-500 rounded-lg px-2 py-1.5 outline-none transition-colors"
-                                                                placeholder="Commodity"
-                                                            />
+                                                        <div>
+                                                            <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5">Mode & Commodity</label>
+                                                            <div className="flex gap-2">
+                                                                <select
+                                                                    value={editFormData.type?.toLowerCase()}
+                                                                    onChange={(e) => setEditFormData({ ...editFormData, type: e.target.value })}
+                                                                    className="w-1/2 text-[11px] font-black border-2 border-slate-200 focus:border-blue-500 rounded-lg px-2 py-1.5 outline-none transition-colors uppercase bg-white"
+                                                                >
+                                                                    <option value="sea">SEA</option>
+                                                                    <option value="air">AIR</option>
+                                                                    <option value="land">LAND</option>
+                                                                    <option value="warehouse">WAREHOUSE</option>
+                                                                    <option value="cha">CHA</option>
+                                                                </select>
+                                                                <input
+                                                                    type="text"
+                                                                    value={editFormData.commodity}
+                                                                    onChange={(e) => setEditFormData({ ...editFormData, commodity: e.target.value })}
+                                                                    className="w-1/2 text-[11px] font-bold border-2 border-slate-200 focus:border-blue-500 rounded-lg px-2 py-1.5 outline-none transition-colors"
+                                                                    placeholder="Commodity"
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                        <div>
+                                                            <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5">Weight & Shipment Date</label>
+                                                            <div className="flex gap-2">
+                                                                <input
+                                                                    type="text"
+                                                                    value={editFormData.weightRange}
+                                                                    onChange={(e) => setEditFormData({ ...editFormData, weightRange: e.target.value })}
+                                                                    className="w-1/2 text-[11px] font-bold border-2 border-slate-200 focus:border-blue-500 rounded-lg px-2 py-1.5 outline-none transition-colors"
+                                                                    placeholder="Weight (e.g. 500 kg)"
+                                                                />
+                                                                <input
+                                                                    type="text"
+                                                                    value={editFormData.shipmentDate}
+                                                                    onChange={(e) => setEditFormData({ ...editFormData, shipmentDate: e.target.value })}
+                                                                    className="w-1/2 text-[11px] font-bold border-2 border-slate-200 focus:border-blue-500 rounded-lg px-2 py-1.5 outline-none transition-colors"
+                                                                    placeholder="Shipment Date"
+                                                                />
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 ) : (
@@ -331,24 +424,30 @@ const AdminEnquiriesTab = () => {
                                             </td>
                                             <td className="p-4 align-top">
                                                 {editingEnq === enq._id ? (
-                                                    <div className="space-y-2">
-                                                        <select
-                                                            value={editFormData.status}
-                                                            onChange={(e) => setEditFormData({ ...editFormData, status: e.target.value })}
-                                                            className="w-full text-xs font-bold p-1.5 border border-slate-200 rounded-md outline-none"
-                                                        >
-                                                            <option value="Pending">Pending</option>
-                                                            <option value="Accepted">Accepted</option>
-                                                            <option value="Declined">Declined</option>
-                                                            <option value="Completed">Completed</option>
-                                                        </select>
-                                                        <input
-                                                            type="number"
-                                                            placeholder="Price"
-                                                            value={editFormData.price}
-                                                            onChange={(e) => setEditFormData({ ...editFormData, price: e.target.value })}
-                                                            className="w-full text-xs font-bold p-1.5 border border-slate-200 rounded-md outline-none"
-                                                        />
+                                                    <div className="space-y-2 w-36">
+                                                        <div>
+                                                            <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5">Status</label>
+                                                            <select
+                                                                value={editFormData.status}
+                                                                onChange={(e) => setEditFormData({ ...editFormData, status: e.target.value })}
+                                                                className="w-full text-xs font-bold p-1.5 border-2 border-slate-200 rounded-lg outline-none focus:border-blue-500 bg-white"
+                                                            >
+                                                                <option value="Pending">Pending</option>
+                                                                <option value="Accepted">Accepted</option>
+                                                                <option value="Declined">Declined</option>
+                                                                <option value="Completed">Completed</option>
+                                                            </select>
+                                                        </div>
+                                                        <div>
+                                                            <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5">Price</label>
+                                                            <input
+                                                                type="number"
+                                                                placeholder="Price ($)"
+                                                                value={editFormData.price}
+                                                                onChange={(e) => setEditFormData({ ...editFormData, price: e.target.value })}
+                                                                className="w-full text-xs font-bold p-1.5 border-2 border-slate-200 rounded-lg outline-none focus:border-blue-500"
+                                                            />
+                                                        </div>
                                                     </div>
                                                 ) : (
                                                     <div>

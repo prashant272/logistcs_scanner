@@ -792,10 +792,25 @@ exports.getEnquiries = async (req, res) => {
 exports.updateEnquiry = async (req, res) => {
     try {
         const Enquiry = require('../models/Enquiry');
+        const User = require('../models/User');
+
         const enquiry = await Enquiry.findByIdAndUpdate(req.params.id, req.body, { new: true });
         if (!enquiry) {
             return res.status(404).json({ message: 'Enquiry not found' });
         }
+
+        // If client exists, synchronize client user record as well
+        if (enquiry.client) {
+            const clientUpdates = {};
+            if (req.body.guestName) clientUpdates.name = req.body.guestName;
+            if (req.body.guestEmail) clientUpdates.email = req.body.guestEmail;
+            if (req.body.guestPhone) clientUpdates.phone = req.body.guestPhone;
+            if (req.body.guestCompany) clientUpdates.company = req.body.guestCompany;
+            if (Object.keys(clientUpdates).length > 0) {
+                await User.findByIdAndUpdate(enquiry.client, clientUpdates);
+            }
+        }
+
         res.json({ message: 'Enquiry updated successfully', enquiry });
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });

@@ -17,10 +17,22 @@ const CouponManagement = () => {
     const [expiryDate, setExpiryDate] = useState('');
     const [status, setStatus] = useState('Active');
     const [assignedTo, setAssignedTo] = useState('');
+    const [plans, setPlans] = useState([]);
+    const [applicablePlanId, setApplicablePlanId] = useState('');
 
     useEffect(() => {
         fetchCoupons();
+        fetchPlans();
     }, []);
+
+    const fetchPlans = async () => {
+        try {
+            const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/plans`);
+            setPlans(res.data || []);
+        } catch (err) {
+            console.error('Failed to fetch plans', err);
+        }
+    };
 
     const fetchCoupons = async () => {
         try {
@@ -46,6 +58,12 @@ const CouponManagement = () => {
         setDiscountValue(coupon.discountValue || '');
         setExpiryDate(coupon.expiryDate ? coupon.expiryDate.split('T')[0] : '');
         setStatus(coupon.status || 'Active');
+        if (coupon.applicablePlans && coupon.applicablePlans.length > 0) {
+            const firstPlan = coupon.applicablePlans[0];
+            setApplicablePlanId(firstPlan._id || firstPlan);
+        } else {
+            setApplicablePlanId('');
+        }
         if (Array.isArray(coupon.assignedTo)) {
             setAssignedTo(coupon.assignedTo.map(u => u.email).filter(Boolean).join(', '));
         } else if (coupon.assignedTo && coupon.assignedTo.email) {
@@ -65,6 +83,7 @@ const CouponManagement = () => {
         setStatus('Active');
         setDiscountType('Fix');
         setAssignedTo('');
+        setApplicablePlanId('');
         setError('');
         setSuccess('');
     };
@@ -93,7 +112,8 @@ const CouponManagement = () => {
                 discountValue: Number(discountValue),
                 expiryDate,
                 status,
-                assignedEmail: assignedTo.trim() || ''
+                assignedEmail: assignedTo.trim() || '',
+                applicablePlans: applicablePlanId ? [applicablePlanId] : []
             };
 
             if (editId) {
@@ -259,6 +279,25 @@ const CouponManagement = () => {
 
                         <div className="group">
                             <label className="block text-xs font-bold !text-slate-900 mb-1">
+                                Applicable Plan (Optional)
+                            </label>
+                            <select
+                                value={applicablePlanId}
+                                onChange={(e) => setApplicablePlanId(e.target.value)}
+                                className="w-full bg-[#f4f7fc] border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-800 focus:outline-none focus:bg-white"
+                            >
+                                <option value="">All Plans (Valid for any plan)</option>
+                                {plans.map((p) => (
+                                    <option key={p._id} value={p._id}>
+                                        {p.name} {p.duration ? `(${p.duration})` : ''} - {p.country || 'Global'} ({p.currency === 'USD' ? '$' : '₹'}{p.price})
+                                    </option>
+                                ))}
+                            </select>
+                            <p className="text-[10px] text-slate-400 font-semibold mt-1">If selected, this coupon will ONLY be valid on this plan</p>
+                        </div>
+
+                        <div className="group">
+                            <label className="block text-xs font-bold !text-slate-900 mb-1">
                                 Assign to User Emails (Optional)
                             </label>
                             <input
@@ -302,6 +341,7 @@ const CouponManagement = () => {
                                     <tr>
                                         <th className="p-4">Code</th>
                                         <th className="p-4">Discount</th>
+                                        <th className="p-4">Applicable Plan</th>
                                         <th className="p-4">Expires</th>
                                         <th className="p-4">Assigned To</th>
                                         <th className="p-4">Status</th>
@@ -317,6 +357,15 @@ const CouponManagement = () => {
                                             </td>
                                             <td className="p-4 text-slate-800">
                                                 {c.discountType === 'Percent' ? `${c.discountValue}%` : `₹${c.discountValue}`}
+                                            </td>
+                                            <td className="p-4">
+                                                {c.applicablePlans && c.applicablePlans.length > 0 ? (
+                                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-blue-50 text-blue-700 border border-blue-200">
+                                                        {c.applicablePlans.map(p => p.name || 'Plan').join(', ')}
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-[10px] font-semibold text-slate-400">All Plans</span>
+                                                )}
                                             </td>
                                             <td className="p-4 text-slate-500">{formatDate(c.expiryDate)}</td>
                                             <td className="p-4 text-slate-500 text-[10px] break-all max-w-[180px]">

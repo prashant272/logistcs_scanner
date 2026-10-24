@@ -226,15 +226,21 @@ exports.createRazorpayOrder = async (req, res) => {
         if (couponCode) {
             const coupon = await Coupon.findOne({ code: couponCode.toUpperCase() });
             if (coupon && coupon.status === 'Active' && new Date(coupon.expiryDate) >= new Date()) {
-                if (coupon.discountType === 'Percent') {
-                    discountAmount = (basePrice * coupon.discountValue) / 100;
-                } else {
-                    discountAmount = coupon.discountValue;
+                let isPlanValid = true;
+                if (coupon.applicablePlans && coupon.applicablePlans.length > 0) {
+                    isPlanValid = coupon.applicablePlans.some(p => p.toString() === planId.toString());
                 }
-                if (discountAmount > basePrice) {
-                    discountAmount = basePrice;
+                if (isPlanValid) {
+                    if (coupon.discountType === 'Percent') {
+                        discountAmount = (basePrice * coupon.discountValue) / 100;
+                    } else {
+                        discountAmount = coupon.discountValue;
+                    }
+                    if (discountAmount > basePrice) {
+                        discountAmount = basePrice;
+                    }
+                    finalPrice = basePrice - discountAmount;
                 }
-                finalPrice = basePrice - discountAmount;
             }
         }
 
@@ -486,15 +492,21 @@ exports.payPlanViaWallet = async (req, res) => {
         if (couponCode) {
             const coupon = await Coupon.findOne({ code: couponCode.toUpperCase() });
             if (coupon && coupon.status === 'Active' && new Date(coupon.expiryDate) >= new Date()) {
-                if (coupon.discountType === 'Percent') {
-                    discountAmount = (basePrice * coupon.discountValue) / 100;
-                } else {
-                    discountAmount = coupon.discountValue;
+                let isPlanValid = true;
+                if (coupon.applicablePlans && coupon.applicablePlans.length > 0) {
+                    isPlanValid = coupon.applicablePlans.some(p => p.toString() === planId.toString());
                 }
-                if (discountAmount > basePrice) {
-                    discountAmount = basePrice;
+                if (isPlanValid) {
+                    if (coupon.discountType === 'Percent') {
+                        discountAmount = (basePrice * coupon.discountValue) / 100;
+                    } else {
+                        discountAmount = coupon.discountValue;
+                    }
+                    if (discountAmount > basePrice) {
+                        discountAmount = basePrice;
+                    }
+                    finalPrice = basePrice - discountAmount;
                 }
-                finalPrice = basePrice - discountAmount;
             }
         }
 

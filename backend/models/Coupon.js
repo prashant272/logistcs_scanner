@@ -30,6 +30,10 @@ const couponSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
     }],
+    applicablePlans: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Plan'
+    }],
     createdAt: {
         type: Date,
         default: Date.now

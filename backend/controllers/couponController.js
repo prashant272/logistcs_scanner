@@ -29,7 +29,10 @@ const parseAssignedEmails = async (assignedEmailStr) => {
 // Get all coupons
 exports.getCoupons = async (req, res) => {
     try {
-        const coupons = await Coupon.find().populate('assignedTo', 'email').sort({ createdAt: -1 });
+        const coupons = await Coupon.find()
+            .populate('assignedTo', 'email')
+            .populate('applicablePlans', 'name price currency country duration')
+            .sort({ createdAt: -1 });
         res.json(coupons);
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
@@ -48,7 +51,9 @@ exports.getMyCoupons = async (req, res) => {
             ],
             status: 'Active',
             expiryDate: { $gte: new Date() }
-        }).sort({ createdAt: -1 });
+        })
+        .populate('applicablePlans', 'name price currency country duration')
+        .sort({ createdAt: -1 });
         res.json(coupons);
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
@@ -58,7 +63,7 @@ exports.getMyCoupons = async (req, res) => {
 // Create a coupon
 exports.createCoupon = async (req, res) => {
     try {
-        const { code, discountType, discountValue, expiryDate, status, assignedEmail } = req.body;
+        const { code, discountType, discountValue, expiryDate, status, assignedEmail, applicablePlans } = req.body;
         if (!code || !discountType || !discountValue || !expiryDate) {
             return res.status(400).json({ message: 'Please provide all required fields' });
         }
@@ -77,16 +82,26 @@ exports.createCoupon = async (req, res) => {
             }
         }
 
+        let planIds = [];
+        if (applicablePlans) {
+            planIds = Array.isArray(applicablePlans)
+                ? applicablePlans.filter(Boolean)
+                : [applicablePlans].filter(Boolean);
+        }
+
         const coupon = await Coupon.create({
             code: code.toUpperCase(),
             discountType,
             discountValue: Number(discountValue),
             expiryDate: new Date(expiryDate),
             status: status || 'Active',
-            assignedTo: assignedUserIds
+            assignedTo: assignedUserIds,
+            applicablePlans: planIds
         });
 
-        const populatedCoupon = await Coupon.findById(coupon._id).populate('assignedTo', 'email');
+        const populatedCoupon = await Coupon.findById(coupon._id)
+            .populate('assignedTo', 'email')
+            .populate('applicablePlans', 'name price currency country duration');
         res.status(201).json(populatedCoupon);
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
@@ -97,7 +112,9 @@ exports.createCoupon = async (req, res) => {
 exports.toggleCouponStatus = async (req, res) => {
     try {
         const { id } = req.params;
-        const coupon = await Coupon.findById(id).populate('assignedTo', 'email');
+        const coupon = await Coupon.findById(id)
+            .populate('assignedTo', 'email')
+            .populate('applicablePlans', 'name price currency country duration');
         if (!coupon) {
             return res.status(404).json({ message: 'Coupon not found' });
         }
@@ -131,7 +148,8 @@ exports.validateCoupon = async (req, res) => {
             return res.status(400).json({ message: 'Coupon code and Plan ID are required' });
         }
 
-        const coupon = await Coupon.findOne({ code: code.toUpperCase() });
+        const coupon = await Coupon.findOne({ code: code.toUpperCase() })
+            .populate('applicablePlans', 'name price currency country duration');
         if (!coupon) {
             return res.status(404).json({ message: 'Invalid coupon code' });
         }
@@ -153,6 +171,17 @@ exports.validateCoupon = async (req, res) => {
 
         if (new Date(coupon.expiryDate) < new Date()) {
             return res.status(400).json({ message: 'Coupon has expired' });
+        }
+
+        // Validate plan restriction
+        if (coupon.applicablePlans && coupon.applicablePlans.length > 0) {
+            const isPlanMatched = coupon.applicablePlans.some(p => (p._id || p).toString() === planId.toString());
+            if (!isPlanMatched) {
+                const planNames = coupon.applicablePlans.map(p => p.name || 'Specified Plan').join(', ');
+                return res.status(400).json({
+                    message: `Invalid coupon for this plan. This coupon is only applicable for "${planNames}". Please apply on ${planNames}.`
+                });
+            }
         }
 
         const plan = await Plan.findById(planId);
@@ -191,7 +220,7 @@ exports.validateCoupon = async (req, res) => {
 exports.updateCoupon = async (req, res) => {
     try {
         const { id } = req.params;
-        const { code, discountType, discountValue, expiryDate, status, assignedEmail } = req.body;
+        const { code, discountType, discountValue, expiryDate, status, assignedEmail, applicablePlans } = req.body;
         
         let updateData = {
             code: code ? code.toUpperCase() : undefined,
@@ -213,11 +242,19 @@ exports.updateCoupon = async (req, res) => {
             }
         }
 
+        if (applicablePlans !== undefined) {
+            updateData.applicablePlans = Array.isArray(applicablePlans)
+                ? applicablePlans.filter(Boolean)
+                : (applicablePlans ? [applicablePlans] : []);
+        }
+
         const updated = await Coupon.findByIdAndUpdate(
             id,
             updateData,
             { new: true }
-        ).populate('assignedTo', 'email');
+        )
+        .populate('assignedTo', 'email')
+        .populate('applicablePlans', 'name price currency country duration');
         
         if (!updated) {
             return res.status(404).json({ message: 'Coupon not found' });
