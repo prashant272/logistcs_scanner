@@ -6,7 +6,7 @@ async function updateVendorDate() {
         await mongoose.connect(process.env.MONGO_URI);
         const User = require('./models/User');
 
-        const vendor = await User.findOne({ email: 'sales@accuratelogistics.co' });
+        const vendor = await User.findOne({ email: 'jesumarylogisticscompanyltd@gmail.com' });
         if (!vendor) {
             console.log('Vendor with email sales@accuratelogistics.co not found.');
             process.exit(1);

@@ -30,6 +30,19 @@ const getCountryFromPhone = (phone) => {
   return '';
 };
 
+const formatDateTimeLocal = (dateString) => {
+  if (!dateString) return '';
+  const d = new Date(dateString);
+  if (isNaN(d.getTime())) return '';
+  const pad = (n) => String(n).padStart(2, '0');
+  const year = d.getFullYear();
+  const month = pad(d.getMonth() + 1);
+  const day = pad(d.getDate());
+  const hours = pad(d.getHours());
+  const minutes = pad(d.getMinutes());
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
+};
+
 const VendorManagement = () => {
   const [vendors, setVendors] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -90,7 +103,7 @@ const VendorManagement = () => {
   const [editingVendor, setEditingVendor] = useState(false);
   const [editVendorId, setEditVendorId] = useState(null);
   const [editFormData, setEditFormData] = useState({
-    company: '', email: '', phone: '', country: '', services: []
+    company: '', email: '', phone: '', country: '', services: [], vendorTypes: [], createdAt: '', approvedAt: ''
   });
 
   // Credit Vendor Modal State
@@ -574,7 +587,9 @@ const VendorManagement = () => {
       phone: vendor.phone || '',
       country: vendor.country || getCountryFromPhone(vendor.phone) || '',
       services: vendor.services || [],
-      vendorTypes: vendor.vendorTypes || []
+      vendorTypes: vendor.vendorTypes || [],
+      createdAt: formatDateTimeLocal(vendor.createdAt),
+      approvedAt: formatDateTimeLocal(vendor.approvedAt)
     });
     setShowEditModal(true);
   };
@@ -1738,7 +1753,7 @@ const VendorManagement = () => {
       {/* Edit Vendor Modal */}
       {showEditModal && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-3xl w-full max-w-md max-h-[80vh] flex flex-col overflow-hidden shadow-2xl border border-slate-200">
+          <div className="bg-white rounded-3xl w-full max-w-lg max-h-[85vh] flex flex-col overflow-hidden shadow-2xl border border-slate-200">
             <div className="bg-[#f8fafc] p-6 border-b border-slate-100 flex justify-between items-center shrink-0">
               <div>
                 <h3 className="text-xl font-black text-[#0B1E43]">Edit Vendor Details</h3>
@@ -1801,6 +1816,53 @@ const VendorManagement = () => {
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-700 focus:outline-none focus:border-[#0066FF] focus:ring-1 focus:ring-[#0066FF] transition-all"
                   placeholder="India"
                 />
+              </div>
+
+              {/* Created Date and Approved Date */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-slate-100">
+                <div>
+                  <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+                    Created Date
+                  </label>
+                  <input
+                    type="datetime-local"
+                    value={editFormData.createdAt || ''}
+                    onClick={(e) => {
+                      try { e.target.showPicker(); } catch (err) { }
+                    }}
+                    onChange={(e) => setEditFormData({ ...editFormData, createdAt: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 focus:outline-none focus:border-[#0066FF] focus:ring-1 focus:ring-[#0066FF] transition-all cursor-pointer"
+                  />
+                  <p className="text-[10px] text-slate-400 mt-1 font-medium">Original registration date</p>
+                </div>
+
+                <div>
+                  <div className="flex justify-between items-center mb-1.5">
+                    <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500">
+                      Approved Date
+                    </label>
+                    {editFormData.createdAt && (
+                      <button
+                        type="button"
+                        onClick={() => setEditFormData({ ...editFormData, approvedAt: editFormData.createdAt })}
+                        className="text-[10px] font-bold text-[#0066FF] hover:underline"
+                        title="Set Approved Date same as Created Date"
+                      >
+                        Same as Created
+                      </button>
+                    )}
+                  </div>
+                  <input
+                    type="datetime-local"
+                    value={editFormData.approvedAt || ''}
+                    onClick={(e) => {
+                      try { e.target.showPicker(); } catch (err) { }
+                    }}
+                    onChange={(e) => setEditFormData({ ...editFormData, approvedAt: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 focus:outline-none focus:border-[#0066FF] focus:ring-1 focus:ring-[#0066FF] transition-all cursor-pointer"
+                  />
+                  <p className="text-[10px] text-slate-400 mt-1 font-medium">Enquiry visibility start date</p>
+                </div>
               </div>
 
               <div>

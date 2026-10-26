@@ -1010,7 +1010,7 @@ exports.updateVendorPlan = async (req, res) => {
 exports.updateVendorDetails = async (req, res) => {
     try {
         const vendorId = req.params.id;
-        const { company, email, phone, country, services, vendorTypes } = req.body;
+        const { company, email, phone, country, services, vendorTypes, createdAt, approvedAt } = req.body;
 
         const vendor = await User.findById(vendorId);
         if (!vendor || vendor.role !== 'vendor') {
@@ -1061,6 +1061,40 @@ exports.updateVendorDetails = async (req, res) => {
             if (removed.length) tMsg.push(`Removed [${removed.join(', ')}]`);
             changes.push(`Vendor Types (${tMsg.join(' | ')})`);
             vendor.vendorTypes = vendorTypes;
+        }
+
+        if (createdAt) {
+            const newCreatedAt = new Date(createdAt);
+            if (!isNaN(newCreatedAt.getTime())) {
+                const oldCreatedAtTime = vendor.createdAt ? new Date(vendor.createdAt).getTime() : 0;
+                if (oldCreatedAtTime !== newCreatedAt.getTime()) {
+                    const oldStr = vendor.createdAt ? new Date(vendor.createdAt).toISOString() : 'None';
+                    changes.push(`Created Date: ${oldStr} -> ${newCreatedAt.toISOString()}`);
+                    vendor.createdAt = newCreatedAt;
+                    vendor.markModified('createdAt');
+                }
+            }
+        }
+
+        if (approvedAt !== undefined) {
+            if (!approvedAt) {
+                if (vendor.approvedAt) {
+                    changes.push(`Approved Date: ${new Date(vendor.approvedAt).toISOString()} -> None`);
+                    vendor.approvedAt = null;
+                    vendor.markModified('approvedAt');
+                }
+            } else {
+                const newApprovedAt = new Date(approvedAt);
+                if (!isNaN(newApprovedAt.getTime())) {
+                    const oldApprovedAtTime = vendor.approvedAt ? new Date(vendor.approvedAt).getTime() : 0;
+                    if (oldApprovedAtTime !== newApprovedAt.getTime()) {
+                        const oldApprovedStr = vendor.approvedAt ? new Date(vendor.approvedAt).toISOString() : 'None';
+                        changes.push(`Approved Date: ${oldApprovedStr} -> ${newApprovedAt.toISOString()}`);
+                        vendor.approvedAt = newApprovedAt;
+                        vendor.markModified('approvedAt');
+                    }
+                }
+            }
         }
 
         await vendor.save();
