@@ -83,10 +83,11 @@ exports.getVendors = async (req, res) => {
             } else if (statusFilter === 'Pre-Approved Wallet') {
                 query.preApprovedAmount = { $gt: 0 };
             } else if (statusFilter === 'Login') {
-                const startOfDay = new Date();
-                startOfDay.setHours(0, 0, 0, 0);
-                const endOfDay = new Date();
-                endOfDay.setHours(23, 59, 59, 999);
+                // Use Indian Standard Time (Asia/Kolkata, UTC+5:30) so production UTC servers match Indian calendar day
+                const now = new Date();
+                const istDateStr = now.toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }); // Formats as YYYY-MM-DD in IST
+                const startOfDay = new Date(`${istDateStr}T00:00:00.000+05:30`);
+                const endOfDay = new Date(`${istDateStr}T23:59:59.999+05:30`);
                 query.lastActive = { $gte: startOfDay, $lte: endOfDay };
                 // Must have logged in (lastActive should be strictly greater than createdAt by at least 1 second)
                 query.$expr = { $gt: [{ $subtract: ["$lastActive", "$createdAt"] }, 5000] };
