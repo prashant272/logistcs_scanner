@@ -3,6 +3,7 @@ import { useNavigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import CustomerSidebar from '../../components/customer/CustomerSidebar';
 import CustomerHeader from '../../components/customer/CustomerHeader';
+import AdBanner from '../../components/shared/AdBanner';
 
 const CustomerDashboard = () => {
     const { user, logout } = useAuth();
@@ -16,6 +17,8 @@ const CustomerDashboard = () => {
             logout();
         }, 0);
     };
+
+    const isMainDashboard = location.pathname === '/customer/dashboard';
 
     return (
         <div className="w-full h-screen bg-[#f4f7fc] text-slate-800 font-sans flex overflow-hidden">
@@ -46,8 +49,23 @@ const CustomerDashboard = () => {
                 />
 
                 {/* Scrollable Dashboard Body */}
-                <main className={`flex-grow overflow-y-auto ${location.pathname === '/customer/dashboard' ? 'p-0 bg-[#F4F7FC]' : 'p-6 md:p-8 space-y-6'}`}>
-                    <Outlet />
+                <main className={`flex-grow overflow-y-auto ${isMainDashboard ? 'p-0 bg-[#F4F7FC]' : 'p-6 md:p-8 space-y-6'}`}>
+                    {isMainDashboard ? (
+                        <Outlet />
+                    ) : (
+                        <div className="w-full space-y-6">
+                            {/* Top Ad for this customer tab */}
+                            <AdBanner pageUrl={location.pathname} placement="top" />
+
+                            <div className="flex flex-col lg:flex-row gap-6 items-start w-full">
+                                <div className="flex-1 min-w-0 w-full">
+                                    <Outlet />
+                                </div>
+                                {/* Right Sidebar Ad for this customer tab */}
+                                <AdBanner pageUrl={location.pathname} placement="sidebar" />
+                            </div>
+                        </div>
+                    )}
                 </main>
 
             </div>

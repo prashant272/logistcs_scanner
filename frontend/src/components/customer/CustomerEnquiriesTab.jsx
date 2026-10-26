@@ -5,6 +5,7 @@ import {
   Truck, Warehouse, Package, Coins, CheckCircle2, Clock, User, X, Hash 
 } from 'lucide-react';
 import { useEnquiries } from '../../services/EnquiryService';
+import AdBanner from '../shared/AdBanner';
 
 const CustomerEnquiriesTab = ({ title, type }) => {
   const {
@@ -166,12 +167,20 @@ const CustomerEnquiriesTab = ({ title, type }) => {
       ) : (
         <div className="space-y-6">
           <div className="grid grid-cols-1 gap-6">
-            {filteredEnquiries.map((enq) => {
+            {filteredEnquiries.map((enq, index) => {
               const hasQuote = enq.price !== undefined && enq.price !== null;
               const isAccepted = enq.status === 'Accepted';
 
-              if (enq.isBooking) {
-                return (
+              return (
+                <React.Fragment key={enq._id}>
+                  {index > 0 && index % 4 === 0 && (
+                    <AdBanner 
+                      section={type === 'direct' ? 'customer_direct' : 'customer_my'}
+                      pageUrl={type === 'direct' ? '/customer/direct-enquiry' : '/customer/my-enquiry'}
+                      placement="inline"
+                    />
+                  )}
+                  {enq.isBooking ? (
                   <div 
                     key={enq._id} 
                     className="bg-white rounded-3xl p-6 md:p-8 border border-amber-250 hover:border-amber-400 hover:shadow-xl transition-all duration-300 relative shadow-[0_12px_45px_rgba(245,158,11,0.02)]"
@@ -289,10 +298,7 @@ const CustomerEnquiriesTab = ({ title, type }) => {
                       </div>
                     </div>
                   </div>
-                );
-              }
-
-              return (
+                ) : (
                 <div 
                   key={enq._id} 
                   className="bg-white rounded-3xl p-5 md:p-6 border border-slate-100 hover:border-[#0066FF]/20 hover:shadow-xl transition-all duration-300 relative shadow-[0_4px_25px_rgba(11,30,67,0.03)]"
@@ -453,8 +459,10 @@ const CustomerEnquiriesTab = ({ title, type }) => {
                     </div>
                   </div>
                 </div>
-              );
-            })}
+              )}
+            </React.Fragment>
+          );
+        })}
           </div>
 
           {hasMore && (

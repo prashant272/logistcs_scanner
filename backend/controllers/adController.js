@@ -3,7 +3,7 @@ const Ad = require('../models/Ad');
 // Create a new Ad (Admin only)
 exports.createAd = async (req, res) => {
     try {
-        const { title, sponsorName, headline, description, imageUrl, features, buttonText, linkUrl, placement, targetSection, isActive } = req.body;
+        const { title, sponsorName, headline, description, imageUrl, features, buttonText, linkUrl, placement, targetSection, targetUrl, openInNewTab, isActive } = req.body;
         
         const newAd = new Ad({
             title,
@@ -15,7 +15,9 @@ exports.createAd = async (req, res) => {
             buttonText,
             linkUrl,
             placement,
-            targetSection,
+            targetSection: targetSection || 'both',
+            targetUrl: targetUrl ? targetUrl.trim() : '',
+            openInNewTab: openInNewTab !== false,
             isActive
         });
         
@@ -66,15 +68,62 @@ exports.deleteAd = async (req, res) => {
     }
 };
 
-// Get active Ads by section (Public / Vendors)
+// Get active Ads by section or pageUrl (Public / Vendors / Customers)
 exports.getActiveAds = async (req, res) => {
     try {
-        const { section } = req.query; // 'direct_enquiry' or 'b2b_enquiry'
+        const { section, pageUrl } = req.query;
         
         let query = { isActive: true };
         
-        if (section) {
-            query.targetSection = { $in: [section, 'both'] };
+        if (section || pageUrl) {
+            const orConditions = [];
+
+            // Match by targetSection if section provided
+            if (section) {
+                if (section === 'direct_enquiry' || section === 'b2b_enquiry') {
+                    orConditions.push({ targetSection: { $in: [section, 'both'] } });
+                } else if (section.startsWith('customer')) {
+                    orConditions.push({ targetSection: { $in: [section, 'customer_all', 'both_panels'] } });
+                } else {
+                    orConditions.push({ targetSection: { $in: [section, 'both'] } });
+                }
+            }
+
+            // Match by pageUrl if pageUrl provided
+            if (pageUrl) {
+                const cleanUrl = pageUrl.split('?')[0].trim();
+                orConditions.push({ targetUrl: cleanUrl });
+                orConditions.push({ targetUrl: pageUrl.trim() });
+                if (cleanUrl.startsWith('/')) {
+                    orConditions.push({ targetUrl: cleanUrl.substring(1) });
+                } else {
+                    orConditions.push({ targetUrl: '/' + cleanUrl });
+                }
+
+                // If customer page URL, match customer-wide sections and specific section aliases
+                if (cleanUrl.includes('/customer')) {
+                    orConditions.push({ targetSection: 'customer_all' });
+                    orConditions.push({ targetSection: 'both_panels' });
+                    
+                    if (cleanUrl === '/customer/my-enquiry') {
+                        orConditions.push({ targetSection: 'customer_my' });
+                    } else if (cleanUrl === '/customer/direct-enquiry') {
+                        orConditions.push({ targetSection: 'customer_direct' });
+                    } else if (cleanUrl === '/customer/dashboard') {
+                        orConditions.push({ targetSection: 'customer_dashboard' });
+                    }
+                }
+
+                // Match in comma/whitespace/semicolon separated list in targetUrl (supports multiple tabs like "/customer/my-enquiry,/customer/finance")
+                const urlWithoutSlash = cleanUrl.replace(/^\/+/, '');
+                const escaped = urlWithoutSlash.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                const regexPattern = new RegExp(`(^|[,;\\s])\\/?${escaped}([,;\\s]|$)`, 'i');
+                orConditions.push({ targetUrl: { $regex: regexPattern } });
+            }
+            
+            if (orConditions.length > 0) {
+                query.$or = orConditions;
+            }
         }
         
         const ads = await Ad.find(query).sort({ createdAt: -1 });

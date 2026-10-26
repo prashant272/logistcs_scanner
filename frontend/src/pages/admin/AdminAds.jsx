@@ -21,6 +21,8 @@ const AdminAds = () => {
         linkUrl: '',
         placement: 'top',
         targetSection: 'both',
+        targetUrl: '',
+        openInNewTab: true,
         isActive: true
     });
 
@@ -107,6 +109,27 @@ const AdminAds = () => {
         }
     };
 
+    const handleSectionChange = (e) => {
+        const section = e.target.value;
+        let autoUrl = formData.targetUrl;
+        if (section === 'customer_direct') autoUrl = '/customer/direct-enquiry';
+        else if (section === 'customer_my') autoUrl = '/customer/my-enquiry';
+        else if (section === 'customer_dashboard') autoUrl = '/customer/dashboard';
+        else if (section === 'customer_finance') autoUrl = '/customer/finance';
+        else if (section === 'customer_plans') autoUrl = '/customer/plans';
+        else if (section === 'customer_complaint') autoUrl = '/customer/complaint';
+        else if (section === 'customer_profile') autoUrl = '/customer/profile';
+        else if (section === 'direct_enquiry') autoUrl = '/vendor/direct-enquiries';
+        else if (section === 'b2b_enquiry') autoUrl = '/vendor/b2b-enquiries';
+        else if (section === 'both' || section === 'customer_all') autoUrl = '';
+
+        setFormData({
+            ...formData,
+            targetSection: section,
+            targetUrl: autoUrl
+        });
+    };
+
     const handleEdit = (ad) => {
         setCurrentAd(ad);
         setFormData({
@@ -119,7 +142,9 @@ const AdminAds = () => {
             buttonText: ad.buttonText || 'View Offer',
             linkUrl: ad.linkUrl || '',
             placement: ad.placement || 'top',
-            targetSection: ad.targetSection,
+            targetSection: ad.targetSection || 'both',
+            targetUrl: ad.targetUrl || '',
+            openInNewTab: ad.openInNewTab !== false,
             isActive: ad.isActive
         });
         setIsModalOpen(true);
@@ -163,6 +188,8 @@ const AdminAds = () => {
             linkUrl: '',
             placement: 'top',
             targetSection: 'both',
+            targetUrl: '',
+            openInNewTab: true,
             isActive: true
         });
         setIsModalOpen(true);
@@ -174,7 +201,7 @@ const AdminAds = () => {
                 <div>
                     <h2 className="text-xl font-black text-slate-800 tracking-tight">Advertisement Management</h2>
                     <p className="text-xs text-slate-500 font-medium mt-1 uppercase tracking-wider">
-                        Manage banner ads in Direct Enquiries and B2B Enquiries
+                        Manage banner ads across Vendor & Customer panels (Enquiries, Dashboard, Custom Tabs)
                     </p>
                 </div>
                 <button
@@ -228,13 +255,45 @@ const AdminAds = () => {
                                     </p>
                                 )}
                                 
-                                <div className="mt-auto">
-                                    <div className="bg-slate-50 rounded-lg p-2 mb-4">
-                                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider block mb-0.5">Section</span>
-                                        <span className="text-xs font-bold text-slate-700 capitalize">
-                                            {ad.targetSection === 'both' ? 'Direct & B2B Enquiries' : 
-                                             ad.targetSection === 'direct_enquiry' ? 'Direct Enquiries Only' : 'B2B Enquiries Only'}
+                                <div className="mt-auto space-y-2">
+                                    <div className="bg-slate-50 rounded-lg p-2.5">
+                                        <div className="flex justify-between items-center mb-1">
+                                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider block">Target Panel / Section</span>
+                                            <div className="flex items-center gap-1.5">
+                                                <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border uppercase tracking-wider ${
+                                                    ad.placement === 'sidebar' 
+                                                        ? 'bg-purple-50 text-purple-700 border-purple-200' 
+                                                        : ad.placement === 'inline'
+                                                        ? 'bg-amber-50 text-amber-700 border-amber-200'
+                                                        : 'bg-blue-50 text-blue-700 border-blue-200'
+                                                }`}>
+                                                    {ad.placement ? `${ad.placement} Ad` : 'Top Ad'}
+                                                </span>
+                                                {ad.linkUrl && (
+                                                    <span className="text-[9px] font-bold text-slate-500 bg-white px-1.5 py-0.5 rounded border border-slate-200">
+                                                        {ad.openInNewTab !== false ? '↗ New Tab' : 'Same Tab'}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <span className="text-xs font-bold text-slate-800 capitalize block">
+                                            {ad.targetSection === 'both' ? 'Vendor: Direct & B2B' : 
+                                             ad.targetSection === 'direct_enquiry' ? 'Vendor: Direct Enquiries' : 
+                                             ad.targetSection === 'b2b_enquiry' ? 'Vendor: B2B Enquiries' :
+                                             ad.targetSection === 'customer_direct' ? 'Customer: Direct Enquiry' :
+                                             ad.targetSection === 'customer_my' ? 'Customer: My Enquiry' :
+                                             ad.targetSection === 'customer_dashboard' ? 'Customer: Dashboard' :
+                                             ad.targetSection === 'customer_finance' ? 'Customer: Finance' :
+                                             ad.targetSection === 'customer_plans' ? 'Customer: Plans' :
+                                             ad.targetSection === 'customer_complaint' ? 'Customer: Complaints' :
+                                             ad.targetSection === 'customer_profile' ? 'Customer: Profile' :
+                                             ad.targetSection === 'customer_all' ? 'Customer: All Pages' : 'Custom Tab / Multiple URLs'}
                                         </span>
+                                        {ad.targetUrl && (
+                                            <span className="text-[10px] text-[#0066FF] font-mono font-bold block mt-1 truncate bg-blue-50/60 px-2 py-0.5 rounded">
+                                                Tab: {ad.targetUrl}
+                                            </span>
+                                        )}
                                     </div>
 
                                     <div className="flex items-center gap-2 pt-4 border-t border-slate-100">
@@ -403,32 +462,81 @@ const AdminAds = () => {
                                     </div>
                                 </div>
 
-                                <div>
-                                    <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1.5">Target Section</label>
-                                    <select
-                                        name="targetSection"
-                                        value={formData.targetSection}
-                                        onChange={handleInputChange}
-                                        className="w-full bg-white border border-slate-300 focus:border-[#0066FF] rounded-xl px-4 py-3 text-sm font-bold text-slate-800 outline-none transition-colors"
-                                    >
-                                        <option value="both">Both (Direct & B2B)</option>
-                                        <option value="direct_enquiry">Direct Enquiries Only</option>
-                                        <option value="b2b_enquiry">B2B Enquiries Only</option>
-                                    </select>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1.5">Target Section / Panel</label>
+                                        <select
+                                            name="targetSection"
+                                            value={formData.targetSection}
+                                            onChange={handleSectionChange}
+                                            className="w-full bg-white border border-slate-300 focus:border-[#0066FF] rounded-xl px-4 py-3 text-sm font-bold text-slate-800 outline-none transition-colors"
+                                        >
+                                            <optgroup label="Vendor Panel">
+                                                <option value="both">Vendor: Direct & B2B Enquiries</option>
+                                                <option value="direct_enquiry">Vendor: Direct Enquiries Only</option>
+                                                <option value="b2b_enquiry">Vendor: B2B Enquiries Only</option>
+                                            </optgroup>
+                                            <optgroup label="Customer Panel">
+                                                <option value="customer_all">Customer: All Pages</option>
+                                                <option value="customer_dashboard">Customer: Dashboard (/customer/dashboard)</option>
+                                                <option value="customer_my">Customer: My Enquiry (/customer/my-enquiry)</option>
+                                                <option value="customer_direct">Customer: Direct Enquiry (/customer/direct-enquiry)</option>
+                                                <option value="customer_finance">Customer: Finance & Credit (/customer/finance)</option>
+                                                <option value="customer_plans">Customer: Plans (/customer/plans)</option>
+                                                <option value="customer_complaint">Customer: Complaints (/customer/complaint)</option>
+                                                <option value="customer_profile">Customer: Profile (/customer/profile)</option>
+                                            </optgroup>
+                                            <optgroup label="Custom / Multiple URLs">
+                                                <option value="custom_url">Custom Page / Tab URL (or multiple)</option>
+                                            </optgroup>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1.5">
+                                            Target Tab / Page URL (Where to Show)
+                                        </label>
+                                        <input
+                                            type="text"
+                                            name="targetUrl"
+                                            value={formData.targetUrl}
+                                            onChange={handleInputChange}
+                                            className="w-full bg-white border border-slate-300 focus:border-[#0066FF] rounded-xl px-4 py-3 text-sm font-mono text-slate-800 outline-none transition-colors"
+                                            placeholder="e.g., /customer/my-enquiry, /customer/finance"
+                                        />
+                                        <p className="text-[10px] text-slate-400 mt-1 font-semibold">
+                                            💡 Comma-separated URLs supported (e.g. <span className="font-mono text-blue-600">/customer/my-enquiry, /customer/finance</span>)
+                                        </p>
+                                    </div>
                                 </div>
 
-                                <div className="flex items-center gap-3 bg-blue-50/50 p-4 rounded-xl border border-blue-100">
-                                    <input
-                                        type="checkbox"
-                                        id="isActive"
-                                        name="isActive"
-                                        checked={formData.isActive}
-                                        onChange={handleInputChange}
-                                        className="w-5 h-5 rounded border-slate-300 text-[#0066FF] focus:ring-[#0066FF]"
-                                    />
-                                    <label htmlFor="isActive" className="text-sm font-bold text-slate-700 cursor-pointer">
-                                        Activate this Ad immediately
-                                    </label>
+                                <div className="space-y-3">
+                                    <div className="flex items-center gap-3 bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+                                        <input
+                                            type="checkbox"
+                                            id="openInNewTab"
+                                            name="openInNewTab"
+                                            checked={formData.openInNewTab}
+                                            onChange={handleInputChange}
+                                            className="w-4 h-4 rounded border-slate-300 text-[#0066FF] focus:ring-[#0066FF]"
+                                        />
+                                        <label htmlFor="openInNewTab" className="text-xs font-bold text-slate-700 cursor-pointer">
+                                            Open Destination Link in a separate browser tab (target="_blank")
+                                        </label>
+                                    </div>
+
+                                    <div className="flex items-center gap-3 bg-blue-50/50 p-3.5 rounded-xl border border-blue-100">
+                                        <input
+                                            type="checkbox"
+                                            id="isActive"
+                                            name="isActive"
+                                            checked={formData.isActive}
+                                            onChange={handleInputChange}
+                                            className="w-4 h-4 rounded border-slate-300 text-[#0066FF] focus:ring-[#0066FF]"
+                                        />
+                                        <label htmlFor="isActive" className="text-xs font-bold text-slate-700 cursor-pointer">
+                                            Activate this Ad immediately
+                                        </label>
+                                    </div>
                                 </div>
                             </form>
                         </div>

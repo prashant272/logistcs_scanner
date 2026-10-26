@@ -16,8 +16,15 @@ const adSchema = new mongoose.Schema({
     },
     targetSection: {
         type: String,
-        enum: ['direct_enquiry', 'b2b_enquiry', 'both'],
         default: 'both'
+    },
+    targetUrl: {
+        type: String,
+        default: ''
+    },
+    openInNewTab: {
+        type: Boolean,
+        default: true
     },
     isActive: {
         type: Boolean,

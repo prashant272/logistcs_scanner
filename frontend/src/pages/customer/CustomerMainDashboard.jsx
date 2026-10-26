@@ -9,6 +9,7 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import api from '../../api/axios';
+import AdBanner from '../../components/shared/AdBanner';
 
 const CustomerMainDashboard = () => {
     const { user } = useAuth();
@@ -94,6 +95,9 @@ const CustomerMainDashboard = () => {
                         </div>
                     </div>
                 </div>
+
+                {/* Advertisement Banner */}
+                <AdBanner section="customer_dashboard" pageUrl="/customer/dashboard" />
 
                 {/* 2. Quick Action Cards (6 grid) */}
                 <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
@@ -356,6 +360,13 @@ const CustomerMainDashboard = () => {
 
                     {/* RIGHT COLUMN */}
                     <div className="xl:col-span-3 space-y-6">
+
+                        {/* Customer Dashboard Sidebar Ads */}
+                        <AdBanner 
+                            section="customer_dashboard" 
+                            pageUrl="/customer/dashboard" 
+                            placement="sidebar" 
+                        />
 
                         {/* RM Profile */}
                         <div className="bg-white border border-slate-100 shadow-sm rounded-2xl p-6">
