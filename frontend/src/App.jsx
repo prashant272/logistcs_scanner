@@ -1,6 +1,7 @@
 import React, { useState, Suspense, lazy } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
+import AdBanner from './components/shared/AdBanner';
 
 // Global Axios Interceptor for handling 401 Unauthorized
 axios.interceptors.response.use(
@@ -189,6 +190,17 @@ const CustomerPrivateRoute = ({ children }) => {
   return children;
 };
 
+const PublicAdBanner = () => {
+  const location = useLocation();
+  // Do not show banner on Home page or Search Results (Search Results has its own inline placement)
+  if (location.pathname === '/' || location.pathname === '/search-results') return null;
+  return (
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
+      <AdBanner pageUrl={location.pathname} placement="top" />
+    </div>
+  );
+};
+
 function App() {
   return (
     <AuthProvider>
@@ -313,6 +325,7 @@ function App() {
                 <Navbar />
                 <CartDrawer />
                 <main className="flex-grow">
+                  <PublicAdBanner />
                   <Routes>
                     <Route path="/" element={<Home />} />
 

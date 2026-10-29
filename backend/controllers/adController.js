@@ -78,20 +78,35 @@ exports.getActiveAds = async (req, res) => {
         if (section || pageUrl) {
             const orConditions = [];
 
-            // Match by targetSection if section provided
+            // Match by targetSection or mapped URLs if section is provided
             if (section) {
-                if (section === 'direct_enquiry' || section === 'b2b_enquiry') {
-                    orConditions.push({ targetSection: { $in: [section, 'both'] } });
+                if (section === 'direct_enquiry') {
+                    orConditions.push({ targetSection: { $in: ['direct_enquiry', 'both', 'both_panels'] } });
+                    orConditions.push({ targetUrl: { $regex: /(^|[,;\s])\/?vendor\/direct-enquiri?e?s?([,;\s]|$)/i } });
+                } else if (section === 'b2b_enquiry') {
+                    orConditions.push({ targetSection: { $in: ['b2b_enquiry', 'both', 'both_panels'] } });
+                    orConditions.push({ targetUrl: { $regex: /(^|[,;\s])\/?vendor\/b2b-enquiri?e?s?([,;\s]|$)/i } });
                 } else if (section.startsWith('customer')) {
-                    orConditions.push({ targetSection: { $in: [section, 'customer_all', 'both_panels'] } });
+                    orConditions.push({ targetSection: { $in: [section, 'customer_all', 'both_panels', 'both'] } });
+                    if (section === 'customer_direct') {
+                        orConditions.push({ targetUrl: { $regex: /(^|[,;\s])\/?customer\/direct-enquiri?e?s?([,;\s]|$)/i } });
+                    } else if (section === 'customer_my') {
+                        orConditions.push({ targetUrl: { $regex: /(^|[,;\s])\/?customer\/my-enquiri?e?s?([,;\s]|$)/i } });
+                    } else if (section === 'customer_dashboard') {
+                        orConditions.push({ targetUrl: { $regex: /(^|[,;\s])\/?customer\/dashboard([,;\s]|$)/i } });
+                    }
                 } else {
-                    orConditions.push({ targetSection: { $in: [section, 'both'] } });
+                    orConditions.push({ targetSection: { $in: [section, 'both', 'both_panels'] } });
                 }
             }
 
             // Match by pageUrl if pageUrl provided
             if (pageUrl) {
                 const cleanUrl = pageUrl.split('?')[0].trim();
+                const urlWithoutSlash = cleanUrl.replace(/^\/+/, '').replace(/\/+$/, '');
+                const escaped = urlWithoutSlash.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+                // 1. Exact string matches
                 orConditions.push({ targetUrl: cleanUrl });
                 orConditions.push({ targetUrl: pageUrl.trim() });
                 if (cleanUrl.startsWith('/')) {
@@ -100,25 +115,59 @@ exports.getActiveAds = async (req, res) => {
                     orConditions.push({ targetUrl: '/' + cleanUrl });
                 }
 
-                // If customer page URL, match customer-wide sections and specific section aliases
+                // 2. Universal token match: only if slug has meaningful characters (prevents '/' from matching all ads)
+                if (urlWithoutSlash && urlWithoutSlash.trim().length > 1) {
+                    const variations = [escaped];
+                    if (urlWithoutSlash.endsWith('ies')) {
+                        variations.push(urlWithoutSlash.slice(0, -3) + 'y');
+                    } else if (urlWithoutSlash.endsWith('y')) {
+                        variations.push(urlWithoutSlash.slice(0, -1) + 'ies');
+                    } else if (urlWithoutSlash.endsWith('s')) {
+                        variations.push(urlWithoutSlash.slice(0, -1));
+                    } else {
+                        variations.push(urlWithoutSlash + 's');
+                    }
+
+                    variations.forEach(token => {
+                        if (token && token.trim().length > 1) {
+                            const esc = token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                            orConditions.push({ targetUrl: { $regex: new RegExp(`(^|[,;\\s\\/])${esc}([,;\\s\\/?]|$)`, 'i') } });
+                        }
+                    });
+                }
+
+                // 3. Customer page URL aliases
                 if (cleanUrl.includes('/customer')) {
                     orConditions.push({ targetSection: 'customer_all' });
                     orConditions.push({ targetSection: 'both_panels' });
+                    orConditions.push({ targetSection: 'both' });
                     
-                    if (cleanUrl === '/customer/my-enquiry') {
+                    if (cleanUrl.includes('my-enquiry') || cleanUrl.includes('my-enquiries')) {
                         orConditions.push({ targetSection: 'customer_my' });
-                    } else if (cleanUrl === '/customer/direct-enquiry') {
+                    } else if (cleanUrl.includes('direct-enquiry') || cleanUrl.includes('direct-enquiries')) {
                         orConditions.push({ targetSection: 'customer_direct' });
-                    } else if (cleanUrl === '/customer/dashboard') {
+                    } else if (cleanUrl.includes('dashboard')) {
                         orConditions.push({ targetSection: 'customer_dashboard' });
                     }
                 }
 
-                // Match in comma/whitespace/semicolon separated list in targetUrl (supports multiple tabs like "/customer/my-enquiry,/customer/finance")
-                const urlWithoutSlash = cleanUrl.replace(/^\/+/, '');
-                const escaped = urlWithoutSlash.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                const regexPattern = new RegExp(`(^|[,;\\s])\\/?${escaped}([,;\\s]|$)`, 'i');
-                orConditions.push({ targetUrl: { $regex: regexPattern } });
+                // 4. Vendor page URL aliases
+                if (cleanUrl.includes('/vendor')) {
+                    orConditions.push({ targetSection: 'both_panels' });
+                    orConditions.push({ targetSection: 'both' });
+
+                    if (cleanUrl.includes('direct-enquiries') || cleanUrl.includes('direct-enquiry')) {
+                        orConditions.push({ targetSection: 'direct_enquiry' });
+                    } else if (cleanUrl.includes('b2b-enquiries') || cleanUrl.includes('b2b-enquiry')) {
+                        orConditions.push({ targetSection: 'b2b_enquiry' });
+                    }
+                }
+
+                // 5. Search results page URL aliases
+                if (cleanUrl.includes('search-results')) {
+                    orConditions.push({ targetSection: 'both' });
+                    orConditions.push({ targetSection: 'both_panels' });
+                }
             }
             
             if (orConditions.length > 0) {

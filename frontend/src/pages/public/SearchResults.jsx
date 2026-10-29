@@ -14,6 +14,7 @@ import { useLocations } from '../../services/LocationService';
 
 import { COUNTRIES } from '../../utils/countries';
 import useSEO from '../../hooks/useSEO';
+import AdBanner from '../../components/shared/AdBanner';
 
 const maskEmail = (email) => {
   if (!email) return 'N/A';
@@ -38,7 +39,8 @@ const maskPhone = (phone) => {
 };
 
 const SearchResults = () => {
-  const { state } = useLocation();
+  const location = useLocation();
+  const state = location.state;
   const navigate = useNavigate();
   const { user } = useAuth();
   const { createEnquiry } = useEnquiries();
@@ -518,6 +520,9 @@ const SearchResults = () => {
             )}
           </div>
         </div>
+
+        {/* Top Ad Banner for Search Results */}
+        <AdBanner pageUrl={location.pathname} placement="top" className="mb-6" />
 
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-800 p-4 rounded-xl text-xs font-bold flex items-start gap-2.5 shadow-sm">

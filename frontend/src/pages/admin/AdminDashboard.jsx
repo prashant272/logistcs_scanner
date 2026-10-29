@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { useNavigate, Outlet } from 'react-router-dom';
+import { useNavigate, Outlet, useLocation } from 'react-router-dom';
 import AdminSidebar from '../../components/admin/AdminSidebar';
 import AdminHeader from '../../components/admin/AdminHeader';
+import AdBanner from '../../components/shared/AdBanner';
 
 const AdminDashboard = () => {
     const navigate = useNavigate();
+    const location = useLocation();
     const [isSidebarOpen, setSidebarOpen] = useState(window.innerWidth >= 768);
     const [searchQuery, setSearchQuery] = useState('');
 
@@ -53,6 +55,8 @@ const AdminDashboard = () => {
 
                 {/* Scrollable Dashboard Body */}
                 <main className="flex-grow p-6 md:p-8 space-y-6 overflow-y-auto">
+                    {/* Automatic Top Ad Banner for admin routes */}
+                    <AdBanner pageUrl={location.pathname} placement="top" />
                     <Outlet />
                 </main>
 

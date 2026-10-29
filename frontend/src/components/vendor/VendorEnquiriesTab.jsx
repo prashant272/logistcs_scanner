@@ -161,8 +161,9 @@ const VendorEnquiriesTab = ({ title, type }) => {
       if (type !== 'direct' && type !== 'b2b') return;
 
       const section = type === 'direct' ? 'direct_enquiry' : 'b2b_enquiry';
+      const pageUrl = type === 'direct' ? '/vendor/direct-enquiries' : '/vendor/b2b-enquiries';
       try {
-        const res = await api.get(`/ads/active?section=${section}`);
+        const res = await api.get(`/ads/active?section=${section}&pageUrl=${encodeURIComponent(pageUrl)}`);
         if (isMounted && res.data) {
           setAds(res.data);
         }

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate, Outlet } from 'react-router-dom';
+import { useNavigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import VendorSidebar from '../../components/vendor/VendorSidebar';
 import VendorHeader from '../../components/vendor/VendorHeader';
@@ -7,6 +7,7 @@ import VendorNotificationPopup from '../../components/vendor/VendorNotificationP
 import PreApprovedPopup from '../../components/vendor/PreApprovedPopup';
 import FreeVendorRMPopup from '../../components/vendor/FreeVendorRMPopup';
 import FollowupTracker from '../../components/vendor/crm/FollowupTracker';
+import AdBanner from '../../components/shared/AdBanner';
 
 const VendorDashboard = () => {
     const { user, logout } = useAuth();
@@ -24,6 +25,9 @@ const VendorDashboard = () => {
         }, 0);
     };
 
+    const location = useLocation();
+    const isEnquiriesTab = ['/vendor/my-enquiries', '/vendor/direct-enquiries', '/vendor/b2b-enquiries'].includes(location.pathname);
+
     return (
         <div className="w-full h-screen bg-[#f4f7fc] text-slate-800 font-sans flex overflow-hidden">
             
@@ -38,7 +42,7 @@ const VendorDashboard = () => {
             <VendorSidebar 
                 isSidebarOpen={isSidebarOpen} 
                 logout={handleLogout} 
-                user={user}
+                user={user} 
             />
 
             {/* Main Content Wrap */}
@@ -56,6 +60,10 @@ const VendorDashboard = () => {
 
                 {/* Scrollable Dashboard Body */}
                 <main className="flex-grow p-6 md:p-8 space-y-6 overflow-y-auto">
+                    {/* Automatic Top Ad Banner for whatever vendor route is active */}
+                    {!isEnquiriesTab && (
+                        <AdBanner pageUrl={location.pathname} placement="top" />
+                    )}
                     <Outlet />
                 </main>
 
