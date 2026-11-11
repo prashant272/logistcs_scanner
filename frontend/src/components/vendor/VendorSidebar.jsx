@@ -5,7 +5,7 @@ import useSWR from 'swr';
 import { 
     Truck, Landmark, FileText, MessageSquare, 
     Calendar, DollarSign, Wallet, FileSpreadsheet, 
-    User, LogOut, Search, AlertCircle, Building2, ChevronDown, Bell
+    User, LogOut, Search, AlertCircle, Building2, ChevronDown, Bell, Bot, Sparkles
 } from 'lucide-react';
 
 const VendorSidebar = ({ isSidebarOpen, logout, user }) => {
@@ -78,6 +78,7 @@ const VendorSidebar = ({ isSidebarOpen, logout, user }) => {
     // Sidebar navigation items with routes
     const allNavItems = [
         { type: 'link', name: 'Dashboard', path: '/vendor/dashboard', icon: <Landmark size={18} />, hideForPtl: true },
+        { type: 'link', name: 'Logistics AI Bot', path: '/vendor/ai-assistant', icon: <Bot size={18} />, hideForPtl: false, badge: 'AI' },
         { type: 'link', name: 'Updates', path: '/vendor/updates', icon: <Bell size={18} />, hideForPtl: false },
         { type: 'link', name: 'CRM Leads', path: '/vendor/crm', icon: <User size={18} />, hideForPtl: true },
         { type: 'link', name: 'Live Price', path: '/vendor/search-price', icon: <Search size={18} />, hideForPtl: true },
@@ -248,6 +249,12 @@ const VendorSidebar = ({ isSidebarOpen, logout, user }) => {
                                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
                                     <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
                                 </div>
+                            )}
+
+                            {group.badge && (
+                                <span className={`absolute right-3 px-1.5 py-0.5 rounded text-[10px] font-black bg-gradient-to-r from-cyan-400 to-blue-500 text-slate-900 ${!isSidebarOpen ? 'md:hidden' : ''}`}>
+                                    {group.badge}
+                                </span>
                             )}
                             {group.name === 'Updates' && user?.hasNewUpdate && (
                                 <div className={`absolute right-4 flex items-center justify-center bg-rose-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded shadow-sm ${!isSidebarOpen ? 'md:hidden' : ''}`}>

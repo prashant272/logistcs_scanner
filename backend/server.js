@@ -42,6 +42,7 @@ app.use("/api/crm", require("./routes/crmRoutes"));
 app.use("/api/email", require("./routes/emailRoutes"));
 app.use("/api/popups", require("./routes/popupRoutes"));
 app.use("/api/ads", require("./routes/adRoutes"));
+app.use("/api/chatbot", require("./routes/chatbotRoutes"));
 
 app.get("/", (req, res) => {
     res.send("logistics scanner API Running...");

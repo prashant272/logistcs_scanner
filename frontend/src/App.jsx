@@ -10,23 +10,23 @@ axios.interceptors.response.use(
     if (error.response && error.response.status === 401) {
       // Do not redirect if the error is from a login request
       if (error.config && error.config.url && error.config.url.includes('/login')) {
-          return Promise.reject(error);
+        return Promise.reject(error);
       }
-      
+
       if (window.location.pathname.startsWith('/admin')) {
-          const role = sessionStorage.getItem('adminRole');
-          sessionStorage.removeItem('adminToken');
-          if (role === 'RM') {
-              window.location.href = '/rm-login';
-          } else {
-              window.location.href = '/admin/login';
-          }
-      } else if (window.location.pathname.startsWith('/rm-login')) {
-          sessionStorage.removeItem('adminToken');
+        const role = sessionStorage.getItem('adminRole');
+        sessionStorage.removeItem('adminToken');
+        if (role === 'RM') {
           window.location.href = '/rm-login';
+        } else {
+          window.location.href = '/admin/login';
+        }
+      } else if (window.location.pathname.startsWith('/rm-login')) {
+        sessionStorage.removeItem('adminToken');
+        window.location.href = '/rm-login';
       } else {
-          localStorage.removeItem('userToken');
-          window.location.href = '/login';
+        localStorage.removeItem('userToken');
+        window.location.href = '/login';
       }
     }
     return Promise.reject(error);
@@ -110,6 +110,7 @@ const CreditInvoicesTab = lazy(() => import('./components/common/CreditInvoicesT
 const WalletLedgerTab = lazy(() => import('./components/common/WalletLedgerTab'));
 const VendorContactListTab = lazy(() => import('./components/vendor/VendorContactListTab'));
 const VendorUpdates = lazy(() => import('./pages/vendor/Updates'));
+const VendorAIChatTab = lazy(() => import('./components/vendor/VendorAIChatTab'));
 const VendorCRMTab = lazy(() => import('./components/vendor/crm'));
 
 // Lazy loaded admin pages
@@ -211,153 +212,154 @@ function App() {
               <CartProvider>
                 <Toaster position="top-right" />
                 <Router>
-            <ScrollRestoration />
-            <ScrollToTopButton />
-            <WhatsAppButton />
-            <GlobalPopup />
-            <Suspense fallback={<PageLoader />}>
-            <Routes>
-            {/* Admin Routes (No Navbar/Footer) */}
-            <Route path="/admin/login" element={<AdminLogin />} />
-            <Route path="/rm-login" element={<RMLogin />} />
-            <Route path="/admin" element={<PrivateRoute><AdminDashboard /></PrivateRoute>}>
-              <Route path="dashboard" element={<AdminDashboardMain />} />
-              <Route path="search-price" element={<SearchPrice isDashboard={true} />} />
-              <Route path="search-results" element={<SearchResults />} />
-              <Route path="menu" element={<MenuManagement />} />
-              <Route path="orders" element={<OrderManagement />} />
-              <Route path="vendors" element={<VendorManagement />} />
-              <Route path="bulk-email" element={<BulkEmail />} />
-              <Route path="popups" element={<AdminPopups />} />
-              <Route path="ads" element={<AdminAds />} />
-              <Route path="customers" element={<CustomerManagement />} />
-              <Route path="enquiries" element={<AdminEnquiriesTab />} />
-              
-              {/* Reports routes */}
-              <Route path="reports/vendor-pricing" element={<VendorPricingManagement />} />
-              <Route path="reports/add-pricing" element={<VendorPricingManagement />} />
-              <Route path="reports/add-via-pricing" element={<ViaPricingManagement />} />
-              <Route path="reports/add-plan" element={<PlanManagement />} />
-              <Route path="reports/add-coupon" element={<CouponManagement />} />
-              <Route path="reports/inquiry-listing" element={<AdminInquiryListing />} />
-              <Route path="reports/add-rm" element={<AddRM />} />
-              <Route path="reports/activity-rm" element={<RMActivity />} />
-              <Route path="reports/bulk-import" element={<div className="p-6 bg-white rounded-2xl shadow-sm text-slate-800"><h2 className="text-xl font-bold mb-4">Bulk Import</h2><p className="text-slate-500">Bulk data import tool.</p></div>} />
-              
-              {/* Location Master */}
-              <Route path="location-master" element={<LocationMaster />} />
-              <Route path="finance-enquiry-list" element={<AdminFinanceListing />} />
-              
-              {/* Request Management */}
-              <Route path="invoice-request" element={<AdminInvoiceRequests />} />
-              <Route path="recharge-requests" element={<AdminRechargeRequests />} />
-              <Route path="reports/plan-invoices" element={<AdminPlanInvoicesTab />} />
-              <Route path="upgrade-requests" element={<AdminUpgradationRequests />} />
-              
-              {/* Other sections */}
-              <Route path="complaints" element={<AdminComplaints />} />
-              <Route path="role-update" element={<AdminRoleUpdate />} />
-              <Route path="vendor-updates" element={<SystemUpdates />} />
-              <Route path="cms-settings" element={<div className="p-6 bg-white rounded-2xl shadow-sm text-slate-800"><h2 className="text-xl font-bold mb-4">CMS Settings</h2><p className="text-slate-500">Content Management System settings.</p></div>} />
-              
-              {/* PTL Delivery */}
-              <Route path="delhivery-settings" element={<DelhiverySettings />} />
-              <Route path="manual-tracking" element={<ManualTracking />} />
-              <Route path="ptl-bookings" element={<AdminPtlBookings />} />
-              <Route path="ptl-calculator" element={<DelhiveryCalculator isDashboard={true} />} />
-              <Route path="ptl-calculator/order" element={<DelhiveryCreateOrder isDashboard={true} />} />
-            </Route>
+                  <ScrollRestoration />
+                  <ScrollToTopButton />
+                  <WhatsAppButton />
+                  <GlobalPopup />
+                  <Suspense fallback={<PageLoader />}>
+                    <Routes>
+                      {/* Admin Routes (No Navbar/Footer) */}
+                      <Route path="/admin/login" element={<AdminLogin />} />
+                      <Route path="/rm-login" element={<RMLogin />} />
+                      <Route path="/admin" element={<PrivateRoute><AdminDashboard /></PrivateRoute>}>
+                        <Route path="dashboard" element={<AdminDashboardMain />} />
+                        <Route path="search-price" element={<SearchPrice isDashboard={true} />} />
+                        <Route path="search-results" element={<SearchResults />} />
+                        <Route path="menu" element={<MenuManagement />} />
+                        <Route path="orders" element={<OrderManagement />} />
+                        <Route path="vendors" element={<VendorManagement />} />
+                        <Route path="bulk-email" element={<BulkEmail />} />
+                        <Route path="popups" element={<AdminPopups />} />
+                        <Route path="ads" element={<AdminAds />} />
+                        <Route path="customers" element={<CustomerManagement />} />
+                        <Route path="enquiries" element={<AdminEnquiriesTab />} />
 
-            {/* Customer Dashboard Routes (No Navbar/Footer) */}
-            <Route path="/customer" element={<CustomerPrivateRoute><CustomerDashboard /></CustomerPrivateRoute>}>
-              <Route index element={<Navigate to="/customer/dashboard" replace />} />
-              <Route path="dashboard" element={<CustomerMainDashboard />} />
-              <Route path="search-price" element={<SearchPrice isDashboard={true} />} />
-              <Route path="search-results" element={<SearchResults />} />
-              <Route path="direct-enquiry" element={<CustomerEnquiriesTab title="Direct Enquiry" type="direct" />} />
-              <Route path="my-enquiry" element={<CustomerEnquiriesTab title="My Enquiry" type="my" />} />
-              <Route path="ptl-bookings" element={<PtlBookingsTab />} />
+                        {/* Reports routes */}
+                        <Route path="reports/vendor-pricing" element={<VendorPricingManagement />} />
+                        <Route path="reports/add-pricing" element={<VendorPricingManagement />} />
+                        <Route path="reports/add-via-pricing" element={<ViaPricingManagement />} />
+                        <Route path="reports/add-plan" element={<PlanManagement />} />
+                        <Route path="reports/add-coupon" element={<CouponManagement />} />
+                        <Route path="reports/inquiry-listing" element={<AdminInquiryListing />} />
+                        <Route path="reports/add-rm" element={<AddRM />} />
+                        <Route path="reports/activity-rm" element={<RMActivity />} />
+                        <Route path="reports/bulk-import" element={<div className="p-6 bg-white rounded-2xl shadow-sm text-slate-800"><h2 className="text-xl font-bold mb-4">Bulk Import</h2><p className="text-slate-500">Bulk data import tool.</p></div>} />
 
-              <Route path="ptl-calculator" element={<DelhiveryCalculator isDashboard={true} />} />
-              <Route path="ptl-calculator/order" element={<DelhiveryCreateOrder isDashboard={true} />} />
-              <Route path="plans" element={<PricingPlans />} />
-              <Route path="finance" element={<FinanceForm />} />
-              <Route path="finance-list" element={<FinanceDashboard />} />
-              <Route path="upload-invoice" element={<UploadInvoiceTab />} />
-              <Route path="credit-invoices" element={<CreditInvoicesTab />} />
-              <Route path="wallet-ledger" element={<WalletLedgerTab />} />
-              <Route path="complaint" element={<CustomerComplaintsTab />} />
-              <Route path="profile" element={<CustomerProfileTab />} />
-            </Route>
+                        {/* Location Master */}
+                        <Route path="location-master" element={<LocationMaster />} />
+                        <Route path="finance-enquiry-list" element={<AdminFinanceListing />} />
 
-            {/* Vendor Routes (No Navbar/Footer) */}
-            <Route path="/vendor" element={<VendorPrivateRoute><VendorDashboard /></VendorPrivateRoute>}>
-              <Route index element={<Navigate to="/vendor/dashboard" replace />} />
-              <Route path="dashboard" element={<VendorDashboardMain />} />
-              <Route path="search-price" element={<SearchPrice isDashboard={true} />} />
-              <Route path="search-results" element={<SearchResults />} />
-              <Route path="my-enquiries" element={<VendorEnquiriesTab title="My Enquiries" type="my" />} />
-              <Route path="direct-enquiries" element={<VendorEnquiriesTab title="Direct Enquiries" type="direct" />} />
-              <Route path="b2b-enquiries" element={<VendorEnquiriesTab title="B2B Enquiries" type="b2b" />} />
-              <Route path="crm" element={<VendorCRMTab />} />
-              <Route path="direct-booking" element={<VendorBookingsTab title="Direct Bookings" type="direct" />} />
-              <Route path="my-bookings" element={<VendorBookingsTab title="My Bookings" type="my" />} />
-              <Route path="ptl-bookings" element={<PtlBookingsTab />} />
-              <Route path="ptl-calculator" element={<DelhiveryCalculator isDashboard={true} />} />
-              <Route path="ptl-calculator/order" element={<DelhiveryCreateOrder isDashboard={true} />} />
-              <Route path="my-pricing" element={<VendorPricingTab />} />
-              <Route path="finance" element={<FinanceForm />} />
-              <Route path="finance-list" element={<FinanceDashboard />} />
-              <Route path="upload-invoice" element={<UploadInvoiceTab />} />
-              <Route path="credit-invoices" element={<CreditInvoicesTab />} />
-              <Route path="wallet-ledger" element={<WalletLedgerTab />} />
-              <Route path="bulk-import" element={<VendorBulkImportTab />} />
-              <Route path="view-profile" element={<VendorProfileTab />} />
-              <Route path="upgrade" element={<PricingPlans />} />
-              <Route path="contact-vendor-list" element={<VendorContactListTab />} />
-              <Route path="updates" element={<VendorUpdates />} />
-              <Route path="complaint" element={<VendorComplaintsTab />} />
-            </Route>
+                        {/* Request Management */}
+                        <Route path="invoice-request" element={<AdminInvoiceRequests />} />
+                        <Route path="recharge-requests" element={<AdminRechargeRequests />} />
+                        <Route path="reports/plan-invoices" element={<AdminPlanInvoicesTab />} />
+                        <Route path="upgrade-requests" element={<AdminUpgradationRequests />} />
 
-            {/* Public Routes */}
-            <Route path="*" element={
-              <div className="flex flex-col min-h-screen bg-dark-900 text-white font-sans">
-                <Navbar />
-                <CartDrawer />
-                <main className="flex-grow">
-                  <PublicAdBanner />
-                  <Routes>
-                    <Route path="/" element={<Home />} />
+                        {/* Other sections */}
+                        <Route path="complaints" element={<AdminComplaints />} />
+                        <Route path="role-update" element={<AdminRoleUpdate />} />
+                        <Route path="vendor-updates" element={<SystemUpdates />} />
+                        <Route path="cms-settings" element={<div className="p-6 bg-white rounded-2xl shadow-sm text-slate-800"><h2 className="text-xl font-bold mb-4">CMS Settings</h2><p className="text-slate-500">Content Management System settings.</p></div>} />
 
-                    <Route path="/about" element={<About />} />
-                    <Route path="/contact" element={<Contact />} />
-                    <Route path="/login" element={<Login />} />
-                    <Route path="/register" element={<Register />} />
-                    <Route path="/vendor-network" element={<VendorNetwork />} />
-                    <Route path="/vendor-network/profile/:id" element={<VendorPublicProfile />} />
-                    <Route path="/track" element={<TrackShipment />} />
-                    <Route path="/track-ptl" element={<TrackPtl />} />
-                    <Route path="/ptl-calculator" element={<DelhiveryCalculator />} />
-                    <Route path="/ptl-calculator/order" element={<DelhiveryCreateOrder />} />
-                    <Route path="/search-results" element={<SearchResults />} />
-                    <Route path="/terms" element={<Terms />} />
-                    <Route path="/privacy" element={<Privacy />} />
-                    <Route path="/refund" element={<Refund />} />
-                    <Route path="/support" element={<Support />} />
-                    <Route path="/download-app" element={<DownloadApp />} />
-                    <Route path="/partner-credit-program" element={<PartnerCreditProgram />} />
+                        {/* PTL Delivery */}
+                        <Route path="delhivery-settings" element={<DelhiverySettings />} />
+                        <Route path="manual-tracking" element={<ManualTracking />} />
+                        <Route path="ptl-bookings" element={<AdminPtlBookings />} />
+                        <Route path="ptl-calculator" element={<DelhiveryCalculator isDashboard={true} />} />
+                        <Route path="ptl-calculator/order" element={<DelhiveryCreateOrder isDashboard={true} />} />
+                      </Route>
 
-                    <Route path="/upgrade" element={<CustomerPrivateRoute><PricingPlans /></CustomerPrivateRoute>} />
-                    <Route path="/vendor-auth" element={<VendorAuth />} />
-                    <Route path="*" element={<Navigate to="/" replace />} />
-                  </Routes>
-                </main>
-                <Footer />
-              </div>
-            } />
-          </Routes>
-          </Suspense>
-        </Router>
+                      {/* Customer Dashboard Routes (No Navbar/Footer) */}
+                      <Route path="/customer" element={<CustomerPrivateRoute><CustomerDashboard /></CustomerPrivateRoute>}>
+                        <Route index element={<Navigate to="/customer/dashboard" replace />} />
+                        <Route path="dashboard" element={<CustomerMainDashboard />} />
+                        <Route path="search-price" element={<SearchPrice isDashboard={true} />} />
+                        <Route path="search-results" element={<SearchResults />} />
+                        <Route path="direct-enquiry" element={<CustomerEnquiriesTab title="Direct Enquiry" type="direct" />} />
+                        <Route path="my-enquiry" element={<CustomerEnquiriesTab title="My Enquiry" type="my" />} />
+                        <Route path="ptl-bookings" element={<PtlBookingsTab />} />
+
+                        <Route path="ptl-calculator" element={<DelhiveryCalculator isDashboard={true} />} />
+                        <Route path="ptl-calculator/order" element={<DelhiveryCreateOrder isDashboard={true} />} />
+                        <Route path="plans" element={<PricingPlans />} />
+                        <Route path="finance" element={<FinanceForm />} />
+                        <Route path="finance-list" element={<FinanceDashboard />} />
+                        <Route path="upload-invoice" element={<UploadInvoiceTab />} />
+                        <Route path="credit-invoices" element={<CreditInvoicesTab />} />
+                        <Route path="wallet-ledger" element={<WalletLedgerTab />} />
+                        <Route path="complaint" element={<CustomerComplaintsTab />} />
+                        <Route path="profile" element={<CustomerProfileTab />} />
+                      </Route>
+
+                      {/* Vendor Routes (No Navbar/Footer) */}
+                      <Route path="/vendor" element={<VendorPrivateRoute><VendorDashboard /></VendorPrivateRoute>}>
+                        <Route index element={<Navigate to="/vendor/dashboard" replace />} />
+                        <Route path="dashboard" element={<VendorDashboardMain />} />
+                        <Route path="search-price" element={<SearchPrice isDashboard={true} />} />
+                        <Route path="search-results" element={<SearchResults />} />
+                        <Route path="my-enquiries" element={<VendorEnquiriesTab title="My Enquiries" type="my" />} />
+                        <Route path="direct-enquiries" element={<VendorEnquiriesTab title="Direct Enquiries" type="direct" />} />
+                        <Route path="b2b-enquiries" element={<VendorEnquiriesTab title="B2B Enquiries" type="b2b" />} />
+                        <Route path="crm" element={<VendorCRMTab />} />
+                        <Route path="direct-booking" element={<VendorBookingsTab title="Direct Bookings" type="direct" />} />
+                        <Route path="my-bookings" element={<VendorBookingsTab title="My Bookings" type="my" />} />
+                        <Route path="ptl-bookings" element={<PtlBookingsTab />} />
+                        <Route path="ptl-calculator" element={<DelhiveryCalculator isDashboard={true} />} />
+                        <Route path="ptl-calculator/order" element={<DelhiveryCreateOrder isDashboard={true} />} />
+                        <Route path="my-pricing" element={<VendorPricingTab />} />
+                        <Route path="finance" element={<FinanceForm />} />
+                        <Route path="finance-list" element={<FinanceDashboard />} />
+                        <Route path="upload-invoice" element={<UploadInvoiceTab />} />
+                        <Route path="credit-invoices" element={<CreditInvoicesTab />} />
+                        <Route path="wallet-ledger" element={<WalletLedgerTab />} />
+                        <Route path="bulk-import" element={<VendorBulkImportTab />} />
+                        <Route path="view-profile" element={<VendorProfileTab />} />
+                        <Route path="upgrade" element={<PricingPlans />} />
+                        <Route path="contact-vendor-list" element={<VendorContactListTab />} />
+                        <Route path="updates" element={<VendorUpdates />} />
+                        <Route path="ai-assistant" element={<VendorAIChatTab />} />
+                        <Route path="complaint" element={<VendorComplaintsTab />} />
+                      </Route>
+
+                      {/* Public Routes */}
+                      <Route path="*" element={
+                        <div className="flex flex-col min-h-screen bg-dark-900 text-white font-sans">
+                          <Navbar />
+                          <CartDrawer />
+                          <main className="flex-grow">
+                            <PublicAdBanner />
+                            <Routes>
+                              <Route path="/" element={<Home />} />
+
+                              <Route path="/about" element={<About />} />
+                              <Route path="/contact" element={<Contact />} />
+                              <Route path="/login" element={<Login />} />
+                              <Route path="/register" element={<Register />} />
+                              <Route path="/vendor-network" element={<VendorNetwork />} />
+                              <Route path="/vendor-network/profile/:id" element={<VendorPublicProfile />} />
+                              <Route path="/track" element={<TrackShipment />} />
+                              <Route path="/track-ptl" element={<TrackPtl />} />
+                              <Route path="/ptl-calculator" element={<DelhiveryCalculator />} />
+                              <Route path="/ptl-calculator/order" element={<DelhiveryCreateOrder />} />
+                              <Route path="/search-results" element={<SearchResults />} />
+                              <Route path="/terms" element={<Terms />} />
+                              <Route path="/privacy" element={<Privacy />} />
+                              <Route path="/refund" element={<Refund />} />
+                              <Route path="/support" element={<Support />} />
+                              <Route path="/download-app" element={<DownloadApp />} />
+                              <Route path="/partner-credit-program" element={<PartnerCreditProgram />} />
+
+                              <Route path="/upgrade" element={<CustomerPrivateRoute><PricingPlans /></CustomerPrivateRoute>} />
+                              <Route path="/vendor-auth" element={<VendorAuth />} />
+                              <Route path="*" element={<Navigate to="/" replace />} />
+                            </Routes>
+                          </main>
+                          <Footer />
+                        </div>
+                      } />
+                    </Routes>
+                  </Suspense>
+                </Router>
               </CartProvider>
             </EnquiryProvider>
           </PricingProvider>

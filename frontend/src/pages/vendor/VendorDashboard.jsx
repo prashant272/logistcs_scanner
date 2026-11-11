@@ -8,6 +8,7 @@ import PreApprovedPopup from '../../components/vendor/PreApprovedPopup';
 import FreeVendorRMPopup from '../../components/vendor/FreeVendorRMPopup';
 import FollowupTracker from '../../components/vendor/crm/FollowupTracker';
 import AdBanner from '../../components/shared/AdBanner';
+import LogisticsChatbot from '../../components/chatbot/LogisticsChatbot';
 
 const VendorDashboard = () => {
     const { user, logout } = useAuth();
