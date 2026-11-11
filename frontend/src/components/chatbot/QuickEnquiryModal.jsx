@@ -5,8 +5,7 @@ import {
     FileText, CheckCircle2, RefreshCw, ArrowRight 
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+import api from '../../api/axios';
 
 const QuickEnquiryModal = ({ isOpen, onClose, defaultFrom = '', defaultTo = '', defaultMode = 'sea' }) => {
     const [fromLocation, setFromLocation] = useState(defaultFrom || 'Mumbai');
@@ -43,8 +42,7 @@ const QuickEnquiryModal = ({ isOpen, onClose, defaultFrom = '', defaultTo = '', 
                 weightRange: weight || '100-500 kg'
             };
 
-            const config = token ? { headers: { Authorization: `Bearer ${token}` } } : {};
-            const res = await axios.post(`${API_BASE}/enquiries`, payload, config);
+            const res = await api.post('/enquiries', payload);
 
             if (res.data?.success || res.status === 201 || res.status === 200) {
                 setSubmitted(true);

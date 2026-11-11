@@ -7,8 +7,9 @@ import {
     Ship, Plane, Truck, FileText
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import api from '../../api/axios';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
 
 const QUICK_CARDS = [
     { id: 1, title: "Find Best Freight Forwarder", desc: "Origin, destination & mode based top partner suggestion", prompt: "Best freight forwarder kaise find karein?" },
@@ -115,8 +116,7 @@ const InlineQuoteBox = ({ defaultFrom = 'Mumbai', defaultTo = 'China', defaultMo
                 commodity: commodity || 'General Cargo',
                 message: `Direct Inquiry from AI Chat | Mode: ${shipMode.toUpperCase()} | Load: ${containerType} | Weight/CBM: ${weight || 'N/A'}`
             };
-            const config = token ? { headers: { Authorization: `Bearer ${token}` } } : {};
-            await axios.post(`${API_BASE}/enquiries`, payload, config);
+            await api.post('/enquiries', payload);
             setDone(true);
         } catch (err) {
             console.error(err);
@@ -312,7 +312,7 @@ const VendorAIChatTab = () => {
         setLoading(true);
 
         try {
-            const res = await axios.post(`${API_BASE}/chatbot/query`, {
+            const res = await api.post('/chatbot/query', {
                 message: text
             });
 

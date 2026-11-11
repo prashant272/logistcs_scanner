@@ -6,8 +6,9 @@ import {
     Mic, MicOff, RotateCcw, Volume2
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import api from '../../api/axios';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
 
 export const QUICK_BUTTONS = [
     { id: 1, label: "Find Best Freight Forwarder", prompt: "Best freight forwarder kaise find karein?" },
@@ -105,7 +106,7 @@ const LogisticsChatbot = ({ defaultOpen = false, placementClass = "fixed bottom-
         setLoading(true);
 
         try {
-            const res = await axios.post(`${API_BASE}/chatbot/query`, {
+            const res = await api.post('/chatbot/query', {
                 message: query
             });
 
