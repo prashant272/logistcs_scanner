@@ -31,6 +31,7 @@ const LogisticsChatbot = ({ defaultOpen = false, placementClass = "fixed bottom-
     const [isOpen, setIsOpen] = useState(defaultOpen);
     const [input, setInput] = useState('');
     const [messages, setMessages] = useState([INITIAL_GREETING]);
+    const [lastContext, setLastContext] = useState(null);
     const [loading, setLoading] = useState(false);
     const [isListening, setIsListening] = useState(false);
     const messagesEndRef = useRef(null);
@@ -107,10 +108,15 @@ const LogisticsChatbot = ({ defaultOpen = false, placementClass = "fixed bottom-
 
         try {
             const res = await api.post('/chatbot/query', {
-                message: query
+                message: query,
+                lastContext,
+                history: newMessages.map(m => ({ sender: m.sender, text: m.text }))
             });
 
             if (res.data?.success) {
+                if (res.data.context) {
+                    setLastContext(res.data.context);
+                }
                 setMessages([
                     ...newMessages,
                     {

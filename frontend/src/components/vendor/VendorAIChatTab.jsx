@@ -4,22 +4,39 @@ import {
     Send, Bot, Sparkles, Building2, MapPin, 
     CheckCircle2, DollarSign, ArrowRight, RefreshCw, RotateCcw, 
     Mic, MicOff, Search, Compass, ShieldCheck, ChevronRight, Copy, Check,
-    Ship, Plane, Truck, FileText
+    Ship, Plane, Truck, FileText, Star, Award, Globe, Navigation
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import api from '../../api/axios';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
 
+// Combined 4 Core Action Cards (Non-overlapping & Clean)
 const QUICK_CARDS = [
-    { id: 1, title: "Find Best Freight Forwarder", desc: "Origin, destination & mode based top partner suggestion", prompt: "Best freight forwarder kaise find karein?" },
-    { id: 2, title: "Compare Freight Rates", desc: "Live comparison across Sea FCL, LCL & Air lines", prompt: "Compare freight rates from India to China" },
-    { id: 3, title: "Find Verified Vendor", desc: "Verified forwarders and logistics companies near you", prompt: "Verified freight forwarder near me" },
-    { id: 4, title: "Find Vendor by City", desc: "Search top vendors in Delhi, Mumbai, Mundra etc.", prompt: "Best freight forwarder in Delhi" },
-    { id: 5, title: "Find Vendor by Country", desc: "Forwarders active in China, UAE, USA & Europe", prompt: "Best freight forwarder in China" },
-    { id: 6, title: "Search Shipping Route", desc: "Best sea/air routes, transit days & port advice", prompt: "Best route from China to India" },
-    { id: 7, title: "Get Freight Quote", desc: "Direct quotation request form for custom cargo", prompt: "I need a freight quote" },
-    { id: 8, title: "Top 10 Logistics Companies", desc: "Ranked verified forwarders list on Logistics Scanner", prompt: "Top 10 freight forwarders in India" }
+    { 
+        id: 1, 
+        icon: Award,
+        color: "blue",
+        title: "Find Best Freight Forwarder", 
+        desc: "Checklist, licenses to verify (IATA, FIATA, CHA) & top ranked portal partners", 
+        prompt: "Best freight forwarder kaise find karein?" 
+    },
+    { 
+        id: 2, 
+        icon: MapPin,
+        color: "indigo",
+        title: "Search Vendors by Location", 
+        desc: "Find verified forwarders by City or Country (Mumbai, Delhi, China, Dubai)", 
+        prompt: "Search vendors by location" 
+    },
+    { 
+        id: 3, 
+        icon: Ship,
+        color: "amber",
+        title: "Shipping Routes & Port Guide", 
+        desc: "Explore loading ports, transit schedules, and freight rate benchmarks", 
+        prompt: "Shipping Routes & Port Guide"
+    }
 ];
 
 // Rich Formatter for Strong & Clear Typography
@@ -92,8 +109,10 @@ const FormattedMessage = ({ content }) => {
     );
 };
 
-// Inline Freight Inquiry Card embedded directly into the chat
-const InlineQuoteBox = ({ defaultFrom = 'Mumbai', defaultTo = 'China', defaultMode = 'sea' }) => {
+// Inline Freight Inquiry Card - Progressive Step-by-Step Flow
+const InlineQuoteBox = ({ defaultFrom = ' ', defaultTo = ' ', defaultMode = 'sea' }) => {
+    // step 1: Cargo details (Commodity & Type), step 2: Weight/CBM & Locations check
+    const [step, setStep] = useState(1);
     const [fromLoc, setFromLoc] = useState(defaultFrom);
     const [toLoc, setToLoc] = useState(defaultTo);
     const [shipMode, setShipMode] = useState(defaultMode || 'sea');
@@ -107,7 +126,6 @@ const InlineQuoteBox = ({ defaultFrom = 'Mumbai', defaultTo = 'China', defaultMo
         e.preventDefault();
         setSubmitting(true);
         try {
-            const token = localStorage.getItem('userToken');
             const payload = {
                 fromLocation: fromLoc,
                 toLocation: toLoc,
@@ -141,99 +159,492 @@ const InlineQuoteBox = ({ defaultFrom = 'Mumbai', defaultTo = 'China', defaultMo
     }
 
     return (
-        <div className="bg-gradient-to-br from-blue-50/90 via-white to-indigo-50/70 border-2 border-blue-300 rounded-2xl p-5 shadow-sm space-y-4">
+        <div className="bg-white border-2 border-blue-200 rounded-2xl p-4 sm:p-5 shadow-sm space-y-4">
             <div className="flex items-center justify-between border-b border-blue-100 pb-3">
-                <div className="flex items-center gap-2.5">
-                    <span className="p-2 bg-blue-600 text-white rounded-xl shadow-xs">
-                        <DollarSign className="w-4 h-4" />
+                <div className="flex items-center gap-2">
+                    <span className="w-6 h-6 rounded-full bg-blue-600 text-white font-black text-xs flex items-center justify-center">
+                        {step}
                     </span>
                     <div>
-                        <h5 className="font-black text-sm text-slate-900">
-                            Request Live Quotes from Verified Portal Vendors
+                        <h5 className="font-black text-xs sm:text-sm text-slate-900">
+                            {step === 1 ? 'Step 1: Specify Cargo & Packaging' : 'Step 2: Confirm Route & Weight'}
                         </h5>
                         <p className="text-[11px] text-slate-500 font-medium">
-                            Fill your cargo specs below to get instant quotes directly inside Logistics Scanner
+                            {step === 1 ? 'Choose commodity and load type for quote' : `Route: ${fromLoc} → ${toLoc}`}
                         </p>
                     </div>
                 </div>
-                <span className="text-[11px] uppercase font-black bg-blue-600 text-white px-2.5 py-1 rounded-lg">
-                    {shipMode} Freight
-                </span>
+
+                <div className="flex items-center gap-2">
+                    {step === 2 && (
+                        <button
+                            type="button"
+                            onClick={() => setStep(1)}
+                            className="text-[11px] font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 px-2.5 py-1 rounded-lg border border-slate-200 cursor-pointer"
+                        >
+                            ← Back
+                        </button>
+                    )}
+                    <span className="text-[10px] uppercase font-black bg-blue-600 text-white px-2 py-0.5 rounded-md">
+                        {shipMode} Freight
+                    </span>
+                </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-3">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {/* STEP 1: Commodity and Container / Packaging Selection */}
+            {step === 1 && (
+                <div className="space-y-3 pt-1">
                     <div>
-                        <label className="block text-[11px] font-bold text-slate-700 mb-1">Origin Port / City</label>
+                        <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                            Commodity / Goods Description:
+                        </label>
                         <input
                             type="text"
-                            required
-                            value={fromLoc}
-                            onChange={(e) => setFromLoc(e.target.value)}
-                            placeholder="e.g. Mumbai, Nhava Sheva"
-                            className="w-full text-xs font-bold px-3.5 py-2.5 bg-white rounded-xl border border-slate-300 focus:border-blue-600 outline-none"
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-[11px] font-bold text-slate-700 mb-1">Destination Port / City</label>
-                        <input
-                            type="text"
-                            required
-                            value={toLoc}
-                            onChange={(e) => setToLoc(e.target.value)}
-                            placeholder="e.g. Shanghai, Jebel Ali, USA"
-                            className="w-full text-xs font-bold px-3.5 py-2.5 bg-white rounded-xl border border-slate-300 focus:border-blue-600 outline-none"
-                        />
-                    </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <div>
-                        <label className="block text-[11px] font-bold text-slate-700 mb-1">Commodity / Goods</label>
-                        <input
-                            type="text"
-                            required
                             value={commodity}
                             onChange={(e) => setCommodity(e.target.value)}
-                            placeholder="e.g. Textiles, Machinery, Chemicals"
-                            className="w-full text-xs font-bold px-3.5 py-2.5 bg-white rounded-xl border border-slate-300 focus:border-blue-600 outline-none"
+                            placeholder="e.g. Textiles, Auto Parts, Electronics, Chemicals..."
+                            className="w-full text-xs font-bold px-3.5 py-2.5 bg-slate-50 focus:bg-white rounded-xl border border-slate-300 focus:border-blue-600 outline-none"
                         />
                     </div>
+
                     <div>
-                        <label className="block text-[11px] font-bold text-slate-700 mb-1">Weight / CBM / Volume</label>
+                        <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                            Container / Packaging Type:
+                        </label>
+                        <select
+                            value={containerType}
+                            onChange={(e) => setContainerType(e.target.value)}
+                            className="w-full text-xs font-bold px-3 py-2.5 bg-slate-50 focus:bg-white rounded-xl border border-slate-300 focus:border-blue-600 outline-none"
+                        >
+                            <option value="20ft Container">20ft Standard Ocean Container (FCL)</option>
+                            <option value="40ft Container">40ft High Cube Ocean Container (FCL)</option>
+                            <option value="LCL Loose Cargo">LCL (Loose Cargo / Shared Container)</option>
+                            <option value="Air Cargo Box">Air Cargo Standard Carton / Pallet</option>
+                            <option value="Road Full Truck">Full Truck Load (FTL)</option>
+                        </select>
+                    </div>
+
+                    <button
+                        type="button"
+                        onClick={() => setStep(2)}
+                        className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-black text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer mt-2"
+                    >
+                        <span>Next: Confirm Ports & Weight →</span>
+                    </button>
+                </div>
+            )}
+
+            {/* STEP 2: Weight & Port verification then Submit */}
+            {step === 2 && (
+                <form onSubmit={handleSubmit} className="space-y-3 pt-1">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label className="block text-[11px] font-bold text-slate-700 mb-1">Origin Port / City</label>
+                            <input
+                                type="text"
+                                required
+                                value={fromLoc}
+                                onChange={(e) => setFromLoc(e.target.value)}
+                                placeholder="e.g. Mumbai, Nhava Sheva"
+                                className="w-full text-xs font-bold px-3.5 py-2.5 bg-slate-50 focus:bg-white rounded-xl border border-slate-300 focus:border-blue-600 outline-none"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-[11px] font-bold text-slate-700 mb-1">Destination Port / City</label>
+                            <input
+                                type="text"
+                                required
+                                value={toLoc}
+                                onChange={(e) => setToLoc(e.target.value)}
+                                placeholder="e.g. Shanghai, Jebel Ali, USA"
+                                className="w-full text-xs font-bold px-3.5 py-2.5 bg-slate-50 focus:bg-white rounded-xl border border-slate-300 focus:border-blue-600 outline-none"
+                            />
+                        </div>
+                    </div>
+
+                    <div>
+                        <label className="block text-[11px] font-bold text-slate-700 mb-1">Estimated Weight / Volume / CBM (Optional):</label>
                         <input
                             type="text"
                             value={weight}
                             onChange={(e) => setWeight(e.target.value)}
-                            placeholder="e.g. 500 kg / 4 CBM"
-                            className="w-full text-xs font-bold px-3.5 py-2.5 bg-white rounded-xl border border-slate-300 focus:border-blue-600 outline-none"
+                            placeholder="e.g. 500 kg, 4 CBM, 18 Tons"
+                            className="w-full text-xs font-bold px-3.5 py-2.5 bg-slate-50 focus:bg-white rounded-xl border border-slate-300 focus:border-blue-600 outline-none"
                         />
                     </div>
+
+                    <button
+                        type="submit"
+                        disabled={submitting}
+                        className="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-black text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 mt-1"
+                    >
+                        {submitting ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                        <span>Submit Live Rate Request to Matched Vendors</span>
+                    </button>
+                </form>
+            )}
+        </div>
+    );
+};
+
+// Interactive Location Search Selector Widget
+const LocationSearchWidget = ({ onSearch }) => {
+    const [basis, setBasis] = useState(null); // 'country' | 'city' | 'both'
+    const [countryInput, setCountryInput] = useState('');
+    const [cityInput, setCityInput] = useState('');
+
+    const handleFormSubmit = (e) => {
+        e.preventDefault();
+        if (basis === 'city' && !cityInput.trim()) return;
+        if (basis === 'country' && !countryInput.trim()) return;
+        if (basis === 'both' && !countryInput.trim() && !cityInput.trim()) return;
+
+        onSearch({
+            basis,
+            city: cityInput.trim(),
+            country: countryInput.trim()
+        });
+    };
+
+    return (
+        <div className="bg-white border-2 border-indigo-200 rounded-2xl p-5 shadow-sm space-y-4">
+            <div className="border-b border-indigo-100 pb-3">
+                <div className="flex items-center gap-2.5">
+                    <span className="p-2 bg-indigo-600 text-white rounded-xl shadow-xs">
+                        <MapPin className="w-4 h-4" />
+                    </span>
                     <div>
-                        <label className="block text-[11px] font-bold text-slate-700 mb-1">Container / Load Type</label>
-                        <select
-                            value={containerType}
-                            onChange={(e) => setContainerType(e.target.value)}
-                            className="w-full text-xs font-bold px-3 py-2.5 bg-white rounded-xl border border-slate-300 focus:border-blue-600 outline-none"
-                        >
-                            <option value="20ft Container">20ft Standard Container</option>
-                            <option value="40ft Container">40ft High Cube Container</option>
-                            <option value="LCL Loose Cargo">LCL (Loose Cargo / Shared)</option>
-                            <option value="Air Cargo Box">Air Cargo Standard Box</option>
-                            <option value="Road Full Truck">FTL (Full Truck Load)</option>
-                        </select>
+                        <h5 className="font-black text-sm text-slate-900">
+                            How would you like to search for vendors?
+                        </h5>
+                        <p className="text-[11px] text-slate-500 font-medium">
+                            Select search basis: City, Country, or Both
+                        </p>
                     </div>
                 </div>
 
-                <button
-                    type="submit"
-                    disabled={submitting}
-                    className="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-black text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 mt-1"
-                >
-                    {submitting ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                    <span>Submit & Request Live Rates from Portal Vendors</span>
-                </button>
-            </form>
+                {/* 3 Choice Buttons */}
+                <div className="grid grid-cols-3 gap-2.5 mt-3.5">
+                    <button
+                        type="button"
+                        onClick={() => setBasis('city')}
+                        className={`py-2 px-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                            basis === 'city'
+                                ? 'bg-blue-600 text-white shadow-sm ring-2 ring-blue-300'
+                                : 'bg-slate-100 hover:bg-blue-50 text-slate-700 border border-slate-200'
+                        }`}
+                    >
+                        <Building2 className="w-3.5 h-3.5" />
+                        <span>City</span>
+                    </button>
+
+                    <button
+                        type="button"
+                        onClick={() => setBasis('country')}
+                        className={`py-2 px-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                            basis === 'country'
+                                ? 'bg-blue-600 text-white shadow-sm ring-2 ring-blue-300'
+                                : 'bg-slate-100 hover:bg-blue-50 text-slate-700 border border-slate-200'
+                        }`}
+                    >
+                        <Globe className="w-3.5 h-3.5" />
+                        <span>Country</span>
+                    </button>
+
+                    <button
+                        type="button"
+                        onClick={() => setBasis('both')}
+                        className={`py-2 px-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                            basis === 'both'
+                                ? 'bg-blue-600 text-white shadow-sm ring-2 ring-blue-300'
+                                : 'bg-slate-100 hover:bg-blue-50 text-slate-700 border border-slate-200'
+                        }`}
+                    >
+                        <Compass className="w-3.5 h-3.5" />
+                        <span>Both (City & Country)</span>
+                    </button>
+                </div>
+            </div>
+
+            {/* Input Form based on selected basis */}
+            {basis && (
+                <form onSubmit={handleFormSubmit} className="space-y-3 pt-1">
+                    {(basis === 'country' || basis === 'both') && (
+                        <div>
+                            <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                                Enter Country Name:
+                            </label>
+                            <input
+                                type="text"
+                                required={basis === 'country'}
+                                value={countryInput}
+                                onChange={(e) => setCountryInput(e.target.value)}
+                                placeholder="e.g. India, China, UAE, USA, Germany..."
+                                className="w-full text-xs font-bold px-3.5 py-2.5 bg-slate-50 focus:bg-white rounded-xl border border-slate-300 focus:border-indigo-600 outline-none"
+                            />
+                        </div>
+                    )}
+
+                    {(basis === 'city' || basis === 'both') && (
+                        <div>
+                            <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                                Enter City Name:
+                            </label>
+                            <input
+                                type="text"
+                                required={basis === 'city'}
+                                value={cityInput}
+                                onChange={(e) => setCityInput(e.target.value)}
+                                placeholder="e.g. Delhi, Mumbai, Shanghai, Ningbo, Dubai..."
+                                className="w-full text-xs font-bold px-3.5 py-2.5 bg-slate-50 focus:bg-white rounded-xl border border-slate-300 focus:border-indigo-600 outline-none"
+                            />
+                        </div>
+                    )}
+
+                    <button
+                        type="submit"
+                        className="w-full py-2.5 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white font-black text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer mt-2"
+                    >
+                        <Search className="w-4 h-4" />
+                        <span>Search Vendors</span>
+                    </button>
+                </form>
+            )}
+        </div>
+    );
+};
+
+// Interactive Route & Port Discovery Selector Widget - Step-by-Step Progressive Flow
+const RouteSelectorWidget = ({ onSearch }) => {
+    // step: 1 = Choose Mode, 2 = Enter Countries, 3 = Select Ports & Confirm
+    const [step, setStep] = useState(1);
+    const [shipMode, setShipMode] = useState(null); // 'sea' | 'air'
+    const [fromCountry, setFromCountry] = useState('India');
+    const [toCountry, setToCountry] = useState('China');
+    const [selectedOriginPort, setSelectedOriginPort] = useState('');
+    const [selectedDestPort, setSelectedDestPort] = useState('');
+
+    // Pre-calculated major shipping ports & air hubs by country
+    const PORT_DIRECTORY = {
+        'india': {
+            sea: ['Nhava Sheva (JNPT, Mumbai)', 'Mundra Port (Gujarat)', 'Chennai Port', 'Kolkata / Haldia Port', 'Hazira Port', 'Cochin Port', 'Pipavav Port'],
+            air: ['Mumbai (BOM Air Cargo Hub)', 'Delhi (DEL Cargo Terminal)', 'Bengaluru (BLR Air Cargo)', 'Chennai (MAA Cargo)', 'Hyderabad (HYD Cargo)']
+        },
+        'china': {
+            sea: ['Shanghai Port', 'Ningbo-Zhoushan Port', 'Shenzhen Port', 'Qingdao Port', 'Guangzhou Port', 'Tianjin Port', 'Xiamen Port'],
+            air: ['Shanghai Pudong (PVG Air Hub)', 'Guangzhou Baiyun (CAN)', 'Shenzhen Baoan (SZX)', 'Beijing Capital (PEK)', 'Hong Kong (HKG Cargo)']
+        },
+        'uae': {
+            sea: ['Jebel Ali Port (Dubai)', 'Khalifa Port (Abu Dhabi)', 'Sharjah Port', 'Fujairah Port'],
+            air: ['Dubai Cargo Village (DXB)', 'Al Maktoum (DWC Air Hub)', 'Abu Dhabi Cargo (AUH)']
+        },
+        'usa': {
+            sea: ['Port of Los Angeles / Long Beach', 'Port of New York & New Jersey', 'Port of Savannah', 'Port of Houston', 'Port of Seattle'],
+            air: ['Chicago O\'Hare (ORD)', 'New York JFK Cargo', 'Los Angeles (LAX)', 'Atlanta (ATL Cargo)']
+        },
+        'germany': {
+            sea: ['Port of Hamburg', 'Port of Bremen / Bremerhaven'],
+            air: ['Frankfurt Cargo City (FRA)', 'Munich Airport (MUC)']
+        }
+    };
+
+    const getPorts = (countryName, mode) => {
+        const clean = (countryName || '').toLowerCase().trim();
+        for (const key of Object.keys(PORT_DIRECTORY)) {
+            if (clean.includes(key)) {
+                return PORT_DIRECTORY[key][mode] || [];
+            }
+        }
+        return mode === 'sea' ? ['Major Sea Port', 'Secondary Hub Port'] : ['International Air Cargo Terminal'];
+    };
+
+    const originPorts = getPorts(fromCountry, shipMode || 'sea');
+    const destPorts = getPorts(toCountry, shipMode || 'sea');
+
+    const handleSelectMode = (mode) => {
+        setShipMode(mode);
+        setSelectedOriginPort('');
+        setSelectedDestPort('');
+        setStep(2);
+    };
+
+    const handleProceedToPorts = (e) => {
+        e.preventDefault();
+        if (!fromCountry.trim() || !toCountry.trim()) return;
+        setStep(3);
+    };
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        onSearch({
+            from: fromCountry,
+            to: toCountry,
+            mode: shipMode || 'sea',
+            originPort: selectedOriginPort || originPorts[0],
+            destPort: selectedDestPort || destPorts[0]
+        });
+    };
+
+    return (
+        <div className="bg-white border-2 border-amber-300 rounded-2xl p-4 sm:p-5 shadow-sm space-y-4">
+            {/* Step Progress Indicators */}
+            <div className="flex items-center justify-between border-b border-amber-100 pb-3">
+                <div className="flex items-center gap-2">
+                    <span className="w-6 h-6 rounded-full bg-amber-500 text-white font-black text-xs flex items-center justify-center">
+                        {step}
+                    </span>
+                    <div>
+                        <h5 className="font-black text-xs sm:text-sm text-slate-900">
+                            {step === 1 && "Step 1: Choose Shipment Transport Mode"}
+                            {step === 2 && "Step 2: Enter Origin & Destination Country"}
+                            {step === 3 && `Step 3: Select Active ${shipMode === 'sea' ? 'Sea Ports' : 'Airport Hubs'}`}
+                        </h5>
+                        <p className="text-[11px] text-slate-500">
+                            {step === 1 && "Select whether your cargo moves by Ocean (Sea) or by Air"}
+                            {step === 2 && `Configuring route for ${shipMode === 'sea' ? '🌊 Sea Freight' : '✈️ Air Cargo'}`}
+                            {step === 3 && `Major transit hubs for ${fromCountry} → ${toCountry}`}
+                        </p>
+                    </div>
+                </div>
+
+                {/* Back / Reset button if in step 2 or 3 */}
+                {step > 1 && (
+                    <button
+                        type="button"
+                        onClick={() => setStep(step - 1)}
+                        className="text-[11px] font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 px-2.5 py-1 rounded-lg border border-amber-200 cursor-pointer"
+                    >
+                        ← Back
+                    </button>
+                )}
+            </div>
+
+            {/* STEP 1: Choose Mode Sea vs Air */}
+            {step === 1 && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                    <button
+                        type="button"
+                        onClick={() => handleSelectMode('sea')}
+                        className="p-4 rounded-xl border-2 border-blue-200 bg-blue-50/50 hover:bg-blue-100/70 hover:border-blue-400 text-left transition-all flex items-center gap-3 cursor-pointer group"
+                    >
+                        <div className="p-3 bg-blue-600 text-white rounded-xl shadow-xs group-hover:scale-105 transition-transform">
+                            <Ship className="w-5 h-5" />
+                        </div>
+                        <div>
+                            <span className="block font-black text-xs sm:text-sm text-blue-950">
+                                🌊 Ocean / Sea Freight
+                            </span>
+                            <span className="block text-[11px] text-blue-800 font-medium mt-0.5">
+                                FCL Containers, LCL Shared cargo, major seaports
+                            </span>
+                        </div>
+                    </button>
+
+                    <button
+                        type="button"
+                        onClick={() => handleSelectMode('air')}
+                        className="p-4 rounded-xl border-2 border-indigo-200 bg-indigo-50/50 hover:bg-indigo-100/70 hover:border-indigo-400 text-left transition-all flex items-center gap-3 cursor-pointer group"
+                    >
+                        <div className="p-3 bg-indigo-600 text-white rounded-xl shadow-xs group-hover:scale-105 transition-transform">
+                            <Plane className="w-5 h-5" />
+                        </div>
+                        <div>
+                            <span className="block font-black text-xs sm:text-sm text-indigo-950">
+                                ✈️ Air Cargo / Freight
+                            </span>
+                            <span className="block text-[11px] text-indigo-800 font-medium mt-0.5">
+                                Express boxes, high priority, international airport terminals
+                            </span>
+                        </div>
+                    </button>
+                </div>
+            )}
+
+            {/* STEP 2: Enter Origin and Destination Countries */}
+            {step === 2 && (
+                <form onSubmit={handleProceedToPorts} className="space-y-3 pt-1">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                                Origin Country:
+                            </label>
+                            <input
+                                type="text"
+                                required
+                                value={fromCountry}
+                                onChange={(e) => { setFromCountry(e.target.value); setSelectedOriginPort(''); }}
+                                placeholder="e.g. India, UAE, China..."
+                                className="w-full text-xs font-bold px-3.5 py-2.5 bg-slate-50 focus:bg-white rounded-xl border border-slate-300 focus:border-amber-500 outline-none"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                                Destination Country:
+                            </label>
+                            <input
+                                type="text"
+                                required
+                                value={toCountry}
+                                onChange={(e) => { setToCountry(e.target.value); setSelectedDestPort(''); }}
+                                placeholder="e.g. China, USA, UAE, Germany..."
+                                className="w-full text-xs font-bold px-3.5 py-2.5 bg-slate-50 focus:bg-white rounded-xl border border-slate-300 focus:border-amber-500 outline-none"
+                            />
+                        </div>
+                    </div>
+
+                    <button
+                        type="submit"
+                        className="w-full py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-black text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer mt-1"
+                    >
+                        <span>Next: Select Specific {shipMode === 'sea' ? 'Ports' : 'Airports'} →</span>
+                    </button>
+                </form>
+            )}
+
+            {/* STEP 3: Select Ports & Submit Search */}
+            {step === 3 && (
+                <form onSubmit={handleSubmit} className="space-y-3 pt-1">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                                {shipMode === 'sea' ? `Select Origin Port (${fromCountry}):` : `Select Origin Airport (${fromCountry}):`}
+                            </label>
+                            <select
+                                value={selectedOriginPort || originPorts[0]}
+                                onChange={(e) => setSelectedOriginPort(e.target.value)}
+                                className="w-full text-xs font-bold px-3 py-2.5 bg-slate-50 focus:bg-white rounded-xl border border-slate-300 focus:border-amber-500 outline-none"
+                            >
+                                {originPorts.map((p, idx) => (
+                                    <option key={idx} value={p}>{p}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div>
+                            <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                                {shipMode === 'sea' ? `Select Destination Port (${toCountry}):` : `Select Destination Airport (${toCountry}):`}
+                            </label>
+                            <select
+                                value={selectedDestPort || destPorts[0]}
+                                onChange={(e) => setSelectedDestPort(e.target.value)}
+                                className="w-full text-xs font-bold px-3 py-2.5 bg-slate-50 focus:bg-white rounded-xl border border-slate-300 focus:border-amber-500 outline-none"
+                            >
+                                {destPorts.map((p, idx) => (
+                                    <option key={idx} value={p}>{p}</option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
+
+                    <button
+                        type="submit"
+                        className="w-full py-3 bg-gradient-to-r from-amber-500 via-orange-500 to-blue-600 hover:from-amber-600 hover:to-blue-700 text-white font-black text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer mt-1"
+                    >
+                        <Compass className="w-4 h-4" />
+                        <span>Discover Route Timelines, Ports & Connect with Forwarders</span>
+                    </button>
+                </form>
+            )}
         </div>
     );
 };
@@ -241,6 +652,7 @@ const InlineQuoteBox = ({ defaultFrom = 'Mumbai', defaultTo = 'China', defaultMo
 const VendorAIChatTab = () => {
     const [input, setInput] = useState('');
     const [messages, setMessages] = useState([]);
+    const [lastContext, setLastContext] = useState(null);
     const [loading, setLoading] = useState(false);
     const [isListening, setIsListening] = useState(false);
     const [copiedIdx, setCopiedIdx] = useState(null);
@@ -302,9 +714,151 @@ const VendorAIChatTab = () => {
         setTimeout(() => setCopiedIdx(null), 2000);
     };
 
+    // Trigger structured location prompt
+    const handleStartLocationFlow = () => {
+        const newMessages = [
+            ...messages,
+            {
+                sender: 'user',
+                text: 'Find Vendor by Location'
+            },
+            {
+                sender: 'bot',
+                text: '📍 **Find Logistics Vendors by Location:**\n\nPlease select whether you want to search by **City**, **Country**, or **Both** below.',
+                showLocationSelector: true
+            }
+        ];
+        setMessages(newMessages);
+    };
+
+    // Trigger structured interactive route & port discovery prompt
+    const handleStartRouteFlow = () => {
+        const newMessages = [
+            ...messages,
+            {
+                sender: 'user',
+                text: 'Shipping Routes & Port Guide'
+            },
+            {
+                sender: 'bot',
+                text: '🚢 **Interactive Shipping Route & Port Hub Discovery:**\n\nConfigure your origin, destination, and mode of shipment (Sea FCL/LCL or Air Cargo) below to view active loading ports, discharge hubs, transit timelines, and get verified quotes directly.',
+                showRouteSelector: true
+            }
+        ];
+        setMessages(newMessages);
+    };
+
+    // Execute route search via backend
+    const handleRouteSearchSubmit = async (routeParams) => {
+        const promptText = `Best shipping route from ${routeParams.from} (${routeParams.originPort}) to ${routeParams.to} (${routeParams.destPort}) mode ${routeParams.mode}`;
+
+        const newMessages = [...messages, { sender: 'user', text: promptText }];
+        setMessages(newMessages);
+        setLoading(true);
+
+        try {
+            const res = await api.post('/chatbot/query', {
+                message: promptText,
+                lastContext,
+                history: newMessages.map(m => ({ sender: m.sender, text: m.text }))
+            });
+
+            if (res.data?.success) {
+                if (res.data.context) {
+                    setLastContext(res.data.context);
+                }
+                setMessages([
+                    ...newMessages,
+                    {
+                        sender: 'bot',
+                        text: res.data.reply,
+                        routeInfo: {
+                            from: routeParams.from,
+                            to: routeParams.to,
+                            mode: routeParams.mode,
+                            originPort: routeParams.originPort,
+                            destPort: routeParams.destPort
+                        },
+                        showQuoteForm: false, // Inquire naturally in chat
+                        vendors: res.data.vendors || [],
+                        rates: res.data.rates || []
+                    }
+                ]);
+            }
+        } catch (error) {
+            console.error('Route search error:', error);
+            setMessages([
+                ...newMessages,
+                {
+                    sender: 'bot',
+                    text: 'Unable to analyze route right now. Please try again.'
+                }
+            ]);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Execute location search via backend
+    const handleLocationSearchSubmit = async (locParams) => {
+        const locLabel = [locParams.city, locParams.country].filter(Boolean).join(', ');
+        const promptText = `Find vendors in ${locLabel} (Basis: ${locParams.basis})`;
+
+        const newMessages = [...messages, { sender: 'user', text: promptText }];
+        setMessages(newMessages);
+        setLoading(true);
+
+        try {
+            const res = await api.post('/chatbot/query', {
+                message: promptText,
+                locationSearch: locParams,
+                lastContext,
+                history: newMessages.map(m => ({ sender: m.sender, text: m.text }))
+            });
+
+            if (res.data?.success) {
+                if (res.data.context) {
+                    setLastContext(res.data.context);
+                }
+                setMessages([
+                    ...newMessages,
+                    {
+                        sender: 'bot',
+                        text: res.data.reply,
+                        vendors: res.data.vendors || [],
+                        rates: res.data.rates || []
+                    }
+                ]);
+            }
+        } catch (error) {
+            console.error('Location search error:', error);
+            setMessages([
+                ...newMessages,
+                {
+                    sender: 'bot',
+                    text: 'Unable to fetch vendors right now. Please try again.'
+                }
+            ]);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const handleSend = async (queryText) => {
         const text = (queryText || input).trim();
         if (!text || loading) return;
+
+        // Check if query is about location search without specific city/country
+        const lower = text.toLowerCase();
+        if (
+            (lower.includes('find vendor') || lower.includes('search vendor')) &&
+            (lower.includes('country') || lower.includes('city') || lower.includes('location')) &&
+            !lower.includes('delhi') && !lower.includes('mumbai') && !lower.includes('china') && !lower.includes('dubai')
+        ) {
+            handleStartLocationFlow();
+            setInput('');
+            return;
+        }
 
         const newMessages = [...messages, { sender: 'user', text }];
         setMessages(newMessages);
@@ -313,19 +867,24 @@ const VendorAIChatTab = () => {
 
         try {
             const res = await api.post('/chatbot/query', {
-                message: text
+                message: text,
+                lastContext,
+                history: newMessages.map(m => ({ sender: m.sender, text: m.text }))
             });
 
             if (res.data?.success) {
+                if (res.data.context) {
+                    setLastContext(res.data.context);
+                }
                 setMessages([
                     ...newMessages,
                     {
                         sender: 'bot',
                         text: res.data.reply,
-                        routeInfo: res.data.routeInfo || null,
-                        showQuoteForm: res.data.showQuoteForm || false,
+                        options: res.data.options || [],
                         vendors: res.data.vendors || [],
-                        rates: res.data.rates || []
+                        rates: res.data.rates || [],
+                        enquiryCreated: res.data.enquiryCreated || false
                     }
                 ]);
             } else {
@@ -353,6 +912,7 @@ const VendorAIChatTab = () => {
 
     const handleReset = () => {
         setMessages([]);
+        setLastContext(null);
         setInput('');
     };
 
@@ -390,7 +950,7 @@ const VendorAIChatTab = () => {
 
             {/* Chat Body */}
             <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50/60">
-                {/* Initial View: 8 Quick Prompt Cards */}
+                {/* Initial View: 7 Quick Prompt Cards */}
                 {messages.length === 0 && (
                     <div className="max-w-4xl mx-auto py-6 space-y-6">
                         <div className="text-center space-y-2.5">
@@ -406,30 +966,39 @@ const VendorAIChatTab = () => {
                             </p>
                         </div>
 
-                        {/* 8 Clickable Cards Grid */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
-                            {QUICK_CARDS.map((card) => (
-                                <button
-                                    key={card.id}
-                                    onClick={() => handleSend(card.prompt)}
-                                    className="p-4 bg-white hover:bg-blue-50/40 rounded-2xl border border-slate-200/90 hover:border-blue-500 text-left transition-all duration-200 shadow-sm hover:shadow-md group flex flex-col justify-between"
-                                >
-                                    <div>
-                                        <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-black text-xs mb-3 group-hover:bg-blue-600 group-hover:text-white transition-colors shadow-2xs">
-                                            {card.id}
+                        {/* 3 Clean Action Cards Grid in one row */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            {QUICK_CARDS.map((card) => {
+                                const CardIcon = card.icon;
+                                return (
+                                    <button
+                                        key={card.id}
+                                        onClick={() => handleSend(card.prompt)}
+                                        className="p-5 bg-white hover:bg-slate-50/80 rounded-2xl border-2 border-slate-200/90 hover:border-blue-500 text-left transition-all duration-200 shadow-xs hover:shadow-md group flex flex-col justify-between cursor-pointer"
+                                    >
+                                        <div>
+                                            <div className="flex items-center justify-between mb-3.5">
+                                                <div className="w-10 h-10 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center font-black group-hover:bg-blue-600 group-hover:text-white transition-all shadow-2xs">
+                                                    <CardIcon className="w-5 h-5" />
+                                                </div>
+                                                <span className="text-[11px] font-black uppercase tracking-wider text-slate-400 group-hover:text-blue-600 transition-colors">
+                                                    Action 0{card.id}
+                                                </span>
+                                            </div>
+                                            <h4 className="font-extrabold text-slate-900 text-sm group-hover:text-blue-600 transition-colors">
+                                                {card.title}
+                                            </h4>
+                                            <p className="text-xs text-slate-500 mt-2 font-medium leading-relaxed">
+                                                {card.desc}
+                                            </p>
                                         </div>
-                                        <h4 className="font-bold text-slate-900 text-sm group-hover:text-blue-600 transition-colors">
-                                            {card.title}
-                                        </h4>
-                                        <p className="text-xs text-slate-500 mt-1.5 font-medium line-clamp-2">
-                                            {card.desc}
-                                        </p>
-                                    </div>
-                                    <div className="mt-4 flex items-center text-xs font-bold text-blue-600 gap-1">
-                                        Ask AI <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-                                    </div>
-                                </button>
-                            ))}
+                                        <div className="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-black text-blue-600">
+                                            <span>Start with AI</span>
+                                            <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                                        </div>
+                                    </button>
+                                );
+                            })}
                         </div>
                     </div>
                 )}
@@ -476,104 +1045,160 @@ const VendorAIChatTab = () => {
                                 )}
                             </div>
 
-                            {/* INLINE QUOTATION FORM: Inquire inside chat */}
-                            {(m.routeInfo || m.showQuoteForm) && (
-                                <InlineQuoteBox
-                                    defaultFrom={m.routeInfo?.from || 'Mumbai'}
-                                    defaultTo={m.routeInfo?.to || 'China'}
-                                    defaultMode={m.routeInfo?.mode || 'sea'}
-                                />
+                            {/* Clickable Quick Option Pills (e.g. Numbered Ports: 1. Nhava Sheva, 2. Mundra) */}
+                            {m.options && m.options.length > 0 && (
+                                <div className="space-y-1.5 pt-1">
+                                    <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider pl-1">
+                                        Click to Select Option:
+                                    </p>
+                                    <div className="flex flex-wrap gap-2">
+                                        {m.options.map((opt, oIdx) => (
+                                            <button
+                                                key={oIdx}
+                                                type="button"
+                                                onClick={() => handleSend(`${opt.number}`)}
+                                                className="px-3.5 py-2 rounded-xl text-xs font-bold bg-white hover:bg-blue-50 text-slate-800 hover:text-blue-700 border-2 border-slate-200 hover:border-blue-400 shadow-2xs hover:shadow-xs transition-all flex items-center gap-2 cursor-pointer group"
+                                            >
+                                                <span className="w-5 h-5 rounded-full bg-blue-100 text-blue-700 group-hover:bg-blue-600 group-hover:text-white flex items-center justify-center text-[10px] font-black transition-colors">
+                                                    {opt.number}
+                                                </span>
+                                                <span>{opt.label}</span>
+                                                {opt.code && (
+                                                    <span className="text-[10px] font-semibold text-slate-400">
+                                                        ({opt.code})
+                                                    </span>
+                                                )}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
                             )}
 
-                            {/* Verified Forwarders on Logistics Scanner */}
-                            {m.vendors && m.vendors.length > 0 && (
-                                <div className="space-y-2 pt-1">
-                                    <div className="flex items-center justify-between px-1">
-                                        <h5 className="font-extrabold text-xs text-slate-700 flex items-center gap-1.5 uppercase tracking-wider">
-                                            <ShieldCheck className="w-4 h-4 text-blue-600" />
-                                            Logistics Scanner Verified Portal Vendors
-                                        </h5>
-                                        <span className="text-[11px] font-bold text-slate-500">{m.vendors.length} Vendors Listed</span>
-                                    </div>
-
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                        {m.vendors.map((v, vIdx) => (
+                            {/* Available Published Vendor Rates Card */}
+                            {m.rates && m.rates.length > 0 && (
+                                <div className="bg-emerald-50/60 border-2 border-emerald-300/80 rounded-2xl p-4 shadow-2xs space-y-2">
+                                    <h5 className="font-extrabold text-xs text-emerald-950 flex items-center gap-1.5 uppercase tracking-wider">
+                                        <DollarSign className="w-4 h-4 text-emerald-600" />
+                                        Direct Vendor Rates Available in Database ({m.rates.length})
+                                    </h5>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                                        {m.rates.map((r, rIdx) => (
                                             <div
-                                                key={v._id || vIdx}
-                                                className="bg-white border-2 border-slate-200/90 hover:border-blue-500 rounded-2xl p-4 shadow-xs hover:shadow-md transition-all group"
+                                                key={r._id || rIdx}
+                                                className="bg-white rounded-xl p-3 border border-emerald-200 flex items-center justify-between"
                                             >
-                                                <div className="flex items-start justify-between gap-2">
-                                                    <div>
-                                                        <div className="flex items-center gap-1.5">
-                                                            <h5 className="font-black text-slate-900 text-xs tracking-tight group-hover:text-blue-600 transition-colors">
-                                                                {v.company || v.name}
-                                                            </h5>
-                                                            {v.isVerified && (
-                                                                <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                                                            )}
-                                                        </div>
-                                                        <p className="text-[11px] text-slate-500 flex items-center gap-1 mt-0.5 font-semibold">
-                                                            <MapPin className="w-3.5 h-3.5 text-blue-500" />
-                                                            {v.city ? `${v.city}, ` : ''}{v.country || 'India'}
-                                                        </p>
-                                                    </div>
-                                                    <Link
-                                                        to={`/vendor-network/profile/${v._id}`}
-                                                        target="_blank"
-                                                        className="text-[11px] font-extrabold text-blue-600 hover:text-white hover:bg-blue-600 px-3 py-1.5 bg-blue-50 rounded-xl border border-blue-200 transition-all shadow-2xs whitespace-nowrap"
-                                                    >
-                                                        View Profile
-                                                    </Link>
+                                                <div>
+                                                    <h6 className="font-black text-xs text-slate-900">
+                                                        {r.vendor?.company || r.vendor?.name || 'Verified Vendor'}
+                                                    </h6>
+                                                    <p className="text-[10px] text-slate-500 font-medium">
+                                                        {r.seaLoadType || r.deliverySpeed || 'Standard'} • {r.type?.toUpperCase()}
+                                                    </p>
                                                 </div>
-
-                                                {v.services && v.services.length > 0 && (
-                                                    <div className="flex flex-wrap gap-1 mt-3">
-                                                        {v.services.slice(0, 3).map((s, sIdx) => (
-                                                            <span
-                                                                key={sIdx}
-                                                                className="text-[10px] font-bold bg-slate-100 text-slate-700 px-2 py-0.5 rounded-md"
-                                                            >
-                                                                {s}
-                                                            </span>
-                                                        ))}
-                                                    </div>
-                                                )}
+                                                <div className="text-right">
+                                                    <span className="font-black text-emerald-700 text-sm">
+                                                        ₹{Number(r.price).toLocaleString('en-IN')}
+                                                    </span>
+                                                    <span className="block text-[9px] font-bold text-slate-400 uppercase">
+                                                        {r.currency || 'INR'}
+                                                    </span>
+                                                </div>
                                             </div>
                                         ))}
                                     </div>
                                 </div>
                             )}
 
-                            {/* Active Published Rates */}
-                            {m.rates && m.rates.length > 0 && (
+                            {/* Verified & Recommended Forwarders on Logistics Scanner */}
+                            {m.vendors && m.vendors.length > 0 && (
                                 <div className="space-y-2 pt-1">
-                                    <h5 className="font-extrabold text-xs text-slate-700 uppercase tracking-wider px-1">
-                                        Published Direct Rates
-                                    </h5>
-                                    <div className="space-y-2.5">
-                                        {m.rates.map((r, rIdx) => (
-                                            <div
-                                                key={r._id || rIdx}
-                                                className="bg-white border-2 border-slate-200 rounded-2xl p-4 shadow-xs flex items-center justify-between"
-                                            >
-                                                <div>
-                                                    <div className="text-xs font-black text-slate-900 capitalize tracking-tight">
-                                                        {r.fromLocation} → {r.toLocation}
+                                    <div className="flex items-center justify-between px-1">
+                                        <h5 className="font-extrabold text-xs text-slate-700 flex items-center gap-1.5 uppercase tracking-wider">
+                                            <ShieldCheck className="w-4 h-4 text-blue-600" />
+                                            Portal Vendors ({m.vendors.length})
+                                        </h5>
+                                        <div className="flex items-center gap-2 text-[10px] font-bold">
+                                            <span className="inline-flex items-center gap-1 text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
+                                                <Star className="w-3 h-3 fill-amber-500 text-amber-500" /> Recommended
+                                            </span>
+                                            <span className="inline-flex items-center gap-1 text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+                                                <CheckCircle2 className="w-3 h-3 text-emerald-500" /> Verified
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        {m.vendors.map((v, vIdx) => {
+                                            // Mutual exclusivity: if isRecommended, show Recommended badge; else if verified, show Verified Vendor badge
+                                            const isRec = Boolean(v.isRecommended);
+                                            const isVer = !isRec && Boolean(v.isVerifiedVendor || v.isVerified || v.verificationStatus === 'Approved');
+
+                                            return (
+                                                <div
+                                                    key={v._id || vIdx}
+                                                    className={`bg-white rounded-2xl p-4 shadow-xs hover:shadow-md transition-all group border-2 ${
+                                                        isRec 
+                                                            ? 'border-amber-300 ring-1 ring-amber-200/60 bg-gradient-to-br from-amber-50/20 via-white to-white' 
+                                                            : 'border-slate-200/90 hover:border-blue-500'
+                                                    }`}
+                                                >
+                                                    <div className="flex items-start justify-between gap-2">
+                                                        <div>
+                                                            {/* Distinct Badge: Either Recommended OR Verified Vendor */}
+                                                            <div className="flex flex-wrap items-center gap-1.5 mb-1.5">
+                                                                {isRec && (
+                                                                    <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider bg-gradient-to-r from-amber-500 to-yellow-500 text-white px-2.5 py-0.5 rounded-full shadow-2xs">
+                                                                        <Star className="w-3 h-3 fill-white text-white" />
+                                                                        Recommended
+                                                                    </span>
+                                                                )}
+                                                                {isVer && (
+                                                                    <span className="inline-flex items-center gap-1 text-[10px] font-extrabold uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-300/80 px-2.5 py-0.5 rounded-full shadow-2xs">
+                                                                        <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                                                                        Verified Vendor
+                                                                    </span>
+                                                                )}
+                                                            </div>
+
+                                                            <div className="flex items-center gap-1.5">
+                                                                <h5 className="font-black text-slate-900 text-xs tracking-tight group-hover:text-blue-600 transition-colors">
+                                                                    {v.company || v.name}
+                                                                </h5>
+                                                            </div>
+                                                            <p className="text-[11px] text-slate-500 flex items-center gap-1 mt-0.5 font-semibold">
+                                                                <MapPin className="w-3.5 h-3.5 text-blue-500" />
+                                                                {v.city ? `${v.city}, ` : ''}{v.country || 'India'}
+                                                            </p>
+                                                        </div>
+
+                                                        <Link
+                                                            to={`/vendor-network/profile/${v._id}`}
+                                                            target="_blank"
+                                                            className={`text-[11px] font-extrabold px-3 py-1.5 rounded-xl border transition-all shadow-2xs whitespace-nowrap ${
+                                                                isRec 
+                                                                    ? 'text-amber-800 bg-amber-50 hover:bg-amber-500 hover:text-white border-amber-300' 
+                                                                    : 'text-blue-600 bg-blue-50 hover:bg-blue-600 hover:text-white border-blue-200'
+                                                            }`}
+                                                        >
+                                                            View Profile
+                                                        </Link>
                                                     </div>
-                                                    <span className="text-[11px] font-extrabold text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded-lg uppercase mt-1 inline-block border border-blue-200">
-                                                        {r.type} • {r.vendor?.company || 'Verified Vendor'}
-                                                    </span>
+
+                                                    {v.services && v.services.length > 0 && (
+                                                        <div className="flex flex-wrap gap-1 mt-3">
+                                                            {v.services.slice(0, 3).map((s, sIdx) => (
+                                                                <span
+                                                                    key={sIdx}
+                                                                    className="text-[10px] font-bold bg-slate-100 text-slate-700 px-2 py-0.5 rounded-md"
+                                                                >
+                                                                    {s}
+                                                                </span>
+                                                            ))}
+                                                        </div>
+                                                    )}
                                                 </div>
-                                                <div className="text-right">
-                                                    <div className="text-base font-black text-emerald-600">
-                                                        ₹{r.price?.toLocaleString()}
-                                                    </div>
-                                                    <span className="text-[11px] text-slate-500 font-bold">
-                                                        {r.seaLoadType || r.truckLoad || 'Standard Rate'}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        ))}
+                                            );
+                                        })}
                                     </div>
                                 </div>
                             )}
