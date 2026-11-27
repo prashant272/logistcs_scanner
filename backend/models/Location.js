@@ -52,6 +52,8 @@ const locationSchema = new mongoose.Schema({
 });
 
 locationSchema.index({ type: 1, code: 1 });
+locationSchema.index({ country: 1, type: 1 });
+locationSchema.index({ city: 1, type: 1 });
 locationSchema.index({ createdAt: -1 });
 
 module.exports = mongoose.model('Location', locationSchema);

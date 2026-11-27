@@ -53,6 +53,9 @@ const PORT = process.env.PORT || 5000;
 // Automatic cleanup of expired pricing entries (after 30 days of expiry)
 const runPricingCleanup = async () => {
     try {
+        const mongoose = require('mongoose');
+        if (!mongoose.connection || mongoose.connection.readyState !== 1) return;
+        
         const Pricing = require('./models/Pricing');
         const thirtyDaysAgo = new Date();
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);

@@ -197,8 +197,13 @@ const processCampaigns = async () => {
     }
 };
 
-// Start background worker loop (runs every 2 seconds roughly)
-setInterval(processCampaigns, 2000);
+// Start background worker loop (runs every 5 seconds only after mongoose connects)
+const mongoose = require('mongoose');
+setInterval(() => {
+    if (mongoose.connection && mongoose.connection.readyState === 1) {
+        processCampaigns();
+    }
+}, 5000);
 
 // @desc    Create and Start Bulk Email Campaign
 // @route   POST /api/email/send-bulk

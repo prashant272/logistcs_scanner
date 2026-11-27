@@ -4,10 +4,13 @@ import {
     Send, Bot, Sparkles, Building2, MapPin, 
     CheckCircle2, DollarSign, ArrowRight, RefreshCw, RotateCcw, 
     Mic, MicOff, Search, Compass, ShieldCheck, ChevronRight, Copy, Check,
-    Ship, Plane, Truck, FileText, Star, Award, Globe, Navigation
+    Ship, Plane, Truck, FileText, Star, Award, Globe, Navigation, Clock, X, AlertCircle,
+    Paperclip, Upload, Package, Coins, Phone, Mail, Building, Radio
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import api from '../../api/axios';
+import { useAuth } from '../../context/AuthContext';
+import { COUNTRIES } from '../../utils/countries';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
 
@@ -15,11 +18,11 @@ const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
 const QUICK_CARDS = [
     { 
         id: 1, 
-        icon: Award,
+        icon: Search,
         color: "blue",
-        title: "Find Best Freight Forwarder", 
-        desc: "Checklist, licenses to verify (IATA, FIATA, CHA) & top ranked portal partners", 
-        prompt: "Best freight forwarder kaise find karein?" 
+        title: "Search Best Quote", 
+        desc: "Compare live freight rates, check verified vendor pricing & book shipment directly in chat", 
+        prompt: "Search best freight quote and book" 
     },
     { 
         id: 2, 
@@ -650,6 +653,7 @@ const RouteSelectorWidget = ({ onSearch }) => {
 };
 
 const VendorAIChatTab = () => {
+    const { user } = useAuth();
     const [input, setInput] = useState('');
     const [messages, setMessages] = useState([]);
     const [lastContext, setLastContext] = useState(null);
@@ -658,6 +662,31 @@ const VendorAIChatTab = () => {
     const [copiedIdx, setCopiedIdx] = useState(null);
     const messagesEndRef = useRef(null);
     const recognitionRef = useRef(null);
+
+    // Direct Booking & Broadcast Modal States
+    const [bookingModalOpen, setBookingModalOpen] = useState(false);
+    const [modalActionType, setModalActionType] = useState('book'); // 'book' | 'broadcast'
+    const [selectedRateForBooking, setSelectedRateForBooking] = useState(null);
+    const [broadcastRouteInfo, setBroadcastRouteInfo] = useState(null);
+
+    // Form fields matching SearchResults.jsx
+    const [bookingForm, setBookingForm] = useState({
+        commodity: '',
+        cargoWeight: '',
+        targetPrice: '',
+        message: '',
+        attachment: '',
+        clientCreditRequired: false,
+        // Contact details for non-logged-in guest
+        guestCompany: '',
+        guestGst: '',
+        guestPhoneCode: '+91',
+        guestPhone: '',
+        guestEmail: ''
+    });
+    const [isUploading, setIsUploading] = useState(false);
+    const [bookingSubmitting, setBookingSubmitting] = useState(false);
+    const [bookingSuccess, setBookingSuccess] = useState(null);
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -712,6 +741,174 @@ const VendorAIChatTab = () => {
         navigator.clipboard.writeText(text);
         setCopiedIdx(idx);
         setTimeout(() => setCopiedIdx(null), 2000);
+    };
+
+    // Open booking form inline inside chat stream
+    const handleOpenBookingModal = (rate) => {
+        const comm = lastContext?.enquiryState?.data?.commodity || '';
+        const wt = lastContext?.enquiryState?.data?.weight || '';
+        setSelectedRateForBooking(rate);
+        setBroadcastRouteInfo(null);
+        setModalActionType('book');
+        setBookingForm({
+            commodity: comm || 'General Cargo',
+            cargoWeight: wt || rate.weightRange || rate.seaLoadType || '',
+            targetPrice: rate.price ? String(rate.price) : '',
+            message: '',
+            attachment: '',
+            clientCreditRequired: false,
+            guestCompany: user?.company || '',
+            guestGst: user?.gst || '',
+            guestPhoneCode: '+91',
+            guestPhone: user?.phone || '',
+            guestEmail: user?.email || ''
+        });
+        setBookingSuccess(null);
+
+        // Add inline interactive form into chat stream
+        const vendorName = rate.vendor?.company || rate.vendor?.name || 'Verified Vendor';
+        const fromLoc = rate.fromLocation || lastContext?.enquiryState?.data?.originPort || 'Origin';
+        const toLoc = rate.toLocation || lastContext?.enquiryState?.data?.destinationPort || 'Destination';
+
+        setMessages(prev => [
+            ...prev,
+            {
+                sender: 'bot',
+                text: `📦 **Shipment Booking Details:**\n\nYou are confirming a direct booking with **${vendorName}** for **${fromLoc} → ${toLoc}**. Please review your shipment specs below and confirm:`,
+                inlineFormType: 'book',
+                rateObj: rate
+            }
+        ]);
+    };
+
+    // Open broadcast form inline inside chat stream
+    const handleOpenBroadcastModal = (msgRates = [], msgVendors = []) => {
+        const comm = lastContext?.enquiryState?.data?.commodity || '';
+        const wt = lastContext?.enquiryState?.data?.weight || '';
+        const fromLoc = lastContext?.enquiryState?.data?.originPort || lastContext?.enquiryState?.data?.originCountry || 'Origin Port';
+        const toLoc = lastContext?.enquiryState?.data?.destinationPort || lastContext?.enquiryState?.data?.destinationCountry || 'Destination Port';
+        const mode = lastContext?.enquiryState?.data?.mode || 'sea';
+
+        setSelectedRateForBooking(null);
+        setBroadcastRouteInfo({ fromLoc, toLoc, mode });
+        setModalActionType('broadcast');
+        setBookingForm({
+            commodity: comm || 'General Cargo',
+            cargoWeight: wt || 'Standard',
+            targetPrice: '',
+            message: '',
+            attachment: '',
+            clientCreditRequired: false,
+            guestCompany: user?.company || '',
+            guestGst: user?.gst || '',
+            guestPhoneCode: '+91',
+            guestPhone: user?.phone || '',
+            guestEmail: user?.email || ''
+        });
+        setBookingSuccess(null);
+
+        setMessages(prev => [
+            ...prev,
+            {
+                sender: 'bot',
+                text: `📢 **Broadcast Enquiry to All Forwarders:**\n\nRoute: **${fromLoc} → ${toLoc}** (${mode.toUpperCase()} Freight).\nPlease provide your cargo requirements and target price to broadcast this enquiry:`,
+                inlineFormType: 'broadcast',
+                broadcastRoute: { fromLoc, toLoc, mode }
+            }
+        ]);
+    };
+
+    // File Upload Handler for Modal (Document / Image)
+    const handleAttachmentUpload = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const formDataPayload = new FormData();
+        formDataPayload.append('file', file);
+
+        setIsUploading(true);
+        try {
+            const { data } = await axios.post(
+                `${API_BASE}/auth/upload-public`,
+                formDataPayload,
+                { headers: { 'Content-Type': 'multipart/form-data' } }
+            );
+            setBookingForm(prev => ({ ...prev, attachment: data.url }));
+        } catch (err) {
+            console.error('File upload failed:', err);
+            alert('File upload failed. Please try again.');
+        } finally {
+            setIsUploading(false);
+        }
+    };
+
+    // Submit booking or broadcast request directly
+    const handleConfirmBooking = async (e) => {
+        e.preventDefault();
+        setBookingSubmitting(true);
+        try {
+            const isBookingAction = modalActionType === 'book';
+            const vendorObj = selectedRateForBooking?.vendor;
+            const vendorName = vendorObj?.company || vendorObj?.name || 'Verified Vendor';
+            const fromLoc = selectedRateForBooking?.fromLocation || broadcastRouteInfo?.fromLoc || lastContext?.enquiryState?.data?.originPort || 'Origin';
+            const toLoc = selectedRateForBooking?.toLocation || broadcastRouteInfo?.toLoc || lastContext?.enquiryState?.data?.destinationPort || 'Destination';
+            const type = selectedRateForBooking?.type || broadcastRouteInfo?.mode || lastContext?.enquiryState?.data?.mode || 'sea';
+
+            const formattedPhone = bookingForm.guestPhone 
+                ? `${bookingForm.guestPhoneCode || '+91'} ${bookingForm.guestPhone}`.trim()
+                : (user?.phone || '');
+
+            const payload = {
+                vendor: isBookingAction ? (vendorObj?._id || null) : null,
+                fromLocation: fromLoc,
+                toLocation: toLoc,
+                type: type,
+                commodity: bookingForm.commodity || 'General Cargo',
+                weightRange: bookingForm.cargoWeight || 'Standard',
+                targetPrice: bookingForm.targetPrice ? Number(bookingForm.targetPrice) : null,
+                price: isBookingAction ? selectedRateForBooking?.price : null,
+                isDirect: isBookingAction,
+                isBooking: isBookingAction,
+                broadcastNow: !isBookingAction,
+                clientCreditRequired: bookingForm.clientCreditRequired,
+                attachment: bookingForm.attachment || '',
+                message: bookingForm.message || (isBookingAction 
+                    ? `Direct Booking Request from AI Assistant | Rate: ₹${selectedRateForBooking?.price}` 
+                    : `Direct Broadcast Enquiry from AI Assistant`),
+                guestName: user ? (user.name || user.company || 'Client') : (bookingForm.guestCompany || 'Guest Client'),
+                guestCompany: user ? (user.company || '') : (bookingForm.guestCompany || ''),
+                guestGst: user ? (user.gst || '') : (bookingForm.guestGst || ''),
+                guestEmail: user ? (user.email || '') : (bookingForm.guestEmail || ''),
+                guestPhone: user ? (user.phone || '') : formattedPhone,
+                status: 'Pending',
+                source: 'web'
+            };
+
+            const res = await api.post('/enquiries', payload);
+
+            setBookingSuccess({
+                isBooking: isBookingAction,
+                vendorName: isBookingAction ? vendorName : 'All Matching Verified Forwarders',
+                fromLoc,
+                toLoc,
+                price: isBookingAction ? selectedRateForBooking?.price : (bookingForm.targetPrice || null),
+                enquiryId: res.data?._id || res.data?.enquiry?._id
+            });
+
+            // Post confirmation in the chat stream
+            const confirmationMsg = {
+                sender: 'bot',
+                text: isBookingAction
+                    ? `🎉 **Booking Request Placed Successfully!**\n\n• **Vendor:** **${vendorName}**\n• **Route:** ${fromLoc} → ${toLoc}\n• **Booked Price:** ₹${Number(selectedRateForBooking?.price).toLocaleString('en-IN')}\n• **Commodity:** ${bookingForm.commodity} (${bookingForm.cargoWeight})\n\nThe forwarder has been notified with your booking details and will coordinate dispatch schedules promptly!`
+                    : `📢 **Enquiry Broadcast Successfully Initiated!**\n\n• **Route:** ${fromLoc} → ${toLoc}\n• **Cargo Mode:** ${type.toUpperCase()}\n• **Commodity:** ${bookingForm.commodity} (${bookingForm.cargoWeight})\n${bookingForm.targetPrice ? `• **Target Price:** ₹${Number(bookingForm.targetPrice).toLocaleString('en-IN')}\n` : ''}\nYour cargo enquiry has been delivered to all matching verified forwarders on this route!`
+            };
+            setMessages(prev => [...prev, confirmationMsg]);
+        } catch (err) {
+            console.error('Booking submission error:', err);
+            alert(err.response?.data?.message || 'Failed to submit enquiry. Please try again.');
+        } finally {
+            setBookingSubmitting(false);
+        }
     };
 
     // Trigger structured location prompt
@@ -868,6 +1065,7 @@ const VendorAIChatTab = () => {
         try {
             const res = await api.post('/chatbot/query', {
                 message: text,
+                user: user ? { _id: user._id, name: user.name, email: user.email, phone: user.phone, company: user.company } : null,
                 lastContext,
                 history: newMessages.map(m => ({ sender: m.sender, text: m.text }))
             });
@@ -1076,32 +1274,66 @@ const VendorAIChatTab = () => {
 
                             {/* Available Published Vendor Rates Card */}
                             {m.rates && m.rates.length > 0 && (
-                                <div className="bg-emerald-50/60 border-2 border-emerald-300/80 rounded-2xl p-4 shadow-2xs space-y-2">
-                                    <h5 className="font-extrabold text-xs text-emerald-950 flex items-center gap-1.5 uppercase tracking-wider">
-                                        <DollarSign className="w-4 h-4 text-emerald-600" />
-                                        Direct Vendor Rates Available in Database ({m.rates.length})
-                                    </h5>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                                <div className="bg-gradient-to-br from-emerald-50/80 via-white to-blue-50/40 border-2 border-emerald-300 rounded-2xl p-4 shadow-sm space-y-3">
+                                    <div className="flex items-center justify-between">
+                                        <h5 className="font-extrabold text-xs text-emerald-950 flex items-center gap-1.5 uppercase tracking-wider">
+                                            <Sparkles className="w-4 h-4 text-emerald-600" />
+                                            Live Matched Vendor Rates in Database ({m.rates.length})
+                                        </h5>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleOpenBroadcastModal(m.rates, m.vendors)}
+                                            className="text-[10px] font-black text-blue-700 hover:text-white bg-blue-100/80 hover:bg-blue-600 border border-blue-300 px-3 py-1 rounded-full transition-all flex items-center gap-1 cursor-pointer shadow-2xs"
+                                        >
+                                            <Radio className="w-3 h-3 animate-pulse" />
+                                            <span>Broadcast to All Forwarders</span>
+                                        </button>
+                                    </div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                         {m.rates.map((r, rIdx) => (
                                             <div
                                                 key={r._id || rIdx}
-                                                className="bg-white rounded-xl p-3 border border-emerald-200 flex items-center justify-between"
+                                                className="bg-white rounded-xl p-3.5 border-2 border-slate-200/90 hover:border-emerald-500 hover:shadow-md transition-all flex flex-col justify-between gap-3 group"
                                             >
-                                                <div>
-                                                    <h6 className="font-black text-xs text-slate-900">
-                                                        {r.vendor?.company || r.vendor?.name || 'Verified Vendor'}
-                                                    </h6>
-                                                    <p className="text-[10px] text-slate-500 font-medium">
-                                                        {r.seaLoadType || r.deliverySpeed || 'Standard'} • {r.type?.toUpperCase()}
-                                                    </p>
+                                                <div className="flex items-start justify-between gap-2">
+                                                    <div>
+                                                        <div className="flex items-center gap-1.5">
+                                                            <h6 className="font-black text-xs text-slate-900 group-hover:text-emerald-700 transition-colors">
+                                                                {r.vendor?.company || r.vendor?.name || 'Verified Vendor'}
+                                                            </h6>
+                                                            {r.vendor?.isVerified && (
+                                                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                                                            )}
+                                                        </div>
+                                                        <p className="text-[10px] text-slate-500 font-semibold mt-0.5">
+                                                            {r.type?.toUpperCase()} • {r.seaLoadType || r.vehicleType || (r.weightRange ? `Weight: ${r.weightRange}` : 'Standard')}
+                                                        </p>
+                                                        {r.deliverySpeed && (
+                                                            <div className="inline-flex items-center gap-1 text-[9.5px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md mt-1">
+                                                                <Clock className="w-3 h-3 text-blue-600" />
+                                                                <span>Transit: {r.deliverySpeed} Days</span>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    <div className="text-right shrink-0">
+                                                        <span className="font-black text-emerald-700 text-base block leading-none">
+                                                            ₹{Number(r.price).toLocaleString('en-IN')}
+                                                        </span>
+                                                        <span className="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider">
+                                                            {r.currency || 'INR'}
+                                                        </span>
+                                                    </div>
                                                 </div>
-                                                <div className="text-right">
-                                                    <span className="font-black text-emerald-700 text-sm">
-                                                        ₹{Number(r.price).toLocaleString('en-IN')}
-                                                    </span>
-                                                    <span className="block text-[9px] font-bold text-slate-400 uppercase">
-                                                        {r.currency || 'INR'}
-                                                    </span>
+
+                                                <div className="flex items-center gap-2 pt-2 border-t border-slate-100">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleOpenBookingModal(r)}
+                                                        className="flex-1 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-black text-xs rounded-lg transition-all shadow-xs hover:shadow-sm flex items-center justify-center gap-1.5 cursor-pointer uppercase tracking-wider"
+                                                    >
+                                                        <CheckCircle2 className="w-3.5 h-3.5" />
+                                                        <span>Connect & Book Now</span>
+                                                    </button>
                                                 </div>
                                             </div>
                                         ))}
@@ -1200,6 +1432,242 @@ const VendorAIChatTab = () => {
                                             );
                                         })}
                                     </div>
+
+                                    {/* Pagination: Load Next 12 Vendors Button */}
+                                    <div className="pt-2 flex justify-center">
+                                        <button
+                                            type="button"
+                                            onClick={() => handleSend('aur')}
+                                            className="px-4 py-2 bg-white hover:bg-blue-50 text-blue-700 hover:text-blue-800 text-xs font-black rounded-xl border-2 border-blue-200 hover:border-blue-400 shadow-2xs transition-all flex items-center gap-1.5 cursor-pointer"
+                                        >
+                                            <RefreshCw className="w-3.5 h-3.5 text-blue-600" />
+                                            <span>Show Next 12 Vendors (Page by Page)</span>
+                                            <ChevronRight className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                            {/* Inline Direct Booking / Broadcast Form Inside Chat */}
+                            {m.inlineFormType && (
+                                <div className="bg-white border-2 border-blue-400/80 rounded-2xl p-5 shadow-md space-y-4 max-w-xl">
+                                    <div className="flex items-center gap-3 pb-3 border-b border-slate-100">
+                                        <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${m.inlineFormType === 'book' ? 'bg-emerald-50 text-emerald-600' : 'bg-blue-50 text-blue-600'}`}>
+                                            {m.inlineFormType === 'book' ? <CheckCircle2 className="w-5 h-5" /> : <Radio className="w-5 h-5" />}
+                                        </div>
+                                        <div>
+                                            <h4 className="text-sm font-black text-slate-900">
+                                                {m.inlineFormType === 'book' ? 'Direct Cargo Booking' : 'Broadcast Freight Enquiry'}
+                                            </h4>
+                                            <p className="text-[11px] text-slate-500 font-medium">
+                                                {m.inlineFormType === 'book' 
+                                                    ? 'Verify shipment details and place your booking directly' 
+                                                    : 'Send your enquiry to all verified route forwarders'}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    {bookingSuccess ? (
+                                        <div className="py-4 text-center space-y-3">
+                                            <div className="w-12 h-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto">
+                                                <CheckCircle2 className="w-6 h-6" />
+                                            </div>
+                                            <h5 className="text-sm font-black text-slate-900">
+                                                {bookingSuccess.isBooking ? 'Booking Placed Successfully!' : 'Enquiry Broadcast Successfully!'}
+                                            </h5>
+                                            <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-left space-y-1 text-xs">
+                                                <p><strong className="text-slate-800">Target:</strong> {bookingSuccess.vendorName}</p>
+                                                <p><strong className="text-slate-800">Sector:</strong> {bookingSuccess.fromLoc} → {bookingSuccess.toLoc}</p>
+                                                {bookingSuccess.price && (
+                                                    <p><strong className="text-slate-800">Rate:</strong> ₹{Number(bookingSuccess.price).toLocaleString('en-IN')}</p>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <form onSubmit={handleConfirmBooking} className="space-y-3">
+                                            {/* Summary Box */}
+                                            {m.inlineFormType === 'book' && m.rateObj ? (
+                                                <div className="bg-emerald-50/70 border border-emerald-200 rounded-xl p-3 flex items-center justify-between">
+                                                    <div>
+                                                        <span className="text-[10px] font-black uppercase text-emerald-800 block">
+                                                            {m.rateObj.type?.toUpperCase()} FREIGHT • {m.rateObj.vendor?.company || m.rateObj.vendor?.name}
+                                                        </span>
+                                                        <span className="text-xs font-extrabold text-slate-800">
+                                                            {m.rateObj.fromLocation || lastContext?.enquiryState?.data?.originPort || 'Origin'} → {m.rateObj.toLocation || lastContext?.enquiryState?.data?.destinationPort || 'Destination'}
+                                                        </span>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <span className="text-base font-black text-emerald-700">
+                                                            ₹{Number(m.rateObj.price).toLocaleString('en-IN')}
+                                                        </span>
+                                                        <span className="block text-[8.5px] font-bold text-slate-400 uppercase">
+                                                            {m.rateObj.currency || 'INR'}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className="bg-blue-50/70 border border-blue-200 rounded-xl p-3 flex items-center justify-between">
+                                                    <div>
+                                                        <span className="text-[10px] font-black uppercase text-blue-800 block">
+                                                            BROADCAST • {m.broadcastRoute?.mode?.toUpperCase() || 'SEA'} FREIGHT
+                                                        </span>
+                                                        <span className="text-xs font-extrabold text-slate-800">
+                                                            {m.broadcastRoute?.fromLoc} → {m.broadcastRoute?.toLoc}
+                                                        </span>
+                                                    </div>
+                                                    <span className="text-[9.5px] font-black uppercase px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full border border-blue-200">
+                                                        Spot Quotes
+                                                    </span>
+                                                </div>
+                                            )}
+
+                                            {/* Message / Additional Details */}
+                                            <div className="space-y-1">
+                                                <label className="block text-[10px] font-black text-slate-800 uppercase tracking-wider flex items-center gap-1">
+                                                    <FileText size={11} className="text-slate-400" /> Message / Additional Details
+                                                </label>
+                                                <textarea
+                                                    placeholder="Provide any specific requirements or details..."
+                                                    value={bookingForm.message}
+                                                    onChange={(e) => setBookingForm({ ...bookingForm, message: e.target.value })}
+                                                    rows={2}
+                                                    className="w-full bg-[#f4f7fc] border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:bg-white focus:border-[#0066FF] transition-all resize-none"
+                                                />
+                                            </div>
+
+                                            {/* Attach Document / Image (Optional) */}
+                                            <div className="space-y-1">
+                                                <label className="block text-[10px] font-black text-slate-800 uppercase tracking-wider flex items-center gap-1">
+                                                    <Paperclip size={11} className="text-slate-400" /> Attach Document / Image (Optional)
+                                                </label>
+                                                <div className="flex items-center gap-2">
+                                                    <input
+                                                        type="file"
+                                                        accept="image/*,.pdf,.doc,.docx,.xls,.xlsx"
+                                                        onChange={handleAttachmentUpload}
+                                                        className="hidden"
+                                                        id={`inline-att-${idx}`}
+                                                    />
+                                                    <label
+                                                        htmlFor={`inline-att-${idx}`}
+                                                        className="flex items-center gap-1.5 px-3 py-1.5 border-2 border-dashed border-slate-200 hover:border-[#0066FF] rounded-xl text-xs font-bold text-slate-600 cursor-pointer transition-all bg-[#f4f7fc] hover:bg-blue-50/20"
+                                                    >
+                                                        <Upload size={13} className="text-slate-400" />
+                                                        {isUploading ? 'Uploading...' : (bookingForm.attachment ? 'Change File' : 'Upload Document')}
+                                                    </label>
+                                                    {bookingForm.attachment && (
+                                                        <div className="flex items-center gap-1 bg-green-50 border border-green-200 text-green-700 px-2 py-1 rounded-lg text-xs font-bold">
+                                                            <CheckCircle2 size={13} className="text-green-600" />
+                                                            <span className="text-[11px]">Attached!</span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            {/* Commodity Description & Cargo Load */}
+                                            <div className="grid grid-cols-2 gap-2.5">
+                                                <div className="space-y-1">
+                                                    <label className="block text-[10px] font-black text-slate-800 uppercase tracking-wider flex items-center gap-1">
+                                                        <Package size={11} className="text-slate-400" /> Commodity Description
+                                                    </label>
+                                                    <input
+                                                        type="text"
+                                                        required
+                                                        placeholder="e.g. Machinery, Electronics"
+                                                        value={bookingForm.commodity}
+                                                        onChange={(e) => setBookingForm({ ...bookingForm, commodity: e.target.value })}
+                                                        className="w-full bg-[#f4f7fc] border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:bg-white focus:border-[#0066FF] transition-all"
+                                                    />
+                                                </div>
+                                                <div className="space-y-1">
+                                                    <label className="block text-[10px] font-black text-slate-800 uppercase tracking-wider flex items-center gap-1">
+                                                        <Package size={11} className="text-slate-400" /> Cargo Load / Weight
+                                                    </label>
+                                                    <input
+                                                        type="text"
+                                                        required
+                                                        placeholder="e.g. 1x20ft, 500 kg"
+                                                        value={bookingForm.cargoWeight}
+                                                        onChange={(e) => setBookingForm({ ...bookingForm, cargoWeight: e.target.value })}
+                                                        className="w-full bg-[#f4f7fc] border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:bg-white focus:border-[#0066FF] transition-all"
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            {/* My Target Price */}
+                                            <div className="space-y-1">
+                                                <label className="block text-[10px] font-black text-slate-800 uppercase tracking-wider flex items-center gap-1">
+                                                    <Coins size={11} className="text-slate-400" /> My Target Price
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    placeholder="Enter your target price"
+                                                    value={bookingForm.targetPrice}
+                                                    onChange={(e) => setBookingForm({ ...bookingForm, targetPrice: e.target.value })}
+                                                    className="w-full bg-[#f4f7fc] border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:bg-white focus:border-[#0066FF] transition-all"
+                                                />
+                                            </div>
+
+                                            {/* Logged in User Badge */}
+                                            {user ? (
+                                                <div className="bg-slate-50 border border-slate-200 rounded-xl p-2.5 flex items-center justify-between">
+                                                    <div>
+                                                        <span className="text-[9.5px] font-black uppercase text-blue-700 block">Submitting as Logged-In User</span>
+                                                        <p className="text-xs font-extrabold text-slate-800">{user.name || user.company} ({user.email})</p>
+                                                    </div>
+                                                    <span className="text-[9.5px] font-bold text-emerald-700 bg-emerald-100 border border-emerald-200 px-2 py-0.5 rounded-full">
+                                                        Auto-Filled
+                                                    </span>
+                                                </div>
+                                            ) : (
+                                                <div className="space-y-2 pt-2 border-t border-slate-100">
+                                                    <input
+                                                        type="text"
+                                                        required
+                                                        placeholder="Organization / Client Name"
+                                                        value={bookingForm.guestCompany}
+                                                        onChange={(e) => setBookingForm({ ...bookingForm, guestCompany: e.target.value })}
+                                                        className="w-full bg-[#f4f7fc] border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 outline-none"
+                                                    />
+                                                    <div className="flex gap-2">
+                                                        <input
+                                                            type="tel"
+                                                            required
+                                                            placeholder="Mobile Number"
+                                                            value={bookingForm.guestPhone}
+                                                            onChange={(e) => setBookingForm({ ...bookingForm, guestPhone: e.target.value })}
+                                                            className="flex-1 bg-[#f4f7fc] border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 outline-none"
+                                                        />
+                                                        <input
+                                                            type="email"
+                                                            required
+                                                            placeholder="Work Email"
+                                                            value={bookingForm.guestEmail}
+                                                            onChange={(e) => setBookingForm({ ...bookingForm, guestEmail: e.target.value })}
+                                                            className="flex-1 bg-[#f4f7fc] border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 outline-none"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            <button
+                                                type="submit"
+                                                disabled={bookingSubmitting}
+                                                className="w-full py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-black text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 mt-2"
+                                            >
+                                                {bookingSubmitting ? (
+                                                    <>
+                                                        <RefreshCw className="w-4 h-4 animate-spin" />
+                                                        <span>Submitting...</span>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <CheckCircle2 className="w-4 h-4" />
+                                                        <span>{m.inlineFormType === 'book' ? 'Confirm & Place Booking' : 'Broadcast Enquiry Now'}</span>
+                                                    </>
+                                                )}
+                                            </button>
+                                        </form>
+                                    )}
                                 </div>
                             )}
                         </div>

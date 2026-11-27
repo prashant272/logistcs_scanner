@@ -1,5 +1,6 @@
 const axios = require('axios');
 const mongoose = require('mongoose');
+const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const Pricing = require('../models/Pricing');
 const Plan = require('../models/Plan');
@@ -243,8 +244,8 @@ const fetchRankedVendorsForRoute = async (filterQuery = {}, limit = 12, skip = 0
     }
 };
 
-// Helper to find genuine published rates from Pricing collection
-const findAvailableRatesForRoute = async (fromLocation, toLocation, mode = 'sea') => {
+// Helper to find genuine published rates from Pricing collection with comprehensive regex matching
+const findAvailableRatesForRoute = async (fromLocation, toLocation, mode = 'sea', loadType = '') => {
     try {
         const query = {
             status: 'active'
@@ -253,23 +254,76 @@ const findAvailableRatesForRoute = async (fromLocation, toLocation, mode = 'sea'
             query.type = mode.toLowerCase();
         }
 
-        // Broad regex for origin and destination ports/cities
-        if (fromLocation) {
-            const cleanFrom = fromLocation.replace(/\(.*?\)/g, '').trim().split(',')[0].trim();
-            query.fromLocation = new RegExp(cleanFrom, 'i');
+        // Helper to extract terms (e.g. "Jawaharlal Nehru Port (Nhava Sheva)" -> ["jawaharlal", "nehru", "nhava sheva", "innsa"])
+        const extractKeywords = (locStr) => {
+            if (!locStr) return [];
+            const cleaned = locStr.replace(/,/g, ' ');
+            const terms = [cleaned.trim()];
+            // Extract inside parentheses
+            const match = locStr.match(/\((.*?)\)/);
+            if (match && match[1]) {
+                terms.push(match[1].trim());
+            }
+            // Extract before parentheses
+            const before = locStr.replace(/\(.*?\)/g, '').trim();
+            if (before) {
+                terms.push(before);
+            }
+            // Add prominent port aliases
+            const lower = locStr.toLowerCase();
+            if (lower.includes('nhava') || lower.includes('jawaharlal') || lower.includes('jnpt')) {
+                terms.push('Nhava', 'JNPT', 'Jawaharlal', 'INNSA');
+            }
+            if (lower.includes('mundra')) terms.push('Mundra', 'INMUN');
+            if (lower.includes('chennai')) terms.push('Chennai', 'INMAA');
+            if (lower.includes('shanghai')) terms.push('Shanghai', 'CNSHG');
+            if (lower.includes('ningbo')) terms.push('Ningbo', 'CNNGB');
+            if (lower.includes('shekou') || lower.includes('shenzhen')) terms.push('Shekou', 'Shenzhen', 'CNSHK');
+            if (lower.includes('singapore')) terms.push('Singapore', 'SGSIN');
+            if (lower.includes('jebel ali') || lower.includes('dubai')) terms.push('Jebel Ali', 'Dubai', 'AEJEA');
+
+            return [...new Set(terms.filter(Boolean))];
+        };
+
+        const fromKeywords = extractKeywords(fromLocation);
+        const toKeywords = extractKeywords(toLocation);
+
+        const conditions = [];
+
+        if (fromKeywords.length > 0) {
+            conditions.push({
+                $or: fromKeywords.map(kw => ({ fromLocation: new RegExp(kw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i') }))
+            });
         }
-        if (toLocation) {
-            const cleanTo = toLocation.replace(/\(.*?\)/g, '').trim().split(',')[0].trim();
-            query.toLocation = new RegExp(cleanTo, 'i');
+
+        if (toKeywords.length > 0) {
+            conditions.push({
+                $or: toKeywords.map(kw => ({ toLocation: new RegExp(kw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i') }))
+            });
+        }
+
+        if (conditions.length > 0) {
+            query.$and = conditions;
+        }
+
+        // Must have both fromLocation and toLocation matching
+        if (!fromLocation || !toLocation) {
+            return [];
         }
 
         const rates = await Pricing.find(query)
-            .populate('vendor', 'name company city country profilePhoto isVerified')
+            .populate('vendor', 'name company city country profilePhoto isVerified activePlan')
             .sort({ price: 1 })
-            .limit(6)
+            .limit(10)
             .lean();
 
-        return rates.filter(r => r.price && r.price > 0);
+        // Filter out dummy/test prices (e.g. <= 100 for ocean container freight)
+        return rates.filter(r => {
+            if (!r.price || r.price <= 0) return false;
+            // For international sea container freight, rate of ₹100 is clearly a test/dummy entry
+            if (r.type === 'sea' && r.price < 1000) return false;
+            return true;
+        });
     } catch (err) {
         console.error("Error finding rates for route:", err);
         return [];
@@ -279,20 +333,70 @@ const findAvailableRatesForRoute = async (fromLocation, toLocation, mode = 'sea'
 // Main Chatbot Query Controller with Stateful Conversational Workflow
 exports.handleChatbotQuery = async (req, res) => {
     try {
-        const { message, intent, locationSearch, history, lastContext } = req.body;
+        const { message, intent, locationSearch, history, lastContext, user: clientUserData } = req.body;
         if (!message && !intent && !locationSearch) {
             return res.status(400).json({ success: false, message: 'Message or intent is required.' });
+        }
+
+        // Identify logged in user if available via token or body
+        let loggedInUserId = null;
+        let loggedInUserDoc = null;
+        const authHeader = req.header("Authorization");
+        if (authHeader) {
+            try {
+                const tokenString = authHeader.startsWith("Bearer ") ? authHeader.slice(7).trim() : authHeader;
+                if (tokenString && tokenString !== "null") {
+                    const decoded = jwt.verify(tokenString, process.env.JWT_SECRET);
+                    loggedInUserId = decoded.id === 'admin_master_id' ? 'ad0000000000000000000000' : decoded.id;
+                }
+            } catch (err) {
+                // Token parse error ignored
+            }
+        }
+        if (!loggedInUserId && clientUserData?._id) {
+            loggedInUserId = clientUserData._id;
+        }
+        if (loggedInUserId && mongoose.Types.ObjectId.isValid(loggedInUserId)) {
+            try {
+                loggedInUserDoc = await User.findById(loggedInUserId).lean();
+            } catch (uErr) {
+                console.error("Error fetching loggedInUser in chatbot:", uErr);
+            }
         }
 
         const raw = (message || '').trim();
         const q = raw.toLowerCase();
         const userWantsHindi = isExplicitHindi(raw);
 
-        // Helper locations declared early so they are accessible anywhere in the handler
-        const cities = ['delhi', 'mumbai', 'kolkata', 'chennai', 'mundra', 'bangalore', 'bengaluru', 'hyderabad', 'pune', 'ahmedabad', 'jaipur', 'surat', 'patna'];
-        const countries = ['china', 'uae', 'dubai', 'usa', 'uk', 'germany', 'singapore', 'india'];
-        let matchedCity = cities.find(c => q.includes(c)) || '';
-        let matchedCountry = countries.find(c => q.includes(c)) || '';
+        // Dynamic Location Helpers: Query distinct countries & cities from DB if available, plus standard global list
+        const commonCountries = [
+            'india', 'china', 'united states', 'usa', 'united arab emirates', 'uae', 'dubai', 
+            'united kingdom', 'uk', 'germany', 'singapore', 'vietnam', 'malaysia', 'thailand', 
+            'saudi arabia', 'turkey', 'japan', 'south korea', 'australia', 'canada', 'netherlands', 
+            'italy', 'france', 'spain', 'egypt', 'brazil', 'russia', 'south africa', 'indonesia'
+        ];
+        const commonCities = [
+            'delhi', 'new delhi', 'mumbai', 'kolkata', 'chennai', 'mundra', 'bangalore', 'bengaluru', 
+            'hyderabad', 'pune', 'ahmedabad', 'jaipur', 'surat', 'patna', 'cochin', 'kochi', 
+            'nhava sheva', 'jnpt', 'visakhapatnam', 'tuticorin', 'hazira', 'pipavav', 'shanghai', 
+            'ningbo', 'shenzhen', 'guangzhou', 'qingdao', 'tianjin', 'xiamen', 'dalian', 'jebel ali', 
+            'singapore', 'rotterdam', 'hamburg', 'los angeles', 'long beach', 'new york', 'houston'
+        ];
+
+        let matchedCity = commonCities.find(c => new RegExp(`\\b${c}\\b`, 'i').test(raw)) || '';
+        let matchedCountry = commonCountries.find(c => new RegExp(`\\b${c}\\b`, 'i').test(raw)) || '';
+
+        // Handle country aliases
+        if (matchedCountry === 'usa' || matchedCountry === 'united states') matchedCountry = 'United States';
+        else if (matchedCountry === 'uae' || matchedCountry === 'dubai' || matchedCountry === 'united arab emirates') matchedCountry = 'United Arab Emirates';
+        else if (matchedCountry === 'uk' || matchedCountry === 'united kingdom') matchedCountry = 'United Kingdom';
+        else if (matchedCountry === 'india') matchedCountry = 'India';
+        else if (matchedCountry === 'china') matchedCountry = 'China';
+        else if (matchedCountry) matchedCountry = matchedCountry.charAt(0).toUpperCase() + matchedCountry.slice(1);
+
+        if (matchedCity) {
+            matchedCity = matchedCity.charAt(0).toUpperCase() + matchedCity.slice(1);
+        }
 
         // Retrieve existing enquiry conversation state
         let enquiryState = lastContext?.enquiryState || {
@@ -314,7 +418,18 @@ exports.handleChatbotQuery = async (req, res) => {
             broadcastConfirmed: false
         };
 
-        let newContext = { ...(lastContext || {}), enquiryState };
+        // Action 03: Shipping Routes & Port Guide State Tracking
+        let guideState = lastContext?.guideState || {
+            active: false,
+            subType: '', // 'PORTS' | 'ROUTES'
+            step: 'IDLE', // 'SELECTING_TYPE' | 'ASK_PORT_COUNTRY' | 'DISPLAY_PORTS' | 'ASK_ROUTE_ORIGIN' | 'ASK_ROUTE_DEST' | 'DONE'
+            country: '',
+            portsList: [],
+            routeOriginCountry: '',
+            routeDestCountry: ''
+        };
+
+        let newContext = { ...(lastContext || {}), enquiryState, guideState };
         let botReply = '';
         let vendors = [];
         let rates = [];
@@ -324,6 +439,16 @@ exports.handleChatbotQuery = async (req, res) => {
         // =========================================================================
         // CHECK IF USER WANTS TO START OR IS IN A CONVERSATIONAL ENQUIRY FLOW
         // =========================================================================
+        const isSearchBestQuote =
+            q.includes('search best quote') ||
+            q.includes('search best freight quote') ||
+            q.includes('best quote') ||
+            q.includes('search quote') ||
+            q.includes('compare freight') ||
+            q.includes('live price') ||
+            q.includes('find best rate') ||
+            q.includes('check rate');
+
         const isRouteInquiry =
             q.includes('shipping routes & port guide') ||
             q.includes('shipping route') ||
@@ -333,11 +458,13 @@ exports.handleChatbotQuery = async (req, res) => {
             (q.includes('route') && (q.includes('india') || q.includes('china') || q.includes('dubai') || q.includes('sea') || q.includes('air')));
 
         const isDirectQuoteRequest =
+            isSearchBestQuote ||
             q.includes('freight quote') ||
             q.includes('request quote') ||
             q.includes('rate quote') ||
             q.includes('need quote') ||
             q.includes('book shipment') ||
+            q.includes('book cargo') ||
             q.includes('quote for');
 
         const isEnquiryInitiator = isDirectQuoteRequest || isRouteInquiry;
@@ -347,13 +474,17 @@ exports.handleChatbotQuery = async (req, res) => {
         const selectedNumber = numberMatch ? parseInt(numberMatch[1], 10) : null;
 
         // -------------------------------------------------------------------------
-        // STATE 0: SELECTING TRANSPORT MODE (Sea vs Air)
+        // STATE 0: SELECTING TRANSPORT MODE (Sea, Air, Land, CHA / Customs)
         // -------------------------------------------------------------------------
         if (enquiryState.active && enquiryState.step === 'SELECTING_MODE') {
             if (selectedNumber === 1 || q.includes('sea') || q.includes('ocean')) {
                 enquiryState.data.mode = 'sea';
             } else if (selectedNumber === 2 || q.includes('air') || q.includes('flight')) {
                 enquiryState.data.mode = 'air';
+            } else if (selectedNumber === 3 || q.includes('land') || q.includes('road') || q.includes('truck')) {
+                enquiryState.data.mode = 'land';
+            } else if (selectedNumber === 4 || q.includes('cha') || q.includes('custom')) {
+                enquiryState.data.mode = 'cha';
             } else {
                 enquiryState.data.mode = 'sea'; // default fallback
             }
@@ -443,7 +574,43 @@ exports.handleChatbotQuery = async (req, res) => {
             enquiryState.data.destinationPort = chosenPort;
             enquiryState.portOptions = [];
 
-            // Now check what else is missing: commodity or weight
+            // Next: Check Cargo Load Type / Weight
+            if (!enquiryState.data.weight) {
+                enquiryState.step = 'COLLECTING';
+                if (enquiryState.data.mode === 'sea') {
+                    options = [
+                        { number: 1, label: '20ft Standard Container (FCL)' },
+                        { number: 2, label: '40ft Standard Container (FCL)' },
+                        { number: 3, label: '40ft High Cube HC (FCL)' },
+                        { number: 4, label: 'Less than Container Load (LCL / CBM)' }
+                    ];
+                    botReply = userWantsHindi
+                        ? `🏁 **Destination Port confirmed:** **${chosenPort}**\n\nAb kripya **Cargo / Load Type** select karein (Option click karein ya load type likhein):\n\n1. **20ft Standard Container (FCL)**\n2. **40ft Standard Container (FCL)**\n3. **40ft High Cube HC (FCL)**\n4. **Less than Container Load (LCL / CBM)**`
+                        : `🏁 **Destination Port confirmed:** **${chosenPort}**\n\nPlease select your **Cargo / Load Type** (Click an option or type your load):\n\n1. **20ft Standard Container (FCL)**\n2. **40ft Standard Container (FCL)**\n3. **40ft High Cube HC (FCL)**\n4. **Less than Container Load (LCL / CBM)**`;
+                    newContext.enquiryState = enquiryState;
+                    return res.json({ success: true, reply: botReply, options, context: newContext });
+                } else if (enquiryState.data.mode === 'air') {
+                    options = [
+                        { number: 1, label: '0 - 50 kg' },
+                        { number: 2, label: '50 - 100 kg' },
+                        { number: 3, label: '100 - 500 kg' },
+                        { number: 4, label: '500+ kg' }
+                    ];
+                    botReply = userWantsHindi
+                        ? `🏁 **Destination Airport confirmed:** **${chosenPort}**\n\nAb kripya **Air Cargo Weight Class** select karein:\n\n1. **0 - 50 kg**\n2. **50 - 100 kg**\n3. **100 - 500 kg**\n4. **500+ kg**`
+                        : `🏁 **Destination Airport confirmed:** **${chosenPort}**\n\nPlease select the **Air Cargo Weight Class**:\n\n1. **0 - 50 kg**\n2. **50 - 100 kg**\n3. **100 - 500 kg**\n4. **500+ kg**`;
+                    newContext.enquiryState = enquiryState;
+                    return res.json({ success: true, reply: botReply, options, context: newContext });
+                } else {
+                    botReply = userWantsHindi
+                        ? `🏁 **Destination set to: ${chosenPort}**\n\nIs shipment ka **approximate weight ya load type** kya hai? (Jaise: *500 kg*, *10 Ton*, *FTL Truck*):`
+                        : `🏁 **Destination confirmed:** **${chosenPort}**\n\nWhat is the approximate **cargo weight or load type**? (e.g., *500 kg*, *10 Ton*, *FTL Truck*):`;
+                    newContext.enquiryState = enquiryState;
+                    return res.json({ success: true, reply: botReply, context: newContext });
+                }
+            }
+
+            // Next: Check Commodity
             if (!enquiryState.data.commodity) {
                 enquiryState.step = 'COLLECTING';
                 botReply = userWantsHindi
@@ -453,16 +620,6 @@ exports.handleChatbotQuery = async (req, res) => {
                 return res.json({ success: true, reply: botReply, context: newContext });
             }
 
-            if (!enquiryState.data.weight) {
-                enquiryState.step = 'COLLECTING';
-                botReply = userWantsHindi
-                    ? `📦 **Commodity:** **${enquiryState.data.commodity}**\n\nCargo ka **approximate weight ya container type** kya hai? (Jaise: *500 kg*, *1x20ft Container*, *1x40ft HC*, *5 CBM*):`
-                    : `📦 **Commodity:** **${enquiryState.data.commodity}**\n\nWhat is the approximate **cargo weight or container load**? (e.g., *500 kg*, *1x20ft Container*, *1x40ft HC*, *4 CBM*):`;
-                newContext.enquiryState = enquiryState;
-                return res.json({ success: true, reply: botReply, context: newContext });
-            }
-
-            // All collected! Proceed to vendor matching
             enquiryState.step = 'MATCHING_DISPLAYED';
         }
 
@@ -484,30 +641,41 @@ exports.handleChatbotQuery = async (req, res) => {
             }
 
             if (isAffirmative || selectedNumber) {
-                // If user selected option 1 (Specific vendor) vs option 2 (Broadcast to all)
+                // If user selected "1" or typed broadcast / yes -> Broadcast to ALL matching forwarders (targetVendorId = null)
+                // If user selected option 2 or higher -> send to specific numbered vendor
                 let targetVendorId = null;
                 let targetVendorName = null;
 
-                if (selectedNumber === 1 && enquiryState.matchingVendors.length > 0) {
-                    targetVendorId = enquiryState.matchingVendors[0]._id;
-                    targetVendorName = enquiryState.matchingVendors[0].company || enquiryState.matchingVendors[0].name;
-                } else if (selectedNumber && selectedNumber <= enquiryState.matchingVendors.length) {
-                    targetVendorId = enquiryState.matchingVendors[selectedNumber - 1]._id;
-                    targetVendorName = enquiryState.matchingVendors[selectedNumber - 1].company || enquiryState.matchingVendors[selectedNumber - 1].name;
+                const isBroadcastChoice = selectedNumber === 1 || q.includes('broadcast') || q.includes('all');
+
+                if (!isBroadcastChoice && selectedNumber && selectedNumber > 1 && selectedNumber <= (enquiryState.matchingVendors.length + 1)) {
+                    // Specific vendor selected (e.g. 2, 3, 4...)
+                    const vIndex = selectedNumber - 2;
+                    if (enquiryState.matchingVendors[vIndex]) {
+                        targetVendorId = enquiryState.matchingVendors[vIndex]._id;
+                        targetVendorName = enquiryState.matchingVendors[vIndex].company || enquiryState.matchingVendors[vIndex].name;
+                    }
                 }
 
                 // Create Enquiry in Database
                 try {
+                    const isBroadcast = !targetVendorId;
                     const enquiryPayload = {
+                        client: loggedInUserDoc ? loggedInUserDoc._id : null,
+                        guestName: loggedInUserDoc ? (loggedInUserDoc.name || loggedInUserDoc.company || '') : (clientUserData?.name || ''),
+                        guestEmail: loggedInUserDoc ? (loggedInUserDoc.email || '') : (clientUserData?.email || ''),
+                        guestPhone: loggedInUserDoc ? (loggedInUserDoc.phone || '') : (clientUserData?.phone || ''),
+                        guestCompany: loggedInUserDoc ? (loggedInUserDoc.company || '') : (clientUserData?.company || ''),
                         fromLocation: `${enquiryState.data.originPort || enquiryState.data.originCountry}`,
                         toLocation: `${enquiryState.data.destinationPort || enquiryState.data.destinationCountry}`,
                         type: enquiryState.data.mode || 'sea',
                         category: 'international',
                         commodity: enquiryState.data.commodity || 'General Goods',
                         weightRange: enquiryState.data.weight || 'As discussed',
-                        message: `Conversational AI Enquiry | Route: ${enquiryState.data.originPort} (${enquiryState.data.originCountry}) → ${enquiryState.data.destinationPort} (${enquiryState.data.destinationCountry}) | Commodity: ${enquiryState.data.commodity} | Load/Weight: ${enquiryState.data.weight}`,
+                        message: `Conversational AI Enquiry | Route: ${enquiryState.data.originPort || enquiryState.data.originCountry} → ${enquiryState.data.destinationPort || enquiryState.data.destinationCountry} | Load: ${enquiryState.data.weight || 'Standard'}`,
                         vendor: targetVendorId || null,
                         isDirect: Boolean(targetVendorId),
+                        broadcastNow: isBroadcast,
                         status: 'Pending',
                         source: 'web'
                     };
@@ -516,15 +684,11 @@ exports.handleChatbotQuery = async (req, res) => {
 
                     if (targetVendorId) {
                         // Direct enquiry to specific vendor
-                        botReply = userWantsHindi
-                            ? `🎉 **Enquiry Safaltapoorvak Bheji Gayi!**\n\n• **Vendor:** **${targetVendorName}**\n• **Route:** ${enquiryState.data.originPort} → ${enquiryState.data.destinationPort}\n• **Commodity:** ${enquiryState.data.commodity} (${enquiryState.data.weight})\n\nVendor ko notification bhej diya gaya hai. Ve aapse jald hi live quotation ke sath contact karenge.`
-                            : `🎉 **Enquiry Successfully Submitted!**\n\n• **Vendor:** **${targetVendorName}**\n• **Route:** ${enquiryState.data.originPort} → ${enquiryState.data.destinationPort}\n• **Commodity:** ${enquiryState.data.commodity} (${enquiryState.data.weight})\n\nThe vendor has been notified and will review your cargo specs to provide customized rates shortly.`;
+                        botReply = `🎉 **Enquiry Successfully Submitted!**\n\n• **Vendor:** **${targetVendorName}**\n• **Route:** ${enquiryState.data.originPort || enquiryState.data.originCountry} → ${enquiryState.data.destinationPort || enquiryState.data.destinationCountry}\n• **Cargo Load:** ${enquiryState.data.weight || 'Standard'}\n\nThe vendor has been notified and will review your cargo specs to provide customized rates shortly.`;
                     } else {
                         // Broadcast enquiry to all matching vendors
                         await triggerVendorBroadcast(newEnquiry._id);
-                        botReply = userWantsHindi
-                            ? `📢 **Enquiry Broadcast Safaltapoorvak Ho Gayi!**\n\n• **Route:** ${enquiryState.data.originPort} (${enquiryState.data.originCountry}) → ${enquiryState.data.destinationPort} (${enquiryState.data.destinationCountry})\n• **Commodity:** ${enquiryState.data.commodity}\n• **Weight / Load:** ${enquiryState.data.weight}\n\nIs route ke sabhi eligible verified forwarders ko aapki lead bhej di gayi hai. Aapko portal par unke live competitive quotations prapt honge!`
-                            : `📢 **Enquiry Successfully Broadcasted!**\n\n• **Route:** ${enquiryState.data.originPort} (${enquiryState.data.originCountry}) → ${enquiryState.data.destinationPort} (${enquiryState.data.destinationCountry})\n• **Commodity:** ${enquiryState.data.commodity}\n• **Weight / Load:** ${enquiryState.data.weight}\n\nYour enquiry has been delivered to all matching verified logistics forwarders. They will submit competitive spot rate quotations directly!`;
+                        botReply = `📢 **Enquiry Successfully Broadcasted to All Forwarders!**\n\n• **Route:** ${enquiryState.data.originPort || enquiryState.data.originCountry} → ${enquiryState.data.destinationPort || enquiryState.data.destinationCountry}\n• **Cargo Mode:** ${(enquiryState.data.mode || 'sea').toUpperCase()} Freight\n• **Cargo Load:** ${enquiryState.data.weight || 'Standard'}\n\nYour enquiry has been delivered to all matching verified logistics forwarders on this route. They will submit competitive spot rate quotations directly!`;
                     }
 
                     enquiryState.active = false;
@@ -547,79 +711,257 @@ exports.handleChatbotQuery = async (req, res) => {
         }
 
         // -------------------------------------------------------------------------
-        // ROUTE & LOCATION ADVISORY FLOW (Detailed Freight Intelligence Report)
+        // ACTION 03: SHIPPING ROUTES & PORT GUIDE CONVERSATIONAL FLOW
         // -------------------------------------------------------------------------
-        if (!enquiryState.active && isRouteInquiry) {
-            let from = 'India';
-            let to = 'China';
+        // 1. Initial trigger of Action 03 (e.g. "Shipping Routes & Port Guide")
+        if (q.includes('shipping routes & port guide') || q.includes('port guide') || q.includes('route guide') || (!guideState.active && q === 'shipping routes')) {
+            guideState.active = true;
+            guideState.step = 'SELECTING_TYPE';
+            guideState.subType = '';
+            newContext.guideState = guideState;
 
-            if (q.includes('china') && q.includes('india')) {
-                from = q.indexOf('china') < q.indexOf('india') ? 'China' : 'India';
-                to = from === 'China' ? 'India' : 'China';
-            } else if (q.includes('delhi') && q.includes('dubai')) {
-                from = 'Delhi'; to = 'Dubai';
-            } else if (q.includes('mumbai') && q.includes('dubai')) {
-                from = 'Mumbai'; to = 'Dubai';
-            } else if (q.includes('mumbai') && q.includes('china')) {
-                from = 'Mumbai'; to = 'China';
-            } else if (q.includes('india') && q.includes('usa')) {
-                from = 'India'; to = 'USA';
-            } else if (matchedCity && matchedCountry) {
-                from = matchedCity;
-                to = matchedCountry;
+            options = [
+                { number: 1, label: '⚓ Port Guide & Terminal Directory' },
+                { number: 2, label: '🚢 Shipping Routes & Freight Analysis' }
+            ];
+
+            botReply = `🧭 **Shipping Routes & Port Guide Explorer:**\n\nWhat would you like to explore today? (Please select an option below):\n\n1. ⚓ **Port Guide & Terminal Directory** (Explore seaports by country & get comprehensive terminal intelligence)\n2. 🚢 **Shipping Routes & Freight Analysis** (Analyze end-to-end trade routes, transit schedules & port pairs)`;
+
+            return res.json({ success: true, reply: botReply, options, context: newContext });
+        }
+
+        // 2. Active in Guide State
+        if (guideState.active) {
+            // STEP 1: User picks Ports (Option 1) vs Routes (Option 2)
+            if (guideState.step === 'SELECTING_TYPE') {
+                if (selectedNumber === 1 || q.includes('port')) {
+                    guideState.subType = 'PORTS';
+                    guideState.step = 'ASK_PORT_COUNTRY';
+                    newContext.guideState = guideState;
+
+                    options = [
+                        { number: 1, label: 'India' },
+                        { number: 2, label: 'China' },
+                        { number: 3, label: 'United Arab Emirates' },
+                        { number: 4, label: 'United States' }
+                    ];
+
+                    botReply = `⚓ **Port Guide & Terminal Directory:**\n\nWhich **Country's** ports would you like to explore? (Click an option below or type any country name, e.g., *India*, *China*, *UAE*, *USA*, *Germany*):`;
+
+                    return res.json({ success: true, reply: botReply, options, context: newContext });
+                } else if (selectedNumber === 2 || q.includes('route') || q.includes('shipping')) {
+                    guideState.subType = 'ROUTES';
+                    guideState.step = 'ASK_ROUTE_ORIGIN';
+                    newContext.guideState = guideState;
+
+                    options = [
+                        { number: 1, label: 'India' },
+                        { number: 2, label: 'China' },
+                        { number: 3, label: 'United Arab Emirates' },
+                        { number: 4, label: 'United States' }
+                    ];
+
+                    botReply = `🚢 **Shipping Routes & Freight Analysis:**\n\nPlease select or type your **Origin Country** (e.g., *India*, *China*, *UAE*, *USA*):`;
+
+                    return res.json({ success: true, reply: botReply, options, context: newContext });
+                }
             }
 
-            const routeMode = q.includes('air') ? 'AIR' : 'SEA';
+            // --- BRANCH A: PORT DIRECTORY ---
+            // STEP A2: User provides country for Port Directory
+            if (guideState.subType === 'PORTS' && guideState.step === 'ASK_PORT_COUNTRY') {
+                let countryName = matchedCountry;
+                if (!countryName) {
+                    if (selectedNumber === 1) countryName = 'India';
+                    else if (selectedNumber === 2) countryName = 'China';
+                    else if (selectedNumber === 3) countryName = 'United Arab Emirates';
+                    else if (selectedNumber === 4) countryName = 'United States';
+                    else countryName = raw.trim();
+                }
 
-            // 1. Fetch 12 Ranked Verified Vendors for this route
-            vendors = await fetchRankedVendorsForRoute(
-                {
-                    $or: [
-                        { countriesServed: new RegExp(to, 'i') },
-                        { serviceLocations: new RegExp(from, 'i') }
-                    ]
-                },
-                12
-            );
+                guideState.country = countryName;
 
-            // 2. Fetch AI Freight Intelligence Report for Route
-            const llmPrompt = `Provide a comprehensive, high-value freight intelligence report for shipping from ${from} to ${to} via ${routeMode} freight:
-1. **Major Loading & Discharge Ports**: (Specific hub ports in ${from} and ${to}).
-2. **Transit Times**: (Direct vs transshipment vessel schedules in days).
-3. **Current Market Rate Benchmarks**: (Realistic estimated freight cost ranges for 20ft/40ft container or air per kg, explaining how fuel and seasonal surcharges apply).
-4. **Customs, CHA & Clearance Protocol**: (Exact paperwork: IEC Code, GST LUT, Packing List, Commercial Invoice, COO, Shipping Bill).
-5. **Next Step Call-To-Action**: Include this exact question at the end:
-"📦 What commodity (goods) are you planning to ship? (e.g., *Textiles*, *Machinery*, *Auto Parts*, *Electronics*):"`;
+                // Query DB for seaports in this country
+                const dbPorts = await Location.find({
+                    country: new RegExp(countryName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i'),
+                    type: { $in: ['Seaport', 'Airport'] }
+                }).select('name code city type').limit(15).lean();
 
-            const aiAnalysis = await queryOpenRouter(llmPrompt, userWantsHindi, history);
+                if (dbPorts && dbPorts.length > 0) {
+                    guideState.portsList = dbPorts;
+                    guideState.step = 'SELECT_PORT_DETAILS';
+                    newContext.guideState = guideState;
 
-            botReply = aiAnalysis || (userWantsHindi
-                ? `🚢 **${from} se ${to} (${routeMode} Freight) Route Guide:**\n\n` +
-                  `• **Transit Time**: Ocean Freight approx 15–25 days; Air Cargo approx 3–5 days.\n` +
-                  `• **Customs & Documentation**: **IEC Code**, **Commercial Invoice**, **Packing List**, **GST LUT**, aur **Shipping Bill** zaroori hain.\n\n` +
-                  `📦 **What commodity (goods) are you planning to ship? (e.g., *Textiles*, *Machinery*, *Auto Parts*, *Electronics*):**`
-                : `🚢 **Freight Intelligence Report: Shipping from ${from} to ${to} via ${routeMode} Freight:**\n\n` +
-                  `1. **Major Loading & Discharge Ports**: Nhava Sheva (JNPT) / Mundra → Shanghai / Ningbo.\n` +
-                  `2. **Transit Times**: Direct Ocean: 20–25 days | Air: 3–5 days.\n` +
-                  `3. **Market Rate Benchmarks**: Ocean 20ft: $800–$1,200 | 40ft: $1,400–$2,200 | LCL: $50–$75/CBM | Air: $4–$7/kg.\n` +
-                  `4. **Mandatory Documentation**: IEC Code, GST LUT, Commercial Invoice with HS Code, Packing List, Certificate of Origin.\n\n` +
-                  `📦 **What commodity (goods) are you planning to ship? (e.g., *Textiles*, *Machinery*, *Auto Parts*, *Electronics*):**`);
+                    const portListDisplay = dbPorts.slice(0, 8).map((p, idx) => 
+                        `${idx + 1}. **${p.name}** (${p.code || p.city}) - *${p.type}*`
+                    ).join('\n');
 
-            // Initialize enquiry state context with route info for next turn
-            enquiryState.active = true;
-            enquiryState.step = 'COLLECTING';
-            enquiryState.data.originCountry = from;
-            enquiryState.data.destinationCountry = to;
-            enquiryState.data.mode = routeMode.toLowerCase();
-            newContext.enquiryState = enquiryState;
+                    options = dbPorts.slice(0, 8).map((p, idx) => ({
+                        number: idx + 1,
+                        label: `${p.name} (${p.code || p.city})`,
+                        code: p.code
+                    }));
 
-            return res.json({
-                success: true,
-                reply: botReply,
-                vendors,
-                rates: [],
-                context: newContext
-            });
+                    botReply = `⚓ **Major Commercial Ports in ${countryName} (from Portal Database):**\n\n${portListDisplay}\n\nType a port number or port name to get comprehensive operational intelligence, terminal handling specifications, and active forwarders:`;
+
+                    return res.json({ success: true, reply: botReply, options, context: newContext });
+                } else {
+                    // Fallback LLM if country not yet populated in Location master
+                    const llmPortPrompt = `List the top 6 commercial cargo ports in ${countryName} with UN/LOCODE and key logistics features. Format clearly with bullet points.`;
+                    const aiPortList = await queryOpenRouter(llmPortPrompt, false, history);
+                    guideState.step = 'SELECT_PORT_DETAILS';
+                    newContext.guideState = guideState;
+
+                    botReply = aiPortList || `Found major ports for ${countryName}. Please specify which port you would like an operational brief for:`;
+                    return res.json({ success: true, reply: botReply, context: newContext });
+                }
+            }
+
+            // STEP A3: User specifies a port name to get AI brief & matching forwarders
+            if (guideState.subType === 'PORTS' && guideState.step === 'SELECT_PORT_DETAILS') {
+                let chosenPort = raw.trim();
+                if (selectedNumber && guideState.portsList && guideState.portsList[selectedNumber - 1]) {
+                    chosenPort = guideState.portsList[selectedNumber - 1].name;
+                }
+
+                // AI Brief about this port
+                const portBriefPrompt = `Provide a concise, professional operational logistics brief for the port "${chosenPort}" in ${guideState.country || 'Global'}:
+1. **Key Capabilities & Terminal Infrastructure**: Container handling (TEUs), depth draft, and berthing.
+2. **Connectivity & Hinterland Rail/Road Access**: Dedicated freight corridors, CFS networks.
+3. **Major Trade Lanes & Carriers**: Key shipping lines and international sectors serviced.
+4. **Customs & Terminal Highlights**: 24/7 scanning, gate-in cutoff windows, and efficiency tips for shippers.`;
+
+                const aiPortBrief = await queryOpenRouter(portBriefPrompt, false, history);
+
+                // Fetch portal forwarders covering this port or country
+                vendors = await fetchRankedVendorsForRoute(
+                    {
+                        $or: [
+                            { portsCovered: new RegExp(chosenPort.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i') },
+                            { serviceLocations: new RegExp(guideState.country || '', 'i') },
+                            { countriesServed: new RegExp(guideState.country || '', 'i') }
+                        ]
+                    },
+                    12
+                );
+
+                botReply = (aiPortBrief || `Here is the operational overview for **${chosenPort}**: Major commercial hub handling international containerized and bulk cargo.`) +
+                    `\n\n📍 **Verified Logistics Forwarders Covering ${chosenPort}:**\nBelow are active forwarders available to handle shipments at this port:`;
+
+                guideState.active = false;
+                guideState.step = 'DONE';
+                newContext.guideState = guideState;
+
+                return res.json({ success: true, reply: botReply, vendors, context: newContext });
+            }
+
+            // --- BRANCH B: SHIPPING ROUTES ANALYSIS ---
+            // STEP B1: User provides Origin Country
+            if (guideState.subType === 'ROUTES' && guideState.step === 'ASK_ROUTE_ORIGIN') {
+                let origin = matchedCountry;
+                if (!origin) {
+                    if (selectedNumber === 1) origin = 'India';
+                    else if (selectedNumber === 2) origin = 'China';
+                    else if (selectedNumber === 3) origin = 'United Arab Emirates';
+                    else if (selectedNumber === 4) origin = 'United States';
+                    else origin = raw.trim();
+                }
+
+                guideState.routeOriginCountry = origin;
+                guideState.step = 'ASK_ROUTE_DEST';
+                newContext.guideState = guideState;
+
+                options = [
+                    { number: 1, label: 'China' },
+                    { number: 2, label: 'United States' },
+                    { number: 3, label: 'United Arab Emirates' },
+                    { number: 4, label: 'Germany' }
+                ];
+
+                botReply = `🏁 **Origin Country set to:** **${origin}**\n\nNow, please select or type your **Destination Country** (e.g., *China*, *USA*, *UAE*, *Germany*):`;
+
+                return res.json({ success: true, reply: botReply, options, context: newContext });
+            }
+
+            // STEP B2: User provides Destination Country -> Get ports of both countries & AI Route Analysis
+            if (guideState.subType === 'ROUTES' && guideState.step === 'ASK_ROUTE_DEST') {
+                let dest = matchedCountry;
+                if (!dest) {
+                    if (selectedNumber === 1) dest = 'China';
+                    else if (selectedNumber === 2) dest = 'United States';
+                    else if (selectedNumber === 3) dest = 'United Arab Emirates';
+                    else if (selectedNumber === 4) dest = 'Germany';
+                    else dest = raw.trim();
+                }
+
+                guideState.routeDestCountry = dest;
+                const originCountry = guideState.routeOriginCountry || 'India';
+                const destCountry = dest;
+
+                // Fetch ports of origin country from DB
+                const originPorts = await Location.find({
+                    country: new RegExp(originCountry.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i'),
+                    type: 'Seaport'
+                }).select('name code').limit(5).lean();
+
+                // Fetch ports of destination country from DB
+                const destPorts = await Location.find({
+                    country: new RegExp(destCountry.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i'),
+                    type: 'Seaport'
+                }).select('name code').limit(5).lean();
+
+                const originPortsListStr = originPorts.length > 0 
+                    ? originPorts.map(p => `${p.name} (${p.code || 'Seaport'})`).join(', ') 
+                    : 'Major national gateway ports';
+
+                const destPortsListStr = destPorts.length > 0 
+                    ? destPorts.map(p => `${p.name} (${p.code || 'Seaport'})`).join(', ') 
+                    : 'Major international gateway ports';
+
+                // Query AI for complete Shipping Route intelligence
+                const routeAnalysisPrompt = `You are a Senior Maritime Logistics & Freight Routing Expert on Logistics Scanner.
+Provide an in-depth shipping route and port analysis for:
+Route: ${originCountry} -> ${destCountry}
+Database Loading Ports in ${originCountry}: ${originPortsListStr}
+Database Discharge Ports in ${destCountry}: ${destPortsListStr}
+
+Please structure your report into clear, professional sections:
+1. **Primary Port-to-Port Pairings**: (Optimal maritime pairings between loading and discharge ports).
+2. **Transit Times & Shipping Lines**: (Average ocean transit in days, direct sailings vs transshipment hubs like Singapore/Colombo/Jebel Ali, major ocean carriers operating on this trade lane).
+3. **Freight Rate Benchmarks & Cost Structure**: (Typical indicative rate bands for 20ft & 40ft FCL and LCL per CBM, bunker surcharges, peak season factors).
+4. **Key Customs & Compliance Documents**: (Export shipping bill, commercial invoice, packing list, certificate of origin, HS code guidelines).
+5. **Operational Pro-Tips for Shippers**: (Cutoff windows, container detention/demurrage precautions).
+
+Keep formatting clean with clear markdown bold headers.`;
+
+                const aiRouteReport = await queryOpenRouter(routeAnalysisPrompt, false, history);
+
+                // Fetch 12 Ranked Verified Vendors for this trade route
+                vendors = await fetchRankedVendorsForRoute(
+                    {
+                        $or: [
+                            { countriesServed: new RegExp(destCountry.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i') },
+                            { serviceLocations: new RegExp(originCountry.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i') }
+                        ]
+                    },
+                    12
+                );
+
+                botReply = (aiRouteReport || `🚢 **Trade Route Guide: ${originCountry} → ${destCountry}**\n\n• **Transit Times:** Ocean Freight approx 15–25 days.\n• **Major Ports:** ${originPortsListStr} → ${destPortsListStr}.\n• **Documentation:** Invoice, Packing List, Shipping Bill, Certificate of Origin.`) +
+                    `\n\n📍 **Verified Freight Forwarders for ${originCountry} → ${destCountry}:**\nHere are 12 verified forwarders actively handling this trade route. You can review their verified profiles or connect directly:`;
+
+                guideState.active = false;
+                guideState.step = 'DONE';
+                newContext.guideState = guideState;
+
+                return res.json({
+                    success: true,
+                    reply: botReply,
+                    vendors,
+                    rates: [],
+                    context: newContext
+                });
+            }
         }
 
         // -------------------------------------------------------------------------
@@ -664,62 +1006,67 @@ exports.handleChatbotQuery = async (req, res) => {
                 }
             }
 
-            // Also check if weight/load was typed (e.g. "500 kg", "20ft", "40ft", "4 cbm")
+            // Also check if weight/load was typed or selected by option number
             if (!enquiryState.data.weight) {
+                if (selectedNumber && enquiryState.data.destinationPort) {
+                    if (enquiryState.data.mode === 'sea') {
+                        const seaLoadOptions = ['20ft Standard Container (FCL)', '40ft Standard Container (FCL)', '40ft High Cube HC (FCL)', 'Less than Container Load (LCL / CBM)'];
+                        if (seaLoadOptions[selectedNumber - 1]) {
+                            enquiryState.data.weight = seaLoadOptions[selectedNumber - 1];
+                        }
+                    } else if (enquiryState.data.mode === 'air') {
+                        const airWeightOptions = ['0 - 50 kg', '50 - 100 kg', '100 - 500 kg', '500+ kg'];
+                        if (airWeightOptions[selectedNumber - 1]) {
+                            enquiryState.data.weight = airWeightOptions[selectedNumber - 1];
+                        }
+                    }
+                }
                 const weightPattern = /\b(\d+(?:\.\d+)?\s*(?:kg|kgs|ton|tons|tonne|cbm|ft|container))\b/i;
                 const matchW = raw.match(weightPattern);
                 if (matchW) {
                     enquiryState.data.weight = matchW[1];
+                } else if (/fcl|lcl|20ft|40ft|container/i.test(q)) {
+                    enquiryState.data.weight = raw;
                 }
             }
 
-            // Check next missing required field:
-            // Order: 1. Commodity -> 2. Weight -> 3. Origin Country -> 4. Origin Port -> 5. Destination Country -> 6. Destination Port
-
-            if (!enquiryState.data.commodity) {
-                enquiryState.step = 'COLLECTING';
-                botReply = userWantsHindi
-                    ? "📦 **Aap kaunsa saman / commodity ship karna chahte hain?** (Jaise: *Textiles*, *Machinery*, *Electronics*, *Chemicals*):"
-                    : "📦 **What commodity (goods) are you planning to ship?** (e.g., *Textiles*, *Machinery*, *Auto Parts*, *Electronics*):";
-                newContext.enquiryState = enquiryState;
-                return res.json({ success: true, reply: botReply, context: newContext });
-            }
-
-            if (!enquiryState.data.weight) {
-                enquiryState.step = 'COLLECTING';
-                botReply = userWantsHindi
-                    ? `📦 **Commodity:** **${enquiryState.data.commodity}**\n\nIs cargo ka **approximate weight ya container size** kya hai? (Jaise: *500 kg*, *1x20ft Container*, *1x40ft HC*, ya *5 CBM*):`
-                    : `📦 **Commodity:** **${enquiryState.data.commodity}**\n\nWhat is the approximate **cargo weight or container load**? (e.g., *500 kg*, *1x20ft Container*, *1x40ft HC*, or *4 CBM*):`;
-                newContext.enquiryState = enquiryState;
-                return res.json({ success: true, reply: botReply, context: newContext });
-            }
-
-            // Transport Mode Selection before selecting Ports:
+            // =========================================================================
+            // STEP 1: TRANSPORT MODE SELECTION (Sea, Air, Land/Truck, CHA Customs)
+            // =========================================================================
             if (!enquiryState.data.mode) {
-                // If user wrote sea or air anywhere in input
-                if (q.includes('sea') || q.includes('ocean')) {
+                // If user wrote sea, air, land, cha as distinct words in message
+                if (/\b(sea|ocean|fcl|lcl|ship|port)\b/i.test(q) && !q.includes('search')) {
                     enquiryState.data.mode = 'sea';
-                } else if (q.includes('air') || q.includes('flight')) {
+                } else if (/\b(air|flight|airline|airport)\b/i.test(q)) {
                     enquiryState.data.mode = 'air';
+                } else if (/\b(land|truck|trucking|road|ftl|ptl)\b/i.test(q)) {
+                    enquiryState.data.mode = 'land';
+                } else if (/\b(cha|customs?|clearance)\b/i.test(q)) {
+                    enquiryState.data.mode = 'cha';
                 } else {
                     enquiryState.step = 'SELECTING_MODE';
                     options = [
-                        { number: 1, label: '🌊 Sea Freight (Ocean FCL / LCL)' },
-                        { number: 2, label: '✈️ Air Cargo (Express / Commercial Air)' }
+                        { number: 1, label: '🌊 Ocean / Sea Freight (FCL / LCL)' },
+                        { number: 2, label: '✈️ Air Cargo (Airport-to-Airport / Express)' },
+                        { number: 3, label: '🚛 Land / Surface Freight (FTL / PTL)' },
+                        { number: 4, label: '📋 Customs Clearance / CHA Port Services' }
                     ];
                     botReply = userWantsHindi
-                        ? `🚢 **Aapka transport mode kaunsa hoga?** (Option number type karein ya button click karein):\n\n1. **🌊 Sea Freight (Ocean FCL / LCL Container)**\n2. **✈️ Air Cargo (Fast Flight Cargo)**`
-                        : `🚢 **What will be your Mode of Transport?** (Type option 1 or 2, or click an option):\n\n1. **🌊 Sea Freight (Ocean FCL / LCL Container)**\n2. **✈️ Air Cargo (Express / Air Cargo Terminal)**`;
+                        ? `🚢 **Aap kaun sa shipment mode book ya search karna chahte hain?** (Option number click ya type karein):\n\n1. **🌊 Ocean / Sea Freight (FCL / LCL)**\n2. **✈️ Air Cargo (Commercial Air / Express)**\n3. **🚛 Land / Surface Freight (FTL / PTL Trucking)**\n4. **📋 Customs Clearance / CHA Port Services**`
+                        : `🚢 **Please select your Shipment Mode:** (Click an option or type 1, 2, 3, or 4):\n\n1. **🌊 Ocean / Sea Freight (FCL / LCL)**\n2. **✈️ Air Cargo (Commercial Air / Express)**\n3. **🚛 Land / Surface Freight (FTL / PTL Trucking)**\n4. **📋 Customs Clearance / CHA Port Services**`;
                     newContext.enquiryState = enquiryState;
                     return res.json({ success: true, reply: botReply, options, context: newContext });
                 }
             }
 
+            // =========================================================================
+            // STEP 2: ORIGIN LOCATION (Country / Port / City)
+            // =========================================================================
             if (!enquiryState.data.originCountry) {
                 enquiryState.step = 'COLLECTING';
                 botReply = userWantsHindi
-                    ? "🌍 **Shipment ka Origin Country kaunsa hai?** (Jaise: *India*, *China*, *UAE*, *USA*):"
-                    : "🌍 **What is your Origin Country?** (e.g., *India*, *China*, *UAE*, *USA*):";
+                    ? "🌍 **Shipment ka Origin Country / City kaunsa hai?** (Jaise: *India*, *China*, *UAE*, *USA*):"
+                    : "🌍 **What is your Origin Country or City?** (e.g., *India*, *China*, *UAE*, *USA*):";
                 newContext.enquiryState = enquiryState;
                 return res.json({ success: true, reply: botReply, context: newContext });
             }
@@ -727,7 +1074,7 @@ exports.handleChatbotQuery = async (req, res) => {
             if (!enquiryState.data.originPort) {
                 // Fetch ports from DB for Origin Country based on selected mode
                 const originPorts = await getPortsByCountryFromDb(enquiryState.data.originCountry, enquiryState.data.mode);
-                const modeLabel = enquiryState.data.mode === 'air' ? 'Airport Hub' : 'Sea Port';
+                const modeLabel = enquiryState.data.mode === 'air' ? 'Airport Hub' : (enquiryState.data.mode === 'land' ? 'Terminal / Hub' : 'Sea Port');
                 if (originPorts.length > 0) {
                     enquiryState.step = 'SELECTING_ORIGIN_PORT';
                     enquiryState.portOptions = originPorts;
@@ -750,17 +1097,21 @@ exports.handleChatbotQuery = async (req, res) => {
                 }
             }
 
+            // =========================================================================
+            // STEP 3: DESTINATION LOCATION (Country / Port / City)
+            // =========================================================================
             if (!enquiryState.data.destinationCountry) {
                 enquiryState.step = 'COLLECTING';
                 botReply = userWantsHindi
-                    ? "🏁 **Shipment ka Destination Country kaunsa hai?** (Jaise: *China*, *UAE*, *USA*, *Germany*):"
-                    : "🏁 **What is your Destination Country?** (e.g., *China*, *UAE*, *USA*, *Germany*):";
+                    ? "🏁 **Shipment ka Destination Country / City kaunsa hai?** (Jaise: *China*, *UAE*, *USA*, *Germany*):"
+                    : "🏁 **What is your Destination Country or City?** (e.g., *China*, *UAE*, *USA*, *Germany*):";
                 newContext.enquiryState = enquiryState;
                 return res.json({ success: true, reply: botReply, context: newContext });
             }
 
             if (!enquiryState.data.destinationPort) {
                 const destPorts = await getPortsByCountryFromDb(enquiryState.data.destinationCountry, enquiryState.data.mode);
+                const modeLabel = enquiryState.data.mode === 'air' ? 'Airport Terminal' : 'Sea Port';
                 if (destPorts.length > 0) {
                     enquiryState.step = 'SELECTING_DEST_PORT';
                     enquiryState.portOptions = destPorts;
@@ -768,8 +1119,8 @@ exports.handleChatbotQuery = async (req, res) => {
 
                     let portListText = destPorts.map((p, idx) => `${idx + 1}. **${p.name}** ${p.code ? `(${p.code})` : ''} - *${p.city || ''}*`).join('\n');
                     botReply = userWantsHindi
-                        ? `⚓ **${enquiryState.data.destinationCountry} me Destination Port select karein** (Option number type karein ya port name):\n\n${portListText}`
-                        : `⚓ **Please select your Destination Port in ${enquiryState.data.destinationCountry}** (Type the option number or port name):\n\n${portListText}`;
+                        ? `⚓ **${enquiryState.data.destinationCountry} me Destination ${modeLabel} select karein** (Option number type karein ya port name):\n\n${portListText}`
+                        : `⚓ **Please select your Destination ${modeLabel} in ${enquiryState.data.destinationCountry}** (Type the option number or port name):\n\n${portListText}`;
 
                     newContext.enquiryState = enquiryState;
                     return res.json({ success: true, reply: botReply, options, context: newContext });
@@ -784,28 +1135,69 @@ exports.handleChatbotQuery = async (req, res) => {
             }
 
             // =========================================================================
-            // ALL REQUIRED FIELDS COLLECTED: SEARCH VENDORS & RATES FROM DATABASE
+            // STEP 4: CARGO LOAD TYPE / WEIGHT DETAILS
+            // =========================================================================
+            if (!enquiryState.data.weight) {
+                enquiryState.step = 'COLLECTING';
+                if (enquiryState.data.mode === 'sea') {
+                    options = [
+                        { number: 1, label: '20ft Standard Container (FCL)' },
+                        { number: 2, label: '40ft Standard Container (FCL)' },
+                        { number: 3, label: '40ft High Cube HC (FCL)' },
+                        { number: 4, label: 'Less than Container Load (LCL / CBM)' }
+                    ];
+                    botReply = userWantsHindi
+                        ? `📦 **Cargo / Load Type select karein** (Option number click karein ya weight/volume type karein jaise *500 kg*, *5 CBM*):\n\n1. **20ft Standard Container (FCL)**\n2. **40ft Standard Container (FCL)**\n3. **40ft High Cube HC (FCL)**\n4. **Less than Container Load (LCL / CBM)**`
+                        : `📦 **Please select your Cargo / Load Type** (Click an option or type custom weight like *500 kg* or *5 CBM*):\n\n1. **20ft Standard Container (FCL)**\n2. **40ft Standard Container (FCL)**\n3. **40ft High Cube HC (FCL)**\n4. **Less than Container Load (LCL / CBM)**`;
+                    newContext.enquiryState = enquiryState;
+                    return res.json({ success: true, reply: botReply, options, context: newContext });
+                } else if (enquiryState.data.mode === 'air') {
+                    options = [
+                        { number: 1, label: '0 - 50 kg' },
+                        { number: 2, label: '50 - 100 kg' },
+                        { number: 3, label: '100 - 500 kg' },
+                        { number: 4, label: '500+ kg' }
+                    ];
+                    botReply = userWantsHindi
+                        ? `📦 **Air Cargo Weight Class select karein** (Option number click karein ya weight type karein jaise *75 kg*):\n\n1. **0 - 50 kg**\n2. **50 - 100 kg**\n3. **100 - 500 kg**\n4. **500+ kg**`
+                        : `📦 **Please select Air Cargo Weight Class** (Click an option or type exact weight like *75 kg*):\n\n1. **0 - 50 kg**\n2. **50 - 100 kg**\n3. **100 - 500 kg**\n4. **500+ kg**`;
+                    newContext.enquiryState = enquiryState;
+                    return res.json({ success: true, reply: botReply, options, context: newContext });
+                } else {
+                    botReply = userWantsHindi
+                        ? `📦 Is shipment ka **approximate weight ya vehicle load** kya hai? (Jaise: *500 kg*, *10 Ton*, *FTL Truck*):`
+                        : `📦 What is the approximate **cargo weight or load**? (e.g., *500 kg*, *10 Ton*, *FTL Truck*):`;
+                    newContext.enquiryState = enquiryState;
+                    return res.json({ success: true, reply: botReply, context: newContext });
+                }
+            }
+
+            // =========================================================================
+            // ALL SEARCH FIELDS COLLECTED (Mode + Origin + Destination + Load/Weight):
+            // SEARCH LIVE VENDOR RATES & VENDORS FROM DATABASE (Search Price Flow)
+            // Commodity is collected at booking/enquiry time (like Search Results modal)
             // =========================================================================
             enquiryState.step = 'BROADCAST_CONFIRMATION';
 
-            const originLabel = `${enquiryState.data.originPort} (${enquiryState.data.originCountry})`;
-            const destLabel = `${enquiryState.data.destinationPort} (${enquiryState.data.destinationCountry})`;
+            const originLabel = `${enquiryState.data.originPort || enquiryState.data.originCountry}`;
+            const destLabel = `${enquiryState.data.destinationPort || enquiryState.data.destinationCountry}`;
 
-            // 1. Search DB for matching rates
+            // 1. Search DB strictly for rates matching the specific origin port and destination port
             const dbRates = await findAvailableRatesForRoute(
-                enquiryState.data.originPort || enquiryState.data.originCountry,
-                enquiryState.data.destinationPort || enquiryState.data.destinationCountry,
-                enquiryState.data.mode
+                enquiryState.data.originPort,
+                enquiryState.data.destinationPort,
+                enquiryState.data.mode,
+                enquiryState.data.weight
             );
 
             // 2. Search DB for matching verified vendors
             const dbVendors = await fetchRankedVendorsForRoute(
                 {
                     $or: [
-                        { countriesServed: new RegExp(enquiryState.data.destinationCountry, 'i') },
-                        { portsCovered: new RegExp(enquiryState.data.destinationPort, 'i') },
-                        { portsCovered: new RegExp(enquiryState.data.originPort, 'i') },
-                        { serviceLocations: new RegExp(enquiryState.data.originCountry, 'i') }
+                        { countriesServed: new RegExp(enquiryState.data.destinationCountry || '', 'i') },
+                        { portsCovered: new RegExp(enquiryState.data.destinationPort || '', 'i') },
+                        { portsCovered: new RegExp(enquiryState.data.originPort || '', 'i') },
+                        { serviceLocations: new RegExp(enquiryState.data.originCountry || '', 'i') }
                     ]
                 },
                 6
@@ -818,19 +1210,17 @@ exports.handleChatbotQuery = async (req, res) => {
 
             let rateText = '';
             if (dbRates.length > 0) {
-                rateText = `\n\n💰 **Available Vendor Rates in Database:**\n` +
-                    dbRates.map((r, idx) => `• **${r.vendor?.company || r.vendor?.name || 'Verified Vendor'}**: **₹${r.price.toLocaleString('en-IN')}** ${r.currency || 'INR'} (${r.deliverySpeed || 'Standard'})`).join('\n');
+                rateText = `\n\n💰 **Live Matched Rates in Database (${dbRates.length}):**\n` +
+                    dbRates.map((r, idx) => `• **${r.vendor?.company || r.vendor?.name || 'Verified Vendor'}**: **₹${r.price.toLocaleString('en-IN')}** ${r.currency || 'INR'} (${r.seaLoadType || r.deliverySpeed || 'Standard'} • ${r.type?.toUpperCase()})`).join('\n');
             } else {
-                rateText = `\n\nℹ️ *Currently, no direct published fixed rate card is found for this specific port pair in our database.*`;
+                rateText = `\n\nℹ️ *Currently no fixed rate card is published for this exact pair in database. You can broadcast your enquiry to get custom bids.*`;
             }
 
             const vendorCardsIntro = dbVendors.length > 0
                 ? `\n\nFound **${dbVendors.length} Verified Forwarders** actively handling this route.`
                 : '';
 
-            botReply = userWantsHindi
-                ? `📋 **Shipment Route Analysis:**\n• **Route:** ${originLabel} → ${destLabel}\n• **Commodity:** ${enquiryState.data.commodity}\n• **Weight / Load:** ${enquiryState.data.weight}${rateText}${vendorCardsIntro}\n\n**Kya aap is enquiry ko matching vendors ko broadcast karna chahte hain taaki ve live quotation provide karein?**\n\n1. **Broadcast to all matching vendors**\n2. **Send enquiry to a specific vendor**\n\n*(Kripya option 1 ya 2 type karein, ya 'Haan'/'Nahi' batayein)*`
-                : `📋 **Shipment Route Analysis:**\n• **Route:** ${originLabel} → ${destLabel}\n• **Commodity:** ${enquiryState.data.commodity}\n• **Weight / Load:** ${enquiryState.data.weight}${rateText}${vendorCardsIntro}\n\n**Would you like us to broadcast your enquiry to matching vendors so they can provide live customized quotations?**\n\n1. **Broadcast enquiry to all matching vendors**\n2. **Send enquiry to a specific vendor**\n\n*(Please type 1 or 2, or reply Yes / No)*`;
+            botReply = `📋 **Live Freight Search Results:**\n• **Sector:** ${originLabel} → ${destLabel}\n• **Mode:** ${enquiryState.data.mode?.toUpperCase()} Freight\n• **Cargo Load:** ${enquiryState.data.weight}${rateText}${vendorCardsIntro}\n\nClick **"Connect & Book Now"** on any rate card to book directly, or type **"1"** (or click "Broadcast to All Forwarders") to broadcast your enquiry to all matching verified forwarders.`;
 
             newContext.enquiryState = enquiryState;
             return res.json({
@@ -845,45 +1235,28 @@ exports.handleChatbotQuery = async (req, res) => {
         // =========================================================================
         // GENERAL FALLBACK & NORMAL CONVERSATION (Outside active enquiry)
         // =========================================================================
-        // INTENT: Continuation request (e.g. "aur", "aur batao", "aur dikhao", "more", "next", "aur vendor", "aur list do")
-        const isContinuation = /^(aur|or|more|next|aur batao|aur dikhao|aur vendors?|aur list|show more|aur aage)$/i.test(q) ||
+        // INTENT: Continuation request (e.g. "aur", "more", "next", "aur vendor", "aur list")
+        const isContinuation = /^(aur|or|more|next|aur batao|aur dikhao|aur vendors?|aur list|show more|aur aage|page|next page)$/i.test(q) ||
             q === 'aur' || q === 'aur?' || q === 'aur bataiye' || q === 'more vendors' || q === 'next page';
 
         // Check recent conversation history for previous search context (location or vendor list)
         let previousSearchFilter = lastContext?.lastVendorFilter || null;
         let previousVendorOffset = lastContext?.vendorOffset || 0;
 
-        if (isContinuation && !previousSearchFilter && Array.isArray(history) && history.length > 0) {
-            // Check if any previous bot message was showing vendor list or if user was asking for forwarders/location
-            const historyText = history.map(h => (h.text || '').toLowerCase()).join(' ');
-            for (const c of cities) {
-                if (historyText.includes(c)) {
-                    previousSearchFilter = { city: c };
-                    break;
-                }
-            }
-            if (!previousSearchFilter) {
-                for (const co of countries) {
-                    if (historyText.includes(co)) {
-                        previousSearchFilter = { country: co };
-                        break;
-                    }
-                }
-            }
-            if (!previousSearchFilter && (historyText.includes('forwarder') || historyText.includes('vendor') || historyText.includes('india'))) {
-                previousSearchFilter = { country: 'India' };
-            }
+        // INTENT: Location Search & Vendor List Inquiries (e.g. "delhi", "mumbai", "india ka vendor ka list do", "forwarders in china", "aur")
+        const isExplicitLocationSearch = Boolean(locationSearch && (locationSearch.country || locationSearch.city));
+        if (isExplicitLocationSearch) {
+            matchedCountry = locationSearch.country || matchedCountry;
+            matchedCity = locationSearch.city || matchedCity;
         }
 
-        // INTENT: Location Search & Vendor List Inquiries (e.g. "delhi", "mumbai", "india ka vendor ka list do", "forwarders in china", "aur")
         const isVendorListInquiry =
+            isExplicitLocationSearch ||
             Boolean(matchedCity) ||
-            (Boolean(matchedCountry) && matchedCountry !== 'india' && !q.includes('to ' + matchedCountry)) ||
+            (Boolean(matchedCountry) && !q.includes('to ' + matchedCountry.toLowerCase())) ||
             q.includes('vendor') || q.includes('vendors') ||
             q.includes('forwarder') || q.includes('forwarders') ||
             q.includes('logistics partner') || q.includes('cha') ||
-            q.includes('in delhi') || q.includes('in mumbai') || q.includes('in china') ||
-            q.includes('in india') || q.includes('india ka') || q.includes('india ke') ||
             q.includes('near me') || q.includes('search vendors by location') || q.includes('find vendor') ||
             isContinuation;
 
@@ -903,17 +1276,43 @@ exports.handleChatbotQuery = async (req, res) => {
                 }
             }
 
-            // If query mentions India or general vendor list request
-            if (!targetCity && (q.includes('india') || q.includes('bharat') || !targetCountry)) {
-                targetCountry = targetCountry || 'India';
+            // If user did not specify city or country, default to India
+            if (!targetCity && !targetCountry) {
+                targetCountry = 'India';
+            }
+
+            // Build vendor search filter matching VendorNetwork exactly
+            const conditions = [];
+            const escapeRegExp = (string) => string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+            if (targetCountry) {
+                // Strict country match like Vendor Network (User.country)
+                conditions.push({
+                    country: new RegExp('^' + escapeRegExp(targetCountry) + '$', 'i')
+                });
             }
 
             if (targetCity) {
-                const reg = new RegExp(targetCity, 'i');
-                filter.$or = [{ city: reg }, { serviceLocations: reg }, { portsCovered: reg }];
-            } else if (targetCountry) {
-                const reg = new RegExp(targetCountry, 'i');
-                filter.$or = [{ country: reg }, { countriesServed: reg }, { serviceLocations: reg }];
+                // City aliases like Vendor Network
+                const cleanCity = targetCity.trim().toLowerCase();
+                const cityAliases = {
+                    'bangalore': ['bangalore', 'bangaluru', 'bengaluru'],
+                    'bangaluru': ['bangalore', 'bangaluru', 'bengaluru'],
+                    'bengaluru': ['bangalore', 'bangaluru', 'bengaluru'],
+                    'mumbai': ['mumbai', 'bombay', 'nhava sheva'],
+                    'delhi': ['delhi', 'new delhi']
+                };
+
+                if (cityAliases[cleanCity]) {
+                    const aliasRegexStr = cityAliases[cleanCity].map(c => `^${escapeRegExp(c)}$`).join('|');
+                    conditions.push({ city: new RegExp(aliasRegexStr, 'i') });
+                } else {
+                    conditions.push({ city: new RegExp('^' + escapeRegExp(targetCity) + '$', 'i') });
+                }
+            }
+
+            if (conditions.length > 0) {
+                filter.$and = conditions;
             }
 
             if (q.includes('cha') || q.includes('custom')) {
@@ -924,7 +1323,7 @@ exports.handleChatbotQuery = async (req, res) => {
 
             vendors = await fetchRankedVendorsForRoute(filter, 12, offset);
 
-            // If offset ran out of extra vendors, loop or fetch verified vendors
+            // If offset ran out of extra vendors, loop back to start
             if (vendors.length === 0 && offset > 0) {
                 offset = 0;
                 vendors = await fetchRankedVendorsForRoute(filter, 12, 0);
@@ -933,11 +1332,11 @@ exports.handleChatbotQuery = async (req, res) => {
             newContext.lastVendorFilter = { city: targetCity, country: targetCountry };
             newContext.vendorOffset = offset;
 
-            const locationLabel = targetCity ? targetCity.toUpperCase() : (targetCountry ? targetCountry.toUpperCase() : 'INDIA');
+            const locationLabel = [targetCity, targetCountry].filter(Boolean).join(', ').toUpperCase() || 'INDIA';
 
-            botReply = userWantsHindi
-                ? `📍 **${locationLabel} ke Aur Verified Logistics Partners & Freight Forwarders:**\n\nLogistics Scanner portal ke agle **${vendors.length} verified vendors** neeche listed hain. Aap inki company profile dekh sakte hain ya direct quotation request kar sakte hain:`
-                : `📍 **More Verified Logistics Partners & Freight Forwarders for ${locationLabel} on Logistics Scanner:**\n\nHere are **${vendors.length} verified partners** from our portal database. You can review their verified profiles, services, and connect directly below:`;
+            botReply = offset > 0
+                ? `📍 **More Verified Logistics Partners & Freight Forwarders for ${locationLabel}:**\n\nHere are next **${vendors.length} verified partners** (offset: ${offset}). Review their profiles, certifications, or request rates directly below:`
+                : `📍 **Top Verified Logistics Partners & Freight Forwarders for ${locationLabel} on Logistics Scanner:**\n\nHere are **${vendors.length} active verified partners** on our portal database. You can review their verified profiles, certifications, and request quotations directly below:`;
 
             return res.json({ success: true, reply: botReply, vendors, context: newContext });
         }
